@@ -289,29 +289,18 @@ func fetchThreadDetails(ctx context.Context, svc *gmail.Service, threads []*gmai
 	}()
 
 	ordered := make([]threadItem, len(threads))
-	hasErr := false
+	var firstErr error
 	for r := range results {
 		if r.err != nil {
-			hasErr = true
+			if firstErr == nil {
+				firstErr = r.err
+			}
 			continue
 		}
 		ordered[r.index] = r.item
 	}
-
-	if hasErr {
-		for _, thread := range threads {
-			if thread == nil || thread.Id == "" {
-				continue
-			}
-			_, err := svc.Users.Threads.Get("me", thread.Id).
-				Format("metadata").
-				MetadataHeaders(gmailMessageSummaryMetadataHeaders...).
-				Context(ctx).
-				Do()
-			if err != nil {
-				return nil, err
-			}
-		}
+	if firstErr != nil {
+		return nil, firstErr
 	}
 
 	items := make([]threadItem, 0, len(ordered))

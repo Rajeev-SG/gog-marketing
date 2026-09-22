@@ -15,6 +15,9 @@ gog gmail get <messageId> --json
 gog gmail thread get <threadId> --json
 ```
 
+Thread searches fail if any thread detail cannot be fetched, without emitting a
+partial result list. Retry the search after resolving the reported API error.
+
 Use `--from-contact 'Ada Lovelace'` with `gmail search` to resolve a contact
 into a sender query. If contact search misses, the fallback scans connections
 page by page and retains only exact name or email matches. Multiple matching

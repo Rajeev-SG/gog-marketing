@@ -2,6 +2,7 @@
 
 ## 0.40.1 - Unreleased
 
+- Gmail: fail thread searches when a detail fetch fails instead of silently returning partial results after a discarded retry. (#1138) — thanks @SebTardif.
 - API: close upload bodies when the circuit breaker rejects a request or retry buffering fails, preventing leaked files and streams. (#1136)
 - Dependencies: refresh Google protocol modules, gofumpt, Node 26/Corepack, the Dockerfile frontend, and tracking-worker Vite, PostCSS, Undici, and Nano ID pins.
 - Gmail: stage and replace raw RFC822 drafts, retrieve their MIME, and preview safely offline; bound raw draft/send input to 35 MiB while preserving no-send policies. (#1126) — thanks @darkamenosa.
