@@ -35,7 +35,7 @@ func (c *PeopleGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return wrapPeopleAPIError(err)
 	}
 
-	person, err := svc.People.Get(resource).PersonFields(peopleProfileReadMask).Do()
+	person, err := svc.People.Get(resource).PersonFields(peopleProfileReadMask).Context(ctx).Do()
 	if err != nil {
 		return wrapPeopleAPIError(err)
 	}
@@ -182,7 +182,7 @@ func (c *PeopleRelationsCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return wrapPeopleAPIError(err)
 	}
 
-	person, err := svc.People.Get(resource).PersonFields(peopleRelationsReadMask).Do()
+	person, err := svc.People.Get(resource).PersonFields(peopleRelationsReadMask).Context(ctx).Do()
 	if err != nil {
 		return wrapPeopleAPIError(err)
 	}

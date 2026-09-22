@@ -78,7 +78,7 @@ func (c *YouTubeActivitiesListCmd) Run(ctx context.Context, flags *RootFlags) er
 	} else {
 		call = call.Mine(true)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -186,7 +186,7 @@ func (c *YouTubeVideosListCmd) Run(ctx context.Context, flags *RootFlags) error 
 	default:
 		call = call.MyRating(myRating)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -228,7 +228,7 @@ func (c *YouTubePlaylistsListCmd) Run(ctx context.Context, flags *RootFlags) err
 	} else {
 		call = call.Mine(true)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -347,7 +347,7 @@ func (c *YouTubePlaylistsCreateCmd) Run(ctx context.Context, flags *RootFlags) e
 		Status: &youtube.PlaylistStatus{
 			PrivacyStatus: c.Privacy,
 		},
-	}).Do()
+	}).Context(ctx).Do()
 	if err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
@@ -417,7 +417,7 @@ func (c *YouTubePlaylistsAddCmd) Run(ctx context.Context, flags *RootFlags) erro
 		item.Snippet.ForceSendFields = []string{"Position"}
 	}
 
-	result, err := svc.PlaylistItems.Insert([]string{"snippet"}, item).Do()
+	result, err := svc.PlaylistItems.Insert([]string{"snippet"}, item).Context(ctx).Do()
 	if err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
@@ -498,7 +498,7 @@ func (c *YouTubePlaylistsRemoveCmd) Run(ctx context.Context, flags *RootFlags) e
 		}
 	}
 
-	if err := svc.PlaylistItems.Delete(itemID).Do(); err != nil {
+	if err := svc.PlaylistItems.Delete(itemID).Context(ctx).Do(); err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
 
@@ -538,7 +538,7 @@ func (c *YouTubePlaylistsDeleteCmd) Run(ctx context.Context, flags *RootFlags) e
 	if err != nil {
 		return err
 	}
-	if err := svc.Playlists.Delete(playlistID).Do(); err != nil {
+	if err := svc.Playlists.Delete(playlistID).Context(ctx).Do(); err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
 
@@ -592,7 +592,7 @@ func (c *YouTubeCommentsListCmd) Run(ctx context.Context, flags *RootFlags) erro
 	} else {
 		call = call.ChannelId(channelID)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return wrapYouTubeCommentsError(err, flags)
 	}
@@ -666,7 +666,7 @@ func (c *YouTubeChannelsListCmd) Run(ctx context.Context, flags *RootFlags) erro
 	} else {
 		call = call.Mine(true)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -742,7 +742,7 @@ func (c *YouTubeSearchListCmd) Run(ctx context.Context, flags *RootFlags) error 
 	if channelID := strings.TrimSpace(c.ChannelID); channelID != "" {
 		call = call.ChannelId(channelID)
 	}
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -878,7 +878,7 @@ func (c *YouTubeSubscriptionsSubscribeCmd) Run(ctx context.Context, flags *RootF
 				ChannelId: channelID,
 			},
 		},
-	}).Do()
+	}).Context(ctx).Do()
 	if err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
@@ -934,6 +934,7 @@ func (c *YouTubeSubscriptionsUnsubscribeCmd) Run(ctx context.Context, flags *Roo
 			Mine(true).
 			ForChannelId(channelID).
 			MaxResults(1).
+			Context(ctx).
 			Do()
 		if lookupErr != nil {
 			return wrapYouTubeWriteError(lookupErr, flags)
@@ -947,7 +948,7 @@ func (c *YouTubeSubscriptionsUnsubscribeCmd) Run(ctx context.Context, flags *Roo
 		}
 	}
 
-	if err := svc.Subscriptions.Delete(subID).Do(); err != nil {
+	if err := svc.Subscriptions.Delete(subID).Context(ctx).Do(); err != nil {
 		return wrapYouTubeWriteError(err, flags)
 	}
 

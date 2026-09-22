@@ -2,6 +2,7 @@
 
 ## 0.40.1 - Unreleased
 
+- API: honor in-flight command cancellation in YouTube, Chat unread lookups and sends, and People profile and relation requests. (#1145) — thanks @SebTardif.
 - Calendar: show failed Zoom meeting cleanup alongside a failed Calendar write, preserving both causes through CLI error formatting. (#1144) — thanks @SebTardif.
 - Sheets: return an error instead of crashing when append responses omit update metadata, without retrying the potentially completed write. (#1142) — thanks @SebTardif.
 - Docs: identify the queued batch UUID in revision-mismatch errors so it can be inspected or aborted. (#1143) — thanks @SebTardif.

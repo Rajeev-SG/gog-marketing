@@ -142,6 +142,9 @@ cancels a pending retry wait. Upload bodies are closed even when a request is
 rejected by the circuit breaker or cannot be buffered for retry, so those
 failures release the associated file or stream resources.
 
+Command cancellation also stops in-flight YouTube requests, Chat unread-message
+lookups and sends, and People profile and relation reads.
+
 If `sheets append` reports missing update metadata, it returns an error without
 success output or another append attempt. Inspect the spreadsheet before
 retrying: the write may have succeeded despite the incomplete response.

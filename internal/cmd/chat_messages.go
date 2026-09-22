@@ -185,7 +185,7 @@ func (c *ChatMessagesListCmd) Run(ctx context.Context, flags *RootFlags) error {
 		filters = append(filters, fmt.Sprintf("thread.name = \"%s\"", threadName))
 	}
 	if c.Unread {
-		readState, readErr := svc.Users.Spaces.GetSpaceReadState(fmt.Sprintf("users/me/spaces/%s/spaceReadState", spaceID(space))).Do()
+		readState, readErr := svc.Users.Spaces.GetSpaceReadState(fmt.Sprintf("users/me/spaces/%s/spaceReadState", spaceID(space))).Context(ctx).Do()
 		if readErr != nil {
 			return readErr
 		}
@@ -346,7 +346,7 @@ func (c *ChatMessagesSendCmd) Run(ctx context.Context, flags *RootFlags) error {
 		call = call.MessageReplyOption(replyOption)
 	}
 
-	resp, err := call.Do()
+	resp, err := call.Context(ctx).Do()
 	if err != nil {
 		return err
 	}
