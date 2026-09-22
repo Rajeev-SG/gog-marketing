@@ -3,10 +3,12 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -139,13 +141,51 @@ func TestSheetsUpdateCopyValidationMissingRange(t *testing.T) {
 	}
 }
 
+func TestSheetsAppendMissingUpdates(t *testing.T) {
+	for _, response := range []string{`{}`, `{"updates":null}`, `null`} {
+		for _, jsonMode := range []bool{false, true} {
+			t.Run(fmt.Sprintf("response=%s/json=%t", response, jsonMode), func(t *testing.T) {
+				var calls atomic.Int32
+				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, ":append") {
+						http.NotFound(w, r)
+						return
+					}
+					calls.Add(1)
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = io.WriteString(w, response)
+				}))
+				t.Cleanup(srv.Close)
+				var output bytes.Buffer
+				ctx := newCmdRuntimeOutputContext(t, &output, io.Discard)
+				if jsonMode {
+					ctx = newCmdRuntimeJSONOutputContext(t, &output, io.Discard)
+				}
+				ctx = withSheetsTestService(ctx, newSheetsServiceFromServer(t, srv))
+				err := runKong(t, &SheetsAppendCmd{}, []string{"s1", "Sheet1!A1", "--values-json", `[["a"]]`}, ctx, &RootFlags{Account: "a@b.com"})
+				if err == nil || !strings.Contains(errorMessage(nil, err), "append response missing update metadata") {
+					t.Fatalf("error = %v, want missing update metadata", err)
+				}
+				if code := ExitCode(err); code != 1 {
+					t.Fatalf("exit code = %d, want non-retryable generic error", code)
+				}
+				if output.Len() != 0 || calls.Load() != 1 {
+					t.Fatalf("output = %q, append calls = %d", output.String(), calls.Load())
+				}
+			})
+		}
+	}
+}
+
 func TestSheetsAppendCopyValidationMissingRange(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/sheets/v4")
 		path = strings.TrimPrefix(path, "/v4")
 		if strings.Contains(path, "/spreadsheets/s1/values/") && r.Method == http.MethodPost {
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{})
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"updates": map[string]any{"updatedRange": ""},
+			})
 			return
 		}
 		http.NotFound(w, r)
@@ -157,8 +197,12 @@ func TestSheetsAppendCopyValidationMissingRange(t *testing.T) {
 	flags := &RootFlags{Account: "a@b.com"}
 
 	cmd := &SheetsAppendCmd{Insert: "INSERT_ROWS", ValueInput: ""}
-	if err := runKong(t, cmd, []string{"s1", "Sheet1!A1", "--values-json", `[["a"]]`, "--copy-validation-from", "Sheet1!A2:A2"}, ctx, flags); err == nil {
-		t.Fatalf("expected missing updated range error")
+	err := runKong(t, cmd, []string{"s1", "Sheet1!A1", "--values-json", `[["a"]]`, "--copy-validation-from", "Sheet1!A2:A2"}, ctx, flags)
+	if err == nil {
+		t.Fatal("expected missing updated range error")
+	}
+	if !strings.Contains(err.Error(), "append response missing updated range for validation copy") {
+		t.Fatalf("error = %v", err)
 	}
 }
 

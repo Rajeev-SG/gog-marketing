@@ -610,12 +610,15 @@ func (c *SheetsAppendCmd) Run(ctx context.Context, flags *RootFlags) error {
 	}
 
 	if strings.TrimSpace(c.CopyValidationFrom) != "" {
-		if resp.Updates == nil || strings.TrimSpace(resp.Updates.UpdatedRange) == "" {
+		if resp == nil || resp.Updates == nil || strings.TrimSpace(resp.Updates.UpdatedRange) == "" {
 			return fmt.Errorf("append response missing updated range for validation copy")
 		}
 		if err := copyDataValidation(ctx, svc, spreadsheetID, c.CopyValidationFrom, resp.Updates.UpdatedRange); err != nil {
 			return err
 		}
+	}
+	if resp == nil || resp.Updates == nil {
+		return fmt.Errorf("append response missing update metadata")
 	}
 
 	if outfmt.IsJSON(ctx) {

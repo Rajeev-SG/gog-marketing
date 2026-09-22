@@ -142,6 +142,10 @@ cancels a pending retry wait. Upload bodies are closed even when a request is
 rejected by the circuit breaker or cannot be buffered for retry, so those
 failures release the associated file or stream resources.
 
+If `sheets append` reports missing update metadata, it returns an error without
+success output or another append attempt. Inspect the spreadsheet before
+retrying: the write may have succeeded despite the incomplete response.
+
 | Code | Name | Meaning |
 | ---: | --- | --- |
 | 0 | `ok` | Success |
