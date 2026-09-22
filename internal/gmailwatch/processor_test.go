@@ -16,19 +16,21 @@ var (
 )
 
 type processorSource struct {
-	history        HistoryPage
-	historyErr     error
-	recentIDs      []string
-	recentErr      error
-	messageBatches []MessageBatch
-	messageErrs    []error
-	historyCalls   int
-	recentCalls    int
-	messageCalls   int
+	history         HistoryPage
+	historyErr      error
+	recentIDs       []string
+	recentErr       error
+	messageBatches  []MessageBatch
+	messageErrs     []error
+	historyCalls    int
+	historyStartIDs []uint64
+	recentCalls     int
+	messageCalls    int
 }
 
-func (s *processorSource) ListHistory(context.Context, uint64, int64, []string) (HistoryPage, error) {
+func (s *processorSource) ListHistory(_ context.Context, startID uint64, _ int64, _ []string) (HistoryPage, error) {
 	s.historyCalls++
+	s.historyStartIDs = append(s.historyStartIDs, startID)
 
 	return s.history, s.historyErr
 }
@@ -375,6 +377,53 @@ func TestProcessorProcessRecordsDelivery(t *testing.T) {
 	state := repository.Get()
 	if state.LastDeliveryStatus != DeliveryStatusOK || state.LastDeliveryAtMs != now.UnixMilli() {
 		t.Fatalf("state = %#v", state)
+	}
+}
+
+func TestProcessorProcessEqualPushHistoryDeliversPendingMessage(t *testing.T) {
+	t.Parallel()
+
+	now := time.Unix(650, 0)
+	repository := NewMemory(State{HistoryID: "200", LastPushMessageID: "before"}, Options{})
+	source := &processorSource{
+		history: HistoryPage{
+			HistoryID: "201",
+			Records:   []HistoryRecord{{Added: []string{"m1"}}},
+		},
+		messageBatches: []MessageBatch{{Messages: []Message{{ID: "m1"}}}},
+	}
+	processor := newTestProcessor(repository, source, now)
+	var deliveredPayload *Payload
+	processor.Deliver = func(_ context.Context, payload *Payload) DeliveryResult {
+		deliveredPayload = payload
+
+		return DeliveryResult{Status: DeliveryStatusOK, Record: true}
+	}
+
+	processed, err := processor.Process(context.Background(), Notification{HistoryID: "200", MessageID: "equal-push"})
+	if err != nil {
+		t.Fatalf("Process equal-history notification: %v", err)
+	}
+
+	if processed == nil || processed.Payload == nil || processed.HookFailed {
+		t.Fatalf("processed = %#v", processed)
+	}
+
+	if source.historyCalls != 1 || source.historyStartIDs[0] != 200 {
+		t.Fatalf("history calls=%d start IDs=%v", source.historyCalls, source.historyStartIDs)
+	}
+
+	if deliveredPayload == nil || deliveredPayload.HistoryID != "201" || len(deliveredPayload.Messages) != 1 {
+		t.Fatalf("delivered payload = %#v", deliveredPayload)
+	}
+
+	state := repository.Get()
+	if state.HistoryID != "201" || state.LastPushMessageID != "equal-push" {
+		t.Fatalf("state = %#v", state)
+	}
+
+	if state.LastDeliveryStatus != DeliveryStatusOK || state.LastDeliveryAtMs != now.UnixMilli() {
+		t.Fatalf("delivery state = %#v", state)
 	}
 }
 

@@ -103,6 +103,15 @@ func TestRepositoryStartHistoryID(t *testing.T) {
 		t.Fatalf("stale start ID = %d", startID)
 	}
 
+	startID, err = repository.StartHistoryID("101")
+	if err != nil {
+		t.Fatalf("StartHistoryID equal push: %v", err)
+	}
+
+	if startID != 101 {
+		t.Fatalf("equal push start ID = %d", startID)
+	}
+
 	startID, err = repository.StartHistoryID("bad")
 	if err != nil {
 		t.Fatalf("StartHistoryID invalid push: %v", err)
@@ -355,5 +364,40 @@ func TestApplyWatchRegistrationReplacesCompletedProgress(t *testing.T) {
 
 	if state.HistoryID != "300" || state.LastPushMessageID != "" || state.ExpirationMs != 456 {
 		t.Fatalf("registration state = %#v", state)
+	}
+}
+
+func TestIsStaleHistoryID(t *testing.T) {
+	t.Parallel()
+
+	stale, err := IsStaleHistoryID("5", "4")
+	if err != nil {
+		t.Fatalf("isStaleHistoryID: %v", err)
+	}
+
+	if !stale {
+		t.Fatalf("expected stale for older history id")
+	}
+
+	stale, err = IsStaleHistoryID("5", "6")
+	if err != nil {
+		t.Fatalf("isStaleHistoryID: %v", err)
+	}
+
+	if stale {
+		t.Fatalf("expected non-stale for newer history id")
+	}
+
+	stale, err = IsStaleHistoryID("", "")
+	if err != nil {
+		t.Fatalf("isStaleHistoryID empty: %v", err)
+	}
+
+	if stale {
+		t.Fatalf("expected non-stale for empty ids")
+	}
+
+	if _, err := IsStaleHistoryID("bad", "5"); err == nil {
+		t.Fatalf("expected error for invalid history id")
 	}
 }

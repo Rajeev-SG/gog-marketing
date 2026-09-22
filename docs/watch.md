@@ -96,6 +96,8 @@ Notes:
 - `watch status` reads atomic state without creating state directories or lock
   files.
 - `watch renew` reuses stored topic/labels.
+- Push and pull inspect notifications whose history ID equals the saved cursor;
+  lower IDs remain stale. Duplicate Pub/Sub message IDs are still ignored.
 - `watch stop` calls Gmail stop + clears state.
 - `watch serve` and `watch pull` use stored hook config if `--hook-url` is not
   provided.

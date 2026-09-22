@@ -139,10 +139,6 @@ func readGmailWatchStateOptionalForLayout(layout config.Layout, account string) 
 	return gmailwatch.ReadOptional(paths...)
 }
 
-func isStaleHistoryID(currentRaw, candidateRaw string) (bool, error) {
-	return gmailwatch.IsStaleHistoryID(currentRaw, candidateRaw)
-}
-
 func parseHistoryID(raw string) (uint64, error) {
 	return gmailwatch.ParseHistoryID(raw)
 }

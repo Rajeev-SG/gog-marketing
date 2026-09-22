@@ -243,7 +243,7 @@ func (r *Repository) StartHistoryID(pushHistory string) (uint64, error) {
 			return nil //nolint:nilerr // A malformed optional push falls back to the valid stored cursor.
 		}
 
-		if pushID > storedID {
+		if pushID >= storedID {
 			startID = storedID
 		}
 
