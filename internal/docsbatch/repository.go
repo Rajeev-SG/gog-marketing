@@ -216,7 +216,7 @@ func (r *Repository) Append(options AppendOptions) (int, error) {
 		if state.RequiredRevisionID != "" && state.RequiredRevisionID != options.RevisionID {
 			return fmt.Errorf(
 				"document revision changed since the first request was queued (batch=%s current=%s): %w",
-				state.RequiredRevisionID,
+				state.BatchID,
 				options.RevisionID,
 				ErrRevisionChanged,
 			)

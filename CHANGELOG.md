@@ -2,6 +2,7 @@
 
 ## 0.40.1 - Unreleased
 
+- Docs: identify the queued batch UUID in revision-mismatch errors so it can be inspected or aborted. (#1143) — thanks @SebTardif.
 - Gmail: fail thread searches when a detail fetch fails instead of silently returning partial results after a discarded retry. (#1138) — thanks @SebTardif.
 - API: close upload bodies when the circuit breaker rejects a request or retry buffering fails, preventing leaked files and streams. (#1136)
 - Dependencies: refresh Google protocol modules, gofumpt, Node 26/Corepack, the Dockerfile frontend, and tracking-worker Vite, PostCSS, Undici, and Nano ID pins.

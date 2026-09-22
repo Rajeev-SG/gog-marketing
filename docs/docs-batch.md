@@ -22,6 +22,8 @@ gog batch end "$BATCH_ID"
 
 `batch begin` prints only the UUID in text and plain modes, making command substitution stable. It records the selected account, OAuth client, and target document without reading the document or pinning a revision. The first queued mutation records the document revision because that is when request positions are first resolved. Later appends fail if the identity or revision differs.
 
+A revision-mismatch error identifies the queued batch with `batch=<UUID>` and the incoming document revision with `current=<revision>`. Use that batch UUID with `gog batch show` or `gog batch abort`.
+
 ## Supported mutations
 
 The `--batch` flag is available on directly composable Docs mutations:
