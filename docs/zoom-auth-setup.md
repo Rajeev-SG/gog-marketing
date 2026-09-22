@@ -122,3 +122,8 @@ inspection.
 Use `--regenerate-zoom` on `gog calendar update` to replace the Zoom meeting, or
 `--remove-zoom` to delete the Zoom meeting and strip the Zoom block from the
 Calendar event description.
+
+If a Calendar write fails after creating a Zoom meeting, gog attempts to delete
+that meeting. A failed cleanup is included in the command error as a Zoom
+rollback failure. Inspect the meeting in Zoom and remove it if needed before
+retrying the Calendar command.
