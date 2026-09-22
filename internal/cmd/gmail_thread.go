@@ -173,9 +173,9 @@ func (c *GmailThreadGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 }
 
 type GmailThreadModifyCmd struct {
-	ThreadID string `arg:"" name:"threadId" help:"Thread ID"`
-	Add      string `name:"add" help:"Labels to add (comma-separated, name or ID)"`
-	Remove   string `name:"remove" help:"Labels to remove (comma-separated, name or ID)"`
+	ThreadID string   `arg:"" name:"threadId" help:"Thread ID"`
+	Add      []string `name:"add" sep:"none" help:"Labels to add (comma-separated or repeated; name or ID)"`
+	Remove   []string `name:"remove" sep:"none" help:"Labels to remove (comma-separated or repeated; name or ID)"`
 }
 
 func (c *GmailThreadModifyCmd) Run(ctx context.Context, flags *RootFlags) error {
@@ -186,8 +186,8 @@ func (c *GmailThreadModifyCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return usage("empty threadId")
 	}
 
-	addLabels := splitCSV(c.Add)
-	removeLabels := splitCSV(c.Remove)
+	addLabels := splitCSVAllRaw(c.Add)
+	removeLabels := splitCSVAllRaw(c.Remove)
 	if len(addLabels) == 0 && len(removeLabels) == 0 {
 		return usage("must specify --add and/or --remove")
 	}

@@ -2,6 +2,7 @@
 
 ## 0.40.1 - Unreleased
 
+- Gmail: accumulate repeated `--add` and `--remove` label flags across thread, message, batch, and label modifications while preserving literal comma/backslash splitting and normalization. (#1139) — thanks @ShacharBialick.
 - Gmail: inspect Pub/Sub notifications matching the saved watch cursor so pending history changes can reach the hook. (#1140) — thanks @kazuyuki-eguchi.
 - API: honor `api list --plain` with stable, sanitized TSV columns while preserving default and JSON catalog responses. (#1141, #1146) — thanks @postoso and @goutamadwant.
 - API: honor in-flight command cancellation in YouTube, Chat unread lookups and sends, and People profile and relation requests. (#1145) — thanks @SebTardif.
