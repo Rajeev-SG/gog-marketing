@@ -26,6 +26,7 @@ gog analytics (ga) properties list (ls) [flags]
 | `--enable-commands` | `string` |  | Comma-separated list of enabled command prefixes; dot paths allowed (restricts CLI) |
 | `--enable-commands-exact` | `string` |  | Comma-separated list of exact enabled commands; dot paths allowed and parent commands do not enable children |
 | `--fail-empty`<br>`--non-empty`<br>`--require-results` | `bool` |  |  |
+| `--filter` | `string` |  | Analytics Admin property filter, e.g. ancestor:accounts/123; empty uses account summaries |
 | `-y`<br>`--force`<br>`--assume-yes`<br>`--yes` | `bool` |  | Skip confirmations for destructive commands |
 | `--gmail-no-send` | `bool` | false | Block Gmail send operations (agent safety) |
 | `-h`<br>`--help` | `kong.helpFlag` |  | Show context-sensitive help. |

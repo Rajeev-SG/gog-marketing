@@ -691,6 +691,8 @@ billable API setup was used.
 
 BigQuery execution is code-enforced with a 1 GiB default `MaximumBytesBilled`
 cap and an explicit `--acknowledge-cost`/MCP acknowledgement after dry-run.
+The dry-run path uses BigQuery `jobs.query` so `--readonly` can validate SQL
+with `bigquery.readonly`; actual execution still requires a full BigQuery grant.
 
 The following expansion points remain follow-up work and do not block the v1
 acceptance surface:

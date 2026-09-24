@@ -21,6 +21,7 @@ type AnalyticsPropertiesListCmd struct {
 	PageSize  int64  `name:"page-size" aliases:"max" default:"50"`
 	PageToken string `name:"page-token" aliases:"page"`
 	All       bool   `name:"all" aliases:"all-pages,allpages"`
+	Filter    string `name:"filter" help:"Analytics Admin property filter, e.g. ancestor:accounts/123; empty uses account summaries"`
 	FailEmpty bool   `name:"fail-empty" aliases:"non-empty,require-results"`
 }
 
@@ -29,10 +30,13 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 	if err != nil {
 		return err
 	}
+	if strings.TrimSpace(c.Filter) == "" {
+		return c.listFromAccountSummaries(ctx, svc)
+	}
 	var items []*analyticsadmin.GoogleAnalyticsAdminV1betaProperty
 	next := c.PageToken
 	for {
-		call := svc.Properties.List().PageSize(c.PageSize).Context(ctx)
+		call := svc.Properties.List().Filter(strings.TrimSpace(c.Filter)).PageSize(c.PageSize).Context(ctx)
 		if next != "" {
 			call = call.PageToken(next)
 		}
@@ -48,6 +52,44 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 	}
 	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, func(item *analyticsadmin.GoogleAnalyticsAdminV1betaProperty) map[string]any {
 		return map[string]any{"name": item.Name, "display_name": item.DisplayName, "create_time": item.CreateTime, "update_time": item.UpdateTime}
+	})
+}
+
+func (c *AnalyticsPropertiesListCmd) listFromAccountSummaries(ctx context.Context, svc *analyticsadmin.Service) error {
+	summaries, next, err := collectAnalyticsAdminPages(c.PageToken, c.All, func(pageToken string) ([]*analyticsadmin.GoogleAnalyticsAdminV1betaAccountSummary, string, error) {
+		call := svc.AccountSummaries.List().PageSize(c.PageSize).Context(ctx)
+		if pageToken != "" {
+			call = call.PageToken(pageToken)
+		}
+		resp, callErr := call.Do()
+		if callErr != nil {
+			return nil, "", callErr
+		}
+		return resp.AccountSummaries, resp.NextPageToken, nil
+	})
+	if err != nil {
+		return err
+	}
+	items := make([]map[string]any, 0)
+	for _, summary := range summaries {
+		if summary == nil {
+			continue
+		}
+		for _, property := range summary.PropertySummaries {
+			if property == nil {
+				continue
+			}
+			items = append(items, map[string]any{
+				"name":          property.Property,
+				"display_name":  property.DisplayName,
+				"parent":        property.Parent,
+				"can_edit":      property.CanEdit,
+				"property_type": property.PropertyType,
+			})
+		}
+	}
+	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, func(item map[string]any) map[string]any {
+		return item
 	})
 }
 

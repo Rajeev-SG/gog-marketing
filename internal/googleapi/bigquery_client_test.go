@@ -89,3 +89,36 @@ func TestBigQueryAdapterRejectsMissingByteCap(t *testing.T) {
 		t.Fatalf("error = %v", err)
 	}
 }
+
+func TestBigQueryAdapterDryRunUsesReadOnlyJobsQuery(t *testing.T) {
+	var requestBody map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/projects/billing-proj/queries") {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			t.Fatal(err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"jobComplete":true,"jobReference":{"projectId":"billing-proj","jobId":"dry-1"},"totalBytesProcessed":"42","cacheHit":false,"schema":{"fields":[{"name":"id","type":"STRING","mode":"NULLABLE"}]}}`)
+	}))
+	defer server.Close()
+
+	adapter := &bigQueryAdapter{httpClient: server.Client(), projectID: "billing-proj", baseURL: server.URL}
+
+	result, err := adapter.Query(context.Background(), "SELECT 1", true, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !result.DryRun || result.JobID != "dry-1" || result.TotalBytesProcessed != 42 || len(result.Schema) != 1 {
+		t.Fatalf("result = %#v", result)
+	}
+
+	if requestBody["dryRun"] != true || requestBody["maximumBytesBilled"] != float64(2048) {
+		t.Fatalf("request body = %#v", requestBody)
+	}
+}
