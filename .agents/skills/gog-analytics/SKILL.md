@@ -29,6 +29,12 @@ gog --readonly --account user@example.com analytics --help
 | Command | Purpose |
 | --- | --- |
 | `accounts` | List GA4 account summaries |
+| `custom-dimensions` | GA4 custom dimensions |
+| `custom-metrics` | GA4 custom metrics |
+| `datastreams` | GA4 data streams |
+| `googleads-links` | GA4 Google Ads links |
+| `keyevents` | GA4 key events |
+| `properties` | GA4 properties |
 | `report` | Run a GA4 report (Analytics Data API) |
 
 Run `gog analytics <command> --help` for flags and `gog schema analytics <command> --json`

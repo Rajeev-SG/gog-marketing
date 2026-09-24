@@ -16,6 +16,7 @@ type googleAPIHint struct {
 
 var googleAPIHints = []googleAPIHint{
 	{API: "adsense.googleapis.com", DisplayName: "AdSense Management API", Service: "adsense"},
+	{API: "bigquery.googleapis.com", DisplayName: "BigQuery API", Service: "bigquery"},
 	{API: "analyticsadmin.googleapis.com", DisplayName: "Analytics Admin API", Service: "analytics"},
 	{API: "analyticsdata.googleapis.com", DisplayName: "Analytics Data API", Service: "analytics"},
 	{API: "admin.googleapis.com", DisplayName: "Admin SDK API", Service: "admin"},
@@ -27,6 +28,7 @@ var googleAPIHints = []googleAPIHint{
 	{API: "drive.googleapis.com", DisplayName: "Drive API", Service: "drive"},
 	{API: "forms.googleapis.com", DisplayName: "Forms API", Service: "forms"},
 	{API: "gmail.googleapis.com", DisplayName: "Gmail API", Service: "gmail"},
+	{API: "googleads.googleapis.com", DisplayName: "Google Ads API", Service: "googleads"},
 	{API: "keep.googleapis.com", DisplayName: "Keep API", Service: "keep"},
 	{API: "people.googleapis.com", DisplayName: "People API", Service: "contacts"},
 	{API: "photoslibrary.googleapis.com", DisplayName: "Photos Library API", Service: "photos"},
@@ -35,6 +37,7 @@ var googleAPIHints = []googleAPIHint{
 	{API: "sheets.googleapis.com", DisplayName: "Sheets API", Service: "sheets"},
 	{API: "slides.googleapis.com", DisplayName: "Slides API", Service: "slides"},
 	{API: "tasks.googleapis.com", DisplayName: "Tasks API", Service: "tasks"},
+	{API: "tagmanager.googleapis.com", DisplayName: "Tag Manager API", Service: "tagmanager"},
 }
 
 var (

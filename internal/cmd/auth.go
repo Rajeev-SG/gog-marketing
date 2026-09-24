@@ -130,6 +130,9 @@ func parseAuthServices(servicesCSV string) ([]googleauth.Service, error) {
 	if trimmed == "" || trimmed == "user" || trimmed == "all-user" || trimmed == literalAll {
 		return googleauth.UserServices(), nil
 	}
+	if trimmed == "marketing" {
+		servicesCSV = "analytics,tagmanager,googleads,searchconsole,bigquery"
+	}
 
 	parts := strings.Split(servicesCSV, ",")
 	seen := make(map[googleauth.Service]struct{})

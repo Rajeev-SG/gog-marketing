@@ -126,3 +126,27 @@ func TestAPIServiceIDsForServices(t *testing.T) {
 		t.Fatalf("got %#v, want %#v", got, want)
 	}
 }
+
+func TestAPIServiceIDsForMarketingServices(t *testing.T) {
+	got, err := googleauth.APIServiceIDsForServices([]googleauth.Service{
+		googleauth.ServiceAnalytics,
+		googleauth.ServiceTagManager,
+		googleauth.ServiceGoogleAds,
+		googleauth.ServiceSearchConsole,
+		googleauth.ServiceBigQuery,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"analyticsadmin.googleapis.com",
+		"analyticsdata.googleapis.com",
+		"bigquery.googleapis.com",
+		"googleads.googleapis.com",
+		"searchconsole.googleapis.com",
+		"tagmanager.googleapis.com",
+	}
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Fatalf("apis = %#v, want %#v", got, want)
+	}
+}

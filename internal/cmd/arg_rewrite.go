@@ -6,6 +6,29 @@ import (
 	"github.com/alecthomas/kong"
 )
 
+func rewriteBigQueryProjectArgs(args []string) []string {
+	inBigQuery := false
+	out := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "bigquery" || arg == "bq" {
+			inBigQuery = true
+			out = append(out, arg)
+			continue
+		}
+		if inBigQuery && arg == "--project" {
+			out = append(out, "--billing-project")
+			continue
+		}
+		if inBigQuery && strings.HasPrefix(arg, "--project=") {
+			out = append(out, "--billing-project="+strings.TrimPrefix(arg, "--project="))
+			continue
+		}
+		out = append(out, arg)
+	}
+	return out
+}
+
 func rewriteDesirePathArgs(model *kong.Application, args []string) []string {
 	// Some commands use `--fields` for API field masks. Agents also frequently
 	// guess `--fields` to mean "select output fields", so we squat it everywhere

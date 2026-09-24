@@ -73,7 +73,7 @@ points; the [examples](docs/examples.md) and generated
 | Docs, Sheets, Slides, and Forms | `gog docs`, `gog sheets`, `gog slides`, `gog forms` |
 | Contacts and tasks | `gog contacts`, `gog tasks` |
 | Meetings and chat | `gog meet`, `gog chat`, `gog zoom` |
-| Analytics and publishing | `gog analytics`, `gog searchconsole`, `gog adsense`, `gog youtube` |
+| Analytics and publishing | `gog analytics`, `gog tagmanager`, `gog googleads`, `gog searchconsole`, `gog bigquery`, `gog adsense`, `gog youtube` |
 | Workspace administration | `gog admin`, `gog groups`, `gog keep` |
 | Discovery API fallback | `gog api describe`, `gog api call` |
 
@@ -162,10 +162,12 @@ binary.
 | sites | yes | Drive API | `https://www.googleapis.com/auth/drive` | New Google Sites are exposed as Drive files |
 | meet | yes | Meet REST API | `https://www.googleapis.com/auth/meetings.space.created`<br>`https://www.googleapis.com/auth/meetings.space.readonly`<br>`https://www.googleapis.com/auth/meetings.space.settings` |  |
 | appscript | yes | Apps Script API | `https://www.googleapis.com/auth/script.projects`<br>`https://www.googleapis.com/auth/script.deployments`<br>`https://www.googleapis.com/auth/script.processes` |  |
-| analytics | yes | Analytics Admin API, Analytics Data API | `https://www.googleapis.com/auth/analytics.readonly` | GA4 account summaries + reporting |
+| analytics | yes | Analytics Admin API, Analytics Data API | `https://www.googleapis.com/auth/analytics.readonly`<br>`https://www.googleapis.com/auth/analytics.edit` | GA4 reporting and typed Admin configuration |
 | searchconsole | yes | Search Console API | `https://www.googleapis.com/auth/webmasters` | Search Analytics + sitemap management + URL Inspection |
+| tagmanager | yes | Tag Manager API | `https://www.googleapis.com/auth/tagmanager.readonly`<br>`https://www.googleapis.com/auth/tagmanager.edit.containers`<br>`https://www.googleapis.com/auth/tagmanager.edit.containerversions`<br>`https://www.googleapis.com/auth/tagmanager.publish` | GTM accounts, containers, workspaces, resources and version publishing |
+| bigquery | yes | BigQuery API | `https://www.googleapis.com/auth/bigquery`<br>`https://www.googleapis.com/auth/bigquery.readonly` | Dataset/table inspection and SQL with explicit execution project |
 | adsense | no | AdSense Management API | `https://www.googleapis.com/auth/adsense.readonly` | Consumer OAuth; explicit opt-in with --services adsense; read-only |
-| ads | yes | Google Ads API | `https://www.googleapis.com/auth/adwords` | OAuth scope only |
+| googleads | yes | Google Ads API | `https://www.googleapis.com/auth/adwords` | Official REST access with developer-token and manager-account headers |
 | groups | no | Cloud Identity API | `https://www.googleapis.com/auth/cloud-identity.groups.readonly` | Workspace only |
 | keep | no | Keep API | `https://www.googleapis.com/auth/keep` | Workspace only; service account (domain-wide delegation) |
 | admin | no | Admin SDK Directory API | `https://www.googleapis.com/auth/admin.directory.user`<br>`https://www.googleapis.com/auth/admin.directory.group`<br>`https://www.googleapis.com/auth/admin.directory.group.member` | Workspace only; service account with domain-wide delegation required |

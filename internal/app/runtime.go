@@ -28,6 +28,7 @@ import (
 	"google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
 	"google.golang.org/api/slides/v1"
+	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
 	"google.golang.org/api/youtube/v3"
 
@@ -50,6 +51,7 @@ type (
 	AppScriptServiceFactory      func(context.Context, string) (*script.Service, error)
 	AnalyticsAdminServiceFactory func(context.Context, string) (*analyticsadmin.Service, error)
 	AnalyticsDataServiceFactory  func(context.Context, string) (*analyticsdata.Service, error)
+	BigQueryClientFactory        googleapi.BigQueryClientFactory
 	CalendarServiceFactory       func(context.Context, string) (*calendar.Service, error)
 	HTTPClientFactory            func(context.Context, string) (*http.Client, error)
 	ChatServiceFactory           func(context.Context, string) (*chat.Service, error)
@@ -74,6 +76,7 @@ type (
 	SheetsHTTPClientFactory      func(context.Context, string) (*http.Client, error)
 	SlidesServiceFactory         func(context.Context, string) (*slides.Service, error)
 	TasksServiceFactory          func(context.Context, string) (*tasks.Service, error)
+	TagManagerServiceFactory     func(context.Context, string) (*tagmanager.Service, error)
 	YouTubeServiceFactory        func(context.Context, string) (*youtube.Service, error)
 	ZoomMeetingClientFactory     func(context.Context, string) (ZoomMeetingClient, error)
 	DriveDownloadFunc            func(context.Context, *drive.Service, string) (*http.Response, error)
@@ -102,6 +105,7 @@ type Services struct {
 	AppScript         AppScriptServiceFactory
 	AnalyticsAdmin    AnalyticsAdminServiceFactory
 	AnalyticsData     AnalyticsDataServiceFactory
+	BigQuery          BigQueryClientFactory
 	Calendar          CalendarServiceFactory
 	Chat              ChatServiceFactory
 	ChatSearch        ChatSearchServiceFactory
@@ -130,6 +134,7 @@ type Services struct {
 	SitesDrive        DriveServiceFactory
 	Slides            SlidesServiceFactory
 	Tasks             TasksServiceFactory
+	TagManager        TagManagerServiceFactory
 	YouTubeAPIKey     YouTubeServiceFactory
 	YouTubeAccount    YouTubeServiceFactory
 	YouTubeComments   YouTubeServiceFactory
@@ -149,6 +154,7 @@ type Services struct {
 	PeopleContactsHTTP HTTPClientFactory
 	SlidesHTTP         HTTPClientFactory
 	TasksHTTP          HTTPClientFactory
+	GoogleAdsHTTP      HTTPClientFactory
 }
 
 type AuthOperations struct {

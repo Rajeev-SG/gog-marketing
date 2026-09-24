@@ -29,8 +29,11 @@ const (
 	ServiceAppScript     Service = "appscript"
 	ServiceAnalytics     Service = "analytics"
 	ServiceSearchConsole Service = "searchconsole"
+	ServiceTagManager    Service = "tagmanager"
+	ServiceBigQuery      Service = "bigquery"
 	ServiceAdSense       Service = "adsense"
-	ServiceAds           Service = "ads"
+	ServiceGoogleAds     Service = "googleads"
+	ServiceAds           Service = ServiceGoogleAds
 	ServiceGroups        Service = "groups"
 	ServiceKeep          Service = "keep"
 	ServiceAdmin         Service = "admin"
@@ -102,8 +105,10 @@ var serviceOrder = []Service{
 	ServiceAppScript,
 	ServiceAnalytics,
 	ServiceSearchConsole,
+	ServiceTagManager,
+	ServiceBigQuery,
 	ServiceAdSense,
-	ServiceAds,
+	ServiceGoogleAds,
 	ServiceGroups,
 	ServiceKeep,
 	ServiceAdmin,
@@ -257,10 +262,13 @@ var serviceInfoByService = map[Service]serviceInfo{
 		apis: []string{"Apps Script API"},
 	},
 	ServiceAnalytics: {
-		scopes: []string{"https://www.googleapis.com/auth/analytics.readonly"},
-		user:   true,
-		apis:   []string{"Analytics Admin API", "Analytics Data API"},
-		note:   "GA4 account summaries + reporting",
+		scopes: []string{
+			"https://www.googleapis.com/auth/analytics.readonly",
+			"https://www.googleapis.com/auth/analytics.edit",
+		},
+		user: true,
+		apis: []string{"Analytics Admin API", "Analytics Data API"},
+		note: "GA4 reporting and typed Admin configuration",
 	},
 	ServiceSearchConsole: {
 		scopes: []string{"https://www.googleapis.com/auth/webmasters"},
@@ -268,17 +276,37 @@ var serviceInfoByService = map[Service]serviceInfo{
 		apis:   []string{"Search Console API"},
 		note:   "Search Analytics + sitemap management + URL Inspection",
 	},
+	ServiceTagManager: {
+		scopes: []string{
+			"https://www.googleapis.com/auth/tagmanager.readonly",
+			"https://www.googleapis.com/auth/tagmanager.edit.containers",
+			"https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+			"https://www.googleapis.com/auth/tagmanager.publish",
+		},
+		user: true,
+		apis: []string{"Tag Manager API"},
+		note: "GTM accounts, containers, workspaces, resources and version publishing",
+	},
+	ServiceBigQuery: {
+		scopes: []string{
+			"https://www.googleapis.com/auth/bigquery",
+			"https://www.googleapis.com/auth/bigquery.readonly",
+		},
+		user: true,
+		apis: []string{"BigQuery API"},
+		note: "Dataset/table inspection and SQL with explicit execution project",
+	},
 	ServiceAdSense: {
 		scopes: []string{"https://www.googleapis.com/auth/adsense.readonly"},
 		user:   false,
 		apis:   []string{"AdSense Management API"},
 		note:   "Consumer OAuth; explicit opt-in with --services adsense; read-only",
 	},
-	ServiceAds: {
+	ServiceGoogleAds: {
 		scopes: []string{"https://www.googleapis.com/auth/adwords"},
 		user:   true,
 		apis:   []string{"Google Ads API"},
-		note:   "OAuth scope only",
+		note:   "Official REST access with developer-token and manager-account headers",
 	},
 	ServiceGroups: {
 		scopes: []string{"https://www.googleapis.com/auth/cloud-identity.groups.readonly"},
@@ -342,8 +370,10 @@ var apiServiceIDsByService = map[Service][]string{
 	ServiceAppScript:     {"script.googleapis.com"},
 	ServiceAnalytics:     {"analyticsadmin.googleapis.com", "analyticsdata.googleapis.com"},
 	ServiceSearchConsole: {"searchconsole.googleapis.com"},
+	ServiceTagManager:    {"tagmanager.googleapis.com"},
+	ServiceBigQuery:      {"bigquery.googleapis.com"},
 	ServiceAdSense:       {"adsense.googleapis.com"},
-	ServiceAds:           {"googleads.googleapis.com"},
+	ServiceGoogleAds:     {"googleads.googleapis.com"},
 	ServiceGroups:        {"cloudidentity.googleapis.com"},
 	ServiceKeep:          {"keep.googleapis.com"},
 	ServiceAdmin:         {"admin.googleapis.com"},
@@ -353,7 +383,12 @@ var apiServiceIDsByService = map[Service][]string{
 }
 
 func ParseService(s string) (Service, error) {
-	parsed := Service(strings.ToLower(strings.TrimSpace(s)))
+	raw := strings.ToLower(strings.TrimSpace(s))
+	if raw == "ads" || raw == "google-ads" {
+		raw = string(ServiceGoogleAds)
+	}
+
+	parsed := Service(raw)
 	if _, ok := serviceInfoByService[parsed]; ok {
 		return parsed, nil
 	}
@@ -621,6 +656,10 @@ func scopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, 
 		}
 	}
 
+	if scopes, handled := marketingScopesForServiceWithOptions(service, opts); handled {
+		return scopes, nil
+	}
+
 	switch service {
 	case ServiceGmail:
 		return gmailScopesWithOptions(opts)
@@ -732,8 +771,6 @@ func scopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, 
 		}
 
 		return Scopes(service)
-	case ServiceAnalytics:
-		return Scopes(service)
 	case ServiceSearchConsole:
 		if opts.Readonly {
 			return []string{"https://www.googleapis.com/auth/webmasters.readonly"}, nil
@@ -741,8 +778,6 @@ func scopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, 
 
 		return Scopes(service)
 	case ServiceAdSense:
-		return Scopes(service)
-	case ServiceAds:
 		return Scopes(service)
 	case ServiceGroups:
 		return Scopes(service)
@@ -756,6 +791,41 @@ func scopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, 
 		return Scopes(service)
 	default:
 		return nil, errUnknownService
+	}
+}
+
+func marketingScopesForServiceWithOptions(service Service, opts ScopeOptions) ([]string, bool) {
+	switch service {
+	case ServiceAnalytics:
+		if opts.Readonly {
+			return []string{"https://www.googleapis.com/auth/analytics.readonly"}, true
+		}
+
+		return []string{
+			"https://www.googleapis.com/auth/analytics.readonly",
+			"https://www.googleapis.com/auth/analytics.edit",
+		}, true
+	case ServiceTagManager:
+		if opts.Readonly {
+			return []string{"https://www.googleapis.com/auth/tagmanager.readonly"}, true
+		}
+
+		return []string{
+			"https://www.googleapis.com/auth/tagmanager.readonly",
+			"https://www.googleapis.com/auth/tagmanager.edit.containers",
+			"https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+			"https://www.googleapis.com/auth/tagmanager.publish",
+		}, true
+	case ServiceBigQuery:
+		if opts.Readonly {
+			return []string{"https://www.googleapis.com/auth/bigquery.readonly"}, true
+		}
+
+		return []string{"https://www.googleapis.com/auth/bigquery"}, true
+	case ServiceGoogleAds:
+		return []string{"https://www.googleapis.com/auth/adwords"}, true
+	default:
+		return nil, false
 	}
 }
 
