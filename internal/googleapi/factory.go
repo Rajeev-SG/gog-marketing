@@ -26,6 +26,7 @@ import (
 	searchconsole "google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
 	"google.golang.org/api/slides/v1"
+	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
 	"google.golang.org/api/youtube/v3"
 
@@ -77,6 +78,10 @@ func (f Factory) AnalyticsAdmin(ctx context.Context, account string) (*analytics
 
 func (f Factory) AnalyticsData(ctx context.Context, account string) (*analyticsdata.Service, error) {
 	return NewAnalyticsData(f.withAuth(ctx), account)
+}
+
+func (f Factory) BigQuery(ctx context.Context, account, project string) (BigQueryClient, error) {
+	return NewBigQuery(f.withAuth(ctx), account, project)
 }
 
 func (f Factory) Calendar(ctx context.Context, account string) (*calendar.Service, error) {
@@ -221,6 +226,14 @@ func (f Factory) Tasks(ctx context.Context, account string) (*tasks.Service, err
 
 func (f Factory) TasksHTTP(ctx context.Context, account string) (*http.Client, error) {
 	return NewHTTPClient(f.withAuth(ctx), googleauth.ServiceTasks, account)
+}
+
+func (f Factory) TagManager(ctx context.Context, account string) (*tagmanager.Service, error) {
+	return NewTagManager(f.withAuth(ctx), account)
+}
+
+func (f Factory) GoogleAdsHTTP(ctx context.Context, account string) (*http.Client, error) {
+	return NewGoogleAdsHTTPClient(f.withAuth(ctx), account)
 }
 
 func (f Factory) YouTubeAPIKey(ctx context.Context, apiKey string) (*youtube.Service, error) {

@@ -24,6 +24,7 @@ gog <command> [flags]
 - [gog auth](gog-auth.md) - Auth and credentials
 - [gog backup](gog-backup.md) - Encrypted Google account backups
 - [gog batch](gog-batch.md) - Build and submit persisted Google Docs request batches
+- [gog bigquery](gog-bigquery.md) - BigQuery (official Go client)
 - [gog calendar](gog-calendar.md) - Google Calendar
 - [gog chat](gog-chat.md) - Google Chat
 - [gog classroom](gog-classroom.md) - Google Classroom
@@ -35,6 +36,7 @@ gog <command> [flags]
 - [gog drive](gog-drive.md) - Google Drive
 - [gog forms](gog-forms.md) - Google Forms
 - [gog gmail](gog-gmail.md) - Gmail
+- [gog googleads](gog-googleads.md) - Google Ads (official REST)
 - [gog groups](gog-groups.md) - Cloud Identity Groups (Workspace only)
 - [gog keep](gog-keep.md) - Google Keep (Workspace only)
 - [gog login](gog-login.md) - Authorize and store a refresh token (alias for 'auth add')
@@ -55,6 +57,7 @@ gog <command> [flags]
 - [gog sites](gog-sites.md) - Google Sites (Drive-backed)
 - [gog slides](gog-slides.md) - Google Slides
 - [gog status](gog-status.md) - Show auth/config status (alias for 'auth status')
+- [gog tagmanager](gog-tagmanager.md) - Google Tag Manager
 - [gog tasks](gog-tasks.md) - Google Tasks
 - [gog time](gog-time.md) - Local time utilities
 - [gog update](gog-update.md) - Check gogcli release status

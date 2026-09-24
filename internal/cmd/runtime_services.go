@@ -28,6 +28,7 @@ import (
 	searchconsoleapi "google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
 	"google.golang.org/api/slides/v1"
+	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
 
 	"github.com/openclaw/gogcli/internal/app"
@@ -42,6 +43,7 @@ func composeRuntimeGoogleServices(runtime *app.Runtime, factory googleapi.Factor
 	}
 
 	services := &runtime.Services
+	composeRuntimeMarketingGoogleServices(services, factory)
 	if services.AdminDirectory == nil {
 		services.AdminDirectory = factory.AdminDirectory
 	}
@@ -53,12 +55,6 @@ func composeRuntimeGoogleServices(runtime *app.Runtime, factory googleapi.Factor
 	}
 	if services.AppScript == nil {
 		services.AppScript = factory.AppScript
-	}
-	if services.AnalyticsAdmin == nil {
-		services.AnalyticsAdmin = factory.AnalyticsAdmin
-	}
-	if services.AnalyticsData == nil {
-		services.AnalyticsData = factory.AnalyticsData
 	}
 	if services.Calendar == nil {
 		services.Calendar = factory.Calendar
@@ -138,9 +134,6 @@ func composeRuntimeGoogleServices(runtime *app.Runtime, factory googleapi.Factor
 	if services.PhotosPicker == nil {
 		services.PhotosPicker = factory.PhotosPicker
 	}
-	if services.SearchConsole == nil {
-		services.SearchConsole = factory.SearchConsole
-	}
 	if services.Sheets == nil {
 		services.Sheets = factory.Sheets
 	}
@@ -179,6 +172,27 @@ func composeRuntimeGoogleServices(runtime *app.Runtime, factory googleapi.Factor
 	}
 	if services.YouTubeWrite == nil {
 		services.YouTubeWrite = factory.YouTubeWrite
+	}
+}
+
+func composeRuntimeMarketingGoogleServices(services *app.Services, factory googleapi.Factory) {
+	if services.AnalyticsAdmin == nil {
+		services.AnalyticsAdmin = factory.AnalyticsAdmin
+	}
+	if services.AnalyticsData == nil {
+		services.AnalyticsData = factory.AnalyticsData
+	}
+	if services.BigQuery == nil {
+		services.BigQuery = factory.BigQuery
+	}
+	if services.SearchConsole == nil {
+		services.SearchConsole = factory.SearchConsole
+	}
+	if services.TagManager == nil {
+		services.TagManager = factory.TagManager
+	}
+	if services.GoogleAdsHTTP == nil {
+		services.GoogleAdsHTTP = factory.GoogleAdsHTTP
 	}
 }
 
@@ -292,6 +306,30 @@ func analyticsDataService(ctx context.Context, account string) (*analyticsdata.S
 		return nil, serviceError(err, "analytics data")
 	}
 	return runtime.Services.AnalyticsData(ctx, account)
+}
+
+func tagManagerService(ctx context.Context, account string) (*tagmanager.Service, error) {
+	runtime, err := runtimeWithService(ctx, "tagmanager")
+	if err != nil || runtime.Services.TagManager == nil {
+		return nil, serviceError(err, "tagmanager")
+	}
+	return runtime.Services.TagManager(ctx, account)
+}
+
+func bigQueryClient(ctx context.Context, account, project string) (googleapi.BigQueryClient, error) {
+	runtime, err := runtimeWithService(ctx, "bigquery")
+	if err != nil || runtime.Services.BigQuery == nil {
+		return nil, serviceError(err, "bigquery")
+	}
+	return runtime.Services.BigQuery(ctx, account, project)
+}
+
+func googleAdsHTTPClient(ctx context.Context, account string) (*http.Client, error) {
+	runtime, err := runtimeWithService(ctx, "googleads HTTP")
+	if err != nil || runtime.Services.GoogleAdsHTTP == nil {
+		return nil, serviceError(err, "googleads HTTP")
+	}
+	return runtime.Services.GoogleAdsHTTP(ctx, account)
 }
 
 func calendarService(ctx context.Context, account string) (*calendar.Service, error) {

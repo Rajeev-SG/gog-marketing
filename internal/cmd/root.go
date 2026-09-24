@@ -102,6 +102,9 @@ type CLI struct {
 	AppScript     AppScriptCmd          `cmd:"" name:"appscript" aliases:"script,apps-script" help:"Google Apps Script"`
 	Analytics     AnalyticsCmd          `cmd:"" aliases:"ga" help:"Google Analytics"`
 	SearchConsole SearchConsoleCmd      `cmd:"" name:"searchconsole" aliases:"gsc,search-console,webmasters" help:"Google Search Console"`
+	TagManager    TagManagerCmd         `cmd:"" name:"tagmanager" aliases:"gtm,tag-manager" help:"Google Tag Manager"`
+	GoogleAds     GoogleAdsCmd          `cmd:"" name:"googleads" aliases:"google-ads,ads" help:"Google Ads (official REST)"`
+	BigQuery      BigQueryCmd           `cmd:"" name:"bigquery" aliases:"bq" help:"BigQuery (official Go client)"`
 	AdSense       AdSenseCmd            `cmd:"" name:"adsense" help:"Google AdSense Management API"`
 	YouTube       YouTubeCmd            `cmd:"" name:"youtube" aliases:"yt" help:"YouTube Data API (search, activities, videos, playlists, comments, channels)"`
 	Photos        PhotosCmd             `cmd:"" name:"photos" aliases:"photo" help:"Google Photos Library and Picker APIs"`
@@ -129,6 +132,7 @@ func executeWithRuntime(args []string, runtime *app.Runtime) (err error) {
 		args = []string{"--help"}
 	}
 	args = rewriteHelpArgs(args)
+	args = rewriteBigQueryProjectArgs(args)
 
 	home, homeProvided := preScanHomeArg(args)
 	if bindErr := bindRuntimeLayoutResolver(runtime, home); bindErr != nil {

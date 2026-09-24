@@ -13,8 +13,14 @@ import (
 )
 
 type AnalyticsCmd struct {
-	Accounts AnalyticsAccountsCmd `cmd:"" name:"accounts" aliases:"list,ls" default:"withargs" help:"List GA4 account summaries"`
-	Report   AnalyticsReportCmd   `cmd:"" name:"report" help:"Run a GA4 report (Analytics Data API)"`
+	Accounts         AnalyticsAccountsCmd         `cmd:"" name:"accounts" aliases:"list,ls" default:"withargs" help:"List GA4 account summaries"`
+	Report           AnalyticsReportCmd           `cmd:"" name:"report" help:"Run a GA4 report (Analytics Data API)"`
+	Properties       AnalyticsPropertiesCmd       `cmd:"" name:"properties" help:"GA4 properties"`
+	DataStreams      AnalyticsDataStreamsCmd      `cmd:"" name:"datastreams" aliases:"data-streams" help:"GA4 data streams"`
+	KeyEvents        AnalyticsKeyEventsCmd        `cmd:"" name:"keyevents" aliases:"key-events" help:"GA4 key events"`
+	CustomDimensions AnalyticsCustomDimensionsCmd `cmd:"" name:"custom-dimensions" help:"GA4 custom dimensions"`
+	CustomMetrics    AnalyticsCustomMetricsCmd    `cmd:"" name:"custom-metrics" help:"GA4 custom metrics"`
+	GoogleAdsLinks   AnalyticsGoogleAdsLinksCmd   `cmd:"" name:"googleads-links" aliases:"google-ads-links" help:"GA4 Google Ads links"`
 }
 
 type AnalyticsAccountsCmd struct {

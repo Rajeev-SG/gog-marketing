@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 775.
+Generated pages: 863.
 
 ## Top-level Commands
 
@@ -14,6 +14,7 @@ Generated pages: 775.
 - [gog auth](gog-auth.md) - Auth and credentials
 - [gog backup](gog-backup.md) - Encrypted Google account backups
 - [gog batch](gog-batch.md) - Build and submit persisted Google Docs request batches
+- [gog bigquery](gog-bigquery.md) - BigQuery (official Go client)
 - [gog calendar](gog-calendar.md) - Google Calendar
 - [gog chat](gog-chat.md) - Google Chat
 - [gog classroom](gog-classroom.md) - Google Classroom
@@ -25,6 +26,7 @@ Generated pages: 775.
 - [gog drive](gog-drive.md) - Google Drive
 - [gog forms](gog-forms.md) - Google Forms
 - [gog gmail](gog-gmail.md) - Gmail
+- [gog googleads](gog-googleads.md) - Google Ads (official REST)
 - [gog groups](gog-groups.md) - Cloud Identity Groups (Workspace only)
 - [gog keep](gog-keep.md) - Google Keep (Workspace only)
 - [gog login](gog-login.md) - Authorize and store a refresh token (alias for 'auth add')
@@ -45,6 +47,7 @@ Generated pages: 775.
 - [gog sites](gog-sites.md) - Google Sites (Drive-backed)
 - [gog slides](gog-slides.md) - Google Slides
 - [gog status](gog-status.md) - Show auth/config status (alias for 'auth status')
+- [gog tagmanager](gog-tagmanager.md) - Google Tag Manager
 - [gog tasks](gog-tasks.md) - Google Tasks
 - [gog time](gog-time.md) - Local time utilities
 - [gog update](gog-update.md) - Check gogcli release status
@@ -115,6 +118,39 @@ Generated pages: 775.
       - [gog adsense urlchannels list](gog-adsense-urlchannels-list.md) - List URL channels for an ad client
   - [gog analytics](gog-analytics.md) - Google Analytics
     - [gog analytics accounts](gog-analytics-accounts.md) - List GA4 account summaries
+    - [gog analytics custom-dimensions](gog-analytics-custom-dimensions.md) - GA4 custom dimensions
+      - [gog analytics custom-dimensions archive](gog-analytics-custom-dimensions-archive.md)
+      - [gog analytics custom-dimensions create](gog-analytics-custom-dimensions-create.md)
+      - [gog analytics custom-dimensions get](gog-analytics-custom-dimensions-get.md)
+      - [gog analytics custom-dimensions list](gog-analytics-custom-dimensions-list.md)
+      - [gog analytics custom-dimensions update](gog-analytics-custom-dimensions-update.md)
+    - [gog analytics custom-metrics](gog-analytics-custom-metrics.md) - GA4 custom metrics
+      - [gog analytics custom-metrics archive](gog-analytics-custom-metrics-archive.md)
+      - [gog analytics custom-metrics create](gog-analytics-custom-metrics-create.md)
+      - [gog analytics custom-metrics get](gog-analytics-custom-metrics-get.md)
+      - [gog analytics custom-metrics list](gog-analytics-custom-metrics-list.md)
+      - [gog analytics custom-metrics update](gog-analytics-custom-metrics-update.md)
+    - [gog analytics datastreams](gog-analytics-datastreams.md) - GA4 data streams
+      - [gog analytics datastreams create](gog-analytics-datastreams-create.md)
+      - [gog analytics datastreams delete](gog-analytics-datastreams-delete.md)
+      - [gog analytics datastreams get](gog-analytics-datastreams-get.md)
+      - [gog analytics datastreams list](gog-analytics-datastreams-list.md)
+      - [gog analytics datastreams update](gog-analytics-datastreams-update.md)
+    - [gog analytics googleads-links](gog-analytics-googleads-links.md) - GA4 Google Ads links
+      - [gog analytics googleads-links create](gog-analytics-googleads-links-create.md)
+      - [gog analytics googleads-links delete](gog-analytics-googleads-links-delete.md)
+      - [gog analytics googleads-links get](gog-analytics-googleads-links-get.md)
+      - [gog analytics googleads-links list](gog-analytics-googleads-links-list.md)
+      - [gog analytics googleads-links update](gog-analytics-googleads-links-update.md)
+    - [gog analytics keyevents](gog-analytics-keyevents.md) - GA4 key events
+      - [gog analytics keyevents create](gog-analytics-keyevents-create.md)
+      - [gog analytics keyevents delete](gog-analytics-keyevents-delete.md)
+      - [gog analytics keyevents get](gog-analytics-keyevents-get.md)
+      - [gog analytics keyevents list](gog-analytics-keyevents-list.md)
+      - [gog analytics keyevents update](gog-analytics-keyevents-update.md)
+    - [gog analytics properties](gog-analytics-properties.md) - GA4 properties
+      - [gog analytics properties get](gog-analytics-properties-get.md)
+      - [gog analytics properties list](gog-analytics-properties-list.md)
     - [gog analytics report](gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
   - [gog api](gog-api.md) - Google Discovery APIs and generic method calls
     - [gog api call](gog-api-call.md) - Call a Discovery-described API method
@@ -173,6 +209,16 @@ Generated pages: 775.
     - [gog batch list](gog-batch-list.md) - List persisted request batches
     - [gog batch prune](gog-batch-prune.md) - Delete stale request batches
     - [gog batch show](gog-batch-show.md) - Show a persisted request batch
+  - [gog bigquery](gog-bigquery.md) - BigQuery (official Go client)
+    - [gog bigquery datasets](gog-bigquery-datasets.md) - Inspect BigQuery datasets
+      - [gog bigquery datasets get](gog-bigquery-datasets-get.md) - Get dataset metadata
+      - [gog bigquery datasets list](gog-bigquery-datasets-list.md) - List datasets
+    - [gog bigquery query](gog-bigquery-query.md) - Run Standard SQL with explicit execution project
+    - [gog bigquery tables](gog-bigquery-tables.md) - Inspect BigQuery tables
+      - [gog bigquery tables get](gog-bigquery-tables-get.md) - Get table metadata
+      - [gog bigquery tables list](gog-bigquery-tables-list.md) - List tables in a dataset
+      - [gog bigquery tables rows](gog-bigquery-tables-rows.md) - Read a bounded number of table rows
+      - [gog bigquery tables schema](gog-bigquery-tables-schema.md) - Get table schema
   - [gog calendar](gog-calendar.md) - Google Calendar
     - [gog calendar acl](gog-calendar-acl.md) - List calendar ACL
     - [gog calendar alias](gog-calendar-alias.md) - Manage calendar aliases
@@ -581,6 +627,9 @@ Generated pages: 775.
     - [gog gmail trash](gog-gmail-trash.md) - Move messages to trash
     - [gog gmail unread](gog-gmail-unread.md) - Mark messages as unread
     - [gog gmail url](gog-gmail-url.md) - Print Gmail web URLs for threads
+  - [gog googleads](gog-googleads.md) - Google Ads (official REST)
+    - [gog googleads customers](gog-googleads-customers.md) - List accessible Google Ads customers
+    - [gog googleads query](gog-googleads-query.md) - Run a read-only GAQL search
   - [gog groups](gog-groups.md) - Cloud Identity Groups (Workspace only)
     - [gog groups list](gog-groups-list.md) - List groups you belong to
     - [gog groups members](gog-groups-members.md) - List members of a group
@@ -784,6 +833,48 @@ Generated pages: 775.
     - [gog slides unskip-slide](gog-slides-unskip-slide.md) - Include a skipped slide during presentation
     - [gog slides update-notes](gog-slides-update-notes.md) - Update speaker notes on an existing slide
   - [gog status](gog-status.md) - Show auth/config status (alias for 'auth status')
+  - [gog tagmanager](gog-tagmanager.md) - Google Tag Manager
+    - [gog tagmanager accounts](gog-tagmanager-accounts.md) - GTM accounts
+      - [gog tagmanager accounts get](gog-tagmanager-accounts-get.md) - Get a GTM account
+      - [gog tagmanager accounts list](gog-tagmanager-accounts-list.md) - List GTM accounts
+    - [gog tagmanager containers](gog-tagmanager-containers.md) - GTM containers
+      - [gog tagmanager containers create](gog-tagmanager-containers-create.md) - Create container
+      - [gog tagmanager containers delete](gog-tagmanager-containers-delete.md) - Delete container
+      - [gog tagmanager containers get](gog-tagmanager-containers-get.md) - Get container
+      - [gog tagmanager containers list](gog-tagmanager-containers-list.md) - List containers
+      - [gog tagmanager containers update](gog-tagmanager-containers-update.md) - Update container
+    - [gog tagmanager tags](gog-tagmanager-tags.md) - GTM tags
+      - [gog tagmanager tags create](gog-tagmanager-tags-create.md)
+      - [gog tagmanager tags delete](gog-tagmanager-tags-delete.md)
+      - [gog tagmanager tags get](gog-tagmanager-tags-get.md)
+      - [gog tagmanager tags list](gog-tagmanager-tags-list.md)
+      - [gog tagmanager tags update](gog-tagmanager-tags-update.md)
+    - [gog tagmanager triggers](gog-tagmanager-triggers.md) - GTM triggers
+      - [gog tagmanager triggers create](gog-tagmanager-triggers-create.md)
+      - [gog tagmanager triggers delete](gog-tagmanager-triggers-delete.md)
+      - [gog tagmanager triggers get](gog-tagmanager-triggers-get.md)
+      - [gog tagmanager triggers list](gog-tagmanager-triggers-list.md)
+      - [gog tagmanager triggers update](gog-tagmanager-triggers-update.md)
+    - [gog tagmanager variables](gog-tagmanager-variables.md) - GTM variables
+      - [gog tagmanager variables create](gog-tagmanager-variables-create.md)
+      - [gog tagmanager variables delete](gog-tagmanager-variables-delete.md)
+      - [gog tagmanager variables get](gog-tagmanager-variables-get.md)
+      - [gog tagmanager variables list](gog-tagmanager-variables-list.md)
+      - [gog tagmanager variables update](gog-tagmanager-variables-update.md)
+    - [gog tagmanager versions](gog-tagmanager-versions.md) - GTM container versions
+      - [gog tagmanager versions delete](gog-tagmanager-versions-delete.md)
+      - [gog tagmanager versions get](gog-tagmanager-versions-get.md)
+      - [gog tagmanager versions list](gog-tagmanager-versions-list.md)
+      - [gog tagmanager versions publish](gog-tagmanager-versions-publish.md)
+    - [gog tagmanager workspaces](gog-tagmanager-workspaces.md) - GTM workspaces
+      - [gog tagmanager workspaces create](gog-tagmanager-workspaces-create.md)
+      - [gog tagmanager workspaces create-version](gog-tagmanager-workspaces-create-version.md)
+      - [gog tagmanager workspaces delete](gog-tagmanager-workspaces-delete.md)
+      - [gog tagmanager workspaces get](gog-tagmanager-workspaces-get.md)
+      - [gog tagmanager workspaces list](gog-tagmanager-workspaces-list.md)
+      - [gog tagmanager workspaces status](gog-tagmanager-workspaces-status.md)
+      - [gog tagmanager workspaces sync](gog-tagmanager-workspaces-sync.md)
+      - [gog tagmanager workspaces update](gog-tagmanager-workspaces-update.md)
   - [gog tasks](gog-tasks.md) - Google Tasks
     - [gog tasks add](gog-tasks-add.md) - Add a task
     - [gog tasks clear](gog-tasks-clear.md) - Clear completed tasks

@@ -1,9 +1,12 @@
 package googleapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -115,7 +118,38 @@ func readOnlyPOSTRequest(request *http.Request) bool {
 			strings.HasSuffix(path, ":batchRunReports") ||
 			strings.HasSuffix(path, ":runPivotReport") ||
 			strings.HasSuffix(path, ":runRealtimeReport")
+	case "googleads.googleapis.com", "googleads.mtls.googleapis.com":
+		return strings.HasSuffix(path, "/googleAds:search") ||
+			strings.HasSuffix(path, "/googleAds:searchStream") ||
+			strings.HasSuffix(path, "/customers:listAccessibleCustomers")
+	case "bigquery.googleapis.com", "bigquery.mtls.googleapis.com":
+		return (strings.HasSuffix(path, "/queries") || strings.HasSuffix(path, "/jobs.query")) && readOnlyBigQueryDryRun(request)
 	default:
 		return false
 	}
+}
+
+func readOnlyBigQueryDryRun(request *http.Request) bool {
+	if request == nil || request.Body == nil {
+		return false
+	}
+	body, err := io.ReadAll(io.LimitReader(request.Body, 1<<20))
+	_ = request.Body.Close()
+	request.Body = io.NopCloser(bytes.NewReader(body))
+
+	if err != nil {
+		return false
+	}
+
+	var payload map[string]json.RawMessage
+	if json.Unmarshal(body, &payload) != nil {
+		return false
+	}
+
+	var dryRun bool
+	if json.Unmarshal(payload["dryRun"], &dryRun) != nil {
+		return false
+	}
+
+	return dryRun
 }

@@ -664,24 +664,42 @@ Run existing lint/static-analysis/docs checks defined by CI. Do not weaken gates
 
 # Acceptance criteria
 
-- [ ] Existing gog behaviour/upstream-compatible structure preserved.
-- [ ] No community/third-party Google API SDK introduced.
-- [ ] Existing GA4 reporting still works.
-- [ ] GA4 Admin/config has useful typed read + mutation coverage.
-- [ ] GTM has typed account/container/workspace/tag/trigger/variable/version workflows including publish.
-- [ ] Google Ads uses direct official REST and supports account listing + GAQL query, manager header, paging and secure developer-token handling.
-- [ ] Existing Search Console is audited/completed and fully wired into auth/MCP.
-- [ ] BigQuery uses official Go client and supports dataset/table inspection plus SQL query/dry-run.
-- [ ] All five services use existing multi-account/alias/keyring model.
-- [ ] `auth setup --enable-apis --services ...` knows the five marketing services and APIs.
-- [ ] Read-only auth uses least-privilege read scopes where available.
-- [ ] CLI commands have stable JSON.
-- [ ] Typed MCP tools exist for implemented reads and reviewed writes.
-- [ ] MCP gains no generic shell/HTTP escape hatch.
-- [ ] Arbitrary BigQuery SQL is not misclassified as read-only MCP.
-- [ ] Tests require no real Google credentials.
-- [ ] Setup + multi-account docs complete.
-- [ ] `go test ./...`, `go vet ./...` and existing CI are green.
+- [x] Existing gog behaviour/upstream-compatible structure preserved.
+- [x] No community/third-party Google API SDK introduced.
+- [x] Existing GA4 reporting still works.
+- [x] GA4 Admin/config has useful typed read + mutation coverage.
+- [x] GTM has typed account/container/workspace/tag/trigger/variable/version workflows including publish.
+- [x] Google Ads uses direct official REST and supports account listing + GAQL query, manager header, paging and secure developer-token handling.
+- [x] Existing Search Console is audited/completed and fully wired into auth/MCP.
+- [x] BigQuery uses official Go client and supports dataset/table inspection plus SQL query/dry-run.
+- [x] All five services use existing multi-account/alias/keyring model.
+- [x] `auth setup --enable-apis --services ...` knows the five marketing services and APIs.
+- [x] Read-only auth uses least-privilege read scopes where available.
+- [x] CLI commands have stable JSON.
+- [x] Typed MCP tools exist for implemented reads and reviewed writes.
+- [x] MCP gains no generic shell/HTTP escape hatch.
+- [x] Arbitrary BigQuery SQL is not misclassified as read-only MCP.
+- [x] Tests require no real Google credentials.
+- [x] Setup + multi-account docs complete.
+- [x] `go test ./...`, `go vet ./...` and existing CI are green.
+
+## Delivery notes
+
+The v1 core above is implemented. Validation used fakes and `httptest`; no live
+Google Cloud project, billing account, BigQuery query, scheduled transfer, or
+billable API setup was used.
+
+The following expansion points remain follow-up work and do not block the v1
+acceptance surface:
+
+- GA4 reporting additions such as multiple date ranges, richer filters/order-bys,
+  metadata listing and realtime reports.
+- Lower-frequency GA4 Admin resources not exposed by the current generated
+  `analyticsadmin/v1beta` client used here, notably BigQuery links and access
+  bindings, when a current official client surface makes them cleanly typed.
+- GTM secondary resources beyond the required account/container/workspace/
+  tag/trigger/variable/version workflows, including folders, clients, built-ins,
+  environments, destinations and account/container permissions.
 
 ---
 
