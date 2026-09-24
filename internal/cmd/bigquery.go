@@ -234,6 +234,8 @@ type BigQueryQueryCmd struct {
 	SQL                  string `name:"sql" help:"Standard SQL query"`
 	File                 string `name:"file" type:"path" help:"Read Standard SQL from a file"`
 	Max                  int64  `name:"max" aliases:"limit" help:"Maximum rows (1-10000)" default:"100"`
+	MaxBytesBilled       int64  `name:"max-bytes-billed" help:"Hard BigQuery byte-billing cap for this query" default:"1073741824"`
+	AcknowledgeCost      bool   `name:"acknowledge-cost" help:"Confirm execution after reviewing a dry-run estimate"`
 	FailEmpty            bool   `name:"fail-empty" aliases:"non-empty,require-results" help:"Exit with code 3 if no rows"`
 }
 
@@ -249,12 +251,22 @@ func (c *BigQueryQueryCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if c.Max < 1 || c.Max > 10000 {
 		return usage("--max must be between 1 and 10000")
 	}
+	if c.MaxBytesBilled <= 0 {
+		return usage("--max-bytes-billed must be greater than zero")
+	}
+	dryRun := flags != nil && flags.DryRun
+	if !dryRun && !c.AcknowledgeCost {
+		return usage("BigQuery execution requires --acknowledge-cost; run --dry-run first to inspect estimated bytes")
+	}
+	if readOnlyEnabled(flags) && !dryRun {
+		return fmt.Errorf("%w: BigQuery query execution is disabled", googleapi.ErrReadOnly)
+	}
 	client, err := openBigQuery(ctx, flags, project)
 	if err != nil {
 		return err
 	}
 	defer closeBigQuery(client)
-	result, err := client.Query(ctx, sql, flags != nil && flags.DryRun)
+	result, err := client.Query(ctx, sql, dryRun, c.MaxBytesBilled)
 	if err != nil {
 		return err
 	}
@@ -275,6 +287,7 @@ func (c *BigQueryQueryCmd) Run(ctx context.Context, flags *RootFlags) error {
 			kv("job_id", result.JobID),
 			kv("total_bytes_processed", result.TotalBytesProcessed),
 			kv("total_bytes_billed", result.TotalBytesBilled),
+			kv("max_bytes_billed", c.MaxBytesBilled),
 		)
 	}
 	if result == nil || len(result.Rows) == 0 {

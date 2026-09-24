@@ -35,7 +35,7 @@ func TestGoogleAdsClientSearchHeadersPaginationAndRequestID(t *testing.T) {
 	var calls int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		calls++
-		if r.Header.Get("developer-token") != "dev-token" || r.Header.Get("login-customer-id") != "1234567890" {
+		if r.Header.Get("developer-token") != "dev-token-1234" || r.Header.Get("login-customer-id") != "1234567890" {
 			t.Errorf("headers = %#v", r.Header)
 		}
 		if r.URL.Path != "/v25/customers/1234567890/googleAds:search" {
@@ -49,7 +49,7 @@ func TestGoogleAdsClientSearchHeadersPaginationAndRequestID(t *testing.T) {
 		_, _ = io.WriteString(w, `{"results":[{"campaign":{"id":"2"}}]}`)
 	}))
 	defer server.Close()
-	client := &googleads.Client{HTTP: server.Client(), BaseURL: server.URL, DeveloperToken: "dev-token", LoginCustomerID: "123-456-7890"}
+	client := &googleads.Client{HTTP: server.Client(), BaseURL: server.URL, DeveloperToken: "dev-token-1234", LoginCustomerID: "123-456-7890"}
 	var rows []map[string]any
 	next := ""
 	for {
@@ -81,7 +81,7 @@ func TestGoogleAdsClientAPIErrorKeepsRequestID(t *testing.T) {
 		_, _ = io.WriteString(w, `{"error":{"message":"bad query","status":"INVALID_ARGUMENT"}}`)
 	}))
 	defer server.Close()
-	client := &googleads.Client{HTTP: server.Client(), BaseURL: server.URL, DeveloperToken: "dev-token"}
+	client := &googleads.Client{HTTP: server.Client(), BaseURL: server.URL, DeveloperToken: "dev-token-1234"}
 	_, err := client.Search(context.Background(), "1234567890", googleads.SearchRequest{Query: "SELECT 1"})
 	var apiErr *googleads.APIError
 	if !errors.As(err, &apiErr) || apiErr.RequestID != "req-error" || !strings.Contains(apiErr.Error(), "req-error") {
@@ -104,6 +104,9 @@ func TestBigQueryDryRunCommandUsesInjectedClient(t *testing.T) {
 	}
 	if fake.querySQL != "SELECT 1" || !fake.queryDryRun {
 		t.Fatalf("query = %#v", fake)
+	}
+	if fake.maxBytesBilled != 1073741824 {
+		t.Fatalf("max bytes billed = %d", fake.maxBytesBilled)
 	}
 	if !strings.Contains(result.stdout, `"dry_run": true`) {
 		t.Fatalf("stdout = %s", result.stdout)
@@ -128,14 +131,54 @@ func TestMarketingMCPToolsAreTypedAndRiskClassified(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if strings.Join(args, " ") != "bigquery query --sql SELECT 1 --dry-run --billing-project p" {
+	if strings.Join(args, " ") != "bigquery query --sql SELECT 1 --dry-run --max-bytes-billed 1073741824 --billing-project p" {
 		t.Fatalf("dry-run args = %#v", args)
 	}
 }
 
+func TestBigQueryExecutionRequiresCostAcknowledgement(t *testing.T) {
+	result := executeWithTestRuntime(t, []string{"--account", "a@b.com", "bigquery", "query", "--project", "billing-proj", "--sql", "SELECT 1"}, &app.Runtime{})
+	if result.err == nil || !strings.Contains(result.err.Error(), "--acknowledge-cost") {
+		t.Fatalf("error = %v", result.err)
+	}
+}
+
+func TestGoogleAdsTokenValidationAndRemediation(t *testing.T) {
+	if err := googleads.ValidateDeveloperToken("bad"); !errors.Is(err, googleads.ErrInvalidDeveloperToken) {
+		t.Fatalf("invalid token error = %v", err)
+	}
+	err := wrapGoogleAdsError(&googleads.APIError{Code: 401, Message: "developer token is invalid"})
+	if !strings.Contains(err.Error(), "GOG_GOOGLE_ADS_DEVELOPER_TOKEN") {
+		t.Fatalf("remediation missing: %v", err)
+	}
+}
+
+func TestMarketingResourcePathNormalization(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"123", "properties/123"},
+		{"properties/123", "properties/123"},
+		{"properties/123/datastreams/456", "properties/123/dataStreams/456"},
+		{"123/keyevents/purchase", "properties/123/keyEvents/purchase"},
+		{"properties/123/custom-dimensions/city", "properties/123/customDimensions/city"},
+		{"properties/123/google-ads-links/1", "properties/123/googleAdsLinks/1"},
+	}
+	for _, tt := range tests {
+		if got := analyticsResourcePath(tt.in); got != tt.want {
+			t.Errorf("analyticsResourcePath(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+	if got := tagManagerWorkspacePath("1", "2", "3"); got != "accounts/1/containers/2/workspaces/3" {
+		t.Fatalf("workspace path = %q", got)
+	}
+}
+
 type fakeBigQueryClient struct {
-	querySQL    string
-	queryDryRun bool
+	querySQL       string
+	queryDryRun    bool
+	maxBytesBilled int64
 }
 
 func (f *fakeBigQueryClient) Project() string { return "billing-proj" }
@@ -159,8 +202,9 @@ func (f *fakeBigQueryClient) ReadRows(context.Context, string, string, int64) ([
 	return []map[string]any{{"id": "1"}}, []googleapi.BigQuerySchemaField{{Name: "id", Type: "STRING"}}, nil
 }
 
-func (f *fakeBigQueryClient) Query(_ context.Context, sql string, dryRun bool) (*googleapi.BigQueryQueryResult, error) {
+func (f *fakeBigQueryClient) Query(_ context.Context, sql string, dryRun bool, maxBytesBilled int64) (*googleapi.BigQueryQueryResult, error) {
 	f.querySQL, f.queryDryRun = sql, dryRun
+	f.maxBytesBilled = maxBytesBilled
 	return &googleapi.BigQueryQueryResult{DryRun: dryRun, Rows: []map[string]any{}}, nil
 }
 func (f *fakeBigQueryClient) Close() error { return nil }

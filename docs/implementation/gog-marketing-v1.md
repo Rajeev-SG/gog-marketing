@@ -689,6 +689,9 @@ The v1 core above is implemented. Validation used fakes and `httptest`; no live
 Google Cloud project, billing account, BigQuery query, scheduled transfer, or
 billable API setup was used.
 
+BigQuery execution is code-enforced with a 1 GiB default `MaximumBytesBilled`
+cap and an explicit `--acknowledge-cost`/MCP acknowledgement after dry-run.
+
 The following expansion points remain follow-up work and do not block the v1
 acceptance surface:
 

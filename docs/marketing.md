@@ -17,7 +17,9 @@ execution or billing project.
   `GOG_BIGQUERY_PROJECT`. The bootstrap project is never inferred as the billing
   project.
 - Run `gog bigquery query --dry-run` before executing SQL. The dry-run reports
-  estimated bytes processed and does not execute the query.
+  estimated bytes processed and does not execute the query. Every executed
+  query requires `--acknowledge-cost` and a `--max-bytes-billed` cap (default
+  1 GiB); the MCP tool enforces the same cap and acknowledgement.
 - Keep `gog bigquery query` and the `bigquery_query` MCP tool out of read-only
   agent policies. The MCP server classifies arbitrary SQL as write-risk because
   SQL can mutate data and consume billable slots.
@@ -141,7 +143,8 @@ gog bigquery tables rows my-dataset events --max 100 --project my-execution-proj
 
 # Never execute before checking the estimate:
 gog bigquery query --project my-execution-project --sql 'SELECT 1' --dry-run
-gog bigquery query --project my-execution-project --sql 'SELECT 1' --max 100
+gog bigquery query --project my-execution-project --sql 'SELECT 1' \
+  --max 100 --max-bytes-billed 1073741824 --acknowledge-cost
 ```
 
 Standard SQL is the default. Row output is bounded by `--max`; JSON output

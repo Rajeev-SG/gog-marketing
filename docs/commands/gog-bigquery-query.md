@@ -20,6 +20,7 @@ gog bigquery (bq) query [flags]
 | --- | --- | --- | --- |
 | `--access-token` | `string` |  | Use provided access token directly (bypasses stored refresh tokens; token expires in ~1h) |
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
+| `--acknowledge-cost` | `bool` |  | Confirm execution after reviewing a dry-run estimate |
 | `--billing-project`<br>`--execution-project`<br>`--project-id` | `string` |  | BigQuery execution and billing project (required) |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
@@ -35,6 +36,7 @@ gog bigquery (bq) query [flags]
 | `--home` | `string` |  | Override gogcli config/data/state/cache root (equivalent to GOG_HOME) |
 | `-j`<br>`--json`<br>`--machine` | `bool` | false | Output JSON to stdout (best for scripting) |
 | `--max`<br>`--limit` | `int64` | 100 | Maximum rows (1-10000) |
+| `--max-bytes-billed` | `int64` | 1073741824 | Hard BigQuery byte-billing cap for this query |
 | `--no-input`<br>`--non-interactive`<br>`--noninteractive` | `bool` |  | Never prompt; fail instead (useful for CI) |
 | `-p`<br>`--plain`<br>`--tsv` | `bool` | false | Output stable, parseable text to stdout (TSV; no colors) |
 | `--quota-project` | `string` |  | Google Cloud project to bill for API usage (sent as X-Goog-User-Project; some APIs require it with --access-token or ADC) |

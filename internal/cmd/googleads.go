@@ -3,12 +3,14 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/openclaw/gogcli/internal/errfmt"
 	"github.com/openclaw/gogcli/internal/googleads"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
@@ -46,7 +48,7 @@ func (c *GoogleAdsCustomersCmd) Run(ctx context.Context, flags *RootFlags) error
 	}
 	names, err := client.ListAccessibleCustomers(ctx)
 	if err != nil {
-		return err
+		return wrapGoogleAdsError(err)
 	}
 	customers := make([]map[string]any, 0, len(names))
 	for _, name := range names {
@@ -131,7 +133,7 @@ func (c *GoogleAdsQueryCmd) Run(ctx context.Context, flags *RootFlags) error {
 		request.PageToken = nextPageToken
 		response, searchErr := client.Search(ctx, customerID, request)
 		if searchErr != nil {
-			return searchErr
+			return wrapGoogleAdsError(searchErr)
 		}
 		for _, raw := range response.Results {
 			var row map[string]any
@@ -194,6 +196,9 @@ func newGoogleAdsClient(ctx context.Context, account string, auth GoogleAdsAuthF
 	if token == "" {
 		return nil, googleads.ErrDeveloperTokenRequired
 	}
+	if err := googleads.ValidateDeveloperToken(token); err != nil {
+		return nil, err
+	}
 	client, err := googleAdsHTTPClient(ctx, account)
 	if err != nil {
 		return nil, err
@@ -209,6 +214,14 @@ func newGoogleAdsClient(ctx context.Context, account string, auth GoogleAdsAuthF
 		DeveloperToken:  token,
 		LoginCustomerID: login,
 	}, nil
+}
+
+func wrapGoogleAdsError(err error) error {
+	var apiErr *googleads.APIError
+	if errors.As(err, &apiErr) && strings.Contains(strings.ToLower(apiErr.Message), "developer token") {
+		return errfmt.NewUserFacingError("Google Ads rejected the developer token. Set GOG_GOOGLE_ADS_DEVELOPER_TOKEN to a valid token and verify API access in Google Ads API Center.", err)
+	}
+	return err
 }
 
 func googleAdsCustomerID(resourceName string) string {

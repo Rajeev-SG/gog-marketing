@@ -347,7 +347,7 @@ func mcpBigQueryTableRowsTool() mcpToolSpec {
 }
 
 func mcpBigQueryDryRunTool() mcpToolSpec {
-	return mcpToolSpec{Name: "bigquery_query_dry_run", Service: "bigquery", Risk: mcpRiskRead, Description: "Validate BigQuery SQL and report estimated bytes without executing it.", Options: []mcp.ToolOption{mcp.WithString("project", mcp.Required()), mcp.WithString("sql", mcp.Required())}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+	return mcpToolSpec{Name: "bigquery_query_dry_run", Service: "bigquery", Risk: mcpRiskRead, Description: "Validate BigQuery SQL and report estimated bytes without executing it.", Options: []mcp.ToolOption{mcp.WithString("project", mcp.Required()), mcp.WithString("sql", mcp.Required()), mcp.WithInteger("max_bytes_billed", mcp.Description("Hard byte-billing cap applied to the query"), mcp.DefaultNumber(1073741824), mcp.Min(1), mcp.Max(2000000000))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
 		project, err := mcpBigQueryProjectArgs(req)
 		if err != nil {
 			return nil, err
@@ -356,12 +356,13 @@ func mcpBigQueryDryRunTool() mcpToolSpec {
 		if err != nil {
 			return nil, err
 		}
-		return append([]string{"bigquery", "query", "--sql", sql, "--dry-run"}, project...), nil
+		maxBytesBilled := strconv.Itoa(clampMCPInt(req.GetInt("max_bytes_billed", 1073741824), 1, 2000000000))
+		return append([]string{"bigquery", "query", "--sql", sql, "--dry-run", "--max-bytes-billed", maxBytesBilled}, project...), nil
 	}}
 }
 
 func mcpBigQueryQueryTool() mcpToolSpec {
-	return mcpToolSpec{Name: "bigquery_query", Service: "bigquery", Risk: mcpRiskWrite, Description: "Execute arbitrary BigQuery SQL. Requires --allow-write and an explicit execution project.", Options: []mcp.ToolOption{mcp.WithString("project", mcp.Required()), mcp.WithString("sql", mcp.Required()), mcp.WithInteger("max", mcp.DefaultNumber(100), mcp.Min(1), mcp.Max(10000))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+	return mcpToolSpec{Name: "bigquery_query", Service: "bigquery", Risk: mcpRiskWrite, Description: "Execute arbitrary BigQuery SQL after explicit cost acknowledgement. Requires --allow-write and an explicit execution project.", Options: []mcp.ToolOption{mcp.WithString("project", mcp.Required()), mcp.WithString("sql", mcp.Required()), mcp.WithInteger("max", mcp.DefaultNumber(100), mcp.Min(1), mcp.Max(10000)), mcp.WithInteger("max_bytes_billed", mcp.Description("Hard byte-billing cap applied to the query"), mcp.DefaultNumber(1073741824), mcp.Min(1), mcp.Max(2000000000)), mcp.WithBoolean("acknowledge_cost", mcp.Description("Confirm execution after reviewing bigquery_query_dry_run"), mcp.Required())}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
 		project, err := mcpBigQueryProjectArgs(req)
 		if err != nil {
 			return nil, err
@@ -370,6 +371,12 @@ func mcpBigQueryQueryTool() mcpToolSpec {
 		if err != nil {
 			return nil, err
 		}
-		return append([]string{"bigquery", "query", "--sql", sql, "--max", strconv.Itoa(clampMCPInt(req.GetInt("max", 100), 1, 10000))}, project...), nil
+		if !req.GetBool("acknowledge_cost", false) {
+			return nil, usage("bigquery_query requires acknowledge_cost=true after a dry run")
+		}
+		maxBytesBilled := strconv.Itoa(clampMCPInt(req.GetInt("max_bytes_billed", 1073741824), 1, 2000000000))
+		args := make([]string, 0, 9+len(project))
+		args = append(args, "bigquery", "query", "--sql", sql, "--max", strconv.Itoa(clampMCPInt(req.GetInt("max", 100), 1, 10000)), "--max-bytes-billed", maxBytesBilled, "--acknowledge-cost")
+		return append(args, project...), nil
 	}}
 }

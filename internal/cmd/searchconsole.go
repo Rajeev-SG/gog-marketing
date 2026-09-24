@@ -349,7 +349,7 @@ func (c *SearchConsoleSitemapsSubmitCmd) Run(ctx context.Context, flags *RootFla
 		return err
 	}
 
-	if err := dryRunExit(ctx, flags, "searchconsole.sitemaps.submit", map[string]any{
+	if err := marketingDryRunExit(ctx, flags, "searchconsole.sitemaps.submit", map[string]any{
 		"site_url":  siteURL,
 		"feed_path": feedPath,
 	}); err != nil {
@@ -395,7 +395,7 @@ func (c *SearchConsoleSitemapsDeleteCmd) Run(ctx context.Context, flags *RootFla
 		return err
 	}
 
-	if err := dryRunAndConfirmDestructive(ctx, flags, "searchconsole.sitemaps.delete", map[string]any{
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "searchconsole.sitemaps.delete", map[string]any{
 		"site_url":  siteURL,
 		"feed_path": feedPath,
 	}, fmt.Sprintf("delete sitemap %s", feedPath)); err != nil {

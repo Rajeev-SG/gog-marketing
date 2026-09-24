@@ -18,6 +18,7 @@ var (
 	ErrDeveloperTokenRequired = errors.New("google ads developer token is required")
 	ErrCustomerIDRequired     = errors.New("google ads customer ID is required")
 	ErrInvalidCustomerID      = errors.New("invalid google ads customer ID")
+	ErrInvalidDeveloperToken  = errors.New("invalid google ads developer token")
 	ErrGAQLRequired           = errors.New("GAQL query is required")
 	ErrInvalidPageSize        = errors.New("page size must be between 1 and 10000")
 	ErrHTTPClientRequired     = errors.New("google ads HTTP client is required")
@@ -91,6 +92,23 @@ type APIError struct {
 	Status    string
 	Message   string
 	RequestID string
+}
+
+func ValidateDeveloperToken(raw string) error {
+	token := strings.TrimSpace(raw)
+	if len(token) < 10 || len(token) > 64 {
+		return ErrInvalidDeveloperToken
+	}
+
+	for _, r := range token {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			continue
+		}
+
+		return ErrInvalidDeveloperToken
+	}
+
+	return nil
 }
 
 func (e *APIError) Error() string {
@@ -194,7 +212,7 @@ func (c *Client) validate() error {
 		return ErrDeveloperTokenRequired
 	}
 
-	return nil
+	return ValidateDeveloperToken(c.DeveloperToken)
 }
 
 func (c *Client) path(suffix string) string {

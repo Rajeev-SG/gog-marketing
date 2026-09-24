@@ -120,7 +120,7 @@ func (c *AnalyticsDataStreamsCreateCmd) Run(ctx context.Context, flags *RootFlag
 	if err := decodeAnalyticsJSON(c.JSONFile, body); err != nil {
 		return err
 	}
-	if err := dryRunExit(ctx, flags, "analytics.datastreams.create", map[string]any{"parent": analyticsPropertyPath(c.Property), "data_stream": body}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, "analytics.datastreams.create", map[string]any{"parent": analyticsPropertyPath(c.Property), "data_stream": body}); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -145,7 +145,7 @@ func (c *AnalyticsDataStreamsUpdateCmd) Run(ctx context.Context, flags *RootFlag
 		return err
 	}
 	path := analyticsResourcePath(c.DataStream)
-	if err := dryRunExit(ctx, flags, "analytics.datastreams.update", map[string]any{"name": path, "data_stream": body, "update_mask": c.UpdateMask}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, "analytics.datastreams.update", map[string]any{"name": path, "data_stream": body, "update_mask": c.UpdateMask}); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -169,7 +169,7 @@ type AnalyticsDataStreamsDeleteCmd struct {
 
 func (c *AnalyticsDataStreamsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := analyticsResourcePath(c.DataStream)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "analytics.datastreams.delete", map[string]any{"name": path}, "delete GA4 data stream "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "analytics.datastreams.delete", map[string]any{"name": path}, "delete GA4 data stream "+path); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -330,7 +330,7 @@ type AnalyticsCustomDimensionsArchiveCmd struct {
 
 func (c *AnalyticsCustomDimensionsArchiveCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := analyticsResourcePath(c.CustomDimension)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "analytics.custom-dimensions.archive", map[string]any{"name": path}, "archive GA4 custom dimension "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "analytics.custom-dimensions.archive", map[string]any{"name": path}, "archive GA4 custom dimension "+path); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -435,7 +435,7 @@ type AnalyticsCustomMetricsArchiveCmd struct {
 
 func (c *AnalyticsCustomMetricsArchiveCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := analyticsResourcePath(c.CustomMetric)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "analytics.custom-metrics.archive", map[string]any{"name": path}, "archive GA4 custom metric "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "analytics.custom-metrics.archive", map[string]any{"name": path}, "archive GA4 custom metric "+path); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -554,14 +554,20 @@ func analyticsPropertyPath(value string) string {
 
 func analyticsResourcePath(value string) string {
 	value = strings.TrimSpace(value)
-	if strings.Contains(value, "/") && (strings.HasPrefix(value, "properties/") || strings.HasPrefix(value, "accounts/")) {
+	replacer := strings.NewReplacer(
+		"/datastreams/", "/dataStreams/",
+		"/keyevents/", "/keyEvents/",
+		"/custom-dimensions/", "/customDimensions/",
+		"/custom-metrics/", "/customMetrics/",
+		"/googleads-links/", "/googleAdsLinks/",
+		"/google-ads-links/", "/googleAdsLinks/",
+	)
+	value = replacer.Replace(value)
+	if strings.HasPrefix(value, "properties/") || strings.HasPrefix(value, "accounts/") {
 		return value
 	}
-	if strings.HasPrefix(value, "properties/") {
-		return value
-	}
-	if strings.Contains(value, "/") {
-		return value
+	if parts := strings.Split(value, "/"); len(parts) > 0 && parts[0] != "" && !strings.Contains(parts[0], ".") && !strings.Contains(parts[0], "@") {
+		return "properties/" + value
 	}
 	return value
 }
@@ -718,7 +724,7 @@ func analyticsGetAndWrite(ctx context.Context, flags *RootFlags, key, name strin
 }
 
 func analyticsCreateAndWrite(ctx context.Context, flags *RootFlags, key, op, parent string, body any, create func(*analyticsadmin.Service, string, any) (any, error)) error {
-	if err := dryRunExit(ctx, flags, op, map[string]any{"parent": parent, "resource": body}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, op, map[string]any{"parent": parent, "resource": body}); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -733,7 +739,7 @@ func analyticsCreateAndWrite(ctx context.Context, flags *RootFlags, key, op, par
 }
 
 func analyticsUpdateAndWrite(ctx context.Context, flags *RootFlags, key, op, name, mask string, body any, update func(*analyticsadmin.Service, string, any, string) (any, error)) error {
-	if err := dryRunExit(ctx, flags, op, map[string]any{"name": name, "resource": body, "update_mask": mask}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, op, map[string]any{"name": name, "resource": body, "update_mask": mask}); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)
@@ -749,7 +755,7 @@ func analyticsUpdateAndWrite(ctx context.Context, flags *RootFlags, key, op, nam
 
 func analyticsDelete(ctx context.Context, flags *RootFlags, op, name string, del func(*analyticsadmin.Service, string) error) error {
 	name = analyticsResourcePath(name)
-	if err := dryRunAndConfirmDestructive(ctx, flags, op, map[string]any{"name": name}, "delete GA4 resource "+name); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, op, map[string]any{"name": name}, "delete GA4 resource "+name); err != nil {
 		return err
 	}
 	svc, err := analyticsAdminFor(ctx, flags)

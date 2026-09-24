@@ -61,13 +61,16 @@ type BigQueryClient interface {
 	ListTables(context.Context, string) ([]BigQueryTable, error)
 	GetTable(context.Context, string, string) (*BigQueryTable, error)
 	ReadRows(context.Context, string, string, int64) ([]map[string]any, []BigQuerySchemaField, error)
-	Query(context.Context, string, bool) (*BigQueryQueryResult, error)
+	Query(context.Context, string, bool, int64) (*BigQueryQueryResult, error)
 	Close() error
 }
 
 type BigQueryClientFactory func(context.Context, string, string) (BigQueryClient, error)
 
-var ErrBigQueryProjectRequired = errors.New("bigquery execution project is required")
+var (
+	ErrBigQueryProjectRequired        = errors.New("bigquery execution project is required")
+	ErrBigQueryMaxBytesBilledRequired = errors.New("bigquery max bytes billed must be greater than zero")
+)
 
 type bigQueryAdapter struct {
 	client *bigquery.Client
@@ -161,11 +164,11 @@ func (a *bigQueryAdapter) GetTable(ctx context.Context, datasetID, tableID strin
 
 func (a *bigQueryAdapter) ReadRows(ctx context.Context, datasetID, tableID string, limit int64) ([]map[string]any, []BigQuerySchemaField, error) {
 	it := a.client.Dataset(datasetID).Table(tableID).Read(ctx)
-	schema := convertBigQuerySchema(it.Schema)
+	var schema []BigQuerySchemaField
 
 	rows := []map[string]any{}
 	for limit <= 0 || int64(len(rows)) < limit {
-		values := make([]bigquery.Value, len(it.Schema))
+		var values []bigquery.Value
 
 		err := it.Next(&values)
 		if errors.Is(err, iterator.Done) {
@@ -176,17 +179,26 @@ func (a *bigQueryAdapter) ReadRows(ctx context.Context, datasetID, tableID strin
 			return nil, nil, fmt.Errorf("read BigQuery table rows: %w", err)
 		}
 
+		if schema == nil {
+			schema = convertBigQuerySchema(it.Schema)
+		}
+
 		rows = append(rows, bigQueryRow(it.Schema, values))
 	}
 
 	return rows, schema, nil
 }
 
-func (a *bigQueryAdapter) Query(ctx context.Context, sql string, dryRun bool) (*BigQueryQueryResult, error) {
+func (a *bigQueryAdapter) Query(ctx context.Context, sql string, dryRun bool, maxBytesBilled int64) (*BigQueryQueryResult, error) {
+	if maxBytesBilled <= 0 {
+		return nil, ErrBigQueryMaxBytesBilledRequired
+	}
 	query := a.client.Query(sql)
 	query.DryRun = dryRun
 
 	query.UseStandardSQL = true
+
+	query.MaxBytesBilled = maxBytesBilled
 	if dryRun {
 		job, err := query.Run(ctx)
 		if err != nil {
@@ -211,11 +223,11 @@ func (a *bigQueryAdapter) Query(ctx context.Context, sql string, dryRun bool) (*
 	if err != nil {
 		return nil, fmt.Errorf("read BigQuery query result: %w", err)
 	}
-	schema := convertBigQuerySchema(it.Schema)
+	var schema []BigQuerySchemaField
 	rows := []map[string]any{}
 
 	for {
-		values := make([]bigquery.Value, len(it.Schema))
+		var values []bigquery.Value
 
 		nextErr := it.Next(&values)
 		if errors.Is(nextErr, iterator.Done) {
@@ -224,6 +236,10 @@ func (a *bigQueryAdapter) Query(ctx context.Context, sql string, dryRun bool) (*
 
 		if nextErr != nil {
 			return nil, fmt.Errorf("read BigQuery query row: %w", nextErr)
+		}
+
+		if schema == nil {
+			schema = convertBigQuerySchema(it.Schema)
 		}
 
 		rows = append(rows, bigQueryRow(it.Schema, values))

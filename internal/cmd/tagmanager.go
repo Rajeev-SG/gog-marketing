@@ -149,7 +149,7 @@ func (c *TagManagerContainersCreateCmd) Run(ctx context.Context, flags *RootFlag
 	if err != nil {
 		return err
 	}
-	if dryRunErr := dryRunExit(ctx, flags, "tagmanager.containers.create", map[string]any{"account": c.Account, "container": container}); dryRunErr != nil {
+	if dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager.containers.create", map[string]any{"account": c.Account, "container": container}); dryRunErr != nil {
 		return dryRunErr
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -188,7 +188,7 @@ func (c *TagManagerContainersUpdateCmd) Run(ctx context.Context, flags *RootFlag
 		return err
 	}
 	path := tagManagerContainerPath(c.Account, c.Container)
-	if dryRunErr := dryRunExit(ctx, flags, "tagmanager.containers.update", map[string]any{"path": path, "container": container}); dryRunErr != nil {
+	if dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager.containers.update", map[string]any{"path": path, "container": container}); dryRunErr != nil {
 		return dryRunErr
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -219,7 +219,7 @@ type TagManagerContainersDeleteCmd struct {
 
 func (c *TagManagerContainersDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerContainerPath(c.Account, c.Container)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "tagmanager.containers.delete", map[string]any{"path": path}, "delete GTM container "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "tagmanager.containers.delete", map[string]any{"path": path}, "delete GTM container "+path); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -311,7 +311,7 @@ func (c *TagManagerWorkspacesCreateCmd) Run(ctx context.Context, flags *RootFlag
 	if err != nil {
 		return err
 	}
-	if dryRunErr := dryRunExit(ctx, flags, "tagmanager.workspaces.create", map[string]any{"parent": tagManagerContainerPath(c.Account, c.Container), "workspace": body}); dryRunErr != nil {
+	if dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager.workspaces.create", map[string]any{"parent": tagManagerContainerPath(c.Account, c.Container), "workspace": body}); dryRunErr != nil {
 		return dryRunErr
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -351,7 +351,7 @@ func (c *TagManagerWorkspacesUpdateCmd) Run(ctx context.Context, flags *RootFlag
 		return err
 	}
 	path := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
-	if dryRunErr := dryRunExit(ctx, flags, "tagmanager.workspaces.update", map[string]any{"path": path, "workspace": body}); dryRunErr != nil {
+	if dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager.workspaces.update", map[string]any{"path": path, "workspace": body}); dryRunErr != nil {
 		return dryRunErr
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -383,7 +383,7 @@ type TagManagerWorkspacesDeleteCmd struct {
 
 func (c *TagManagerWorkspacesDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "tagmanager.workspaces.delete", map[string]any{"path": path}, "delete GTM workspace "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "tagmanager.workspaces.delete", map[string]any{"path": path}, "delete GTM workspace "+path); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -422,7 +422,7 @@ type TagManagerWorkspacesSyncCmd struct {
 
 func (c *TagManagerWorkspacesSyncCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
-	if err := dryRunExit(ctx, flags, "tagmanager.workspaces.sync", map[string]any{"path": path}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, "tagmanager.workspaces.sync", map[string]any{"path": path}); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -446,7 +446,7 @@ type TagManagerWorkspaceCreateVersionCmd struct {
 
 func (c *TagManagerWorkspaceCreateVersionCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
-	if err := dryRunExit(ctx, flags, "tagmanager.workspaces.create-version", map[string]any{"path": path, "name": c.Name, "notes": c.Notes}); err != nil {
+	if err := marketingDryRunExit(ctx, flags, "tagmanager.workspaces.create-version", map[string]any{"path": path, "name": c.Name, "notes": c.Notes}); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -756,14 +756,14 @@ type TagManagerResourceCreateCmd struct {
 }
 
 func (c *TagManagerResourceCreateCmd) Run(ctx context.Context, flags *RootFlags) error {
+	parent := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
+	dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager."+c.Kind+".create", map[string]any{"parent": parent, "name": c.Name, "type": c.Type, "body": c.JSONFile})
+	if dryRunErr != nil {
+		return dryRunErr
+	}
 	svc, err := tagManagerFor(ctx, flags)
 	if err != nil {
 		return err
-	}
-	parent := tagManagerWorkspacePath(c.Account, c.Container, c.Workspace)
-	dryRunErr := dryRunExit(ctx, flags, "tagmanager."+c.Kind+".create", map[string]any{"parent": parent, "name": c.Name, "type": c.Type, "body": c.JSONFile})
-	if dryRunErr != nil {
-		return dryRunErr
 	}
 	return runTagManagerResourceMutation(ctx, svc, c.Kind, true, parent, "", c.TagManagerResourceMutation)
 }
@@ -833,14 +833,14 @@ type TagManagerResourceUpdateCmd struct {
 }
 
 func (c *TagManagerResourceUpdateCmd) Run(ctx context.Context, flags *RootFlags) error {
+	path := tagManagerResourcePath(c.Account, c.Container, c.Workspace, c.Kind, c.Resource)
+	dryRunErr := marketingDryRunExit(ctx, flags, "tagmanager."+c.Kind+".update", map[string]any{"path": path, "body": c.JSONFile})
+	if dryRunErr != nil {
+		return dryRunErr
+	}
 	svc, err := tagManagerFor(ctx, flags)
 	if err != nil {
 		return err
-	}
-	path := tagManagerResourcePath(c.Account, c.Container, c.Workspace, c.Kind, c.Resource)
-	dryRunErr := dryRunExit(ctx, flags, "tagmanager."+c.Kind+".update", map[string]any{"path": path, "body": c.JSONFile})
-	if dryRunErr != nil {
-		return dryRunErr
 	}
 	return runTagManagerResourceMutation(ctx, svc, c.Kind, false, "", path, c.TagManagerResourceMutation)
 }
@@ -854,13 +854,13 @@ type TagManagerResourceDeleteCmd struct {
 }
 
 func (c *TagManagerResourceDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
+	path := tagManagerResourcePath(c.Account, c.Container, c.Workspace, c.Kind, c.Resource)
+	if dryRunErr := marketingDryRunAndConfirmDestructive(ctx, flags, "tagmanager."+c.Kind+".delete", map[string]any{"path": path}, "delete GTM "+c.Kind+" "+path); dryRunErr != nil {
+		return dryRunErr
+	}
 	svc, err := tagManagerFor(ctx, flags)
 	if err != nil {
 		return err
-	}
-	path := tagManagerResourcePath(c.Account, c.Container, c.Workspace, c.Kind, c.Resource)
-	if dryRunErr := dryRunAndConfirmDestructive(ctx, flags, "tagmanager."+c.Kind+".delete", map[string]any{"path": path}, "delete GTM "+c.Kind+" "+path); dryRunErr != nil {
-		return dryRunErr
 	}
 	switch strings.TrimSpace(c.Kind) {
 	case "tags":
@@ -945,7 +945,7 @@ type TagManagerVersionsDeleteCmd struct {
 
 func (c *TagManagerVersionsDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerVersionPath(c.Account, c.Container, c.Version)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "tagmanager.versions.delete", map[string]any{"path": path}, "delete GTM version "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "tagmanager.versions.delete", map[string]any{"path": path}, "delete GTM version "+path); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
@@ -967,7 +967,7 @@ type TagManagerVersionsPublishCmd struct {
 
 func (c *TagManagerVersionsPublishCmd) Run(ctx context.Context, flags *RootFlags) error {
 	path := tagManagerVersionPath(c.Account, c.Container, c.Version)
-	if err := dryRunAndConfirmDestructive(ctx, flags, "tagmanager.versions.publish", map[string]any{"path": path, "fingerprint": c.Fingerprint}, "publish GTM version "+path); err != nil {
+	if err := marketingDryRunAndConfirmDestructive(ctx, flags, "tagmanager.versions.publish", map[string]any{"path": path, "fingerprint": c.Fingerprint}, "publish GTM version "+path); err != nil {
 		return err
 	}
 	svc, err := tagManagerFor(ctx, flags)
