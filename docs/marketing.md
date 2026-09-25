@@ -62,6 +62,7 @@ Google Ads OAuth scope remains `adwords`.
 gog analytics accounts --all --json
 gog analytics report 123456789 --dimensions=date,country --metrics=sessions
 gog analytics properties list
+gog analytics properties list --filter 'ancestor:accounts/123'
 gog analytics properties get 123456789
 gog analytics datastreams list 123456789
 gog analytics keyevents list 123456789
@@ -74,6 +75,11 @@ Create, update, delete, and archive commands accept a complete official
 resource body through `--json-file` (inline JSON, `@file`, or `-`), plus
 `--update-mask` where the Admin API supports it. Mutations honour `--readonly`,
 `--dry-run`, `--force`, and `--no-input`.
+
+`analytics properties list` uses account summaries when `--filter` is omitted,
+so the bare command does not send an empty Analytics Admin filter. Pass an
+explicit `ancestor:accounts/...` or other supported Admin filter to use the
+Properties.List endpoint directly.
 
 ## Google Tag Manager
 
@@ -149,7 +155,9 @@ gog bigquery query --project my-execution-project --sql 'SELECT 1' \
 
 Standard SQL is the default. Row output is bounded by `--max`; JSON output
 contains schema and rows. `--dry-run` is an actual BigQuery dry run and reports
-estimated bytes. Arbitrary SQL is exposed to operators but is write-risk in MCP.
+estimated bytes through the official `jobs.query` endpoint, which works with
+the least-privilege `bigquery.readonly` grant. Arbitrary SQL execution remains
+write-risk in MCP and requires the full BigQuery grant plus `--acknowledge-cost`.
 
 ## MCP
 

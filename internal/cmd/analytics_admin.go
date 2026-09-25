@@ -21,7 +21,19 @@ type AnalyticsPropertiesListCmd struct {
 	PageSize  int64  `name:"page-size" aliases:"max" default:"50"`
 	PageToken string `name:"page-token" aliases:"page"`
 	All       bool   `name:"all" aliases:"all-pages,allpages"`
+	Filter    string `name:"filter" help:"Analytics Admin property filter, e.g. ancestor:accounts/123; empty uses account summaries"`
 	FailEmpty bool   `name:"fail-empty" aliases:"non-empty,require-results"`
+}
+
+type analyticsPropertyListEntry struct {
+	Name         string `json:"name"`
+	DisplayName  string `json:"display_name"`
+	Parent       string `json:"parent"`
+	CanEdit      bool   `json:"can_edit"`
+	PropertyType string `json:"property_type"`
+	CreateTime   string `json:"create_time"`
+	UpdateTime   string `json:"update_time"`
+	Source       string `json:"source"`
 }
 
 func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) error {
@@ -29,10 +41,13 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 	if err != nil {
 		return err
 	}
-	var items []*analyticsadmin.GoogleAnalyticsAdminV1betaProperty
+	if strings.TrimSpace(c.Filter) == "" {
+		return c.listFromAccountSummaries(ctx, svc)
+	}
+	var items []analyticsPropertyListEntry
 	next := c.PageToken
 	for {
-		call := svc.Properties.List().PageSize(c.PageSize).Context(ctx)
+		call := svc.Properties.List().Filter(strings.TrimSpace(c.Filter)).PageSize(c.PageSize).Context(ctx)
 		if next != "" {
 			call = call.PageToken(next)
 		}
@@ -40,15 +55,88 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 		if callErr != nil {
 			return callErr
 		}
-		items = append(items, resp.Properties...)
+		for _, property := range resp.Properties {
+			if property == nil {
+				continue
+			}
+			items = append(items, analyticsPropertyListEntryFromProperty(property))
+		}
 		next = resp.NextPageToken
 		if !c.All || next == "" {
 			break
 		}
 	}
-	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, func(item *analyticsadmin.GoogleAnalyticsAdminV1betaProperty) map[string]any {
-		return map[string]any{"name": item.Name, "display_name": item.DisplayName, "create_time": item.CreateTime, "update_time": item.UpdateTime}
+	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, analyticsPropertyListRow)
+}
+
+func (c *AnalyticsPropertiesListCmd) listFromAccountSummaries(ctx context.Context, svc *analyticsadmin.Service) error {
+	summaries, next, err := collectAnalyticsAdminPages(c.PageToken, c.All, func(pageToken string) ([]*analyticsadmin.GoogleAnalyticsAdminV1betaAccountSummary, string, error) {
+		call := svc.AccountSummaries.List().PageSize(c.PageSize).Context(ctx)
+		if pageToken != "" {
+			call = call.PageToken(pageToken)
+		}
+		resp, callErr := call.Do()
+		if callErr != nil {
+			return nil, "", callErr
+		}
+		return resp.AccountSummaries, resp.NextPageToken, nil
 	})
+	if err != nil {
+		return err
+	}
+	items := make([]analyticsPropertyListEntry, 0)
+	for _, summary := range summaries {
+		if summary == nil {
+			continue
+		}
+		for _, property := range summary.PropertySummaries {
+			if property == nil {
+				continue
+			}
+			parent := strings.TrimSpace(property.Parent)
+			if parent == "" {
+				parent = strings.TrimSpace(summary.Account)
+			}
+			items = append(items, analyticsPropertyListEntry{
+				Name:         property.Property,
+				DisplayName:  property.DisplayName,
+				Parent:       parent,
+				CanEdit:      property.CanEdit,
+				PropertyType: property.PropertyType,
+				Source:       "account_summaries",
+			})
+		}
+	}
+	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, analyticsPropertyListRow)
+}
+
+func analyticsPropertyListEntryFromProperty(item *analyticsadmin.GoogleAnalyticsAdminV1betaProperty) analyticsPropertyListEntry {
+	parent := strings.TrimSpace(item.Parent)
+	if parent == "" {
+		parent = strings.TrimSpace(item.Account)
+	}
+	return analyticsPropertyListEntry{
+		Name:         item.Name,
+		DisplayName:  item.DisplayName,
+		Parent:       parent,
+		PropertyType: item.PropertyType,
+		CreateTime:   item.CreateTime,
+		UpdateTime:   item.UpdateTime,
+		Source:       "properties_list",
+	}
+}
+
+func analyticsPropertyListRow(item analyticsPropertyListEntry) map[string]any {
+	return map[string]any{
+		"name":          item.Name,
+		"display_name":  item.DisplayName,
+		"parent":        item.Parent,
+		"can_edit":      item.CanEdit,
+		"property_type": item.PropertyType,
+		"create_time":   item.CreateTime,
+		"update_time":   item.UpdateTime,
+		"source":        item.Source,
+	}
 }
 
 type AnalyticsPropertyGetCmd struct {

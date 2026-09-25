@@ -2,6 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
+- Marketing: fix bare GA4 property listing with account-summary fallback and explicit Admin filters, and run BigQuery dry-runs through `jobs.query` so `--readonly` works with `bigquery.readonly`. (#3)
 - Marketing: add typed GA4 Admin, Google Tag Manager, Google Ads REST, and BigQuery commands with marketing auth/API aliases, explicit BigQuery billing projects, dry-run query estimates, and fixed-schema MCP tools. BigQuery SQL execution remains write-risk and tests stay offline. (#1)
 - Groups: use the documented single-label membership query in listings and backups, preserving native pagination and escaping member identities correctly. (#1059) — thanks @hengshan.
 - Docs: reject explicitly empty or whitespace-only `--batch` values before input or authentication, preventing accidental immediate edits when a batch variable is empty. (#1156)

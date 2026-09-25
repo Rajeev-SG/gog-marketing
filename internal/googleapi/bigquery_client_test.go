@@ -12,6 +12,8 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/option"
+
+	"github.com/openclaw/gogcli/internal/authclient"
 )
 
 func TestBigQueryAdapterUsesOfficialClientAndBoundedQuery(t *testing.T) {
@@ -86,6 +88,110 @@ func TestBigQueryAdapterUsesOfficialClientAndBoundedQuery(t *testing.T) {
 func TestBigQueryAdapterRejectsMissingByteCap(t *testing.T) {
 	adapter := &bigQueryAdapter{}
 	if _, err := adapter.Query(context.Background(), "SELECT 1", true, 0); !errors.Is(err, ErrBigQueryMaxBytesBilledRequired) {
+		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestBigQueryAdapterDryRunUsesReadOnlyJobsQuery(t *testing.T) {
+	var requestBody map[string]any
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/projects/billing-proj/queries") {
+			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+			t.Fatal(err)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"jobComplete":true,"jobReference":{"projectId":"billing-proj","jobId":"dry-1"},"totalBytesProcessed":"42","cacheHit":false,"schema":{"fields":[{"name":"id","type":"STRING","mode":"NULLABLE"}]}}`)
+	}))
+	defer server.Close()
+
+	adapter := &bigQueryAdapter{httpClient: server.Client(), projectID: "billing-proj", baseURL: server.URL}
+
+	result, err := adapter.Query(context.Background(), "SELECT 1", true, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !result.DryRun || result.JobID != "dry-1" || result.TotalBytesProcessed != 42 || len(result.Schema) != 1 {
+		t.Fatalf("result = %#v", result)
+	}
+
+	if requestBody["dryRun"] != true || requestBody["maximumBytesBilled"] != float64(2048) {
+		t.Fatalf("request body = %#v", requestBody)
+	}
+}
+
+func TestNewBigQueryProductionFactoryUsesReadOnlyDryRun(t *testing.T) {
+	scopes := bigQueryAuthScopes(WithReadOnly(context.Background(), true))
+	if len(scopes) != 1 || scopes[0] != scopeBigQueryReadOnly {
+		t.Fatalf("readonly scopes = %#v", scopes)
+	}
+
+	if scopes := bigQueryAuthScopes(context.Background()); len(scopes) != 1 || scopes[0] != scopeBigQueryFull {
+		t.Fatalf("execution scopes = %#v", scopes)
+	}
+
+	ctx := WithReadOnly(authclient.WithAccessToken(context.Background(), "test-token"), true)
+
+	client, err := NewBigQuery(ctx, "a@b.com", "billing-proj")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	adapter, ok := client.(*bigQueryAdapter)
+	if !ok || adapter.baseURL != "" || adapter.projectID != "billing-proj" || adapter.httpClient == nil {
+		t.Fatalf("production adapter = %#v", client)
+	}
+	adapter.httpClient.Transport = roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		if request.URL.String() != "https://bigquery.googleapis.com/bigquery/v2/projects/billing-proj/queries" {
+			t.Fatalf("request URL = %s", request.URL)
+		}
+
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"totalBytesProcessed":"42"}`)),
+			Request:    request,
+		}, nil
+	})
+
+	result, err := adapter.Query(ctx, "SELECT 1", true, 2048)
+	if err != nil || result.TotalBytesProcessed != 42 {
+		t.Fatalf("result = %#v, err = %v", result, err)
+	}
+}
+
+func TestBigQueryDryRunErrorsAreStructuredAndBounded(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = io.WriteString(w, `{"error":{"message":"`+strings.Repeat("x", 4000)+`","reason":"invalidQuery"}}`)
+	}))
+	defer server.Close()
+
+	adapter := &bigQueryAdapter{httpClient: server.Client(), projectID: "billing-proj", baseURL: server.URL}
+
+	_, err := adapter.Query(context.Background(), "SELECT 1", true, 1024)
+	if err == nil || len(err.Error()) > 800 || !strings.Contains(err.Error(), "invalidQuery") || !strings.Contains(err.Error(), "...") {
+		t.Fatalf("error = %v, length = %d", err, len(err.Error()))
+	}
+}
+
+func TestBigQueryDryRunRejectsUnparseableByteCount(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"totalBytesProcessed":"abc"}`)
+	}))
+	defer server.Close()
+
+	adapter := &bigQueryAdapter{httpClient: server.Client(), projectID: "billing-proj", baseURL: server.URL}
+
+	_, err := adapter.Query(context.Background(), "SELECT 1", true, 1024)
+	if err == nil || !strings.Contains(err.Error(), "totalBytesProcessed") {
 		t.Fatalf("error = %v", err)
 	}
 }
