@@ -42,6 +42,7 @@ func TestAnalyticsPropertiesListDefaultsToAccountSummaries(t *testing.T) {
 	if !strings.Contains(result.stdout, "properties/999") || !strings.Contains(result.stdout, "Main Property") {
 		t.Fatalf("unexpected output: %s", result.stdout)
 	}
+	assertAnalyticsPropertyListSchema(t, result.stdout, "account_summaries")
 }
 
 func TestAnalyticsPropertiesListPassesFilter(t *testing.T) {
@@ -66,5 +67,27 @@ func TestAnalyticsPropertiesListPassesFilter(t *testing.T) {
 	}
 	if !strings.Contains(result.stdout, "properties/999") {
 		t.Fatalf("unexpected output: %s", result.stdout)
+	}
+	assertAnalyticsPropertyListSchema(t, result.stdout, "properties_list")
+}
+
+func assertAnalyticsPropertyListSchema(t *testing.T, output, source string) {
+	t.Helper()
+	var payload struct {
+		Properties []map[string]any `json:"properties"`
+	}
+	if err := json.Unmarshal([]byte(output), &payload); err != nil {
+		t.Fatalf("decode properties output: %v\n%s", err, output)
+	}
+	if len(payload.Properties) != 1 {
+		t.Fatalf("properties = %#v", payload.Properties)
+	}
+	for _, key := range []string{"name", "display_name", "parent", "can_edit", "property_type", "create_time", "update_time", "source"} {
+		if _, ok := payload.Properties[0][key]; !ok {
+			t.Fatalf("property schema missing %q: %#v", key, payload.Properties[0])
+		}
+	}
+	if payload.Properties[0]["source"] != source {
+		t.Fatalf("source = %#v, want %q", payload.Properties[0]["source"], source)
 	}
 }

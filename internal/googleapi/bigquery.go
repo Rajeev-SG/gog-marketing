@@ -19,6 +19,8 @@ import (
 	"github.com/openclaw/gogcli/internal/googleauth"
 )
 
+const scopeBigQueryFull = "https://www.googleapis.com/auth/bigquery"
+
 type BigQuerySchemaField struct {
 	Name        string                `json:"name"`
 	Type        string                `json:"type"`
@@ -79,6 +81,7 @@ var (
 	ErrBigQueryMaxBytesBilledRequired = errors.New("bigquery max bytes billed must be greater than zero")
 	ErrBigQueryHTTPClientRequired     = errors.New("bigquery HTTP client is required")
 	ErrBigQueryDryRunFailed           = errors.New("bigquery dry-run failed")
+	ErrBigQueryInvalidValue           = errors.New("bigquery value is invalid")
 )
 
 type bigQueryAdapter struct {
@@ -93,7 +96,7 @@ func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, 
 		return nil, ErrBigQueryProjectRequired
 	}
 
-	client, err := NewHTTPClient(ctx, googleauth.ServiceBigQuery, account)
+	client, err := NewHTTPClientForScopes(ctx, string(googleauth.ServiceBigQuery), account, bigQueryAuthScopes(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("bigquery auth client: %w", err)
 	}
@@ -104,6 +107,14 @@ func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, 
 	}
 
 	return &bigQueryAdapter{client: bq, httpClient: client, projectID: project}, nil
+}
+
+func bigQueryAuthScopes(ctx context.Context) []string {
+	if ReadOnly(ctx) {
+		return []string{scopeBigQueryReadOnly}
+	}
+
+	return []string{scopeBigQueryFull}
 }
 
 func (a *bigQueryAdapter) Project() string {
@@ -301,7 +312,7 @@ func (a *bigQueryAdapter) queryDryRun(ctx context.Context, sql string, maxBytesB
 	}
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w (%d): %s", ErrBigQueryDryRunFailed, response.StatusCode, strings.TrimSpace(string(body)))
+		return nil, bigQueryDryRunError(response.StatusCode, body)
 	}
 
 	var payloadMap map[string]json.RawMessage
@@ -310,12 +321,21 @@ func (a *bigQueryAdapter) queryDryRun(ctx context.Context, sql string, maxBytesB
 	}
 
 	result := &BigQueryQueryResult{DryRun: true, Rows: []map[string]any{}}
+
 	if raw := payloadMap["totalBytesProcessed"]; len(raw) > 0 {
-		result.TotalBytesProcessed = parseBigQueryInt(raw)
+		value, parseErr := parseBigQueryInt(raw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("decode BigQuery totalBytesProcessed: %w", parseErr)
+		}
+		result.TotalBytesProcessed = value
 	}
 
 	if raw := payloadMap["totalBytesBilled"]; len(raw) > 0 {
-		result.TotalBytesBilled = parseBigQueryInt(raw)
+		value, parseErr := parseBigQueryInt(raw)
+		if parseErr != nil {
+			return nil, fmt.Errorf("decode BigQuery totalBytesBilled: %w", parseErr)
+		}
+		result.TotalBytesBilled = value
 	}
 
 	if raw := payloadMap["cacheHit"]; len(raw) > 0 {
@@ -346,21 +366,64 @@ func (a *bigQueryAdapter) queryDryRun(ctx context.Context, sql string, maxBytesB
 	return result, nil
 }
 
-func parseBigQueryInt(raw json.RawMessage) int64 {
+func parseBigQueryInt(raw json.RawMessage) (int64, error) {
 	var value int64
 	if err := json.Unmarshal(raw, &value); err == nil {
-		return value
+		return value, nil
 	}
 
 	var text string
 	if err := json.Unmarshal(raw, &text); err == nil {
 		parsed, parseErr := strconv.ParseInt(text, 10, 64)
 		if parseErr == nil {
-			return parsed
+			return parsed, nil
 		}
 	}
 
-	return 0
+	return 0, fmt.Errorf("invalid BigQuery integer %s: %w", truncateBigQueryText(string(raw), 128), ErrBigQueryInvalidValue)
+}
+
+func bigQueryDryRunError(status int, body []byte) error {
+	var envelope struct {
+		Error struct {
+			Message string `json:"message"`
+			Reason  string `json:"reason"`
+			Errors  []struct {
+				Message string `json:"message"`
+				Reason  string `json:"reason"`
+			} `json:"errors"`
+		} `json:"error"`
+	}
+	_ = json.Unmarshal(body, &envelope)
+	message := strings.TrimSpace(envelope.Error.Message)
+
+	reason := strings.TrimSpace(envelope.Error.Reason)
+	if message == "" && len(envelope.Error.Errors) > 0 {
+		message = strings.TrimSpace(envelope.Error.Errors[0].Message)
+		if reason == "" {
+			reason = strings.TrimSpace(envelope.Error.Errors[0].Reason)
+		}
+	}
+
+	if message == "" {
+		message = truncateBigQueryText(string(body), 512)
+	}
+
+	message = truncateBigQueryText(message, 512)
+	if reason == "" {
+		return fmt.Errorf("%w (%d): %s", ErrBigQueryDryRunFailed, status, message)
+	}
+
+	return fmt.Errorf("%w (%d %s): %s", ErrBigQueryDryRunFailed, status, reason, message)
+}
+
+func truncateBigQueryText(value string, limit int) string {
+	value = strings.TrimSpace(value)
+	if limit <= 0 || len(value) <= limit {
+		return value
+	}
+
+	return value[:limit] + "..."
 }
 
 func (a *bigQueryAdapter) Close() error {

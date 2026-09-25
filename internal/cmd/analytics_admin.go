@@ -25,6 +25,17 @@ type AnalyticsPropertiesListCmd struct {
 	FailEmpty bool   `name:"fail-empty" aliases:"non-empty,require-results"`
 }
 
+type analyticsPropertyListEntry struct {
+	Name         string `json:"name"`
+	DisplayName  string `json:"display_name"`
+	Parent       string `json:"parent"`
+	CanEdit      bool   `json:"can_edit"`
+	PropertyType string `json:"property_type"`
+	CreateTime   string `json:"create_time"`
+	UpdateTime   string `json:"update_time"`
+	Source       string `json:"source"`
+}
+
 func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) error {
 	svc, err := analyticsAdminFor(ctx, flags)
 	if err != nil {
@@ -33,7 +44,7 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 	if strings.TrimSpace(c.Filter) == "" {
 		return c.listFromAccountSummaries(ctx, svc)
 	}
-	var items []*analyticsadmin.GoogleAnalyticsAdminV1betaProperty
+	var items []analyticsPropertyListEntry
 	next := c.PageToken
 	for {
 		call := svc.Properties.List().Filter(strings.TrimSpace(c.Filter)).PageSize(c.PageSize).Context(ctx)
@@ -44,15 +55,18 @@ func (c *AnalyticsPropertiesListCmd) Run(ctx context.Context, flags *RootFlags) 
 		if callErr != nil {
 			return callErr
 		}
-		items = append(items, resp.Properties...)
+		for _, property := range resp.Properties {
+			if property == nil {
+				continue
+			}
+			items = append(items, analyticsPropertyListEntryFromProperty(property))
+		}
 		next = resp.NextPageToken
 		if !c.All || next == "" {
 			break
 		}
 	}
-	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, func(item *analyticsadmin.GoogleAnalyticsAdminV1betaProperty) map[string]any {
-		return map[string]any{"name": item.Name, "display_name": item.DisplayName, "create_time": item.CreateTime, "update_time": item.UpdateTime}
-	})
+	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, analyticsPropertyListRow)
 }
 
 func (c *AnalyticsPropertiesListCmd) listFromAccountSummaries(ctx context.Context, svc *analyticsadmin.Service) error {
@@ -70,7 +84,7 @@ func (c *AnalyticsPropertiesListCmd) listFromAccountSummaries(ctx context.Contex
 	if err != nil {
 		return err
 	}
-	items := make([]map[string]any, 0)
+	items := make([]analyticsPropertyListEntry, 0)
 	for _, summary := range summaries {
 		if summary == nil {
 			continue
@@ -79,18 +93,50 @@ func (c *AnalyticsPropertiesListCmd) listFromAccountSummaries(ctx context.Contex
 			if property == nil {
 				continue
 			}
-			items = append(items, map[string]any{
-				"name":          property.Property,
-				"display_name":  property.DisplayName,
-				"parent":        property.Parent,
-				"can_edit":      property.CanEdit,
-				"property_type": property.PropertyType,
+			parent := strings.TrimSpace(property.Parent)
+			if parent == "" {
+				parent = strings.TrimSpace(summary.Account)
+			}
+			items = append(items, analyticsPropertyListEntry{
+				Name:         property.Property,
+				DisplayName:  property.DisplayName,
+				Parent:       parent,
+				CanEdit:      property.CanEdit,
+				PropertyType: property.PropertyType,
+				Source:       "account_summaries",
 			})
 		}
 	}
-	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, func(item map[string]any) map[string]any {
-		return item
-	})
+	return writeAnalyticsAdminList(ctx, "properties", items, next, c.FailEmpty, analyticsPropertyListRow)
+}
+
+func analyticsPropertyListEntryFromProperty(item *analyticsadmin.GoogleAnalyticsAdminV1betaProperty) analyticsPropertyListEntry {
+	parent := strings.TrimSpace(item.Parent)
+	if parent == "" {
+		parent = strings.TrimSpace(item.Account)
+	}
+	return analyticsPropertyListEntry{
+		Name:         item.Name,
+		DisplayName:  item.DisplayName,
+		Parent:       parent,
+		PropertyType: item.PropertyType,
+		CreateTime:   item.CreateTime,
+		UpdateTime:   item.UpdateTime,
+		Source:       "properties_list",
+	}
+}
+
+func analyticsPropertyListRow(item analyticsPropertyListEntry) map[string]any {
+	return map[string]any{
+		"name":          item.Name,
+		"display_name":  item.DisplayName,
+		"parent":        item.Parent,
+		"can_edit":      item.CanEdit,
+		"property_type": item.PropertyType,
+		"create_time":   item.CreateTime,
+		"update_time":   item.UpdateTime,
+		"source":        item.Source,
+	}
 }
 
 type AnalyticsPropertyGetCmd struct {
