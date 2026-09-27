@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"google.golang.org/api/bigquerydatatransfer/v1"
 	"google.golang.org/api/cloudbilling/v1"
@@ -224,9 +225,12 @@ func TestCloudAdminOperationPollsToCompletionAndSurfacesFailure(t *testing.T) {
 	}))
 	defer server.Close()
 
+	adapter.pollInterval = time.Millisecond
+	adapter.pollTimeout = 5 * time.Second
+
 	op, err := adapter.EnableService(context.Background(), "demo-proj", "cloudbilling.googleapis.com")
-	if err != nil {
-		t.Fatalf("enable: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "permission denied") {
+		t.Fatalf("expected operation failure error, got %v", err)
 	}
 
 	if op.OperationName == "" || !op.Done {

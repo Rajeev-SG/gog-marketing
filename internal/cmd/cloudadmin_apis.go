@@ -70,6 +70,9 @@ func (c *CloudAdminAPIDisableCmd) Run(ctx context.Context, flags *RootFlags) err
 	if err != nil {
 		return err
 	}
+	if apiID == "serviceusage.googleapis.com" {
+		return usage("refusing to disable serviceusage.googleapis.com: it is the API this CLI needs to re-enable anything else; disable it in the Google Cloud console if ever needed")
+	}
 	confirmErr := marketingDryRunAndConfirmDestructive(ctx, flags, "cloudadmin.apis.disable", map[string]any{
 		"project": project,
 		"api":     apiID,
@@ -114,7 +117,31 @@ func runCloudAdminAPIChange(ctx context.Context, flags *RootFlags, project, apiI
 		return nil, err
 	}
 	if enable {
-		return client.EnableService(ctx, project, apiID)
+		op, opErr := client.EnableService(ctx, project, apiID)
+		if opErr != nil {
+			return nil, opErr
+		}
+		return op, cloudAdminOperationFailure(op)
 	}
-	return client.DisableService(ctx, project, apiID)
+	op, opErr := client.DisableService(ctx, project, apiID)
+	if opErr != nil {
+		return nil, opErr
+	}
+	return op, cloudAdminOperationFailure(op)
+}
+
+// cloudAdminOperationFailure turns an unfinished or failed long-running
+// operation into an error so scripts never treat a pending/failed API change
+// as success.
+func cloudAdminOperationFailure(op *googleapi.CloudAdminOperation) error {
+	if op == nil {
+		return fmt.Errorf("service usage returned no operation")
+	}
+	if op.Error != "" {
+		return fmt.Errorf("service usage operation failed: %s", op.Error)
+	}
+	if !op.Done {
+		return fmt.Errorf("service usage operation %s is still running", op.OperationName)
+	}
+	return nil
 }

@@ -2,6 +2,7 @@ package googleapi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -21,6 +22,13 @@ import (
 // cloud-admin capability. These admin APIs have no read-only scope, so the
 // capability is opt-in via an explicit "cloudadmin" auth service.
 const scopeCloudAdmin = "https://www.googleapis.com/auth/cloud-platform"
+
+const (
+	defaultCloudAdminPollInterval = 2 * time.Second
+	defaultCloudAdminPollTimeout  = 5 * time.Minute
+)
+
+var ErrCloudAdminOperationFailed = errors.New("service usage operation failed")
 
 type CloudAdminProject struct {
 	ProjectID      string            `json:"project_id"`
@@ -128,6 +136,8 @@ type cloudAdminAdapter struct {
 	serviceUsage    *serviceusage.Service
 	iam             *iam.Service
 	dataTransfer    *bigquerydatatransfer.Service
+	pollInterval    time.Duration
+	pollTimeout     time.Duration
 }
 
 func (a *cloudAdminAdapter) ListProjects(ctx context.Context) ([]CloudAdminProject, error) {
@@ -266,10 +276,15 @@ func (a *cloudAdminAdapter) DisableService(ctx context.Context, projectID, apiID
 // just an accepted request. Operations are usually fast; the timeout is a
 // bound on pathological cases, not a poll loop for interactive use.
 func (a *cloudAdminAdapter) awaitCloudAdminOperation(ctx context.Context, initial *serviceusage.Operation) (*CloudAdminOperation, error) {
-	const (
-		pollInterval = 2 * time.Second
-		pollTimeout  = 5 * time.Minute
-	)
+	pollInterval := a.pollInterval
+	if pollInterval <= 0 {
+		pollInterval = defaultCloudAdminPollInterval
+	}
+
+	pollTimeout := a.pollTimeout
+	if pollTimeout <= 0 {
+		pollTimeout = defaultCloudAdminPollTimeout
+	}
 
 	deadline := time.Now().Add(pollTimeout)
 	op := initial
@@ -299,6 +314,7 @@ func (a *cloudAdminAdapter) awaitCloudAdminOperation(ctx context.Context, initia
 	result := &CloudAdminOperation{OperationName: op.Name, Done: true}
 	if op.Error != nil && op.Error.Message != "" {
 		result.Error = op.Error.Message
+		return result, fmt.Errorf("%w: %s", ErrCloudAdminOperationFailed, op.Error.Message)
 	}
 
 	return result, nil

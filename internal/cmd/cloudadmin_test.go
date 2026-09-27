@@ -21,6 +21,7 @@ type fakeCloudAdminClient struct {
 	deletedConfigs   []string
 	enabledServices  []string
 	disabledServices []string
+	failedOperation  string
 }
 
 func (f *fakeCloudAdminClient) ListProjects(context.Context) ([]googleapi.CloudAdminProject, error) {
@@ -61,12 +62,15 @@ func (f *fakeCloudAdminClient) DeleteTransferConfig(_ context.Context, configNam
 
 func (f *fakeCloudAdminClient) EnableService(_ context.Context, projectID, apiID string) (*googleapi.CloudAdminOperation, error) {
 	f.enabledServices = append(f.enabledServices, projectID+"/"+apiID)
-	return &googleapi.CloudAdminOperation{OperationName: "op-enable"}, nil
+	if f.failedOperation != "" {
+		return &googleapi.CloudAdminOperation{OperationName: "op-failed", Done: true, Error: f.failedOperation}, nil
+	}
+	return &googleapi.CloudAdminOperation{OperationName: "op-enable", Done: true}, nil
 }
 
 func (f *fakeCloudAdminClient) DisableService(_ context.Context, projectID, apiID string) (*googleapi.CloudAdminOperation, error) {
 	f.disabledServices = append(f.disabledServices, projectID+"/"+apiID)
-	return &googleapi.CloudAdminOperation{OperationName: "op-disable"}, nil
+	return &googleapi.CloudAdminOperation{OperationName: "op-disable", Done: true}, nil
 }
 
 func executeWithCloudAdmin(t *testing.T, args []string, client *fakeCloudAdminClient) executeTestResult {
@@ -261,5 +265,18 @@ func TestCloudAdminInventoryIncludesPerProjectErrors(t *testing.T) {
 	}
 	if len(resp.APIs) != 2 || resp.APIs[1].Project != "failing-proj" || !strings.Contains(resp.APIs[1].Error, "permission denied") {
 		t.Fatalf("unexpected entries: %#v", resp.APIs)
+	}
+}
+
+func TestCloudAdminAPIChangeFailsOnFailedOperation(t *testing.T) {
+	client := &fakeCloudAdminClient{}
+	client.failedOperation = "permission denied"
+
+	result := executeWithCloudAdmin(t, []string{
+		"--account", "a@b.com", "--force", "--json",
+		"cloudadmin", "apis", "enable", "--project-id", "demo-proj", "cloudbilling.googleapis.com",
+	}, client)
+	if result.err == nil || !strings.Contains(result.err.Error(), "permission denied") {
+		t.Fatalf("expected nonzero exit for failed operation, got %v", result.err)
 	}
 }
