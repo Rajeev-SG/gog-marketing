@@ -385,9 +385,10 @@ const (
 )
 
 func tenantFindTool(tenant tenants.Tenant, toolName string) (*mcpToolSpec, tenantAllowState) {
-	for index, spec := range allowedTools(tenant) {
+	tools := allowedTools(tenant)
+	for index, spec := range tools {
 		if spec.Name == toolName {
-			return &allowedTools(tenant)[index], tenantAllowExplicit
+			return &tools[index], tenantAllowExplicit
 		}
 	}
 
