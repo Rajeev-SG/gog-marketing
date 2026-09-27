@@ -284,6 +284,19 @@ Generated from `gog schema --json`.
       - [`gog classroom (class) topics (topic) get (info,show) <courseId> <topicId>`](commands/gog-classroom-topics-get.md) - Get a topic
       - [`gog classroom (class) topics (topic) list (ls) <courseId> [flags]`](commands/gog-classroom-topics-list.md) - List topics
       - [`gog classroom (class) topics (topic) update (edit,set) --name=STRING <courseId> <topicId>`](commands/gog-classroom-topics-update.md) - Update a topic
+  - [`gog cloudadmin (cloud-admin) <command> [flags]`](commands/gog-cloudadmin.md) - Narrow Google Cloud administration (inventory, transfers, APIs)
+    - [`gog cloudadmin (cloud-admin) apis <command>`](commands/gog-cloudadmin-apis.md) - Enable or disable Google Cloud APIs in a project
+      - [`gog cloudadmin (cloud-admin) apis disable <api> [flags]`](commands/gog-cloudadmin-apis-disable.md) - Disable an API in a project
+      - [`gog cloudadmin (cloud-admin) apis enable <api> [flags]`](commands/gog-cloudadmin-apis-enable.md) - Enable an API in a project
+    - [`gog cloudadmin (cloud-admin) inventory <command>`](commands/gog-cloudadmin-inventory.md) - Inventory projects, billing links, enabled APIs, service accounts and transfer configs
+      - [`gog cloudadmin (cloud-admin) inventory apis [flags]`](commands/gog-cloudadmin-inventory-apis.md) - Show enabled APIs (all projects, or --project)
+      - [`gog cloudadmin (cloud-admin) inventory billing [flags]`](commands/gog-cloudadmin-inventory-billing.md) - Show billing links (all projects, or --project)
+      - [`gog cloudadmin (cloud-admin) inventory projects [flags]`](commands/gog-cloudadmin-inventory-projects.md) - List visible Google Cloud projects
+      - [`gog cloudadmin (cloud-admin) inventory service-accounts [flags]`](commands/gog-cloudadmin-inventory-service-accounts.md) - Show service accounts (all projects, or --project)
+      - [`gog cloudadmin (cloud-admin) inventory transfers [flags]`](commands/gog-cloudadmin-inventory-transfers.md) - Show scheduled transfer configs (all projects, or --project)
+    - [`gog cloudadmin (cloud-admin) transfers <command>`](commands/gog-cloudadmin-transfers.md) - Disable or delete BigQuery scheduled transfer configs
+      - [`gog cloudadmin (cloud-admin) transfers delete <config> [flags]`](commands/gog-cloudadmin-transfers-delete.md) - Delete a scheduled transfer config (destructive)
+      - [`gog cloudadmin (cloud-admin) transfers disable <config> [flags]`](commands/gog-cloudadmin-transfers-disable.md) - Disable a scheduled transfer config (reversible)
   - [`gog completion <shell> [flags]`](commands/gog-completion.md) - Generate shell completion scripts
   - [`gog config <command> [flags]`](commands/gog-config.md) - Manage configuration
     - [`gog config get (show) <key>`](commands/gog-config-get.md) - Get a config value

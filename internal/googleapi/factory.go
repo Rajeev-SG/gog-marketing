@@ -84,6 +84,10 @@ func (f Factory) BigQuery(ctx context.Context, account, project string) (BigQuer
 	return NewBigQuery(f.withAuth(ctx), account, project)
 }
 
+func (f Factory) CloudAdmin(ctx context.Context, account string) (CloudAdminClient, error) {
+	return NewCloudAdmin(f.withAuth(ctx), account)
+}
+
 func (f Factory) Calendar(ctx context.Context, account string) (*calendar.Service, error) {
 	return NewCalendar(f.withAuth(ctx), account)
 }

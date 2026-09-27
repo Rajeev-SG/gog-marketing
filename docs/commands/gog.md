@@ -28,6 +28,7 @@ gog <command> [flags]
 - [gog calendar](gog-calendar.md) - Google Calendar
 - [gog chat](gog-chat.md) - Google Chat
 - [gog classroom](gog-classroom.md) - Google Classroom
+- [gog cloudadmin](gog-cloudadmin.md) - Narrow Google Cloud administration (inventory, transfers, APIs)
 - [gog completion](gog-completion.md) - Generate shell completion scripts
 - [gog config](gog-config.md) - Manage configuration
 - [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)

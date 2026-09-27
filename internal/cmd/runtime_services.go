@@ -194,6 +194,9 @@ func composeRuntimeMarketingGoogleServices(services *app.Services, factory googl
 	if services.GoogleAdsHTTP == nil {
 		services.GoogleAdsHTTP = factory.GoogleAdsHTTP
 	}
+	if services.CloudAdmin == nil {
+		services.CloudAdmin = factory.CloudAdmin
+	}
 }
 
 func runtimeWithService(ctx context.Context, name string) (*app.Runtime, error) {
@@ -330,6 +333,14 @@ func googleAdsHTTPClient(ctx context.Context, account string) (*http.Client, err
 		return nil, serviceError(err, "googleads HTTP")
 	}
 	return runtime.Services.GoogleAdsHTTP(ctx, account)
+}
+
+func cloudAdminClient(ctx context.Context, account string) (googleapi.CloudAdminClient, error) {
+	runtime, err := runtimeWithService(ctx, "cloud-admin")
+	if err != nil || runtime.Services.CloudAdmin == nil {
+		return nil, serviceError(err, "cloud-admin")
+	}
+	return runtime.Services.CloudAdmin(ctx, account)
 }
 
 func calendarService(ctx context.Context, account string) (*calendar.Service, error) {

@@ -67,6 +67,48 @@ A connection binds:
 project at execution time with `--billing-project`; the connection fallback
 applies only when the flag and env var are absent.
 
+## Cloud admin (narrow capability)
+
+`gog cloudadmin` is a small, fixed-schema surface for Google Cloud
+housekeeping. It is not a `gcloud` proxy: there is no arbitrary command
+passthrough, and each operation is a typed read or a confirmed, dry-run-aware
+mutation.
+
+```bash
+gog auth add rajeev.sgill@gmail.com --services cloudadmin   # requests cloud-platform
+
+gog cloudadmin inventory projects
+gog cloudadmin inventory billing
+gog cloudadmin inventory apis
+gog cloudadmin inventory service-accounts --project-id personal-gws-1
+gog cloudadmin inventory transfers --project-id hackathon-proj
+
+gog cloudadmin transfers disable --project-id hackathon-proj \
+  projects/hackathon-proj/locations/us/transferConfigs/<id>
+gog cloudadmin transfers delete --project-id hackathon-proj --force \
+  projects/hackathon-proj/locations/us/transferConfigs/<id>
+
+gog cloudadmin apis enable  --project-id demo-proj cloudbilling.googleapis.com
+gog cloudadmin apis disable --project-id demo-proj --force storage.googleapis.com
+```
+
+- Inventory reads cover projects (Cloud Resource Manager), billing links
+  (Cloud Billing), enabled APIs (Service Usage), service accounts (IAM), and
+  scheduled transfer configs (BigQuery Data Transfer).
+- `transfers disable` flips the config's `disabled` flag (reversible);
+  `transfers delete` removes it and requires `--force`.
+- API enable/disable go through Service Usage and wait for the long-running
+  operation to finish, so the exit code reflects the real outcome. API IDs must
+  be Google service IDs; `apis disable` is destructive and requires
+  `--force`. `--readonly` blocks every write.
+- Project deletion/archival stays manual on purpose: gog records the evidence,
+  but destructive project lifecycle is left to the operator.
+- Blast radius: the `cloudadmin` token uses `cloud-platform` because these
+  admin APIs have no read-only scope. The containment is the command surface
+  (no arbitrary `gcloud` passthrough); the token's actual reach is still
+  whatever IAM allows for that account. Grant least-privilege IAM on the
+  projects you manage, not org-wide admin.
+
 ## One-time setup
 ```bash
 gog auth setup work@example.com \

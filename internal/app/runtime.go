@@ -58,6 +58,7 @@ type (
 	ChatSearchServiceFactory     func(context.Context, string) (*googleapi.ChatSearchClient, error)
 	ClassroomServiceFactory      func(context.Context, string) (*classroom.Service, error)
 	CloudIdentityServiceFactory  func(context.Context, string) (*cloudidentity.Service, error)
+	CloudAdminClientFactory      googleapi.CloudAdminClientFactory
 	DocsServiceFactory           func(context.Context, string) (*docs.Service, error)
 	DocsHTTPClientFactory        func(context.Context, string) (*http.Client, error)
 	DriveServiceFactory          func(context.Context, string) (*drive.Service, error)
@@ -111,6 +112,7 @@ type Services struct {
 	ChatSearch        ChatSearchServiceFactory
 	Classroom         ClassroomServiceFactory
 	CloudIdentity     CloudIdentityServiceFactory
+	CloudAdmin        CloudAdminClientFactory
 	Docs              DocsServiceFactory
 	DocsHTTP          DocsHTTPClientFactory
 	Drive             DriveServiceFactory
