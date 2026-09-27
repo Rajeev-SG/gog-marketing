@@ -81,7 +81,7 @@ func TestParseRedirectURL_Errors(t *testing.T) {
 
 func TestAllServices(t *testing.T) {
 	svcs := AllServices()
-	if len(svcs) != 29 {
+	if len(svcs) != 30 {
 		t.Fatalf("unexpected: %v", svcs)
 	}
 	seen := make(map[Service]bool)
@@ -90,7 +90,7 @@ func TestAllServices(t *testing.T) {
 		seen[s] = true
 	}
 
-	for _, want := range []Service{ServiceGmail, ServiceCalendar, ServiceChat, ServiceClassroom, ServiceDrive, ServiceDriveActivity, ServiceDriveLabels, ServiceDocs, ServiceSlides, ServiceContacts, ServiceTasks, ServicePeople, ServiceSheets, ServiceForms, ServiceSites, ServiceMeet, ServiceAppScript, ServiceAnalytics, ServiceSearchConsole, ServiceTagManager, ServiceBigQuery, ServiceAdSense, ServiceGoogleAds, ServiceGroups, ServiceKeep, ServiceAdmin, ServiceYouTube, ServicePhotos, ServicePhotosPicker} {
+	for _, want := range []Service{ServiceGmail, ServiceCalendar, ServiceChat, ServiceClassroom, ServiceDrive, ServiceDriveActivity, ServiceDriveLabels, ServiceDocs, ServiceSlides, ServiceContacts, ServiceTasks, ServicePeople, ServiceSheets, ServiceForms, ServiceSites, ServiceMeet, ServiceAppScript, ServiceAnalytics, ServiceSearchConsole, ServiceTagManager, ServiceBigQuery, ServiceAdSense, ServiceGoogleAds, ServiceCloudAdmin, ServiceGroups, ServiceKeep, ServiceAdmin, ServiceYouTube, ServicePhotos, ServicePhotosPicker} {
 		if !seen[want] {
 			t.Fatalf("missing %q", want)
 		}
@@ -99,7 +99,7 @@ func TestAllServices(t *testing.T) {
 
 func TestUserServices(t *testing.T) {
 	svcs := UserServices()
-	if len(svcs) != 24 {
+	if len(svcs) != 25 {
 		t.Fatalf("unexpected: %v", svcs)
 	}
 
@@ -112,7 +112,7 @@ func TestUserServices(t *testing.T) {
 			seenDocs = true
 		case ServiceSlides:
 			seenSlides = true
-		case ServiceDriveActivity, ServiceDriveLabels, ServiceForms, ServiceSites, ServiceMeet, ServiceAppScript, ServiceAnalytics, ServiceSearchConsole, ServiceTagManager, ServiceBigQuery, ServiceGoogleAds, ServiceYouTube, ServicePhotos:
+		case ServiceDriveActivity, ServiceDriveLabels, ServiceForms, ServiceSites, ServiceMeet, ServiceAppScript, ServiceAnalytics, ServiceSearchConsole, ServiceTagManager, ServiceBigQuery, ServiceGoogleAds, ServiceCloudAdmin, ServiceYouTube, ServicePhotos:
 			// expected user services
 		case ServiceKeep:
 			t.Fatalf("unexpected keep in user services")
@@ -131,7 +131,7 @@ func TestUserServices(t *testing.T) {
 }
 
 func TestUserServiceCSV(t *testing.T) {
-	want := "gmail,calendar,chat,classroom,drive,driveactivity,drivelabels,docs,slides,contacts,tasks,sheets,people,forms,sites,meet,appscript,analytics,searchconsole,tagmanager,bigquery,googleads,youtube,photos"
+	want := "gmail,calendar,chat,classroom,drive,driveactivity,drivelabels,docs,slides,contacts,tasks,sheets,people,forms,sites,meet,appscript,analytics,searchconsole,tagmanager,bigquery,googleads,cloudadmin,youtube,photos"
 	if got := UserServiceCSV(); got != want {
 		t.Fatalf("unexpected user services csv: %q", got)
 	}

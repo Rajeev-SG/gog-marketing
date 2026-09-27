@@ -850,6 +850,13 @@ Generated from `gog schema --json`.
     - [`gog tasks (task) raw <tasklistId> <taskId> [flags]`](commands/gog-tasks-raw.md) - Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption)
     - [`gog tasks (task) undo (uncomplete,undone) <tasklistId> <taskId>`](commands/gog-tasks-undo.md) - Mark task needs action
     - [`gog tasks (task) update (edit,set) <tasklistId> <taskId> [flags]`](commands/gog-tasks-update.md) - Update a task
+  - [`gog tenant <command> [flags]`](commands/gog-tenant.md) - Hosted tenant registry, isolated homes, audit logs and local API
+    - [`gog tenant add <name> <account> [flags]`](commands/gog-tenant-add.md) - Define an isolated hosted tenant
+    - [`gog tenant audit <name> [flags]`](commands/gog-tenant-audit.md) - Show a tenant's hosted-access audit log
+    - [`gog tenant get <name>`](commands/gog-tenant-get.md) - Show one tenant
+    - [`gog tenant list (ls)`](commands/gog-tenant-list.md) - List tenants
+    - [`gog tenant remove (rm,delete) <name> [flags]`](commands/gog-tenant-remove.md) - Remove a tenant from the registry
+    - [`gog tenant serve [flags]`](commands/gog-tenant-serve.md) - Run the hosted tenant API (tenant-isolated gog access)
   - [`gog time <command> [flags]`](commands/gog-time.md) - Local time utilities
     - [`gog time now [flags]`](commands/gog-time-now.md) - Show current time
   - [`gog update <command> [flags]`](commands/gog-update.md) - Check gogcli release status

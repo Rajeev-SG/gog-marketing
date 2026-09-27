@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 882.
+Generated pages: 889.
 
 ## Top-level Commands
 
@@ -51,6 +51,7 @@ Generated pages: 882.
 - [gog status](gog-status.md) - Show auth/config status (alias for 'auth status')
 - [gog tagmanager](gog-tagmanager.md) - Google Tag Manager
 - [gog tasks](gog-tasks.md) - Google Tasks
+- [gog tenant](gog-tenant.md) - Hosted tenant registry, isolated homes, audit logs and local API
 - [gog time](gog-time.md) - Local time utilities
 - [gog update](gog-update.md) - Check gogcli release status
 - [gog upload](gog-upload.md) - Upload a file to Drive (alias for 'drive upload')
@@ -909,6 +910,13 @@ Generated pages: 882.
     - [gog tasks raw](gog-tasks-raw.md) - Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption)
     - [gog tasks undo](gog-tasks-undo.md) - Mark task needs action
     - [gog tasks update](gog-tasks-update.md) - Update a task
+  - [gog tenant](gog-tenant.md) - Hosted tenant registry, isolated homes, audit logs and local API
+    - [gog tenant add](gog-tenant-add.md) - Define an isolated hosted tenant
+    - [gog tenant audit](gog-tenant-audit.md) - Show a tenant's hosted-access audit log
+    - [gog tenant get](gog-tenant-get.md) - Show one tenant
+    - [gog tenant list](gog-tenant-list.md) - List tenants
+    - [gog tenant remove](gog-tenant-remove.md) - Remove a tenant from the registry
+    - [gog tenant serve](gog-tenant-serve.md) - Run the hosted tenant API (tenant-isolated gog access)
   - [gog time](gog-time.md) - Local time utilities
     - [gog time now](gog-time-now.md) - Show current time
   - [gog update](gog-update.md) - Check gogcli release status

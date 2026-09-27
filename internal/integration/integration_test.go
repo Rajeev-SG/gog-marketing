@@ -52,13 +52,17 @@ func withIntegrationAuth(t *testing.T, ctx context.Context) (context.Context, se
 		t.Fatalf("resolve integration layout: %v", err)
 	}
 	configStore := config.NewConfigStore(layout)
-	secretRepository, err := secrets.Open(secrets.OpenOptionsFromLookup(
+	secretOptions, secretErr := secrets.OpenOptionsFromLookup(
 		layout,
 		configStore,
 		os.LookupEnv,
 		runtime.GOOS,
 		termutil.IsTerminal(os.Stdin),
-	))
+	)
+	if secretErr != nil {
+		t.Skipf("open secrets repository: %v", secretErr)
+	}
+	secretRepository, err := secrets.Open(secretOptions)
 	if err != nil {
 		t.Skipf("open integration secrets repository: %v", err)
 	}

@@ -61,6 +61,7 @@ gog <command> [flags]
 - [gog status](gog-status.md) - Show auth/config status (alias for 'auth status')
 - [gog tagmanager](gog-tagmanager.md) - Google Tag Manager
 - [gog tasks](gog-tasks.md) - Google Tasks
+- [gog tenant](gog-tenant.md) - Hosted tenant registry, isolated homes, audit logs and local API
 - [gog time](gog-time.md) - Local time utilities
 - [gog update](gog-update.md) - Check gogcli release status
 - [gog upload](gog-upload.md) - Upload a file to Drive (alias for 'drive upload')
