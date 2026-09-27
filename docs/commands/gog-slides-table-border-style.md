@@ -25,6 +25,7 @@ gog slides (slide) table border style --row=INT-64 --col=INT-64 <presentationId>
 | `--col` | `int64` |  | Zero-based starting column |
 | `--col-span` | `int64` | 1 | Number of columns in the range |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--dash` | `*string` |  | Border dash style |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

@@ -22,6 +22,7 @@ gog adsense reports (report) query (run,generate) <account> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--currency` | `string` |  | Currency code override (e.g. USD) |
 | `--date-range` | `string` | LAST_7_DAYS | Named date range (TODAY,YESTERDAY,MONTH_TO_DATE,YEAR_TO_DATE,LAST_7_DAYS,LAST_30_DAYS); ignored if --from/--to set |
 | `--dimensions` | `string` | DATE | Comma-separated report dimensions (e.g. DATE,COUNTRY_NAME) |

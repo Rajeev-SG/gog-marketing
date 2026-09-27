@@ -24,6 +24,7 @@ gog calendar (cal) focus-time (focus) --from=STRING --to=STRING [<calendarId>] [
 | `--chat-status` | `string` | doNotDisturb | Chat status: available, doNotDisturb |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--decline-message` | `string` |  | Message for declined invitations |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

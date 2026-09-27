@@ -22,6 +22,7 @@ gog classroom (class) courses (course) update (edit,set) <courseId> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--description` | `string` |  | Description |
 | `--description-heading` | `string` |  | Description heading |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

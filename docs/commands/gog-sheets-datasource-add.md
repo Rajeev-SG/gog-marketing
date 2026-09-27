@@ -23,6 +23,7 @@ gog sheets (sheet) datasource (data-source,data-sources,connected-sheets) add <s
 | `--billing-project` | `string` |  | Billing-enabled BigQuery project charged for source queries |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--dataset` | `string` |  | BigQuery dataset ID |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

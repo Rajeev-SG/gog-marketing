@@ -30,6 +30,44 @@ execution or billing project.
 
 ## One-time setup
 
+## Named connections
+
+Multi-account work should not guess at account/client/project routing.
+Connections make the mapping explicit and reusable:
+
+```bash
+gog connection add personal rajeev.sgill@gmail.com \
+  --oauth-client default \
+  --services analytics,tagmanager,searchconsole,bigquery \
+  --bigquery-project my-bigquery-execution \
+  --description "personal dogfood"
+
+gog connection add singulyr rajeev@singulyr.com \
+  --oauth-client singulyr-client \
+  --services analytics,bigquery \
+  --bigquery-project singulyr-marketing-bq
+
+gog connection use personal            # stored default
+gog --connection singulyr bigquery datasets list
+```
+
+A connection binds:
+
+- `account`: the email or account alias commands route to,
+- `oauth-client`: the OAuth client that holds the stored credentials,
+- `services`: the services the connection is scoped for (documentation and
+  validation; `bigquery` requires `--bigquery-project`),
+- `quota-project` / `bigquery-project`: the explicit quota and execution/billing
+  projects so BigQuery never bills the OAuth/bootstrap project.
+
+`gog --connection <name>` (or `GOG_CONNECTION`, or the stored default set via
+`gog connection use`) fills in only what you leave unspecified: explicit
+`--account`, `--client`, `--quota-project`, `--billing-project`, and
+`GOG_ACCOUNT`/GOG_BIGQUERY_PROJECT env vars always win. Connect the BigQuery
+project at execution time with `--billing-project`; the connection fallback
+applies only when the flag and env var are absent.
+
+## One-time setup
 ```bash
 gog auth setup work@example.com \
   --gcloud-project gog-marketing \

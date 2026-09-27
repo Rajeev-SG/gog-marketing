@@ -35,6 +35,7 @@ type RootFlags struct {
 	Home                string `name:"home" help:"Override gogcli config/data/state/cache root (equivalent to GOG_HOME)"`
 	Account             string `help:"Account email, alias, or auto for authenticated Google API commands" aliases:"acct" short:"a"`
 	Client              string `help:"OAuth client name (selects stored credentials + token bucket)" default:"${client}"`
+	Connection          string `help:"Named connection supplying default account/client/quota/billing settings (see gog connection)" env:"GOG_CONNECTION"`
 	AccessToken         string `help:"Use provided access token directly (bypasses stored refresh tokens; token expires in ~1h)" env:"GOG_ACCESS_TOKEN"`
 	QuotaProject        string `help:"Google Cloud project to bill for API usage (sent as X-Goog-User-Project; some APIs require it with --access-token or ADC)" env:"GOG_QUOTA_PROJECT"`
 	EnableCommands      string `help:"Comma-separated list of enabled command prefixes; dot paths allowed (restricts CLI)" default:"${enabled_commands}"`
@@ -55,6 +56,7 @@ type RootFlags struct {
 	authOperations      app.AuthOperations
 	configStoreResolver func() (*config.ConfigStore, error)
 	authMode            googleapi.AuthMode
+	connection          *config.Connection
 }
 
 type CLI struct {
@@ -105,6 +107,7 @@ type CLI struct {
 	TagManager    TagManagerCmd         `cmd:"" name:"tagmanager" aliases:"gtm,tag-manager" help:"Google Tag Manager"`
 	GoogleAds     GoogleAdsCmd          `cmd:"" name:"googleads" aliases:"google-ads,ads" help:"Google Ads (official REST)"`
 	BigQuery      BigQueryCmd           `cmd:"" name:"bigquery" aliases:"bq" help:"BigQuery (official Go client)"`
+	Connection    ConnectionCmd         `cmd:"" help:"Named multi-account connections (account, client, quota/billing project)"`
 	AdSense       AdSenseCmd            `cmd:"" name:"adsense" help:"Google AdSense Management API"`
 	YouTube       YouTubeCmd            `cmd:"" name:"youtube" aliases:"yt" help:"YouTube Data API (search, activities, videos, playlists, comments, channels)"`
 	Photos        PhotosCmd             `cmd:"" name:"photos" aliases:"photo" help:"Google Photos Library and Picker APIs"`
@@ -213,6 +216,9 @@ func executeWithRuntime(args []string, runtime *app.Runtime) (err error) {
 		return reportEarlyError(kctx, runtimeIO.Err, err)
 	}
 	if err = enforceDisabledCommands(kctx, cli.DisableCommands); err != nil {
+		return reportEarlyError(kctx, runtimeIO.Err, err)
+	}
+	if err = applyConnectionDefaults(&cli.RootFlags); err != nil {
 		return reportEarlyError(kctx, runtimeIO.Err, err)
 	}
 	if err = enforceGmailNoSend(kctx, &cli.RootFlags, runtime); err != nil {

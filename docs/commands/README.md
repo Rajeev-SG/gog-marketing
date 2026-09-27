@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 863.
+Generated pages: 869.
 
 ## Top-level Commands
 
@@ -20,6 +20,7 @@ Generated pages: 863.
 - [gog classroom](gog-classroom.md) - Google Classroom
 - [gog completion](gog-completion.md) - Generate shell completion scripts
 - [gog config](gog-config.md) - Manage configuration
+- [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
 - [gog contacts](gog-contacts.md) - Google Contacts
 - [gog docs](gog-docs.md) - Google Docs (export via Drive)
 - [gog download](gog-download.md) - Download a Drive file (alias for 'drive download')
@@ -353,6 +354,12 @@ Generated pages: 863.
     - [gog config path](gog-config-path.md) - Print config file path
     - [gog config set](gog-config-set.md) - Set a config value
     - [gog config unset](gog-config-unset.md) - Unset a config value
+  - [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
+    - [gog connection add](gog-connection-add.md) - Define a named multi-account connection
+    - [gog connection get](gog-connection-get.md) - Show one stored connection
+    - [gog connection list](gog-connection-list.md) - List stored connections
+    - [gog connection remove](gog-connection-remove.md) - Remove a stored connection
+    - [gog connection use](gog-connection-use.md) - Set the default connection for account routing
   - [gog contacts](gog-contacts.md) - Google Contacts
     - [gog contacts batch](gog-contacts-batch.md) - Read, create, update, or delete contacts in native People API batches
       - [gog contacts batch create](gog-contacts-batch-create.md) - Create contacts from a JSON array, in batches of up to 200

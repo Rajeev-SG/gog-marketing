@@ -22,6 +22,7 @@ gog upload (up,put) <localPath> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--convert` | `bool` |  | Auto-convert to native Google format based on file extension (create only) |
 | `--convert-to` | `string` |  | Convert to a specific Google format: doc\|sheet\|slides (create only) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

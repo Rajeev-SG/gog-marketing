@@ -23,6 +23,7 @@ gog drive (drv) labels (label) list (ls) [flags]
 | `--admin-access` | `bool` |  | Use admin access for Workspace admin accounts |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--customer` | `string` |  | Customer resource (for example customers/123abc789); Google Workspace customer required |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

@@ -24,6 +24,7 @@ gog slides (slide) table merge --row=INT-64 --col=INT-64 <presentationId> <table
 | `--col` | `int64` |  | Zero-based starting column |
 | `--col-span` | `int64` | 1 | Number of columns in the range |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |
 | `--enable-commands` | `string` |  | Comma-separated list of enabled command prefixes; dot paths allowed (restricts CLI) |

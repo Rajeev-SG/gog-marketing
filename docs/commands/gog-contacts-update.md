@@ -24,6 +24,7 @@ gog contacts (contact) update (edit,set) <resourceName> [flags]
 | `--birthday` | `string` |  | Birthday in YYYY-MM-DD (empty clears) |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--custom` | `[]string` |  | Custom field as key=value (can be repeated; empty clears all) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

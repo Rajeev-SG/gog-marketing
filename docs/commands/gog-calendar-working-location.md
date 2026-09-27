@@ -23,6 +23,7 @@ gog calendar (cal) working-location (wl) --from=STRING --to=STRING --type=STRING
 | `--building-id` | `string` |  | Building ID |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--custom-label` | `string` |  | Custom location label |
 | `--desk-id` | `string` |  | Desk ID |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

@@ -24,6 +24,7 @@ gog backup push [flags]
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
 | `--config` | `string` |  | Backup config path |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `--drive-binary-contents` | `bool` |  | Include non-Google Drive binary file bytes in encrypted shards |
 | `--drive-collaboration` | `bool` | true | Back up Drive permissions, comments, and revision metadata |

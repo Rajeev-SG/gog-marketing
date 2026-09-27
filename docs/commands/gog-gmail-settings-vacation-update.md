@@ -23,6 +23,7 @@ gog gmail (mail,email) settings vacation update (edit,set) [flags]
 | `--body` | `string` |  | HTML body of the auto-reply message |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--contacts-only` | `bool` |  | Only respond to contacts |
 | `--disable` | `bool` |  | Disable vacation responder |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

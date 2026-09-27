@@ -22,6 +22,7 @@ gog slides (slide) create-from-markdown <title> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--content` | `string` |  | Markdown content (inline) |
 | `--content-file` | `string` |  | Read markdown content from file |
 | `--debug` | `bool` |  | Show debug output |

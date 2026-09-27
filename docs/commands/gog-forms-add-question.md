@@ -22,6 +22,7 @@ gog forms (form) add-question (add-q,aq) --title=STRING <formId> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--correct` | `[]string` |  | Correct answer value for quiz grading (repeat for multiple accepted/checkbox answers) |
 | `--description` | `string` |  | Question description/help text |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
