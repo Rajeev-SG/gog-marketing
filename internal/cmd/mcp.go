@@ -145,6 +145,7 @@ type mcpRunOptions struct {
 	timeout        time.Duration
 	maxOutputBytes int
 	accessToken    string
+	env            []string
 	force          bool
 }
 
@@ -163,8 +164,11 @@ func mcpRunGogTool(reqCtx context.Context, opts mcpRunOptions) *mcp.CallToolResu
 
 	//nolint:gosec // argv comes from typed tool schemas, not model-supplied shell text.
 	cmd := exec.CommandContext(ctx, opts.self, args...)
-	if strings.TrimSpace(opts.accessToken) != "" {
+	switch {
+	case strings.TrimSpace(opts.accessToken) != "":
 		cmd.Env = append(os.Environ(), "GOG_ACCESS_TOKEN="+opts.accessToken)
+	case len(opts.env) > 0:
+		cmd.Env = opts.env
 	}
 	stdoutBuf := newMCPLimitedBuffer(opts.maxOutputBytes)
 	stderrBuf := newMCPLimitedBuffer(opts.maxOutputBytes)

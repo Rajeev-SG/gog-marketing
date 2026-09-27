@@ -2,6 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
+- Tenants: add the hosted multi-account SaaS MVP — a tenant registry with per-tenant isolated gog homes, HKDF-derived per-tenant encrypted file keyrings, per-tenant audit logs, explicit allowlists, a read-only-by-default hosted API (`gog tenant add/list/get/remove/audit/serve`), and every hosted call routed through the same typed engine as the CLI. (#5)
 - Cloud admin: add a narrow `gog cloudadmin` command surface — inventory of projects, billing links, enabled APIs, service accounts, and BigQuery scheduled transfer configs; reversible transfer-config disable; confirmed transfer-config delete; and typed API enable/disable via Service Usage that waits for the operation, validates API IDs, and requires `--force` for disable. There is no arbitrary `gcloud` passthrough, `--readonly` blocks every write, and the cloud-platform token blast radius is documented. (#5)
 - Connections: add a named multi-account connection registry (`gog connection add/list/get/use/remove`) that makes the account, OAuth client, services, quota project, and explicit BigQuery execution/billing project explicit, with `--connection`/GOG_CONNECTION and default-connection routing that never overrides explicit flags or env vars. (#5)
 - Marketing: fix bare GA4 property listing with account-summary fallback and explicit Admin filters, and run BigQuery dry-runs through `jobs.query` so `--readonly` works with `bigquery.readonly`. (#3)

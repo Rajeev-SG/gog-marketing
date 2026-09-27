@@ -1,14 +1,34 @@
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	_ "github.com/openclaw/gogcli/internal/tzembed" // Embed IANA timezone database for Windows test support
 )
 
 func TestMain(m *testing.M) {
+	if os.Getenv("TENANT_FAKE_GOG") == "1" {
+		// Test-subprocess mode: act as the tenant-hosted "gog" child. Record
+		// selected environment and argv, emit one JSON line, exit 0.
+		logPath := os.Getenv("TENANT_TEST_LOG")
+		if logPath != "" {
+			line := fmt.Sprintf("argv:%s\nGOG_HOME:%s\nGOG_ACCOUNT:%s\nGOG_KEYRING:%s\n",
+				strings.Join(os.Args[1:], " "),
+				os.Getenv("GOG_HOME"),
+				os.Getenv("GOG_ACCOUNT"),
+				os.Getenv("GOG_KEYRING_BACKEND"),
+			)
+			_ = os.WriteFile(logPath, []byte(line), 0o600)
+		}
+		_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"result": "ok"})
+		os.Exit(0)
+	}
+
 	contactsSearchWarmupDelay = 0
 
 	root, err := os.MkdirTemp("", "gogcli-tests-*")
