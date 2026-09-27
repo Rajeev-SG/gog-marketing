@@ -23,6 +23,7 @@ gog slides (slide) table row insert (add) --row=INT-64 <presentationId> <tableOb
 | `--below` | `bool` |  | Insert below the reference row instead of above |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--count` | `int64` | 1 | Number of rows to insert (1-20) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

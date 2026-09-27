@@ -24,6 +24,7 @@ gog docs (doc) insert-date-chip --date=STRING <docId> [flags]
 | `--batch` | `string` |  | Append requests to a persisted Docs batch instead of submitting |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--date` | `string` |  | Date to insert as YYYY-MM-DD |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

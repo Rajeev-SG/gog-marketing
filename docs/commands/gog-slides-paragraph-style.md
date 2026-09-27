@@ -24,6 +24,7 @@ gog slides (slide) paragraph-style <presentationId> <objectId> [flags]
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--col` | `*int64` |  | Zero-based table column; requires --row |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--direction` | `string` |  | Text direction: LEFT_TO_RIGHT or RIGHT_TO_LEFT |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

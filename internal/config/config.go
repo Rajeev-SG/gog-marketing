@@ -13,17 +13,19 @@ import (
 )
 
 type File struct {
-	KeyringBackend  string            `json:"keyring_backend,omitempty"`
-	DefaultTimezone string            `json:"default_timezone,omitempty"`
-	YoutubeAPIKey   string            `json:"youtube_api_key,omitempty"`
-	PlacesAPIKey    string            `json:"places_api_key,omitempty"`
-	AccountAliases  map[string]string `json:"account_aliases,omitempty"`
-	AccountClients  map[string]string `json:"account_clients,omitempty"`
-	ClientDomains   map[string]string `json:"client_domains,omitempty"`
-	CalendarAliases map[string]string `json:"calendar_aliases,omitempty"`
-	GmailNoSend     bool              `json:"gmail_no_send,omitempty"`
-	NoSendAccounts  map[string]bool   `json:"no_send_accounts,omitempty"`
-	MCP             *MCPConfig        `json:"mcp,omitempty"`
+	KeyringBackend    string                `json:"keyring_backend,omitempty"`
+	DefaultTimezone   string                `json:"default_timezone,omitempty"`
+	YoutubeAPIKey     string                `json:"youtube_api_key,omitempty"`
+	PlacesAPIKey      string                `json:"places_api_key,omitempty"`
+	AccountAliases    map[string]string     `json:"account_aliases,omitempty"`
+	AccountClients    map[string]string     `json:"account_clients,omitempty"`
+	ClientDomains     map[string]string     `json:"client_domains,omitempty"`
+	Connections       map[string]Connection `json:"connections,omitempty"`
+	DefaultConnection string                `json:"default_connection,omitempty"`
+	CalendarAliases   map[string]string     `json:"calendar_aliases,omitempty"`
+	GmailNoSend       bool                  `json:"gmail_no_send,omitempty"`
+	NoSendAccounts    map[string]bool       `json:"no_send_accounts,omitempty"`
+	MCP               *MCPConfig            `json:"mcp,omitempty"`
 }
 
 type MCPConfig struct {

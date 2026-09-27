@@ -296,6 +296,12 @@ Generated from `gog schema --json`.
     - [`gog config path (where)`](commands/gog-config-path.md) - Print config file path
     - [`gog config set (add,update) <key> <value>`](commands/gog-config-set.md) - Set a config value
     - [`gog config unset (rm,del,remove) <key>`](commands/gog-config-unset.md) - Unset a config value
+  - [`gog connection <command> [flags]`](commands/gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
+    - [`gog connection add <name> <account> [flags]`](commands/gog-connection-add.md) - Define a named multi-account connection
+    - [`gog connection get <name>`](commands/gog-connection-get.md) - Show one stored connection
+    - [`gog connection list (ls)`](commands/gog-connection-list.md) - List stored connections
+    - [`gog connection remove (rm,delete) <name>`](commands/gog-connection-remove.md) - Remove a stored connection
+    - [`gog connection use <name>`](commands/gog-connection-use.md) - Set the default connection for account routing
   - [`gog contacts (contact) <command> [flags]`](commands/gog-contacts.md) - Google Contacts
     - [`gog contacts (contact) batch <command>`](commands/gog-contacts-batch.md) - Read, create, update, or delete contacts in native People API batches
       - [`gog contacts (contact) batch create --from-file=STRING`](commands/gog-contacts-batch-create.md) - Create contacts from a JSON array, in batches of up to 200

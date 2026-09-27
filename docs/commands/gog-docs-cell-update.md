@@ -24,6 +24,7 @@ gog docs (doc) cell-update (update-cell) --row=INT --col=INT <docId> [flags]
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--col` | `int` |  | 1-based column number |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--content` | `string` |  | Replacement content (omit when using --content-file) |
 | `--content-file` | `string` |  | Read replacement content from a file |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

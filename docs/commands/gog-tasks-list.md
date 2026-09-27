@@ -25,6 +25,7 @@ gog tasks (task) list (ls) <tasklistId> [flags]
 | `--color` | `string` | auto | Color output: auto\|always\|never |
 | `--completed-max` | `string` |  | Upper bound for completion date filter (RFC3339) |
 | `--completed-min` | `string` |  | Lower bound for completion date filter (RFC3339) |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |
 | `--due-max` | `string` |  | Upper bound for due date filter (RFC3339) |

@@ -34,7 +34,7 @@ type BigQueryDatasetsListCmd struct {
 
 func (c *BigQueryDatasetsListCmd) Run(ctx context.Context, flags *RootFlags) error {
 	u := ui.FromContext(ctx)
-	project, err := resolveBigQueryProject(c.Project)
+	project, err := resolveBigQueryProject(c.Project, flags)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ type BigQueryDatasetGetCmd struct {
 }
 
 func (c *BigQueryDatasetGetCmd) Run(ctx context.Context, flags *RootFlags) error {
-	project, err := resolveBigQueryProject(c.Project)
+	project, err := resolveBigQueryProject(c.Project, flags)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ type BigQueryTablesListCmd struct {
 }
 
 func (c *BigQueryTablesListCmd) Run(ctx context.Context, flags *RootFlags) error {
-	project, err := resolveBigQueryProject(c.Project)
+	project, err := resolveBigQueryProject(c.Project, flags)
 	if err != nil {
 		return err
 	}
@@ -202,7 +202,7 @@ func (c *BigQueryTableRowsCmd) Run(ctx context.Context, flags *RootFlags) error 
 	if c.Max < 1 || c.Max > 10000 {
 		return usage("--max must be between 1 and 10000")
 	}
-	project, err := resolveBigQueryProject(c.Project)
+	project, err := resolveBigQueryProject(c.Project, flags)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (c *BigQueryQueryCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
-	project, err := resolveBigQueryProject(c.Project)
+	project, err := resolveBigQueryProject(c.Project, flags)
 	if err != nil {
 		return err
 	}
@@ -317,10 +317,13 @@ func (c *BigQueryQueryCmd) readSQL() (string, error) {
 	return sql, nil
 }
 
-func resolveBigQueryProject(explicit string) (string, error) {
+func resolveBigQueryProject(explicit string, flags *RootFlags) (string, error) {
 	project := strings.TrimSpace(explicit)
 	if project == "" {
 		project = strings.TrimSpace(os.Getenv("GOG_BIGQUERY_PROJECT"))
+	}
+	if project == "" && flags != nil && flags.connection != nil {
+		project = strings.TrimSpace(flags.connection.BigQueryProject)
 	}
 	if project == "" {
 		return "", usage("BigQuery execution/billing project is required; pass --project or set GOG_BIGQUERY_PROJECT")
@@ -347,7 +350,7 @@ func closeBigQuery(client googleapi.BigQueryClient) {
 }
 
 func bigQueryTable(ctx context.Context, flags *RootFlags, project, dataset, table string) (*googleapi.BigQueryTable, error) {
-	resolvedProject, err := resolveBigQueryProject(project)
+	resolvedProject, err := resolveBigQueryProject(project, flags)
 	if err != nil {
 		return nil, err
 	}

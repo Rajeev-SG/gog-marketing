@@ -23,6 +23,7 @@ gog gmail (mail,email) track setup [flags]
 | `--admin-key` | `string` |  | Admin key for /opens (generates one if omitted) |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--db-name` | `string` |  | D1 database name (defaults to worker name) |
 | `--deploy` | `bool` |  | Provision D1 + deploy the worker (requires wrangler) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |

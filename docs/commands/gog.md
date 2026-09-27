@@ -30,6 +30,7 @@ gog <command> [flags]
 - [gog classroom](gog-classroom.md) - Google Classroom
 - [gog completion](gog-completion.md) - Generate shell completion scripts
 - [gog config](gog-config.md) - Manage configuration
+- [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
 - [gog contacts](gog-contacts.md) - Google Contacts
 - [gog docs](gog-docs.md) - Google Docs (export via Drive)
 - [gog download](gog-download.md) - Download a Drive file (alias for 'drive download')
@@ -75,6 +76,7 @@ gog <command> [flags]
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |
 | `--enable-commands` | `string` |  | Comma-separated list of enabled command prefixes; dot paths allowed (restricts CLI) |

@@ -23,6 +23,7 @@ gog batch end (submit) <batchId> [flags]
 | `--auto-split` | `bool` |  | Submit batches over 500 requests as ordered chunks (non-atomic) |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--continue-on-error` | `bool` |  | After an atomic validation failure, submit requests individually and retain failures |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
 | `-n`<br>`--dry-run`<br>`--dryrun`<br>`--noop`<br>`--preview` | `bool` |  | Do not make changes; print intended actions and exit successfully |

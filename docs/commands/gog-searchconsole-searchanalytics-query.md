@@ -23,6 +23,7 @@ gog searchconsole (gsc,search-console,webmasters) searchanalytics (analytics) qu
 | `--aggregation` | `string` |  | Aggregation type (AUTO,BY_PROPERTY,BY_PAGE,BY_NEWS_SHOWCASE_PANEL) |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
+| `--connection` | `string` |  | Named connection supplying default account/client/quota/billing settings (see gog connection) |
 | `--data-state` | `string` |  | Data state (FINAL,ALL,HOURLY_ALL) |
 | `--dimensions` | `string` | QUERY | Comma-separated dimensions (DATE,QUERY,PAGE,COUNTRY,DEVICE,SEARCH_APPEARANCE,HOUR) |
 | `--disable-commands` | `string` |  | Comma-separated list of disabled commands; dot paths allowed |
