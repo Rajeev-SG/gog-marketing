@@ -29,7 +29,10 @@ var (
 )
 
 func newDefaultRuntime() *app.Runtime {
-	keyringOptions := systemKeyringOpenOptions(config.Layout{}, nil)
+	keyringOptions, keyringErr := systemKeyringOpenOptions(config.Layout{}, nil)
+	if keyringErr != nil {
+		panic(keyringErr)
+	}
 	runtime := &app.Runtime{
 		IO: app.IO{
 			In:  os.Stdin,
@@ -57,14 +60,15 @@ func newDefaultRuntime() *app.Runtime {
 	return runtime
 }
 
-func systemKeyringOpenOptions(layout config.Layout, store *config.ConfigStore) secrets.OpenOptions {
-	return secrets.OpenOptionsFromLookup(
+func systemKeyringOpenOptions(layout config.Layout, store *config.ConfigStore) (secrets.OpenOptions, error) {
+	options, err := secrets.OpenOptionsFromLookup(
 		layout,
 		store,
 		os.LookupEnv,
 		goruntime.GOOS,
 		termutil.IsTerminal(os.Stdin),
 	)
+	return options, err
 }
 
 func normalizedRuntime(runtime *app.Runtime) *app.Runtime {

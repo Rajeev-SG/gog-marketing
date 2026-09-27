@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,15 +38,15 @@ func tenantSeed(t *testing.T, tenantsSeed []tenants.Tenant) *tenantServeHandler 
 			t.Fatalf("seed tenant: %v", err)
 		}
 	}
-	masterKey, err := loadTenantMasterKey("")
-	if err != nil {
-		t.Fatalf("load master key: %v", err)
-	}
 	handler := &tenantServeHandler{
-		store:     store,
-		self:      tenantFakeGog(t),
-		timeout:   10 * time.Second,
-		masterKey: masterKey,
+		store:         store,
+		self:          tenantFakeGog(t),
+		timeout:       10 * time.Second,
+		masterKey:     []byte("test-master"),
+		serveToken:    "test-token",
+		errOut:        io.Discard,
+		port:          8086,
+		childEnvExtra: []string{"TENANT_FAKE_GOG=1"},
 	}
 	return handler
 }
@@ -58,6 +59,8 @@ func tenantPost(t *testing.T, handler *tenantServeHandler, path string, body any
 		t.Fatal(err)
 	}
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, path, bytes.NewReader(encoded))
+	request.Host = "127.0.0.1:8086"
+	request.Header.Set("Authorization", "Bearer test-token")
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 
@@ -72,6 +75,8 @@ func TestTenantServeListAndAllowlistDeny(t *testing.T) {
 	})
 
 	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/tenants", nil)
+	request.Host = "127.0.0.1:8086"
+	request.Header.Set("Authorization", "Bearer test-token")
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 	var listPayload struct {
@@ -82,6 +87,35 @@ func TestTenantServeListAndAllowlistDeny(t *testing.T) {
 	}
 	if len(listPayload.Tenants) != 1 || listPayload.Tenants[0]["name"] != "personal" {
 		t.Fatalf("unexpected tenants: %#v", listPayload.Tenants)
+	}
+
+	// SEC: requests without a bearer token are rejected; bad Host and browser
+	// origins are rejected before tenant data is touched.
+	unauthorized := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/tenants", nil)
+	unauthorized.Host = "127.0.0.1:8086"
+	unauthorizedRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(unauthorizedRecorder, unauthorized)
+	if unauthorizedRecorder.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without token, got %d", unauthorizedRecorder.Code)
+	}
+
+	rebind := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/tenants", nil)
+	rebind.Host = "evil.example.com:8086"
+	rebind.Header.Set("Authorization", "Bearer test-token")
+	rebindRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(rebindRecorder, rebind)
+	if rebindRecorder.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for unexpected Host, got %d", rebindRecorder.Code)
+	}
+
+	origin := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/tenants", nil)
+	origin.Host = "127.0.0.1:8086"
+	origin.Header.Set("Authorization", "Bearer test-token")
+	origin.Header.Set("Origin", "https://attacker.example.com")
+	originRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(originRecorder, origin)
+	if originRecorder.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 for browser Origin, got %d", originRecorder.Code)
 	}
 
 	// Read tool on a read-only tenant is allowed.
@@ -117,10 +151,13 @@ func TestTenantServeCallRunsIsolatedChild(t *testing.T) {
 	t.Setenv("TENANT_TEST_LOG", logPath)
 	t.Setenv("GOG_HOME", "/should-be-overridden")
 	t.Setenv("GOG_ACCOUNT", "/should-be-overridden")
+	// Poison the operator environment: the minimal child env must drop it.
+	t.Setenv("GOG_ACCESS_TOKEN", "poisoned-op-token")
 
 	handler := tenantSeed(t, []tenants.Tenant{
 		{Name: "personal", Account: "rajeev.sgill@gmail.com", ReadOnly: true},
 	})
+	handler.childEnvExtra = append(handler.childEnvExtra, "TENANT_TEST_LOG="+logPath)
 	status, payload := tenantPost(t, handler, "/tenants/personal/call", map[string]any{
 		"tool":      "gmail_search",
 		"arguments": map[string]any{"query": "newer_than:7d", "max": 5},
@@ -140,12 +177,32 @@ func TestTenantServeCallRunsIsolatedChild(t *testing.T) {
 	if !strings.Contains(childText, "--readonly") {
 		t.Fatalf("expected --readonly for readonly tenant: %s", childText)
 	}
-	home := handler.store.Home("personal")
+	home, homeErr := handler.store.Home("personal")
+	if homeErr != nil {
+		t.Fatalf("tenant home: %v", homeErr)
+	}
 	if !strings.Contains(childText, "GOG_HOME:"+home) {
 		t.Fatalf("expected tenant home env: %s", childText)
 	}
 	if !strings.Contains(childText, "GOG_ACCOUNT:rajeev.sgill@gmail.com") {
 		t.Fatalf("expected pinned account: %s", childText)
+	}
+	if strings.Contains(childText, "GOG_ACCESS_TOKEN_SET:true") {
+		t.Fatalf("child must not inherit the operator access token: %s", childText)
+	}
+
+	// The keyring password must travel by file, not by env.
+	childEnv, childEnvErr := handler.tenantChildEnv("personal", tenants.Tenant{Name: "personal", Account: "x@y.com"})
+	if childEnvErr != nil {
+		t.Fatalf("tenantChildEnv: %v", childEnvErr)
+	}
+	for _, entry := range childEnv {
+		if strings.HasPrefix(entry, "GOG_KEYRING_PASSWORD=") {
+			t.Fatalf("keyring password must not be in child env: %s", entry)
+		}
+	}
+	if !strings.Contains(strings.Join(childEnv, "\n"), "GOG_KEYRING_PASSWORD_FILE=") {
+		t.Fatal("expected GOG_KEYRING_PASSWORD_FILE in child env")
 	}
 
 	// The call must leave an audit entry inside the tenant home.
@@ -164,6 +221,7 @@ func TestTenantServeExplicitAllowlistAndMasterKey(t *testing.T) {
 	handler := tenantSeed(t, []tenants.Tenant{
 		{Name: "singulyr", Account: "rajeev@singulyr.com", AllowTools: []string{"gmail_search"}},
 	})
+	handler.childEnvExtra = append(handler.childEnvExtra, "TENANT_TEST_LOG="+logPath)
 
 	// Allowlisted read tool runs and derives a tenant keyring password.
 	status, _ := tenantPost(t, handler, "/tenants/singulyr/call", map[string]any{
@@ -180,7 +238,11 @@ func TestTenantServeExplicitAllowlistAndMasterKey(t *testing.T) {
 	if !strings.Contains(string(child), "GOG_KEYRING:file") {
 		t.Fatalf("expected file keyring with master key: %s", child)
 	}
-	if !strings.Contains(string(child), fmt.Sprintf("GOG_HOME:%s", handler.store.Home("singulyr"))) {
+	singulyrHome, singulyrErr := handler.store.Home("singulyr")
+	if singulyrErr != nil {
+		t.Fatalf("tenant home: %v", singulyrErr)
+	}
+	if !strings.Contains(string(child), fmt.Sprintf("GOG_HOME:%s", singulyrHome)) {
 		t.Fatalf("expected tenant home: %s", child)
 	}
 
@@ -197,5 +259,60 @@ func TestTenantServeExplicitAllowlistAndMasterKey(t *testing.T) {
 	two, _ := tenants.DeriveKeyringPassword([]byte("op-secret"), "other")
 	if string(one) == string(two) {
 		t.Fatal("tenant passwords must differ")
+	}
+}
+
+func TestTenantServeOversizedBodyRejected(t *testing.T) {
+	handler := tenantSeed(t, []tenants.Tenant{
+		{Name: "personal", Account: "rajeev.sgill@gmail.com", ReadOnly: true},
+	})
+
+	huge := strings.Repeat("x", tenantMaxRequestBodyBytes+1024)
+	status, payload := tenantPost(t, handler, "/tenants/personal/call", map[string]any{
+		"tool":      "gmail_search",
+		"arguments": map[string]any{"query": huge},
+	})
+	if status != http.StatusBadRequest && status != http.StatusRequestEntityTooLarge {
+		t.Fatalf("expected oversized body to be rejected, got %d %v", status, payload)
+	}
+}
+
+func TestTenantServeAuditFailureIsVisible(t *testing.T) {
+	handler := tenantSeed(t, []tenants.Tenant{
+		{Name: "personal", Account: "rajeev.sgill@gmail.com", ReadOnly: true},
+	})
+
+	var errOut bytes.Buffer
+	handler.errOut = &errOut
+
+	// Make the audit dir unwritable: a file where the dir must go.
+	home := handler.tenantHome("personal")
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "audit"), []byte("not a dir"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	status, _ := tenantPost(t, handler, "/tenants/personal/call", map[string]any{
+		"tool":      "gmail_search",
+		"arguments": map[string]any{"query": "x"},
+	})
+	if status != http.StatusOK {
+		t.Fatalf("call itself should still run: %d", status)
+	}
+	if !strings.Contains(errOut.String(), "AUDIT append failed") {
+		t.Fatalf("audit failure must be surfaced to the operator, got stderr=%q", errOut.String())
+	}
+}
+
+func TestTenantHomeRejectsUnsafeNames(t *testing.T) {
+	configDir := t.TempDir()
+	store := tenants.NewStore(configDir)
+
+	for _, name := range []string{"..", ".", "a/b", "has space", ""} {
+		if _, err := store.Home(name); err == nil {
+			t.Fatalf("expected Home(%q) to be rejected", name)
+		}
 	}
 }

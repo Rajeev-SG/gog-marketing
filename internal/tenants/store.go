@@ -24,9 +24,15 @@ func (s *Store) Path() string {
 	return s.path
 }
 
-// Home returns the isolated gog home for a tenant.
-func (s *Store) Home(name string) string {
-	return filepath.Join(filepath.Dir(s.path), "tenants", strings.ToLower(strings.TrimSpace(name)))
+// Home returns the isolated gog home for a tenant. The name is validated
+// here so the path is safe by construction, not by caller convention.
+func (s *Store) Home(name string) (string, error) {
+	normalized, err := NormalizeName(name)
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(filepath.Dir(s.path), "tenants", normalized), nil
 }
 
 func (s *Store) List() ([]Tenant, error) {

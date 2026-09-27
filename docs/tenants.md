@@ -44,12 +44,26 @@ forensics or 30-day-style holds.
 gog tenant serve --port 8086 --master-key-file ~/.gog-tenants-master
 ```
 
+The server prints the hosted API bearer token once at startup (or pin one
+with --serve-token-file); every request needs Authorization: Bearer token and
+tokens are compared in constant time. Requests with a browser Origin header or
+an unexpected Host are rejected (DNS-rebinding and CSRF hardening). Serving
+requires a master secret: tenant OAuth tokens are always encrypted at rest.
+Request bodies are capped at 1 MiB, requests time out after 3 minutes, and
+concurrent calls are bounded.
+
 Endpoints (bound to 127.0.0.1 only):
 
 - `GET /healthz`
 - `GET /tenants` — tenant list (no secrets)
 - `POST /tenants/<name>/tools` — tools this tenant may call
 - `POST /tenants/<name>/call` — body `{"tool": "...", "arguments": {...}}`
+
+Child environment: hosted children get a minimal environment (PATH, HOME, TERM,
+locale, TMPDIR, plus the tenant's GOG_HOME, GOG_ACCOUNT, and file-keyring
+settings). Operator secrets and unrelated GOG_* overrides are not inherited.
+The per-tenant keyring password is written to a 0600 file inside the tenant
+home and passed by file path, so the secret never appears in child-process env.
 
 Policy:
 
@@ -67,4 +81,3 @@ Policy:
 - Master key rotation is manual (re-derive per tenant with the same HKDF info
   once tokens are re-authenticated).
 - No hosted billing/quota metering yet; the audit log is the usage record.
-

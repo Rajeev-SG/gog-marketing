@@ -27,7 +27,11 @@ func defaultAuthTestOperations() (
 		if err != nil {
 			return nil, err
 		}
-		return secrets.Open(systemKeyringOpenOptions(layout, config.NewConfigStore(layout)))
+		options, optionsErr := systemKeyringOpenOptions(layout, config.NewConfigStore(layout))
+		if optionsErr != nil {
+			return nil, optionsErr
+		}
+		return secrets.Open(options)
 	}
 	return openStore, googleauth.Authorize, secrets.EnsureKeychainAccessContext, googleauth.IdentityForRefreshToken
 }

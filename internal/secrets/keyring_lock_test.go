@@ -220,7 +220,7 @@ func TestSetSecretFileBackendUsesSharedLock(t *testing.T) {
 	layout := testSystemLayout(t, config.PathKindConfig, config.PathKindData)
 	configStore := config.NewConfigStore(layout)
 	openStore := func() (Repository, error) {
-		return Open(systemTestOpenOptions(layout, configStore))
+		return Open(systemTestOpenOptions(t, layout, configStore))
 	}
 
 	var wg sync.WaitGroup

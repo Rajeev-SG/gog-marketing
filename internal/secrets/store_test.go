@@ -49,7 +49,8 @@ func TestOpenOptionsFromLookupCapturesEnvironment(t *testing.T) {
 		"DBUS_SESSION_BUS_ADDRESS":  "unix:path=/tmp/dbus",
 		keyringLockTimeoutEnv:       "125ms",
 	}
-	options := OpenOptionsFromLookup(
+
+	options, err := OpenOptionsFromLookup(
 		config.Layout{ConfigDir: "/config", DataDir: "/data"},
 		config.NewConfigStore(config.Layout{ConfigDir: "/config"}),
 		func(key string) (string, bool) {
@@ -59,6 +60,9 @@ func TestOpenOptionsFromLookupCapturesEnvironment(t *testing.T) {
 		"linux",
 		true,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if options.Backend != " file " || options.ServiceName != "custom-gog" {
 		t.Fatalf("options = %#v", options)
@@ -85,7 +89,8 @@ func TestOpenOptionsFromLookupOpenTimeout(t *testing.T) {
 	t.Parallel()
 
 	values := map[string]string{keyringOpenTimeoutEnv: "45s"}
-	options := OpenOptionsFromLookup(
+
+	options, err := OpenOptionsFromLookup(
 		config.Layout{ConfigDir: "/config", DataDir: "/data"},
 		config.NewConfigStore(config.Layout{ConfigDir: "/config"}),
 		func(key string) (string, bool) {
@@ -95,6 +100,9 @@ func TestOpenOptionsFromLookupOpenTimeout(t *testing.T) {
 		"darwin",
 		true,
 	)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if options.OpenTimeout != 45*time.Second {
 		t.Fatalf("OpenTimeout = %v, want 45s", options.OpenTimeout)
@@ -255,7 +263,7 @@ func TestResolveKeyringBackendInfo_Default(t *testing.T) {
 	layout := testSystemLayout(t, config.PathKindConfig)
 	store := config.NewConfigStore(layout)
 
-	info, err := ResolveKeyringBackendInfoWithOptions(systemTestOpenOptions(layout, store))
+	info, err := ResolveKeyringBackendInfoWithOptions(systemTestOpenOptions(t, layout, store))
 	if err != nil {
 		t.Fatalf("ResolveKeyringBackendInfo: %v", err)
 	}
@@ -296,7 +304,7 @@ func assertResolveKeyringBackendConfig(t *testing.T, envValue, wantValue, wantSo
 		t.Fatalf("write config: %v", err)
 	}
 
-	info, err := ResolveKeyringBackendInfoWithOptions(systemTestOpenOptions(layout, store))
+	info, err := ResolveKeyringBackendInfoWithOptions(systemTestOpenOptions(t, layout, store))
 	if err != nil {
 		t.Fatalf("ResolveKeyringBackendInfo: %v", err)
 	}

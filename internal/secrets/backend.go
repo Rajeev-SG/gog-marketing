@@ -3,6 +3,7 @@ package secrets
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -13,8 +14,9 @@ import (
 )
 
 const (
-	keyringPasswordEnv          = "GOG_KEYRING_PASSWORD" //nolint:gosec // env var name, not a credential
-	keyringBackendEnv           = "GOG_KEYRING_BACKEND"  //nolint:gosec // env var name, not a credential
+	keyringPasswordEnv          = "GOG_KEYRING_PASSWORD"      //nolint:gosec // environment variable name, not a credential
+	keyringPasswordFileEnv      = "GOG_KEYRING_PASSWORD_FILE" //nolint:gosec // environment variable name, not a credential
+	keyringBackendEnv           = "GOG_KEYRING_BACKEND"
 	keyringServiceNameEnv       = "GOG_KEYRING_SERVICE_NAME"
 	keyringOpenTimeoutEnv       = "GOG_KEYRING_OPEN_TIMEOUT"
 	keychainTrustApplicationEnv = "GOG_KEYCHAIN_TRUST_APPLICATION"
@@ -63,13 +65,24 @@ func OpenOptionsFromLookup(
 	lookup func(string) (string, bool),
 	goos string,
 	isTTY bool,
-) OpenOptions {
+) (OpenOptions, error) {
 	if lookup == nil {
 		lookup = func(string) (string, bool) { return "", false }
 	}
 
 	backend, _ := lookup(keyringBackendEnv)
+
 	password, passwordSet := lookup(keyringPasswordEnv)
+	if !passwordSet {
+		if passwordFile, fileSet := lookup(keyringPasswordFileEnv); fileSet && strings.TrimSpace(passwordFile) != "" {
+			raw, readErr := os.ReadFile(strings.TrimSpace(passwordFile))
+			if readErr != nil {
+				return OpenOptions{}, fmt.Errorf("read %s: %w", keyringPasswordFileEnv, readErr)
+			}
+			password = strings.TrimSpace(string(raw))
+			passwordSet = true
+		}
+	}
 	serviceName, _ := lookup(keyringServiceNameEnv)
 	dbusAddress, _ := lookup("DBUS_SESSION_BUS_ADDRESS")
 	openTimeoutRaw, _ := lookup(keyringOpenTimeoutEnv)
@@ -89,7 +102,7 @@ func OpenOptionsFromLookup(
 		OpenTimeout:              parseKeyringOpenTimeout(openTimeoutRaw, goos),
 		LockTimeout:              parseKeyringLockTimeout(lockTimeoutRaw),
 		KeychainTrustApplication: keychainTrustApplication,
-	}
+	}, nil
 }
 
 func ResolveKeyringBackendInfoWithOptions(options OpenOptions) (KeyringBackendInfo, error) {

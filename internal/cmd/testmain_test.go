@@ -23,6 +23,7 @@ func TestMain(m *testing.M) {
 				os.Getenv("GOG_ACCOUNT"),
 				os.Getenv("GOG_KEYRING_BACKEND"),
 			)
+			line += fmt.Sprintf("GOG_ACCESS_TOKEN_SET:%t\n", os.Getenv("GOG_ACCESS_TOKEN") != "")
 			_ = os.WriteFile(logPath, []byte(line), 0o600)
 		}
 		_ = json.NewEncoder(os.Stdout).Encode(map[string]any{"result": "ok"})

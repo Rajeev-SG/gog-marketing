@@ -2,13 +2,17 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -18,9 +22,18 @@ import (
 	"github.com/openclaw/gogcli/internal/ui"
 )
 
+const (
+	tenantMaxOutputBytes      = 4 << 20
+	tenantMaxRequestBodyBytes = 1 << 20
+	tenantMaxConcurrentCalls  = 8
+	tenantRequestTimeout      = 3 * time.Minute
+)
+
 type TenantServeCmd struct {
 	Port           int    `name:"port" help:"HTTP port (binds 127.0.0.1 only)"`
-	MasterKeyFile  string `name:"master-key-file" type:"path" help:"File holding the master secret; enables per-tenant encrypted file keyrings"`
+	ServeToken     string `name:"serve-token" help:"Bearer token required on every request (generated and printed if unset)" env:"GOG_TENANTS_SERVE_TOKEN"`
+	ServeTokenFile string `name:"serve-token-file" type:"path" help:"File holding the bearer token for the hosted API"`
+	MasterKeyFile  string `name:"master-key-file" type:"path" help:"File holding the master secret; enables per-tenant encrypted file keyrings (required)"`
 	TimeoutSeconds int    `name:"timeout-seconds" help:"Per-call child timeout in seconds"`
 }
 
@@ -29,27 +42,45 @@ func (c *TenantServeCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
+
 	masterKey, err := loadTenantMasterKey(c.MasterKeyFile)
 	if err != nil {
 		return err
 	}
+	if len(masterKey) == 0 {
+		return usage("tenant serving requires a master secret (--master-key-file or GOG_TENANTS_MASTER_KEY) so tenant OAuth tokens are always encrypted at rest")
+	}
+
+	serveToken, err := loadTenantServeToken(c.ServeToken, c.ServeTokenFile)
+	if err != nil {
+		return err
+	}
+
 	self, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("resolve executable: %w", err)
 	}
+
 	timeout := time.Duration(c.TimeoutSeconds) * time.Second
 	if timeout <= 0 {
 		return usage("--timeout-seconds must be greater than zero")
 	}
 
 	handler := &tenantServeHandler{
-		store:     store,
-		self:      self,
-		masterKey: masterKey,
-		timeout:   timeout,
+		store:      store,
+		self:       self,
+		masterKey:  masterKey,
+		serveToken: serveToken,
+		timeout:    timeout,
+		errOut:     os.Stderr,
+		callSlots:  make(chan struct{}, tenantMaxConcurrentCalls),
+		port:       c.Port,
 	}
+
 	addr := fmt.Sprintf("127.0.0.1:%d", c.Port)
-	ui.FromContext(ctx).Out().Linef("gog tenant API listening on http://%s (tenants: /tenants/<name>/tools, /tenants/<name>/call)", addr)
+	ui.FromContext(ctx).Err().Linef("gog tenant API listening on http://%s", addr)
+	ui.FromContext(ctx).Err().Linef("hosted API bearer token: %s (give it only to authorized clients)", serveToken)
+
 	httpServer := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
@@ -62,36 +93,105 @@ func loadTenantMasterKey(path string) ([]byte, error) {
 	if strings.TrimSpace(path) == "" {
 		return []byte(strings.TrimSpace(os.Getenv("GOG_TENANTS_MASTER_KEY"))), nil
 	}
-	raw, err := os.ReadFile(path) //nolint:gosec // operator-provided key file path
+	raw, err := os.ReadFile(path) //nolint:gosec // operator-provided key/token file path
 	if err != nil {
 		return nil, fmt.Errorf("read --master-key-file: %w", err)
 	}
 	return []byte(strings.TrimSpace(string(raw))), nil
 }
 
+// loadTenantServeToken resolves or generates the hosted API bearer token.
+// Operators may pin one via --serve-token(-file); otherwise a random token is
+// generated per run and printed to stderr for authorized clients.
+func loadTenantServeToken(token, tokenFile string) (string, error) {
+	if strings.TrimSpace(token) != "" {
+		return strings.TrimSpace(token), nil
+	}
+	if strings.TrimSpace(tokenFile) != "" {
+		raw, err := os.ReadFile(strings.TrimSpace(tokenFile))
+		if err != nil {
+			return "", fmt.Errorf("read --serve-token-file: %w", err)
+		}
+		return strings.TrimSpace(string(raw)), nil
+	}
+
+	buf := make([]byte, 32)
+	if _, err := rand.Read(buf); err != nil {
+		return "", fmt.Errorf("generate serve token: %w", err)
+	}
+	return hex.EncodeToString(buf), nil
+}
+
 type tenantServeHandler struct {
-	store     *tenants.Store
-	self      string
-	masterKey []byte
-	timeout   time.Duration
+	store      *tenants.Store
+	self       string
+	masterKey  []byte
+	serveToken string
+	timeout    time.Duration
+	errOut     io.Writer
+	callSlots  chan struct{}
+	port       int
+	// childEnvExtra is appended to every tenant child environment. Hosted
+	// operators can use it for managed settings; tests use it to re-exec the
+	// test binary in a controlled fake-child mode.
+	childEnvExtra []string
 }
 
 func (h *tenantServeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := strings.Trim(r.URL.Path, "/")
+	// Local-host hardening: DNS rebinding / cross-origin browser calls are
+	// rejected before any tenant data is touched.
+	if origin := strings.TrimSpace(r.Header.Get("Origin")); origin != "" {
+		writeTenantJSON(w, http.StatusForbidden, map[string]any{"error": "browser-origin requests are not allowed on the hosted API"})
+		return
+	}
+	if !tenantHostAllowed(r.Host, h.port) {
+		writeTenantJSON(w, http.StatusForbidden, map[string]any{"error": "unexpected Host header"})
+		return
+	}
+	if !h.authorized(r) {
+		w.Header().Set("WWW-Authenticate", "Bearer")
+		writeTenantJSON(w, http.StatusUnauthorized, map[string]any{"error": "missing or invalid bearer token"})
+		return
+	}
+
+	callCtx, cancel := context.WithTimeout(r.Context(), tenantRequestTimeout)
+	defer cancel()
+
+	if h.callSlots == nil {
+		h.callSlots = make(chan struct{}, tenantMaxConcurrentCalls)
+	}
+
+	select {
+	case h.callSlots <- struct{}{}:
+		defer func() { <-h.callSlots }()
+	case <-callCtx.Done():
+		writeTenantJSON(w, http.StatusServiceUnavailable, map[string]any{"error": "hosted API is busy"})
+		return
+	}
+
+	request := r.WithContext(callCtx)
+	request.Body = http.MaxBytesReader(w, request.Body, tenantMaxRequestBodyBytes)
+
+	path := strings.Trim(request.URL.Path, "/")
 	switch {
-	case r.Method == http.MethodGet && path == "healthz":
+	case request.Method == http.MethodGet && path == "healthz":
 		writeTenantJSON(w, http.StatusOK, map[string]any{"status": "ok"})
-	case r.Method == http.MethodGet && path == "tenants":
+	case request.Method == http.MethodGet && path == "tenants":
 		h.handleList(w)
-	case r.Method == http.MethodPost && strings.Count(path, "/") == 2 && strings.HasSuffix(path, "/tools"):
+	case request.Method == http.MethodPost && strings.Count(path, "/") == 2 && strings.HasSuffix(path, "/tools"):
 		h.handleListTools(w, tenantNameFromPath(path))
-	case r.Method == http.MethodPost && strings.Count(path, "/") == 2 && strings.HasSuffix(path, "/call"):
-		h.handleCall(w, r, tenantNameFromPath(path))
+	case request.Method == http.MethodPost && strings.Count(path, "/") == 2 && strings.HasSuffix(path, "/call"):
+		h.handleCall(w, request, tenantNameFromPath(path))
 	default:
 		writeTenantJSON(w, http.StatusNotFound, map[string]any{"error": "not found"})
 	}
 }
 
+func tenantHostAllowed(host string, port int) bool {
+	return host == fmt.Sprintf("127.0.0.1:%d", port) || host == fmt.Sprintf("localhost:%d", port)
+}
+
+// tenantNameFromPath parses /tenants/<name>[/(tools|call)].
 func tenantNameFromPath(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) != 3 || parts[0] != "tenants" {
@@ -100,26 +200,8 @@ func tenantNameFromPath(path string) string {
 	return parts[1]
 }
 
-func (h *tenantServeHandler) handleList(w http.ResponseWriter) {
-	tenantsList, err := h.store.List()
-	if err != nil {
-		writeTenantJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
-		return
-	}
-	out := make([]map[string]any, 0, len(tenantsList))
-	for _, tenant := range tenantsList {
-		out = append(out, map[string]any{
-			"name":     tenant.Name,
-			"account":  tenant.Account,
-			"readonly": tenant.ReadOnly,
-		})
-	}
-	writeTenantJSON(w, http.StatusOK, map[string]any{"tenants": out})
-}
-
-// allowedTools applies the tenant policy: an explicit allow-tools list wins,
-// and with no list only read-risk tools are exposed. Write tools require an
-// explicit allowlist and a non-readonly tenant.
+// allowedTools applies the tenant policy: an explicit allow-tools list is the
+// tenant's exact tool surface; without a list only read-risk tools are exposed.
 func allowedTools(tenant tenants.Tenant) []mcpToolSpec {
 	allow := make(map[string]bool, len(tenant.AllowTools))
 	explicit := len(tenant.AllowTools) > 0
@@ -142,10 +224,70 @@ func allowedTools(tenant tenants.Tenant) []mcpToolSpec {
 	return out
 }
 
-func (h *tenantServeHandler) handleListTools(w http.ResponseWriter, name string) {
+// authorized checks the bearer token with a constant-time compare.
+func (h *tenantServeHandler) authorized(r *http.Request) bool {
+	value := strings.TrimSpace(r.Header.Get("Authorization"))
+	const prefix = "Bearer "
+	if !strings.HasPrefix(value, prefix) {
+		return false
+	}
+	token := strings.TrimSpace(strings.TrimPrefix(value, prefix))
+	return subtle.ConstantTimeCompare([]byte(token), []byte(h.serveToken)) == 1
+}
+
+func (h *tenantServeHandler) tenantErr(err error) {
+	_, _ = fmt.Fprintf(h.errOut, "tenant API error: %v\n", err)
+}
+
+func (h *tenantServeHandler) handleList(w http.ResponseWriter) {
+	tenantsList, err := h.store.List()
+	if err != nil {
+		h.tenantErr(err)
+		writeTenantJSON(w, http.StatusInternalServerError, map[string]any{"error": "tenant registry is unavailable"})
+		return
+	}
+
+	out := make([]map[string]any, 0, len(tenantsList))
+	for _, tenant := range tenantsList {
+		out = append(out, map[string]any{
+			"name":     tenant.Name,
+			"readonly": tenant.ReadOnly,
+		})
+	}
+	writeTenantJSON(w, http.StatusOK, map[string]any{"tenants": out})
+}
+
+func (h *tenantServeHandler) resolveTenant(w http.ResponseWriter, name string) (tenants.Tenant, bool) {
 	tenant, ok, err := h.store.Get(name)
-	if err != nil || !ok {
+	if err != nil {
+		h.tenantErr(err)
+		writeTenantJSON(w, http.StatusInternalServerError, map[string]any{"error": "tenant registry is unavailable"})
+		return tenants.Tenant{}, false
+	}
+	if !ok {
 		writeTenantJSON(w, http.StatusNotFound, map[string]any{"error": fmt.Sprintf("tenant %q not found", name)})
+		return tenants.Tenant{}, false
+	}
+	return tenant, true
+}
+
+func (h *tenantServeHandler) tenantAudit(tenant tenants.Tenant) *tenants.AuditLog {
+	return tenants.NewAuditLog(h.tenantHome(tenant.Name))
+}
+
+func (h *tenantServeHandler) tenantHome(name string) string {
+	home, err := h.store.Home(name)
+	if err != nil {
+		// Normalized store data is the only way a tenant reaches the handler,
+		// so this is unreachable in practice; fall back to a root-anchored path.
+		return filepath.Join(filepath.Dir(h.store.Path()), "tenants", "_invalid")
+	}
+	return home
+}
+
+func (h *tenantServeHandler) handleListTools(w http.ResponseWriter, name string) {
+	tenant, ok := h.resolveTenant(w, name)
+	if !ok {
 		return
 	}
 	names := make([]string, 0, 8)
@@ -161,55 +303,52 @@ type tenantToolRequest struct {
 }
 
 func (h *tenantServeHandler) handleCall(w http.ResponseWriter, r *http.Request, name string) {
-	tenant, ok, err := h.store.Get(name)
-	if err != nil || !ok {
-		writeTenantJSON(w, http.StatusNotFound, map[string]any{"error": fmt.Sprintf("tenant %q not found", name)})
+	tenant, ok := h.resolveTenant(w, name)
+	if !ok {
 		return
 	}
+	audit := h.tenantAudit(tenant)
 
 	var body tenantToolRequest
 	if decodeErr := json.NewDecoder(r.Body).Decode(&body); decodeErr != nil {
 		writeTenantJSON(w, http.StatusBadRequest, map[string]any{"error": fmt.Sprintf("decode body: %v", decodeErr)})
+		_ = audit.Append(tenants.AuditEntry{Tenant: tenant.Name, Action: body.Tool, Decision: "deny", Detail: decodeErr.Error()})
 		return
 	}
 
-	audit := tenants.NewAuditLog(h.store.Home(tenant.Name))
-	spec, allowed := tenantFindTool(tenant, body.Tool)
+	spec, allowState := tenantFindTool(tenant, body.Tool)
 	if spec == nil {
 		reason := fmt.Sprintf("unknown tool %q", body.Tool)
-		if allowed == tenantAllowKnown {
+		if allowState == tenantAllowKnown {
 			reason = fmt.Sprintf("tool %q is not allowlisted for this tenant", body.Tool)
 		}
 		writeTenantJSON(w, http.StatusForbidden, map[string]any{"error": reason})
-		_ = audit.Append(tenants.AuditEntry{Tenant: tenant.Name, Action: body.Tool, Decision: "deny", Detail: reason})
+		h.recordAudit(audit, tenants.AuditEntry{Tenant: tenant.Name, Action: body.Tool, Decision: "deny", Detail: reason})
 		return
 	}
 
 	request := mcpCallRequest(body.Tool, body.Arguments)
-	childArgs, err := spec.BuildArgs(request)
-	if err != nil {
-		writeTenantJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
-		_ = audit.Append(tenants.AuditEntry{Tenant: tenant.Name, Action: body.Tool, Decision: "deny", Detail: err.Error()})
+	childArgs, buildErr := spec.BuildArgs(request)
+	if buildErr != nil {
+		writeTenantJSON(w, http.StatusBadRequest, map[string]any{"error": buildErr.Error()})
+		h.recordAudit(h.tenantAudit(tenant), tenants.AuditEntry{Tenant: tenant.Name, Action: body.Tool, Decision: "deny", Detail: buildErr.Error()})
 		return
 	}
 
-	childEnv, err := h.tenantChildEnv(tenant.Name, tenant)
-	if err != nil {
-		writeTenantJSON(w, http.StatusInternalServerError, map[string]any{"error": err.Error()})
+	childEnv, envErr := h.tenantChildEnv(tenant.Name, tenant)
+	if envErr != nil {
+		h.tenantErr(envErr)
+		writeTenantJSON(w, http.StatusInternalServerError, map[string]any{"error": "could not prepare the tenant environment"})
 		return
 	}
 
 	result := h.runTenantTool(r.Context(), tenant, spec, childArgs, childEnv)
-	detail := result.Stderr
-	if detail == "" && result.ExitCode == 0 {
-		detail = "ok"
-	}
-	_ = audit.Append(tenants.AuditEntry{
+	h.recordAudit(h.tenantAudit(tenant), tenants.AuditEntry{
 		Tenant:   tenant.Name,
 		Action:   body.Tool,
 		Decision: "execute",
 		ExitCode: result.ExitCode,
-		Detail:   detail,
+		Detail:   tenantAuditDetail(result),
 	})
 	writeTenantJSON(w, http.StatusOK, map[string]any{
 		"tenant":    tenant.Name,
@@ -222,20 +361,19 @@ func (h *tenantServeHandler) handleCall(w http.ResponseWriter, r *http.Request, 
 	})
 }
 
-func tenantFindTool(tenant tenants.Tenant, toolName string) (*mcpToolSpec, tenantAllowState) {
-	for index, spec := range allowedTools(tenant) {
-		if spec.Name == toolName {
-			return &allowedTools(tenant)[index], tenantAllowExplicit
-		}
+// recordAudit never swallows audit failures: execute-path failures are logged
+// loudly so the operator knows an action went unrecorded.
+func (h *tenantServeHandler) recordAudit(audit *tenants.AuditLog, entry tenants.AuditEntry) {
+	if err := audit.Append(entry); err != nil {
+		h.tenantErr(fmt.Errorf("AUDIT append failed for tenant %s action %s: %w", entry.Tenant, entry.Action, err))
 	}
-	if len(tenant.AllowTools) > 0 {
-		for _, spec := range mcpAllTools() {
-			if spec.Name == toolName {
-				return nil, tenantAllowKnown
-			}
-		}
+}
+
+func tenantAuditDetail(result mcpCommandResult) string {
+	if result.Stderr != "" {
+		return result.Stderr
 	}
-	return nil, tenantAllowUnknown
+	return "ok"
 }
 
 type tenantAllowState int
@@ -245,6 +383,23 @@ const (
 	tenantAllowKnown
 	tenantAllowExplicit
 )
+
+func tenantFindTool(tenant tenants.Tenant, toolName string) (*mcpToolSpec, tenantAllowState) {
+	for index, spec := range allowedTools(tenant) {
+		if spec.Name == toolName {
+			return &allowedTools(tenant)[index], tenantAllowExplicit
+		}
+	}
+
+	if len(tenant.AllowTools) > 0 {
+		for _, spec := range mcpAllTools() {
+			if spec.Name == toolName {
+				return nil, tenantAllowKnown
+			}
+		}
+	}
+	return nil, tenantAllowUnknown
+}
 
 func mcpCallRequest(tool string, arguments map[string]any) mcp.CallToolRequest {
 	request := mcp.CallToolRequest{}
@@ -256,25 +411,39 @@ func mcpCallRequest(tool string, arguments map[string]any) mcp.CallToolRequest {
 	return request
 }
 
-// tenantChildEnv builds the child process environment. The tenant home
-// isolates config, tokens, cache, and state; the per-tenant file keyring
-// password (derived with HKDF from the operator master secret) keeps OAuth
-// tokens encrypted at rest per tenant.
+// tenantChildEnv builds a minimal, tenant-scoped child environment. Operator
+// secrets and unrelated GOG_* overrides are NOT inherited. The derived
+// keyring password is written to a 0600 file inside the tenant home and passed
+// by file path so the secret never appears in child-process environment.
 func (h *tenantServeHandler) tenantChildEnv(tenantName string, tenant tenants.Tenant) ([]string, error) {
-	env := append(os.Environ(),
-		"GOG_HOME="+h.store.Home(tenant.Name),
-		"GOG_ACCOUNT="+tenant.Account,
-	)
-	if len(h.masterKey) > 0 {
-		password, err := tenants.DeriveKeyringPassword(h.masterKey, tenantName)
-		if err != nil {
-			return nil, err
-		}
-		env = append(env,
-			"GOG_KEYRING_BACKEND=file",
-			"GOG_KEYRING_PASSWORD="+hex.EncodeToString(password),
-		)
+	password, err := tenants.DeriveKeyringPassword(h.masterKey, tenantName)
+	if err != nil {
+		return nil, err
 	}
+
+	home := h.tenantHome(tenant.Name)
+	passwordFile := filepath.Join(home, "keys", "keyring-password")
+	if writeErr := os.MkdirAll(filepath.Dir(passwordFile), 0o700); writeErr != nil {
+		return nil, writeErr
+	}
+	if writeErr := os.WriteFile(passwordFile, []byte(hex.EncodeToString(password)+"\n"), 0o600); writeErr != nil {
+		return nil, fmt.Errorf("write tenant keyring password file: %w", writeErr)
+	}
+
+	env := make([]string, 0, 10+len(h.childEnvExtra))
+	env = append(env,
+		"PATH="+os.Getenv("PATH"),
+		"HOME="+os.Getenv("HOME"),
+		"TERM="+os.Getenv("TERM"),
+		"LANG="+os.Getenv("LANG"),
+		"LC_ALL="+os.Getenv("LC_ALL"),
+		"TMPDIR="+os.Getenv("TMPDIR"),
+		"GOG_HOME="+home,
+		"GOG_ACCOUNT="+tenant.Account,
+		"GOG_KEYRING_BACKEND=file",
+		"GOG_KEYRING_PASSWORD_FILE="+passwordFile,
+	)
+	env = append(env, h.childEnvExtra...)
 	return env, nil
 }
 
@@ -324,8 +493,6 @@ func writeTenantJSON(w http.ResponseWriter, status int, payload any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
 }
-
-const tenantMaxOutputBytes = 4 << 20
 
 type tenantLimitedBuffer struct {
 	buf  []byte

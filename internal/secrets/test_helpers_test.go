@@ -25,7 +25,7 @@ func openSystemTestStore(tb testing.TB) Repository {
 
 	layout := testSystemLayout(tb, config.PathKindConfig, config.PathKindData)
 
-	store, err := Open(systemTestOpenOptions(layout, config.NewConfigStore(layout)))
+	store, err := Open(systemTestOpenOptions(tb, layout, config.NewConfigStore(layout)))
 	if err != nil {
 		tb.Fatalf("open test store: %v", err)
 	}
@@ -33,6 +33,13 @@ func openSystemTestStore(tb testing.TB) Repository {
 	return store
 }
 
-func systemTestOpenOptions(layout config.Layout, store *config.ConfigStore) OpenOptions {
-	return OpenOptionsFromLookup(layout, store, os.LookupEnv, runtime.GOOS, termutil.IsTerminal(os.Stdin))
+func systemTestOpenOptions(tb testing.TB, layout config.Layout, store *config.ConfigStore) OpenOptions {
+	tb.Helper()
+
+	options, err := OpenOptionsFromLookup(layout, store, os.LookupEnv, runtime.GOOS, termutil.IsTerminal(os.Stdin))
+	if err != nil {
+		tb.Fatal(err)
+	}
+
+	return options
 }

@@ -64,13 +64,17 @@ func (c *TenantAddCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if !ok {
 		return fmt.Errorf("tenant %q not found after save", c.Name)
 	}
+	home, err := store.Home(saved.Name)
+	if err != nil {
+		return err
+	}
 	if outfmt.IsJSON(ctx) {
-		return outfmt.WriteJSON(ctx, stdoutWriter(ctx), map[string]any{"tenant": saved, "home": store.Home(saved.Name)})
+		return outfmt.WriteJSON(ctx, stdoutWriter(ctx), map[string]any{"tenant": saved, "home": home})
 	}
 	return writeResult(ctx, u,
 		kv("tenant", saved.Name),
 		kv("account", saved.Account),
-		kv("home", store.Home(saved.Name)),
+		kv("home", home),
 		kv("readonly", saved.ReadOnly),
 		kv("allow_tools", strings.Join(saved.AllowTools, ",")),
 	)
@@ -127,8 +131,12 @@ func (c *TenantGetCmd) Run(ctx context.Context) error {
 	if !ok {
 		return usage(fmt.Sprintf("tenant %q not found", strings.TrimSpace(c.Name)))
 	}
+	home, err := store.Home(tenant.Name)
+	if err != nil {
+		return err
+	}
 	if outfmt.IsJSON(ctx) {
-		return outfmt.WriteJSON(ctx, stdoutWriter(ctx), map[string]any{"tenant": tenant, "home": store.Home(tenant.Name)})
+		return outfmt.WriteJSON(ctx, stdoutWriter(ctx), map[string]any{"tenant": tenant, "home": home})
 	}
 	return writeResult(ctx, u,
 		kv("tenant", tenant.Name),
@@ -136,7 +144,7 @@ func (c *TenantGetCmd) Run(ctx context.Context) error {
 		kv("client", tenant.Client),
 		kv("readonly", tenant.ReadOnly),
 		kv("allow_tools", strings.Join(tenant.AllowTools, ",")),
-		kv("home", store.Home(tenant.Name)),
+		kv("home", home),
 		kv("notes", tenant.Notes),
 	)
 }
@@ -168,7 +176,10 @@ func (c *TenantRemoveCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if _, delErr := store.Delete(c.Name); delErr != nil {
 		return delErr
 	}
-	home := store.Home(tenant.Name)
+	home, err := store.Home(tenant.Name)
+	if err != nil {
+		return err
+	}
 	if !c.KeepHome {
 		if err := os.RemoveAll(home); err != nil {
 			return fmt.Errorf("remove tenant home %s: %w", home, err)
@@ -200,7 +211,11 @@ func (c *TenantAuditCmd) Run(ctx context.Context) error {
 	if !ok {
 		return usage(fmt.Sprintf("tenant %q not found", strings.TrimSpace(c.Name)))
 	}
-	auditLog := tenants.NewAuditLog(store.Home(tenant.Name))
+	tenantHome, err := store.Home(tenant.Name)
+	if err != nil {
+		return err
+	}
+	auditLog := tenants.NewAuditLog(tenantHome)
 	entries, err := auditLog.Tail(c.Max)
 	if err != nil {
 		return err
