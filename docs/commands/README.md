@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 869.
+Generated pages: 882.
 
 ## Top-level Commands
 
@@ -18,6 +18,7 @@ Generated pages: 869.
 - [gog calendar](gog-calendar.md) - Google Calendar
 - [gog chat](gog-chat.md) - Google Chat
 - [gog classroom](gog-classroom.md) - Google Classroom
+- [gog cloudadmin](gog-cloudadmin.md) - Narrow Google Cloud administration (inventory, transfers, APIs)
 - [gog completion](gog-completion.md) - Generate shell completion scripts
 - [gog config](gog-config.md) - Manage configuration
 - [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
@@ -342,6 +343,19 @@ Generated pages: 869.
       - [gog classroom topics get](gog-classroom-topics-get.md) - Get a topic
       - [gog classroom topics list](gog-classroom-topics-list.md) - List topics
       - [gog classroom topics update](gog-classroom-topics-update.md) - Update a topic
+  - [gog cloudadmin](gog-cloudadmin.md) - Narrow Google Cloud administration (inventory, transfers, APIs)
+    - [gog cloudadmin apis](gog-cloudadmin-apis.md) - Enable or disable Google Cloud APIs in a project
+      - [gog cloudadmin apis disable](gog-cloudadmin-apis-disable.md) - Disable an API in a project
+      - [gog cloudadmin apis enable](gog-cloudadmin-apis-enable.md) - Enable an API in a project
+    - [gog cloudadmin inventory](gog-cloudadmin-inventory.md) - Inventory projects, billing links, enabled APIs, service accounts and transfer configs
+      - [gog cloudadmin inventory apis](gog-cloudadmin-inventory-apis.md) - Show enabled APIs (all projects, or --project)
+      - [gog cloudadmin inventory billing](gog-cloudadmin-inventory-billing.md) - Show billing links (all projects, or --project)
+      - [gog cloudadmin inventory projects](gog-cloudadmin-inventory-projects.md) - List visible Google Cloud projects
+      - [gog cloudadmin inventory service-accounts](gog-cloudadmin-inventory-service-accounts.md) - Show service accounts (all projects, or --project)
+      - [gog cloudadmin inventory transfers](gog-cloudadmin-inventory-transfers.md) - Show scheduled transfer configs (all projects, or --project)
+    - [gog cloudadmin transfers](gog-cloudadmin-transfers.md) - Disable or delete BigQuery scheduled transfer configs
+      - [gog cloudadmin transfers delete](gog-cloudadmin-transfers-delete.md) - Delete a scheduled transfer config (destructive)
+      - [gog cloudadmin transfers disable](gog-cloudadmin-transfers-disable.md) - Disable a scheduled transfer config (reversible)
   - [gog completion](gog-completion.md) - Generate shell completion scripts
   - [gog config](gog-config.md) - Manage configuration
     - [gog config get](gog-config-get.md) - Get a config value

@@ -34,6 +34,7 @@ const (
 	ServiceAdSense       Service = "adsense"
 	ServiceGoogleAds     Service = "googleads"
 	ServiceAds           Service = ServiceGoogleAds
+	ServiceCloudAdmin    Service = "cloudadmin"
 	ServiceGroups        Service = "groups"
 	ServiceKeep          Service = "keep"
 	ServiceAdmin         Service = "admin"
@@ -109,6 +110,7 @@ var serviceOrder = []Service{
 	ServiceBigQuery,
 	ServiceAdSense,
 	ServiceGoogleAds,
+	ServiceCloudAdmin,
 	ServiceGroups,
 	ServiceKeep,
 	ServiceAdmin,
@@ -308,6 +310,12 @@ var serviceInfoByService = map[Service]serviceInfo{
 		apis:   []string{"Google Ads API"},
 		note:   "Official REST access with developer-token and manager-account headers",
 	},
+	ServiceCloudAdmin: {
+		scopes: []string{"https://www.googleapis.com/auth/cloud-platform"},
+		user:   true,
+		apis:   []string{"Cloud Resource Manager API", "Service Usage API", "Cloud Billing API", "BigQuery Data Transfer API", "IAM API"},
+		note:   "Narrow cloud administration: inventory, scheduled-transfer disable/delete, API enable/disable",
+	},
 	ServiceGroups: {
 		scopes: []string{"https://www.googleapis.com/auth/cloud-identity.groups.readonly"},
 		user:   false,
@@ -374,6 +382,7 @@ var apiServiceIDsByService = map[Service][]string{
 	ServiceBigQuery:      {"bigquery.googleapis.com"},
 	ServiceAdSense:       {"adsense.googleapis.com"},
 	ServiceGoogleAds:     {"googleads.googleapis.com"},
+	ServiceCloudAdmin:    {"cloudresourcemanager.googleapis.com", "serviceusage.googleapis.com", "cloudbilling.googleapis.com", "bigquerydatatransfer.googleapis.com", "iam.googleapis.com"},
 	ServiceGroups:        {"cloudidentity.googleapis.com"},
 	ServiceKeep:          {"keep.googleapis.com"},
 	ServiceAdmin:         {"admin.googleapis.com"},
@@ -824,6 +833,8 @@ func marketingScopesForServiceWithOptions(service Service, opts ScopeOptions) ([
 		return []string{"https://www.googleapis.com/auth/bigquery"}, true
 	case ServiceGoogleAds:
 		return []string{"https://www.googleapis.com/auth/adwords"}, true
+	case ServiceCloudAdmin:
+		return []string{"https://www.googleapis.com/auth/cloud-platform"}, true
 	default:
 		return nil, false
 	}
