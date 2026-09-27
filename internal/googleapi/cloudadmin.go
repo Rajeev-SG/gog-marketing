@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"google.golang.org/api/bigquerydatatransfer/v1"
 	"google.golang.org/api/cloudbilling/v1"
@@ -63,6 +64,8 @@ type CloudAdminTransferConfig struct {
 
 type CloudAdminOperation struct {
 	OperationName string `json:"operation_name,omitempty"`
+	Done          bool   `json:"done"`
+	Error         string `json:"error,omitempty"`
 }
 
 type CloudAdminClient interface {
@@ -246,7 +249,7 @@ func (a *cloudAdminAdapter) EnableService(ctx context.Context, projectID, apiID 
 		return nil, fmt.Errorf("enable %s in %s: %w", apiID, projectID, err)
 	}
 
-	return &CloudAdminOperation{OperationName: op.Name}, nil
+	return a.awaitCloudAdminOperation(ctx, op)
 }
 
 func (a *cloudAdminAdapter) DisableService(ctx context.Context, projectID, apiID string) (*CloudAdminOperation, error) {
@@ -255,7 +258,50 @@ func (a *cloudAdminAdapter) DisableService(ctx context.Context, projectID, apiID
 		return nil, fmt.Errorf("disable %s in %s: %w", apiID, projectID, err)
 	}
 
-	return &CloudAdminOperation{OperationName: op.Name}, nil
+	return a.awaitCloudAdminOperation(ctx, op)
+}
+
+// awaitCloudAdminOperation polls a Service Usage long-running operation to
+// completion so the command exit status reflects the actual API change, not
+// just an accepted request. Operations are usually fast; the timeout is a
+// bound on pathological cases, not a poll loop for interactive use.
+func (a *cloudAdminAdapter) awaitCloudAdminOperation(ctx context.Context, initial *serviceusage.Operation) (*CloudAdminOperation, error) {
+	const (
+		pollInterval = 2 * time.Second
+		pollTimeout  = 5 * time.Minute
+	)
+
+	deadline := time.Now().Add(pollTimeout)
+	op := initial
+
+	for op != nil && !op.Done {
+		if err := ctx.Err(); err != nil {
+			return nil, fmt.Errorf("service usage operation %s: %w", op.Name, err)
+		}
+
+		if time.Now().After(deadline) {
+			return &CloudAdminOperation{OperationName: op.Name, Error: "operation still running after 5m; check with the provider"}, nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, fmt.Errorf("service usage operation %s: %w", op.Name, ctx.Err())
+		case <-time.After(pollInterval):
+		}
+
+		polled, err := a.serviceUsage.Operations.Get(op.Name).Context(ctx).Do()
+		if err != nil {
+			return nil, fmt.Errorf("poll service usage operation %s: %w", op.Name, err)
+		}
+		op = polled
+	}
+
+	result := &CloudAdminOperation{OperationName: op.Name, Done: true}
+	if op.Error != nil && op.Error.Message != "" {
+		result.Error = op.Error.Message
+	}
+
+	return result, nil
 }
 
 func transferConfigFromAPI(config *bigquerydatatransfer.TransferConfig) *CloudAdminTransferConfig {

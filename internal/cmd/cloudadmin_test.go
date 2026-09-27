@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/openclaw/gogcli/internal/app"
@@ -33,6 +35,9 @@ func (f *fakeCloudAdminClient) GetProjectBillingInfo(_ context.Context, projectI
 }
 
 func (f *fakeCloudAdminClient) ListEnabledServices(_ context.Context, projectID string) ([]googleapi.CloudAdminService, error) {
+	if projectID == "failing-proj" {
+		return nil, fmt.Errorf("permission denied on failing-proj")
+	}
 	return f.apis[projectID], nil
 }
 
@@ -169,5 +174,92 @@ func TestCloudAdminTransferDeleteRequiresConfirmation(t *testing.T) {
 	}
 	if len(client.deletedConfigs) != 1 || client.deletedConfigs[0] != configName {
 		t.Fatalf("unexpected deleted configs: %v", client.deletedConfigs)
+	}
+}
+
+func TestCloudAdminTransferBareIDRejected(t *testing.T) {
+	client := &fakeCloudAdminClient{}
+	result := executeWithCloudAdmin(t, []string{
+		"--account", "a@b.com", "--force", "--json",
+		"cloudadmin", "transfers", "disable", "--project-id", "demo-proj", "tc-1",
+	}, client)
+	if result.err == nil || !strings.Contains(result.err.Error(), "full transfer config resource name") {
+		t.Fatalf("expected usage error for bare transfer ID, got %v", result.err)
+	}
+	if len(client.disabledConfigs) != 0 {
+		t.Fatal("rejected name must not mutate")
+	}
+}
+
+func TestCloudAdminWriteBlockedByReadOnly(t *testing.T) {
+	client := &fakeCloudAdminClient{}
+	configName := "projects/demo-proj/locations/us/transferConfigs/tc-1"
+
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"transfers-disable", []string{"cloudadmin", "transfers", "disable", "--project-id", "demo-proj", configName}},
+		{"transfers-delete", []string{"cloudadmin", "transfers", "delete", "--project-id", "demo-proj", configName}},
+		{"apis-enable", []string{"cloudadmin", "apis", "enable", "--project-id", "demo-proj", "cloudbilling.googleapis.com"}},
+		{"apis-disable", []string{"cloudadmin", "apis", "disable", "--project-id", "demo-proj", "cloudbilling.googleapis.com"}},
+	} {
+		result := executeWithCloudAdmin(t, append([]string{"--account", "a@b.com", "--readonly", "--force", "--json"}, tc.args...), client)
+		if result.err == nil {
+			t.Fatalf("%s: --readonly must block the write", tc.name)
+		}
+	}
+	if len(client.disabledConfigs) != 0 || len(client.deletedConfigs) != 0 || len(client.enabledServices) != 0 || len(client.disabledServices) != 0 {
+		t.Fatal("readonly run must not mutate")
+	}
+}
+
+func TestCloudAdminAPIDisableRequiresConfirmation(t *testing.T) {
+	client := &fakeCloudAdminClient{}
+
+	refused := executeWithCloudAdmin(t, []string{
+		"--account", "a@b.com", "--json",
+		"cloudadmin", "apis", "disable", "--project-id", "demo-proj", "cloudbilling.googleapis.com",
+	}, client)
+	if refused.err == nil {
+		t.Fatal("apis disable must require confirmation without --force")
+	}
+	if len(client.disabledServices) != 0 {
+		t.Fatal("refused disable must not mutate")
+	}
+
+	forced := executeWithCloudAdmin(t, []string{
+		"--account", "a@b.com", "--force", "--json",
+		"cloudadmin", "apis", "disable", "--project-id", "demo-proj", "cloudbilling.googleapis.com",
+	}, client)
+	if forced.err != nil {
+		t.Fatalf("forced disable: %v", forced.err)
+	}
+	if len(client.disabledServices) != 1 {
+		t.Fatalf("unexpected disabled services: %v", client.disabledServices)
+	}
+}
+
+func TestCloudAdminInventoryIncludesPerProjectErrors(t *testing.T) {
+	client := &fakeCloudAdminClient{projects: []googleapi.CloudAdminProject{{ProjectID: "demo-proj"}, {ProjectID: "failing-proj"}}}
+	// Use inventory billing where the fake returns results for both projects;
+	// exercise the error path through a nil-safe result caller instead.
+	result := executeWithCloudAdmin(t, []string{
+		"--account", "a@b.com", "--json", "cloudadmin", "inventory", "apis",
+	}, client)
+	if result.err == nil {
+		t.Fatal("aggregate status must be nonzero when a project fails")
+	}
+	var resp struct {
+		APIs []struct {
+			Project string `json:"project"`
+			Error   string `json:"error,omitempty"`
+		} `json:"apis"`
+	}
+	if err := json.Unmarshal([]byte(result.stdout), &resp); err != nil {
+		t.Fatalf("json: %v out=%s", err, result.stdout)
+	}
+	if len(resp.APIs) != 2 || resp.APIs[1].Project != "failing-proj" || !strings.Contains(resp.APIs[1].Error, "permission denied") {
+		t.Fatalf("unexpected entries: %#v", resp.APIs)
 	}
 }

@@ -33,7 +33,7 @@ func (f *CloudAdminTransferName) requireConfigName(project string) (string, erro
 		return "", usage("transfer config name is required")
 	}
 	if !strings.Contains(name, "/") {
-		name = fmt.Sprintf("projects/%s/locations/us/transferConfigs/%s", project, name)
+		return "", usage(fmt.Sprintf("pass the full transfer config resource name (projects/%s/locations/LOCATION/transferConfigs/ID), not the bare ID %q; location is not guessed", project, name))
 	}
 	return name, nil
 }

@@ -139,6 +139,7 @@ func runCloudAdminPerProject(
 	type projectResult struct {
 		Project string `json:"project"`
 		Result  any    `json:"result"`
+		Error   string `json:"error,omitempty"`
 	}
 
 	results := make([]projectResult, 0, 8)
@@ -153,6 +154,7 @@ func runCloudAdminPerProject(
 			if firstErr == nil {
 				firstErr = callErr
 			}
+			results = append(results, projectResult{Project: projectID, Error: callErr.Error()})
 			continue
 		}
 		results = append(results, projectResult{Project: projectID, Result: result})
@@ -163,6 +165,12 @@ func runCloudAdminPerProject(
 			return err
 		}
 	} else {
+		var partialErrs []string
+		for _, result := range results {
+			if result.Error != "" {
+				partialErrs = append(partialErrs, result.Project+": "+result.Error)
+			}
+		}
 		if len(results) == 0 && firstErr == nil {
 			u.Err().Println("No " + label)
 			return nil
@@ -172,6 +180,9 @@ func runCloudAdminPerProject(
 		fmt.Fprintln(w, "PROJECT\tRESULT")
 		for _, result := range results {
 			fmt.Fprintf(w, "%s\t%s\n", sanitizeTab(result.Project), sanitizeTab(fmt.Sprintf("%v", summarizeCloudAdminResult(result.Result))))
+		}
+		for _, partialErr := range partialErrs {
+			u.Err().Println("ERROR " + partialErr)
 		}
 	}
 	return firstErr

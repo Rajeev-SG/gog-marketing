@@ -166,6 +166,8 @@ func TestCloudAdminServiceEnableDisableAndServiceAccounts(t *testing.T) {
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/services/cloudbilling.googleapis.com:enable"):
 			enablePath = r.URL.Path
 			_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/enable-1"}`)
+		case strings.Contains(r.URL.Path, "/operations/"):
+			_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/enable-1","done":true}`)
 		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/services/cloudbilling.googleapis.com:disable"):
 			disablePath = r.URL.Path
 			_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/disable-1"}`)
@@ -196,5 +198,42 @@ func TestCloudAdminServiceEnableDisableAndServiceAccounts(t *testing.T) {
 
 	if len(accounts) != 1 || accounts[0].Email != "sa@demo-proj.iam.gserviceaccount.com" {
 		t.Fatalf("unexpected accounts parsed: %#v", accounts)
+	}
+}
+
+func TestCloudAdminOperationPollsToCompletionAndSurfacesFailure(t *testing.T) {
+	var polls int
+
+	adapter, server := newCloudAdminTestAdapter(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch {
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, ":enable"):
+			_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/op-1","done":false}`)
+		case strings.Contains(r.URL.Path, "/operations/op-1"):
+			polls++
+			if polls == 1 {
+				_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/op-1","done":false}`)
+				return
+			}
+			_, _ = io.WriteString(w, `{"name":"projects/demo-proj/operations/op-1","done":true,"error":{"code":7,"message":"permission denied"}}`)
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+
+	op, err := adapter.EnableService(context.Background(), "demo-proj", "cloudbilling.googleapis.com")
+	if err != nil {
+		t.Fatalf("enable: %v", err)
+	}
+
+	if op.OperationName == "" || !op.Done {
+		t.Fatalf("unexpected operation: %#v", op)
+	}
+
+	if op.Error != "permission denied" {
+		t.Fatalf("expected operation failure surfaced, got %#v", op)
 	}
 }

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/openclaw/gogcli/internal/googleapi"
@@ -31,6 +32,9 @@ func (c *CloudAdminAPIChangeCmd) validate() (string, string, error) {
 	apiID := strings.TrimSpace(c.Service)
 	if apiID == "" {
 		return "", "", usage("API ID is required")
+	}
+	if !strings.HasSuffix(apiID, ".googleapis.com") || strings.ContainsAny(apiID, ` /\`) {
+		return "", "", usage(fmt.Sprintf("API ID must be a Google service ID such as cloudbilling.googleapis.com, got %q", apiID))
 	}
 	project := strings.TrimSpace(c.Project)
 	if project == "" {
@@ -66,7 +70,15 @@ func (c *CloudAdminAPIDisableCmd) Run(ctx context.Context, flags *RootFlags) err
 	if err != nil {
 		return err
 	}
-	op, err := changeCloudAdminAPI(ctx, flags, "cloudadmin.apis.disable", project, apiID, false)
+	confirmErr := marketingDryRunAndConfirmDestructive(ctx, flags, "cloudadmin.apis.disable", map[string]any{
+		"project": project,
+		"api":     apiID,
+		"action":  "disable",
+	}, fmt.Sprintf("Disable %s in %s (can break integrations and lock further API management)", apiID, project))
+	if confirmErr != nil {
+		return confirmErr
+	}
+	op, err := runCloudAdminAPIChange(ctx, flags, project, apiID, false)
 	if err != nil {
 		return err
 	}
@@ -89,6 +101,10 @@ func changeCloudAdminAPI(ctx context.Context, flags *RootFlags, op string, proje
 	if err := marketingDryRunExit(ctx, flags, op, plan); err != nil {
 		return nil, err
 	}
+	return runCloudAdminAPIChange(ctx, flags, project, apiID, enable)
+}
+
+func runCloudAdminAPIChange(ctx context.Context, flags *RootFlags, project, apiID string, enable bool) (*googleapi.CloudAdminOperation, error) {
 	account, err := requireAccount(flags)
 	if err != nil {
 		return nil, err
