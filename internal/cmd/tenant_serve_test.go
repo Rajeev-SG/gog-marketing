@@ -191,8 +191,13 @@ func TestTenantServeCallRunsIsolatedChild(t *testing.T) {
 		t.Fatalf("child must not inherit the operator access token: %s", childText)
 	}
 
-	// The keyring password must travel by file, not by env.
-	childEnv, childEnvErr := handler.tenantChildEnv("personal", tenants.Tenant{Name: "personal", Account: "x@y.com"})
+	// The keyring password must travel by a temporary file, not by env, and
+	// must be removed before the call result is returned.
+	homeForEnv, homeForEnvErr := handler.tenantHome("personal")
+	if homeForEnvErr != nil {
+		t.Fatal(homeForEnvErr)
+	}
+	childEnv, cleanupChildEnv, childEnvErr := handler.tenantChildEnv("personal", tenants.Tenant{Name: "personal", Account: "x@y.com"})
 	if childEnvErr != nil {
 		t.Fatalf("tenantChildEnv: %v", childEnvErr)
 	}
@@ -204,12 +209,66 @@ func TestTenantServeCallRunsIsolatedChild(t *testing.T) {
 	if !strings.Contains(strings.Join(childEnv, "\n"), "GOG_KEYRING_PASSWORD_FILE=") {
 		t.Fatal("expected GOG_KEYRING_PASSWORD_FILE in child env")
 	}
+	passwordFile := filepath.Join(homeForEnv, "keys", "keyring-password")
+	if _, statErr := os.Stat(passwordFile); statErr != nil {
+		t.Fatalf("temporary keyring password file should exist while the child runs: %v", statErr)
+	}
+	cleanupChildEnv()
+	if _, statErr := os.Stat(passwordFile); !os.IsNotExist(statErr) {
+		t.Fatalf("temporary keyring password file must be removed after cleanup: %v", statErr)
+	}
 
 	// The call must leave an audit entry inside the tenant home.
 	audit := tenants.NewAuditLog(home)
 	entries, err := audit.Tail(10)
 	if err != nil || len(entries) != 1 || entries[0].Decision != "execute" {
 		t.Fatalf("unexpected audit: %#v err=%v", entries, err)
+	}
+	passwordFileAfter := filepath.Join(home, "keys", "keyring-password")
+	if _, statErr := os.Stat(passwordFileAfter); !os.IsNotExist(statErr) {
+		t.Fatalf("keyring password file must be removed after handleCall: %v", statErr)
+	}
+}
+
+func TestTenantServeMalformedBodySurfacesAuditFailure(t *testing.T) {
+	handler := tenantSeed(t, []tenants.Tenant{
+		{Name: "personal", Account: "rajeev.sgill@gmail.com", ReadOnly: true},
+	})
+	var errOut bytes.Buffer
+	handler.errOut = &errOut
+
+	home, homeErr := handler.tenantHome("personal")
+	if homeErr != nil {
+		t.Fatal(homeErr)
+	}
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, "audit"), []byte("not a dir"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/tenants/personal/call", strings.NewReader("{"))
+	request.Host = "127.0.0.1:8086"
+	request.Header.Set("Authorization", "Bearer test-token")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected malformed body to be rejected, got %d %s", recorder.Code, recorder.Body.String())
+	}
+	if !strings.Contains(errOut.String(), "AUDIT append failed") {
+		t.Fatalf("malformed-body audit failure must be surfaced, got stderr=%q", errOut.String())
+	}
+}
+
+func TestTenantTokenNoticeRedactsConfiguredTokens(t *testing.T) {
+	generated := tenantTokenNotice("generated-secret", true)
+	configured := tenantTokenNotice("configured-secret", false)
+	if !strings.Contains(generated, "generated-secret") {
+		t.Fatalf("generated token notice should include the token: %q", generated)
+	}
+	if strings.Contains(configured, "configured-secret") {
+		t.Fatalf("configured token notice must not leak the token: %q", configured)
 	}
 }
 
@@ -286,7 +345,10 @@ func TestTenantServeAuditFailureIsVisible(t *testing.T) {
 	handler.errOut = &errOut
 
 	// Make the audit dir unwritable: a file where the dir must go.
-	home := handler.tenantHome("personal")
+	home, homeErr := handler.tenantHome("personal")
+	if homeErr != nil {
+		t.Fatal(homeErr)
+	}
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -306,6 +368,39 @@ func TestTenantServeAuditFailureIsVisible(t *testing.T) {
 	}
 }
 
+func TestTenantServeHealthRemainsAvailableWhileCallsAreBusy(t *testing.T) {
+	handler := tenantSeed(t, []tenants.Tenant{
+		{Name: "personal", Account: "rajeev.sgill@gmail.com", ReadOnly: true},
+	})
+	handler.callSlots = make(chan struct{}, tenantMaxConcurrentCalls)
+	for i := 0; i < tenantMaxConcurrentCalls; i++ {
+		handler.callSlots <- struct{}{}
+	}
+
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/healthz", nil)
+	request.Host = "127.0.0.1:8086"
+	request.Header.Set("Authorization", "Bearer test-token")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("healthz must remain unthrottled while call slots are busy: %d %s", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestTenantServeRejectsUnsafeTenantNamesBeforeLookup(t *testing.T) {
+	handler := tenantSeed(t, nil)
+	for _, path := range []string{"/tenants/..%2F..%2F/call", "/tenants/a%2Fb/call", "/tenants/..%2F..%2F/tools"} {
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, path, strings.NewReader("{}"))
+		request.Host = "127.0.0.1:8086"
+		request.Header.Set("Authorization", "Bearer test-token")
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("%s should reject unsafe tenant name with 400, got %d %s", path, recorder.Code, recorder.Body.String())
+		}
+	}
+}
+
 func TestTenantHomeRejectsUnsafeNames(t *testing.T) {
 	configDir := t.TempDir()
 	store := tenants.NewStore(configDir)
@@ -314,5 +409,12 @@ func TestTenantHomeRejectsUnsafeNames(t *testing.T) {
 		if _, err := store.Home(name); err == nil {
 			t.Fatalf("expected Home(%q) to be rejected", name)
 		}
+	}
+	handler := &tenantServeHandler{store: store}
+	if _, err := handler.tenantHome("a/b"); err == nil {
+		t.Fatal("handler tenantHome must propagate unsafe-name errors")
+	}
+	if _, statErr := os.Stat(filepath.Join(configDir, "tenants", "_invalid")); !os.IsNotExist(statErr) {
+		t.Fatalf("unsafe names must not create an _invalid fallback directory: %v", statErr)
 	}
 }

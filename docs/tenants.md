@@ -66,8 +66,11 @@ Endpoints (bound to 127.0.0.1 only):
 Child environment: hosted children get a minimal environment (PATH, HOME, TERM,
 locale, TMPDIR, plus the tenant's GOG_HOME, GOG_ACCOUNT, and file-keyring
 settings). Operator secrets and unrelated GOG_* overrides are not inherited.
-The per-tenant keyring password is written to a 0600 file inside the tenant
-home and passed by file path, so the secret never appears in child-process env.
+The per-tenant keyring password is passed through a short-lived 0600 file and
+removed immediately after the child exits; it is never placed in child-process
+environment or left beside the encrypted keyring. This handoff does not protect
+against a same-UID process during an active call; encryption protects idle
+tenant storage and backups, not a fully compromised operator account.
 
 Policy:
 
