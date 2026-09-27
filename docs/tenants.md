@@ -34,6 +34,10 @@ gog tenant remove personal          # registry entry + isolated home
 gog tenant remove personal --keep-home
 ```
 
+Use `--oauth-client` when pinning the tenant's stored OAuth client; the global
+`--client` flag continues to select the operator runtime client. `--readonly`
+is also global and records the tenant as read-only at creation.
+
 The registry (`tenants.json`) holds tenant metadata only. Removing a tenant
 deletes its isolated home by default; `--keep-home` preserves data for
 forensics or 30-day-style holds.

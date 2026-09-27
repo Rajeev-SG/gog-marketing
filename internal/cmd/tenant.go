@@ -31,8 +31,7 @@ func commandTenantStore(ctx context.Context) (*tenants.Store, error) {
 type TenantAddCmd struct {
 	Name       string `arg:"" name:"name" help:"Tenant name (lowercase slug, used as the isolated home directory)"`
 	Account    string `arg:"" name:"account" help:"Pinned account email or alias for every hosted call"`
-	Client     string `name:"client" help:"OAuth client name for the tenant (optional)"`
-	ReadOnly   bool   `name:"readonly" help:"Run every hosted call with --readonly (default for writes protection)"`
+	Client     string `name:"oauth-client" help:"OAuth client name for the tenant (optional)"`
 	AllowTools string `name:"allow-tools" help:"Comma-separated MCP tool names; empty allows read-risk tools only"`
 	Notes      string `help:"Operational notes"`
 }
@@ -43,7 +42,7 @@ func (c *TenantAddCmd) Run(ctx context.Context, flags *RootFlags) error {
 		Name:       c.Name,
 		Account:    c.Account,
 		Client:     c.Client,
-		ReadOnly:   c.ReadOnly,
+		ReadOnly:   flags.ReadOnly,
 		AllowTools: splitCommaList(c.AllowTools),
 		Notes:      c.Notes,
 	}
