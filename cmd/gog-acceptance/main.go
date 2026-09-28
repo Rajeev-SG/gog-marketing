@@ -226,5 +226,9 @@ func resolveBootstrapClient(explicitClientID string, raw []byte) (config.ClientC
 		return config.ClientCredentials{}, errBootstrapClient
 	}
 
-	return config.ClientCredentials{ClientID: clientID, ClientSecret: clientSecret}, nil
+	var credentials config.ClientCredentials
+	credentials.ClientID = clientID
+	credentials.ClientSecret = clientSecret
+
+	return credentials, nil
 }
