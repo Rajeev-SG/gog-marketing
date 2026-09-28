@@ -48,7 +48,7 @@
 
 ## Acceptance and authentication
 
-For `gog-marketing` acceptance work, use `make acceptance-local`, `make acceptance-doctor`, `make acceptance-live`, and `make acceptance-live-repeat N=3`. Never use `go run` for authenticated acceptance or credential access. Routine acceptance must not open a browser, start OAuth consent, trigger macOS Keychain dialogs, or wait for terminal input. Use the stable developer profile and control-plane SecretStore described in `docs/acceptance.md`; only the explicit human bootstrap command may import credentials or request re-consent. If live credentials are unavailable, stop at the deterministic bootstrap action instead of retrying auth.
+For `gog-marketing` acceptance work, use `make acceptance-local`, `make acceptance-doctor`, `make acceptance-live`, and `make acceptance-live-repeat N=3` from the repository root, or use `make -C /path/to/gog-marketing ...` from another directory. Never use `go run` for authenticated acceptance or credential access. Routine acceptance must not open a browser, start OAuth consent, trigger macOS Keychain dialogs, or wait for terminal input. Use the stable developer profile and control-plane SecretStore described in `docs/acceptance.md`; only the explicit human bootstrap command may import credentials or request re-consent. If live credentials are unavailable, stop at the deterministic bootstrap action instead of retrying auth.
 
 ## Security & Configuration Tips
 
