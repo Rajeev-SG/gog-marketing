@@ -336,6 +336,7 @@ Generated from `gog schema --json`.
     - [`gog contacts (contact) raw <identifier> [flags]`](commands/gog-contacts-raw.md) - Dump raw People API response as JSON (People.Get; lossless; for scripting and LLM consumption)
     - [`gog contacts (contact) search <query> ... [flags]`](commands/gog-contacts-search.md) - Search contacts by name/email/phone
     - [`gog contacts (contact) update (edit,set) <resourceName> [flags]`](commands/gog-contacts-update.md) - Update a contact
+  - [`gog controlplane (control-plane) [flags]`](commands/gog-controlplane.md) - Web control plane for Google connections and asset grants
   - [`gog docs (doc) <command> [flags]`](commands/gog-docs.md) - Google Docs (export via Drive)
     - [`gog docs (doc) add-tab <docId> [flags]`](commands/gog-docs-add-tab.md) - Add a tab to a Google Doc
     - [`gog docs (doc) cat (text,read) <docId> [flags]`](commands/gog-docs-cat.md) - Print a Google Doc as plain text

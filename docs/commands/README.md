@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 889.
+Generated pages: 890.
 
 ## Top-level Commands
 
@@ -23,6 +23,7 @@ Generated pages: 889.
 - [gog config](gog-config.md) - Manage configuration
 - [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
 - [gog contacts](gog-contacts.md) - Google Contacts
+- [gog controlplane](gog-controlplane.md) - Web control plane for Google connections and asset grants
 - [gog docs](gog-docs.md) - Google Docs (export via Drive)
 - [gog download](gog-download.md) - Download a Drive file (alias for 'drive download')
 - [gog drive](gog-drive.md) - Google Drive
@@ -396,6 +397,7 @@ Generated pages: 889.
     - [gog contacts raw](gog-contacts-raw.md) - Dump raw People API response as JSON (People.Get; lossless; for scripting and LLM consumption)
     - [gog contacts search](gog-contacts-search.md) - Search contacts by name/email/phone
     - [gog contacts update](gog-contacts-update.md) - Update a contact
+  - [gog controlplane](gog-controlplane.md) - Web control plane for Google connections and asset grants
   - [gog docs](gog-docs.md) - Google Docs (export via Drive)
     - [gog docs add-tab](gog-docs-add-tab.md) - Add a tab to a Google Doc
     - [gog docs cat](gog-docs-cat.md) - Print a Google Doc as plain text

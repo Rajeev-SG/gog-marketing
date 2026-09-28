@@ -33,6 +33,7 @@ gog <command> [flags]
 - [gog config](gog-config.md) - Manage configuration
 - [gog connection](gog-connection.md) - Named multi-account connections (account, client, quota/billing project)
 - [gog contacts](gog-contacts.md) - Google Contacts
+- [gog controlplane](gog-controlplane.md) - Web control plane for Google connections and asset grants
 - [gog docs](gog-docs.md) - Google Docs (export via Drive)
 - [gog download](gog-download.md) - Download a Drive file (alias for 'drive download')
 - [gog drive](gog-drive.md) - Google Drive

@@ -110,6 +110,7 @@ type CLI struct {
 	Connection    ConnectionCmd         `cmd:"" help:"Named multi-account connections (account, client, quota/billing project)"`
 	CloudAdmin    CloudAdminCmd         `cmd:"" name:"cloudadmin" aliases:"cloud-admin" help:"Narrow Google Cloud administration (inventory, transfers, APIs)"`
 	Tenant        TenantCmd             `cmd:"" help:"Hosted tenant registry, isolated homes, audit logs and local API"`
+	ControlPlane  ControlPlaneCmd       `cmd:"" name:"controlplane" aliases:"control-plane" help:"Web control plane for Google connections and asset grants"`
 	AdSense       AdSenseCmd            `cmd:"" name:"adsense" help:"Google AdSense Management API"`
 	YouTube       YouTubeCmd            `cmd:"" name:"youtube" aliases:"yt" help:"YouTube Data API (search, activities, videos, playlists, comments, channels)"`
 	Photos        PhotosCmd             `cmd:"" name:"photos" aliases:"photo" help:"Google Photos Library and Picker APIs"`

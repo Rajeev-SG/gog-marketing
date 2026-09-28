@@ -121,6 +121,10 @@ See [OAuth clients](docs/auth-clients.md) for client selection and service
 accounts, and [Paths and State](docs/paths.md) for `GOG_HOME`, XDG paths, and
 keyring storage.
 
+For the hosted control-plane slice, see [Control Plane](docs/control-plane.md)
+and run `gog controlplane` with a Postgres URL, central OAuth client, and
+configured owner identity.
+
 ## Discover the contract
 
 The running binary generates its command schema, reference pages, and agent
