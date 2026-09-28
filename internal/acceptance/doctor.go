@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/openclaw/gogcli/internal/controlplane"
@@ -63,15 +64,24 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 	defer func() { _ = store.Close() }()
 
 	versions, versionErr := store.MigrationVersions(ctx)
-	if versionErr != nil || !hasVersions(versions, "001", "002") {
-		add("migrations", "FAIL", "database_unavailable", "required migrations are not current")
-		report.Remediation = "run make acceptance-bootstrap"
+	requiredVersions := controlplane.RequiredMigrationVersions()
+
+	if versionErr != nil {
+		add("migrations", "FAIL", "database_unavailable", "migration versions cannot be read")
+		report.Remediation = bootstrapAction
 
 		return report, wrapAcceptanceError(versionErr)
 	}
 
+	if missing := missingVersions(versions, requiredVersions...); len(missing) > 0 {
+		add("migrations", "FAIL", "database_unavailable", "missing "+strings.Join(missing, ","))
+		report.Remediation = bootstrapAction
+
+		return report, fmt.Errorf("%w: missing migrations %s", ErrDoctorFailed, strings.Join(missing, ","))
+	}
+
 	add("database", "PASS", "", "Postgres reachable")
-	add("migrations", "PASS", "", "001,002 current")
+	add("migrations", "PASS", "", strings.Join(requiredVersions, ",")+" current")
 
 	for _, name := range []string{"gmail", "singulyr"} {
 		connection, err := (&Runtime{Store: store}).ConnectionByName(ctx, name)
@@ -126,11 +136,19 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 
 	add("oauth_publishing_status", "INFO", "", "operator check required in Google Cloud Console; no stable public API or CLI exposes Testing/In production")
 
+	return report, finalizeDoctorReport(report)
+}
+
+func finalizeDoctorReport(report DoctorReport) error {
 	if report.Remediation == "" && report.Status == "FAIL" {
 		report.Remediation = bootstrapAction
 	}
 
-	return report, nil
+	if report.Status == "FAIL" {
+		return fmt.Errorf("%w: one or more checks failed", ErrDoctorFailed)
+	}
+
+	return nil
 }
 
 func (r DoctorReport) JSON() string {
@@ -153,19 +171,22 @@ func (r DoctorReport) Text() string {
 	return b.String()
 }
 
-func hasVersions(actual []string, required ...string) bool {
+func missingVersions(actual []string, required ...string) []string {
 	present := make(map[string]bool, len(actual))
 	for _, version := range actual {
 		present[version] = true
 	}
+	missing := make([]string, 0)
 
 	for _, version := range required {
 		if !present[version] {
-			return false
+			missing = append(missing, version)
 		}
 	}
 
-	return true
+	sort.Strings(missing)
+
+	return missing
 }
 
 func doctorOAuthClientCheck(ctx context.Context, profile Profile, secrets controlplane.SecretStore) CheckResult {

@@ -45,16 +45,10 @@ func (s *PostgresStore) Migrate(ctx context.Context) error {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
 
-	migrations := []struct {
-		version string
-		sql     string
-	}{
-		{"001", migration001Up},
-		{"002", migration002Up},
-	}
+	migrations := ControlPlaneMigrations()
 	for _, migration := range migrations {
 		var exists bool
-		if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, migration.version).Scan(&exists); err != nil {
+		if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, migration.Version).Scan(&exists); err != nil {
 			return wrapControlPlaneError(err)
 		}
 
@@ -67,18 +61,20 @@ func (s *PostgresStore) Migrate(ctx context.Context) error {
 			return wrapControlPlaneError(err)
 		}
 
-		if _, err := tx.ExecContext(ctx, migration.sql); err != nil {
+		if _, err := tx.ExecContext(ctx, migration.Up); err != nil {
 			_ = tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", migration.version, err)
+
+			return fmt.Errorf("apply migration %s: %w", migration.Version, err)
 		}
 
-		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations(version, applied_at) VALUES($1, $2)`, migration.version, time.Now().UTC()); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations(version, applied_at) VALUES($1, $2)`, migration.Version, time.Now().UTC()); err != nil {
 			_ = tx.Rollback()
+
 			return wrapControlPlaneError(err)
 		}
 
 		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit migration %s: %w", migration.version, err)
+			return fmt.Errorf("commit migration %s: %w", migration.Version, err)
 		}
 	}
 

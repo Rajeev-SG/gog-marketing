@@ -22,6 +22,7 @@ var (
 	ErrBootstrapClient       = errors.New("central OAuth client configuration is required")
 	ErrBootstrapTokens       = errors.New("bootstrap refresh-token exports are required")
 	ErrNeedsReconnect        = errors.New("needs_reconnect")
+	ErrDoctorFailed          = errors.New("acceptance doctor failed")
 )
 
 const bootstrapAction = "run make acceptance-bootstrap"

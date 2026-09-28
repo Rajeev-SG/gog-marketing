@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/api/googleapi"
+
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
@@ -21,7 +23,7 @@ func TestRetryPolicyOnlyRetriesTransientErrors(t *testing.T) {
 	calls := 0
 	policy := RetryPolicy{MaxAttempts: 3, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond}
 
-	_, err := policy.Run(context.Background(), "test", func() error {
+	_, err := policy.Run(context.Background(), "test", func(context.Context) error {
 		calls++
 		return errTestInvalidGrant
 	})
@@ -30,7 +32,7 @@ func TestRetryPolicyOnlyRetriesTransientErrors(t *testing.T) {
 	}
 	calls = 0
 
-	_, err = policy.Run(context.Background(), "test", func() error {
+	_, err = policy.Run(context.Background(), "test", func(context.Context) error {
 		calls++
 		if calls < 2 {
 			return errTestConnectionReset
@@ -185,5 +187,55 @@ func TestDoctorOAuthClientCheckMatchesBootstrapProfile(t *testing.T) {
 	check := doctorOAuthClientCheck(context.Background(), profile, secrets)
 	if check.Result != "PASS" {
 		t.Fatalf("doctor OAuth check = %+v", check)
+	}
+}
+
+func TestRetryAttemptTimeoutDoesNotConsumeBackoffBudget(t *testing.T) {
+	policy := RetryPolicy{MaxAttempts: 2, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond, AttemptTimeout: 10 * time.Millisecond}
+	calls := 0
+
+	attempts, err := policy.Run(context.Background(), "test", func(ctx context.Context) error {
+		calls++
+		if calls == 1 {
+			return &googleapi.Error{Code: 429, Message: "rate limited"}
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(time.Millisecond):
+			return nil
+		}
+	})
+	if err != nil || attempts != 2 {
+		t.Fatalf("retry outcome: attempts=%d err=%v", attempts, err)
+	}
+}
+
+func TestMigrationCheckUsesRegistryAndFailsMissing(t *testing.T) {
+	required := controlplane.RequiredMigrationVersions()
+	if len(required) < 2 {
+		t.Fatalf("migration registry too small: %v", required)
+	}
+
+	if missing := missingVersions(required[:len(required)-1], required...); len(missing) != 1 || missing[0] != required[len(required)-1] {
+		t.Fatalf("missing migration detection = %v", missing)
+	}
+
+	report := DoctorReport{Status: "FAIL"}
+	if err := finalizeDoctorReport(report); err == nil {
+		t.Fatal("FAIL doctor report returned nil error")
+	}
+}
+
+func TestRetryAttemptTimeoutRemainsRetryable(t *testing.T) {
+	policy := RetryPolicy{MaxAttempts: 1, AttemptTimeout: time.Millisecond}
+
+	_, err := policy.Run(context.Background(), "test", func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+	if err == nil || !Retryable(err) {
+		t.Fatalf("deadline outcome = %v", err)
 	}
 }

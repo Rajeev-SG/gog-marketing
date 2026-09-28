@@ -57,7 +57,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 		if err != nil {
 			return wrapMainError(err)
 		}
-		if installErr := installBootstrapToken(ctx, store, secrets, service, actor, org.ID, connection, token); installErr != nil {
+		if installErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, org.ID, connection, token); installErr != nil {
 			if controlplane.AuthFailureCategoryFor(installErr) != controlplane.AuthFailureInvalidGrant {
 				return fmt.Errorf("validate %s refresh token: %w", item.name, installErr)
 			}
@@ -72,7 +72,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 			if err != nil {
 				return wrapMainError(err)
 			}
-			if reinstallErr := installBootstrapToken(ctx, store, secrets, service, actor, org.ID, connection, token); reinstallErr != nil {
+			if reinstallErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, org.ID, connection, token); reinstallErr != nil {
 				return fmt.Errorf("validate %s refresh token after reauthorization: %w", item.name, reinstallErr)
 			}
 		}
@@ -94,7 +94,9 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	return nil
 }
 
-func installBootstrapToken(ctx context.Context, store *controlplane.PostgresStore, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, orgID string, connection controlplane.Connection, token controlplane.OAuthToken) error {
+func installBootstrapToken(parent context.Context, timeout time.Duration, store *controlplane.PostgresStore, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, orgID string, connection controlplane.Connection, token controlplane.OAuthToken) error {
+	ctx, cancel := context.WithTimeout(parent, timeout)
+	defer cancel()
 	token.Expiry = time.Now().Add(-time.Minute)
 	raw, err := controlplane.MarshalOAuthToken(token)
 	if err != nil {

@@ -247,6 +247,23 @@ func (r *Runtime) RunLive(ctx context.Context, runID string) (Manifest, error) {
 	return manifest, nil
 }
 
+func (r *Runtime) withRetryTimeout(ctx context.Context, fn func(context.Context) (int, error)) (int, error) {
+	budget := r.Timeout + (r.Retry.MaxDelay * time.Duration(maxInt(1, r.Retry.MaxAttempts)))
+
+	retryCtx, cancel := context.WithTimeout(ctx, budget)
+	defer cancel()
+
+	return fn(retryCtx)
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
 func (r *Runtime) withTimeout(ctx context.Context, fn func(context.Context) error) error {
 	stepCtx, cancel := context.WithTimeout(ctx, r.Timeout)
 	defer cancel()
@@ -283,20 +300,17 @@ func (r *Runtime) runConnection(ctx context.Context, manifest *Manifest, name st
 	var refreshed controlplane.Connection
 	var attempts int
 
-	err = r.withTimeout(ctx, func(stepCtx context.Context) error {
-		var refreshErr error
-		attempts, refreshErr = r.Retry.Run(stepCtx, name+".refresh", func() error {
+	attempts, err = r.withRetryTimeout(ctx, func(stepCtx context.Context) (int, error) {
+		return r.Retry.Run(stepCtx, name+".refresh", func(attemptCtx context.Context) error {
 			var callErr error
 
-			refreshed, callErr = service.Refresh(stepCtx, r.Actor(), connection.ID)
+			refreshed, callErr = service.Refresh(attemptCtx, r.Actor(), connection.ID)
 			if callErr != nil {
 				return wrapAcceptanceError(callErr)
 			}
 
 			return nil
 		})
-
-		return refreshErr
 	})
 	if err != nil {
 		category := string(controlplane_auth_category(err))
@@ -329,18 +343,15 @@ func (r *Runtime) runConnection(ctx context.Context, manifest *Manifest, name st
 		return FailFast("resource_grant_unavailable", "enable one resource during bootstrap", name+" has no enabled grant")
 	}
 
-	err = r.withTimeout(ctx, func(stepCtx context.Context) error {
-		var readErr error
-		attempts, readErr = r.Retry.Run(stepCtx, name+".read", func() error {
-			_, token, tokenErr := service.FreshToken(stepCtx, r.Actor(), connection.ID)
+	attempts, err = r.withRetryTimeout(ctx, func(stepCtx context.Context) (int, error) {
+		return r.Retry.Run(stepCtx, name+".read", func(attemptCtx context.Context) error {
+			_, token, tokenErr := service.FreshToken(attemptCtx, r.Actor(), connection.ID)
 			if tokenErr != nil {
 				return wrapAcceptanceError(tokenErr)
 			}
 
-			return r.Reader.Read(stepCtx, connection, token, grant)
+			return r.Reader.Read(attemptCtx, connection, token, grant)
 		})
-
-		return readErr
 	})
 	if err != nil {
 		category := string(controlplane_auth_category(err))

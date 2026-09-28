@@ -32,7 +32,7 @@ docker run --rm -d --name "$container" \
   -p "${port}:5432" postgres:17-alpine >/dev/null
 
 for _ in {1..30}; do
-  if docker exec "$container" pg_isready -U gog -d gog_control_plane >/dev/null 2>&1; then
+  if docker exec "$container" psql -U gog -d gog_control_plane -At -c "SELECT 1" >/dev/null 2>&1; then
     break
   fi
   sleep 1

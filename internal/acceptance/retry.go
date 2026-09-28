@@ -13,16 +13,17 @@ import (
 )
 
 type RetryPolicy struct {
-	MaxAttempts int
-	BaseDelay   time.Duration
-	MaxDelay    time.Duration
+	MaxAttempts    int
+	BaseDelay      time.Duration
+	MaxDelay       time.Duration
+	AttemptTimeout time.Duration
 }
 
 func DefaultRetryPolicy() RetryPolicy {
-	return RetryPolicy{MaxAttempts: 3, BaseDelay: 250 * time.Millisecond, MaxDelay: 2 * time.Second}
+	return RetryPolicy{MaxAttempts: 3, BaseDelay: 250 * time.Millisecond, MaxDelay: 2 * time.Second, AttemptTimeout: 30 * time.Second}
 }
 
-func (p RetryPolicy) Run(ctx context.Context, operation string, fn func() error) (attempts int, err error) {
+func (p RetryPolicy) Run(ctx context.Context, operation string, fn func(context.Context) error) (attempts int, err error) {
 	if p.MaxAttempts <= 0 {
 		p.MaxAttempts = 1
 	}
@@ -38,7 +39,11 @@ func (p RetryPolicy) Run(ctx context.Context, operation string, fn func() error)
 	for attempt := 1; attempt <= p.MaxAttempts; attempt++ {
 		attempts = attempt
 
-		err = fn()
+		attemptCtx, cancel := context.WithTimeout(ctx, p.AttemptTimeout)
+		err = fn(attemptCtx)
+
+		cancel()
+
 		if err == nil || !Retryable(err) || attempt == p.MaxAttempts {
 			return attempts, wrapAcceptanceError(err)
 		}
@@ -67,6 +72,10 @@ func (p RetryPolicy) Run(ctx context.Context, operation string, fn func() error)
 func Retryable(err error) bool {
 	if err == nil {
 		return false
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
 	}
 
 	var apiErr *googleapi.Error

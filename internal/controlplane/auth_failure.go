@@ -1,6 +1,7 @@
 package controlplane
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/url"
@@ -19,6 +20,7 @@ const (
 	AuthFailureOAuthClient    AuthFailureCategory = "oauth_client_unavailable"
 	AuthFailurePermission     AuthFailureCategory = "google_permission_denied"
 	AuthFailureTransient      AuthFailureCategory = "transient"
+	AuthFailureTimeout        AuthFailureCategory = "timeout"
 	AuthFailureUnknown        AuthFailureCategory = "unknown"
 )
 
@@ -72,6 +74,10 @@ func classifyAuthError(err error) AuthFailureCategory {
 		case apiErr.Code == 401 || apiErr.Code == 403:
 			return AuthFailurePermission
 		}
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return AuthFailureTimeout
 	}
 
 	var netErr net.Error
