@@ -70,6 +70,34 @@ Shows stored credential files plus any configured domain mappings.
 - Manual or remote authorization started before v0.24.0 cannot be completed
   after upgrading. Run step 1 again to generate a PKCE-bound URL.
 
+## macOS Keychain prompt loop during development
+
+Symptom: macOS repeatedly shows `gog wants to access key "gogcli" in your keychain`, even after choosing **Always Allow**. Each approval appears to last only for one command.
+
+Cause: `go run ./cmd/gog` compiles a fresh temporary executable for every invocation. macOS Keychain access approval is tied to executable identity, so a new build cannot inherit the previous build's **Always Allow** entry. Rebuilding an ad-hoc-signed binary can have the same effect.
+
+Use one stable executable for authenticated work:
+
+```bash
+make build
+bin/gog auth list --json
+bin/gog auth list --json
+```
+
+When the dialog appears for that stable binary, enter the login Keychain password and choose **Always Allow** once. Repeated reads from `bin/gog` should then complete without prompting. Do not use `go run` for commands that read or write stored credentials.
+
+If the binary is rebuilt and macOS prompts again, approve the new binary once or switch to the encrypted file keyring:
+
+```bash
+bin/gog auth keyring file
+export GOG_KEYRING_BACKEND=file
+export GOG_KEYRING_PASSWORD_FILE=/secure/path/gog-keyring-password
+```
+
+Keep the password file readable only by the account running `gog`. `gog auth keyring file` changes the backend; it does not migrate existing macOS Keychain entries. Export/import stored tokens and re-store OAuth client credentials before relying on the file backend.
+
+This local Keychain dependency is a development compatibility path. The hosted control plane must use managed secret storage instead of customer or operator macOS Keychain state.
+
 ## Quota project
 
 This selects request quota/billing attribution; it does not switch the Google
