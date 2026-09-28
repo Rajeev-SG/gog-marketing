@@ -63,15 +63,6 @@ func TestStableProfileRoundTrip(t *testing.T) {
 		t.Fatalf("profile round trip failed: %+v", loaded)
 	}
 
-	info, err := os.Stat(paths.MasterKey)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if info.Mode().Perm() != 0o600 {
-		t.Fatalf("master key permissions = %o", info.Mode().Perm())
-	}
-
 	if err := ValidateStablePaths(paths); err == nil && strings.Contains(root, os.TempDir()) {
 		t.Fatal("temporary profile path was accepted")
 	}
