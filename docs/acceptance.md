@@ -17,11 +17,14 @@ Acceptance state lives outside the repository:
 
 ## Commands
 
+The Make targets are repository-scoped. From any working directory, point `make` at the checkout:
+
 ```bash
-make acceptance-local
-make acceptance-doctor
-make acceptance-live
-make acceptance-live-repeat N=3
+REPO=/path/to/gog-marketing
+make -C "$REPO" acceptance-local
+make -C "$REPO" acceptance-doctor
+make -C "$REPO" acceptance-live
+make -C "$REPO" acceptance-live-repeat N=3
 ```
 
 `acceptance-local` provisions a disposable Docker Postgres instance, runs the stable `bin/gog-acceptance` binary with fake OAuth/resources, and cleans up its container. `acceptance-live` uses only the Postgres control plane and the acceptance SecretStore. It never constructs an authorization URL.
@@ -36,17 +39,17 @@ ACCEPTANCE_GMAIL_EMAIL=gmail-account@example.com \
 ACCEPTANCE_SINGULYR_EMAIL=singulyr-account@example.com \
 GOG_STABLE_BIN=/path/to/signed/gog \
 GOOGLE_CLIENT_SECRET_FILE=/path/to/client_secret.json \
-make acceptance-bootstrap
+make -C /path/to/gog-marketing acceptance-bootstrap
 ```
 
 This is the single deterministic bootstrap action. It uses the stable signed `gog` binary to export the existing `gmail` and `singulyr` refresh tokens. If either token is genuinely revoked or expired, that same command opens the deliberate browser consent once for the affected account, then exports the replacement token. It imports the central client and tokens into the non-Keychain acceptance SecretStore, silently refreshes both, discovers resources, and enables one resource per connection.
 
-After the central client secret is imported, connect the real `gmail` and `singulyr` accounts through the deliberate control-plane reconnect flow. Once both tokens are in the acceptance SecretStore, routine acceptance is unattended.
+Bootstrap imports the central client and both connection tokens into the acceptance SecretStore. It re-opens consent only when a stored token is actually invalid. Once it returns, routine acceptance is unattended.
 
 ## Failure contract
 
 - `google_invalid_grant` / `google_scope_mismatch` → `needs_reconnect`, no browser fallback.
-- OAuth client missing → fail fast with `make acceptance-bootstrap`.
+- OAuth client missing → fail fast with the repository-scoped `make acceptance-bootstrap` action.
 - HTTP 429/5xx/network reset → bounded retry only.
 - Permission, scope, and disabled-grant errors → immediate failure.
 
