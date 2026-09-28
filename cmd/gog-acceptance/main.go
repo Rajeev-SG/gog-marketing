@@ -149,11 +149,8 @@ func run(args []string) error {
 }
 
 func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, ownerEmail, gmailEmail, singulyrEmail, googleClientID, secretFile, gmailTokenFile, singulyrTokenFile, exportGog string, timeout time.Duration) error {
-	if strings.TrimSpace(databaseURL) == "" || strings.TrimSpace(googleClientID) == "" || strings.TrimSpace(secretFile) == "" {
-		return errBootstrapArguments
-	}
-	if strings.TrimSpace(gmailEmail) == "" || strings.TrimSpace(singulyrEmail) == "" || strings.TrimSpace(exportGog) == "" {
-		return errBootstrapArguments
+	if err := validateBootstrapInputs(databaseURL, ownerEmail, gmailEmail, singulyrEmail, secretFile, exportGog); err != nil {
+		return err
 	}
 	if strings.TrimSpace(gmailTokenFile) == "" || strings.TrimSpace(singulyrTokenFile) == "" {
 		var err error
@@ -170,16 +167,12 @@ func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, owne
 	if err != nil {
 		return wrapMainError(err)
 	}
-	clientSecret := strings.TrimSpace(string(secret))
-	if credentials, parseErr := config.ParseGoogleOAuthClientJSON(secret); parseErr == nil {
-		if strings.TrimSpace(googleClientID) == "" {
-			googleClientID = credentials.ClientID
-		}
-		clientSecret = credentials.ClientSecret
+	credentials, err := resolveBootstrapClient(googleClientID, secret)
+	if err != nil {
+		return err
 	}
-	if strings.TrimSpace(googleClientID) == "" || strings.TrimSpace(clientSecret) == "" {
-		return errBootstrapClient
-	}
+	googleClientID = credentials.ClientID
+	clientSecret := credentials.ClientSecret
 	profile := acceptance.Profile{
 		Version: 1, DatabaseURL: databaseURL, OwnerEmail: ownerEmail,
 		OrganizationSlug: "acceptance", GoogleClientID: googleClientID,
@@ -207,4 +200,34 @@ func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, owne
 	}
 	fmt.Println("acceptance bootstrap complete; run make acceptance-live")
 	return nil
+}
+
+func validateBootstrapInputs(databaseURL, ownerEmail, gmailEmail, singulyrEmail, secretFile, exportGog string) error {
+	if strings.TrimSpace(databaseURL) == "" || strings.TrimSpace(secretFile) == "" {
+		return errBootstrapArguments
+	}
+	if strings.TrimSpace(ownerEmail) == "" || strings.TrimSpace(gmailEmail) == "" || strings.TrimSpace(singulyrEmail) == "" || strings.TrimSpace(exportGog) == "" {
+		return errBootstrapArguments
+	}
+
+	return nil
+}
+
+func resolveBootstrapClient(explicitClientID string, raw []byte) (config.ClientCredentials, error) {
+	clientID := strings.TrimSpace(explicitClientID)
+	secretMaterial := strings.TrimSpace(string(raw))
+	if credentials, err := config.ParseGoogleOAuthClientJSON(raw); err == nil {
+		if clientID == "" {
+			clientID = strings.TrimSpace(credentials.ClientID)
+		}
+		secretMaterial = strings.TrimSpace(credentials.ClientSecret)
+	}
+	if clientID == "" || secretMaterial == "" {
+		return config.ClientCredentials{}, errBootstrapClient
+	}
+
+	resolved := config.ClientCredentials{ClientID: clientID}
+	resolved.ClientSecret = secretMaterial
+
+	return resolved, nil
 }
