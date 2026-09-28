@@ -78,3 +78,22 @@ func TestResolveControlPlaneGoogleOAuthClient(t *testing.T) {
 		t.Fatal("stored client read failure was ignored")
 	}
 }
+
+func TestControlPlaneDiscovererWiresGoogleAdsConfig(t *testing.T) {
+	command := &ControlPlaneCmd{
+		GoogleAdsDeveloperToken: "developer-token",
+		GoogleAdsLoginCustomer:  "123-456-7890",
+		BigQueryProjects:        "project-a,project-b",
+	}
+
+	discoverer := controlPlaneDiscoverer(command)
+	if discoverer.GoogleAdsDeveloperToken != command.GoogleAdsDeveloperToken {
+		t.Fatal("Google Ads developer token was not wired")
+	}
+	if discoverer.GoogleAdsLoginCustomer != command.GoogleAdsLoginCustomer {
+		t.Fatal("Google Ads login customer was not wired")
+	}
+	if len(discoverer.BigQueryProjects) != 2 || discoverer.BigQueryProjects[0] != "project-a" || discoverer.BigQueryProjects[1] != "project-b" {
+		t.Fatalf("BigQuery projects were not wired: %+v", discoverer.BigQueryProjects)
+	}
+}

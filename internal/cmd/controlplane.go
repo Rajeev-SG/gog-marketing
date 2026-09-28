@@ -123,11 +123,7 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	provider := controlplane.NewGoogleOAuthProvider(googleClient.ClientID, googleClient.ClientSecret, redirectURI)
 	service := &controlplane.Service{
 		Store: store, Secrets: secretStore, OAuth: provider, RedirectURI: redirectURI,
-		Discoverer: controlplane.EngineDiscoverer{
-			GoogleAdsDeveloperToken: c.GoogleAdsDeveloperToken,
-			GoogleAdsLoginCustomer:  c.GoogleAdsLoginCustomer,
-			BigQueryProjects:        splitCSV(c.BigQueryProjects),
-		},
+		Discoverer: controlPlaneDiscoverer(c),
 	}
 	for _, name := range splitCSV(c.SeedConnections) {
 		existing, getErr := service.ListConnections(ctx, actor)
@@ -201,6 +197,14 @@ func resolveControlPlaneGoogleOAuthClient(ctx context.Context, clientName, clien
 		return config.ClientCredentials{}, usage("configure --google-client-name or both --google-client-id and --google-client-secret")
 	}
 	return config.ClientCredentials{ClientID: clientID, ClientSecret: clientSecret}, nil
+}
+
+func controlPlaneDiscoverer(cmd *ControlPlaneCmd) controlplane.EngineDiscoverer {
+	return controlplane.EngineDiscoverer{
+		GoogleAdsDeveloperToken: cmd.GoogleAdsDeveloperToken,
+		GoogleAdsLoginCustomer:  cmd.GoogleAdsLoginCustomer,
+		BigQueryProjects:        splitCSV(cmd.BigQueryProjects),
+	}
 }
 
 func validateControlPlaneSecurity(listen, secretBackend, secretManagerProject, adminToken string) error {
