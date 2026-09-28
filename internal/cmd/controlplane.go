@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/openclaw/gogcli/internal/authclient"
+	"github.com/openclaw/gogcli/internal/config"
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
@@ -29,8 +31,9 @@ type ControlPlaneCmd struct {
 	MasterKey               string `name:"master-key" help:"Encryption master key for local secret storage" env:"GOG_CONTROL_PLANE_MASTER_KEY"`
 	SessionKey              string `name:"session-key" help:"Stable signing key for web sessions" env:"GOG_CONTROL_PLANE_SESSION_KEY"`
 	AdminToken              string `name:"admin-token" help:"Required bootstrap admin token used to sign in" env:"GOG_CONTROL_PLANE_ADMIN_TOKEN"`
-	GoogleClientID          string `name:"google-client-id" help:"Central gog-marketing Google OAuth client ID" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_ID"`
-	GoogleClientSecret      string `name:"google-client-secret" help:"Central gog-marketing Google OAuth client secret" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_SECRET"`
+	GoogleClientName        string `name:"google-client-name" help:"Named stored OAuth client supplying the central client ID and Keychain secret" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_NAME"`
+	GoogleClientID          string `name:"google-client-id" help:"Explicit central Google OAuth client ID for secret-injected deployments" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_ID"`
+	GoogleClientSecret      string `name:"google-client-secret" help:"Explicit central Google OAuth client secret for secret-injected deployments" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_SECRET"`
 	GoogleAdsDeveloperToken string `name:"google-ads-developer-token" help:"Google Ads developer token used for resource discovery" env:"GOG_GOOGLE_ADS_DEVELOPER_TOKEN"`
 	GoogleAdsLoginCustomer  string `name:"google-ads-login-customer-id" help:"Optional Google Ads manager customer ID" env:"GOG_GOOGLE_ADS_LOGIN_CUSTOMER_ID"`
 	BigQueryProjects        string `name:"bigquery-projects" help:"Comma-separated BigQuery projects to discover" env:"GOG_CONTROL_PLANE_BIGQUERY_PROJECTS"`
@@ -45,9 +48,6 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	}
 	if strings.TrimSpace(c.DatabaseURL) == "" {
 		return usage("--database-url is required (Postgres URL or explicit memory://)")
-	}
-	if strings.TrimSpace(c.GoogleClientID) == "" || strings.TrimSpace(c.GoogleClientSecret) == "" {
-		return usage("central Google OAuth client credentials are required")
 	}
 	if err := validateControlPlaneSecurity(c.Listen, c.SecretBackend, c.SecretManagerProject, c.AdminToken); err != nil {
 		return err
@@ -65,13 +65,18 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 		return usage("--session-key must be at least 16 bytes")
 	}
 
+	googleClient, clientErr := resolveControlPlaneGoogleOAuthClient(ctx, c.GoogleClientName, c.GoogleClientID, c.GoogleClientSecret, authclient.ReadCredentials)
+	if clientErr != nil {
+		return clientErr
+	}
+
 	var store controlplane.Store
 	if strings.TrimSpace(c.DatabaseURL) == "memory://" {
 		store = controlplane.NewMemoryStore()
 	} else {
-		postgres, err := controlplane.OpenPostgresStore(ctx, c.DatabaseURL)
-		if err != nil {
-			return fmt.Errorf("control plane: %w", err)
+		postgres, openErr := controlplane.OpenPostgresStore(ctx, c.DatabaseURL)
+		if openErr != nil {
+			return fmt.Errorf("control plane: %w", openErr)
 		}
 		store = postgres
 	}
@@ -79,24 +84,24 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 
 	secretPath := strings.TrimSpace(c.SecretStorePath)
 	if secretPath == "" {
-		configDir, err := os.UserConfigDir()
-		if err != nil {
-			return fmt.Errorf("control plane: %w", err)
+		configDir, configErr := os.UserConfigDir()
+		if configErr != nil {
+			return fmt.Errorf("control plane: %w", configErr)
 		}
 		secretPath = filepath.Join(configDir, "gogcli", "control-plane-secrets.json")
 	}
 	var secretStore controlplane.SecretStore
-	var err error
+	var secretErr error
 	switch strings.ToLower(strings.TrimSpace(c.SecretBackend)) {
 	case "file":
-		secretStore, err = controlplane.NewFileSecretStore(secretPath, masterKey)
+		secretStore, secretErr = controlplane.NewFileSecretStore(secretPath, masterKey)
 	case "secret-manager":
-		secretStore, err = controlplane.NewGoogleSecretManagerStore(ctx, c.SecretManagerProject)
+		secretStore, secretErr = controlplane.NewGoogleSecretManagerStore(ctx, c.SecretManagerProject)
 	default:
 		return usage("--secret-backend must be file or secret-manager")
 	}
-	if err != nil {
-		return fmt.Errorf("control plane: %w", err)
+	if secretErr != nil {
+		return fmt.Errorf("control plane: %w", secretErr)
 	}
 
 	owner := controlplane.User{
@@ -115,7 +120,7 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 		baseURL = "http://" + strings.TrimSpace(c.Listen)
 	}
 	redirectURI := baseURL + "/oauth/google/callback"
-	provider := controlplane.NewGoogleOAuthProvider(c.GoogleClientID, c.GoogleClientSecret, redirectURI)
+	provider := controlplane.NewGoogleOAuthProvider(googleClient.ClientID, googleClient.ClientSecret, redirectURI)
 	service := &controlplane.Service{
 		Store: store, Secrets: secretStore, OAuth: provider, RedirectURI: redirectURI,
 		Discoverer: controlplane.EngineDiscoverer{
@@ -168,6 +173,34 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 		return nil
 	}
 	return fmt.Errorf("control plane: %w", err)
+}
+
+type controlPlaneCredentialsReader func(context.Context, string) (config.ClientCredentials, error)
+
+func resolveControlPlaneGoogleOAuthClient(ctx context.Context, clientName, clientID, clientSecret string, read controlPlaneCredentialsReader) (config.ClientCredentials, error) {
+	clientName = strings.TrimSpace(clientName)
+	clientID = strings.TrimSpace(clientID)
+	clientSecret = strings.TrimSpace(clientSecret)
+	if clientName != "" {
+		if clientID != "" || clientSecret != "" {
+			return config.ClientCredentials{}, usage("--google-client-name cannot be combined with --google-client-id or --google-client-secret")
+		}
+		if read == nil {
+			return config.ClientCredentials{}, errors.New("stored OAuth credential reader is required")
+		}
+		credentials, err := read(ctx, clientName)
+		if err != nil {
+			return config.ClientCredentials{}, fmt.Errorf("read stored Google OAuth client %q: %w", clientName, err)
+		}
+		if strings.TrimSpace(credentials.ClientID) == "" || strings.TrimSpace(credentials.ClientSecret) == "" {
+			return config.ClientCredentials{}, fmt.Errorf("stored Google OAuth client %q is incomplete", clientName)
+		}
+		return credentials, nil
+	}
+	if clientID == "" || clientSecret == "" {
+		return config.ClientCredentials{}, usage("configure --google-client-name or both --google-client-id and --google-client-secret")
+	}
+	return config.ClientCredentials{ClientID: clientID, ClientSecret: clientSecret}, nil
 }
 
 func validateControlPlaneSecurity(listen, secretBackend, secretManagerProject, adminToken string) error {

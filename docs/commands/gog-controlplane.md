@@ -35,8 +35,9 @@ gog controlplane (control-plane) [flags]
 | `--gmail-no-send` | `bool` | false | Block Gmail send operations (agent safety) |
 | `--google-ads-developer-token` | `string` |  | Google Ads developer token used for resource discovery |
 | `--google-ads-login-customer-id` | `string` |  | Optional Google Ads manager customer ID |
-| `--google-client-id` | `string` |  | Central gog-marketing Google OAuth client ID |
-| `--google-client-secret` | `string` |  | Central gog-marketing Google OAuth client secret |
+| `--google-client-id` | `string` |  | Explicit central Google OAuth client ID for secret-injected deployments |
+| `--google-client-name` | `string` |  | Named stored OAuth client supplying the central client ID and Keychain secret |
+| `--google-client-secret` | `string` |  | Explicit central Google OAuth client secret for secret-injected deployments |
 | `-h`<br>`--help` | `kong.helpFlag` |  | Show context-sensitive help. |
 | `--home` | `string` |  | Override gogcli config/data/state/cache root (equivalent to GOG_HOME) |
 | `-j`<br>`--json`<br>`--machine` | `bool` | false | Output JSON to stdout (best for scripting) |

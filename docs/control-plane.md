@@ -17,12 +17,13 @@ gog controlplane \
   --secret-manager-project my-gcp-project \
   --owner-email owner@example.com \
   --admin-token "$GOG_CONTROL_PLANE_ADMIN_TOKEN" \
-  --google-client-id "$GOOGLE_CLIENT_ID" \
-  --google-client-secret "$GOOGLE_CLIENT_SECRET" \
+  --google-client-name personal-owned \
   --session-key "$GOG_CONTROL_PLANE_SESSION_KEY"
 ```
 
 The secret backend is an explicit required choice. For a hermetic loopback smoke run, use `--database-url memory://`, `--secret-backend file`, and a loopback `--listen` address; the file backend encrypts values with the supplied `--master-key` and stores only ciphertext. The server refuses `file` on a non-loopback listener. `--admin-token` is required and is checked in constant time before a web session is issued.
+
+`--google-client-name` loads the public client ID and protected client secret through the existing `gog` credentials store. Use the stable `bin/gog` binary for this path so macOS can keep one persistent Keychain grant instead of prompting for temporary `go run` binaries. Deployments that inject secrets directly may instead provide both `--google-client-id` and `--google-client-secret`; do not combine the named and explicit forms.
 
 The OAuth redirect URI is derived from `--external-base-url` and is
 `/oauth/google/callback`. Register that exact URI on the central gog-marketing
@@ -62,6 +63,18 @@ request may proceed
 
 `controlplane.Policy.Allow` is the future MCP/API/agent gate. Unknown resources
 and cross-organisation connection IDs are denied by default.
+
+Discovery is atomic across configured services. Google Ads is skipped only when
+its developer token is absent; once configured, an API or permission failure
+fails the discovery operation rather than silently returning partial results.
+
+## Acceptance evidence policy
+
+Do not commit screenshots or manifests containing real account emails, Google
+resource IDs, tokens, auth codes, or customer names. Store those artifacts in a
+private operator-controlled evidence location. The public repository may contain
+only a redacted procedure and synthetic acceptance examples.
+
 
 ## Security boundaries
 
