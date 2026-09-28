@@ -463,3 +463,26 @@ func scanGrantRows(rows *sql.Rows) (ResourceGrant, error) { return scanGrant(row
 func isUniqueViolation(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "duplicate key")
 }
+
+func (s *PostgresStore) MigrationVersions(ctx context.Context) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT version FROM schema_migrations ORDER BY version`)
+	if err != nil {
+		return nil, wrapControlPlaneError(err)
+	}
+	defer rows.Close()
+	versions := make([]string, 0, 2)
+
+	for rows.Next() {
+		var version string
+		if err := rows.Scan(&version); err != nil {
+			return nil, wrapControlPlaneError(err)
+		}
+		versions = append(versions, version)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, wrapControlPlaneError(err)
+	}
+
+	return versions, nil
+}

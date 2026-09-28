@@ -151,3 +151,22 @@ func ValidateStablePaths(paths Paths) error {
 
 	return nil
 }
+
+func SetGoogleClientSecretRef(paths Paths, reference string) error {
+	profile, _, err := LoadProfile(paths)
+	if err != nil {
+		return wrapAcceptanceError(err)
+	}
+	profile.GoogleClientSecretRef = reference
+
+	raw, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		return wrapAcceptanceError(err)
+	}
+
+	if err := os.WriteFile(paths.Config, append(raw, '\n'), 0o600); err != nil {
+		return wrapAcceptanceError(err)
+	}
+
+	return nil
+}

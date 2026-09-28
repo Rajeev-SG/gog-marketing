@@ -174,7 +174,7 @@ acceptance-guard:
 
 acceptance-bootstrap: build-acceptance
 	@docker start gog-control-plane-postgres >/dev/null 2>&1 || docker run -d --name gog-control-plane-postgres -e POSTGRES_USER=gog -e POSTGRES_PASSWORD=gog-test -e POSTGRES_DB=gog_control_plane -p 55432:5432 postgres:17-alpine >/dev/null
-	@$(BIN_DIR)/gog-acceptance bootstrap --database-url "postgres://gog:gog-test@127.0.0.1:55432/gog_control_plane?sslmode=disable" --owner-email "$${ACCEPTANCE_OWNER_EMAIL:-rajeev.sgill@gmail.com}" --google-client-secret-file "$${GOOGLE_CLIENT_SECRET_FILE:?set GOOGLE_CLIENT_SECRET_FILE to the downloaded central client JSON}" --export-gog "$${GOG_STABLE_BIN:-/opt/homebrew/bin/gog}"
+	@$(BIN_DIR)/gog-acceptance bootstrap --database-url "postgres://gog:gog-test@127.0.0.1:55432/gog_control_plane?sslmode=disable" --owner-email "$${ACCEPTANCE_OWNER_EMAIL:?set ACCEPTANCE_OWNER_EMAIL}" --gmail-email "$${ACCEPTANCE_GMAIL_EMAIL:?set ACCEPTANCE_GMAIL_EMAIL}" --singulyr-email "$${ACCEPTANCE_SINGULYR_EMAIL:?set ACCEPTANCE_SINGULYR_EMAIL}" --google-client-secret-file "$${GOOGLE_CLIENT_SECRET_FILE:?set GOOGLE_CLIENT_SECRET_FILE}" --export-gog "$${GOG_STABLE_BIN:?set GOG_STABLE_BIN}"
 
 ci: docker-version-check fmt-check lint deadcode test docs-check agent-skills-check acceptance-guard
 

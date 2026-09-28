@@ -62,7 +62,16 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 
 	defer func() { _ = store.Close() }()
 
-	add("database", "PASS", "", "Postgres reachable and migrations current")
+	versions, versionErr := store.MigrationVersions(ctx)
+	if versionErr != nil || !hasVersions(versions, "001", "002") {
+		add("migrations", "FAIL", "database_unavailable", "required migrations are not current")
+		report.Remediation = "run make acceptance-bootstrap"
+
+		return report, wrapAcceptanceError(versionErr)
+	}
+
+	add("database", "PASS", "", "Postgres reachable")
+	add("migrations", "PASS", "", "001,002 current")
 
 	for _, name := range []string{"gmail", "singulyr"} {
 		connection, err := (&Runtime{Store: store}).ConnectionByName(ctx, name)
@@ -102,16 +111,11 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 		}
 	}
 
-	if strings.TrimSpace(profile.GoogleClientID) == "" || strings.TrimSpace(profile.GoogleClientSecretRef) == "" {
-		add("oauth_client", "FAIL", "oauth_client_unavailable", "client ID or secret reference missing")
+	oauthCheck := doctorOAuthClientCheck(ctx, profile, secrets)
+	add(oauthCheck.Name, oauthCheck.Result, oauthCheck.Category, oauthCheck.Detail)
+
+	if oauthCheck.Result == "FAIL" {
 		report.Remediation = bootstrapAction
-	} else {
-		if _, secretErr := secrets.Get(ctx, acceptanceOrg, profile.GoogleClientSecretRef); secretErr != nil {
-			add("oauth_client_secret", "FAIL", "oauth_client_unavailable", "secret reference cannot be read")
-			report.Remediation = bootstrapAction
-		} else {
-			add("oauth_client", "PASS", "", "client ID and secret reference configured")
-		}
 	}
 
 	if strings.TrimSpace(profile.GoogleAdsDeveloperToken) == "" {
@@ -147,4 +151,31 @@ func (r DoctorReport) Text() string {
 	}
 
 	return b.String()
+}
+
+func hasVersions(actual []string, required ...string) bool {
+	present := make(map[string]bool, len(actual))
+	for _, version := range actual {
+		present[version] = true
+	}
+
+	for _, version := range required {
+		if !present[version] {
+			return false
+		}
+	}
+
+	return true
+}
+
+func doctorOAuthClientCheck(ctx context.Context, profile Profile, secrets controlplane.SecretStore) CheckResult {
+	if strings.TrimSpace(profile.GoogleClientID) == "" || strings.TrimSpace(profile.GoogleClientSecretRef) == "" {
+		return CheckResult{Name: "oauth_client", Result: "FAIL", Category: "oauth_client_unavailable", Detail: "client ID or secret reference missing"}
+	}
+
+	if _, err := secrets.Get(ctx, acceptanceOrg, profile.GoogleClientSecretRef); err != nil {
+		return CheckResult{Name: "oauth_client", Result: "FAIL", Category: "oauth_client_unavailable", Detail: "secret reference cannot be read"}
+	}
+
+	return CheckResult{Name: "oauth_client", Result: "PASS", Detail: "client ID and secret reference configured"}
 }

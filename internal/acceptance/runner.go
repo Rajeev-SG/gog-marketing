@@ -247,8 +247,22 @@ func (r *Runtime) RunLive(ctx context.Context, runID string) (Manifest, error) {
 	return manifest, nil
 }
 
+func (r *Runtime) withTimeout(ctx context.Context, fn func(context.Context) error) error {
+	stepCtx, cancel := context.WithTimeout(ctx, r.Timeout)
+	defer cancel()
+
+	return fn(stepCtx)
+}
+
 func (r *Runtime) runConnection(ctx context.Context, manifest *Manifest, name string) error {
-	connection, err := r.ConnectionByName(ctx, name)
+	var connection controlplane.Connection
+
+	err := r.withTimeout(ctx, func(stepCtx context.Context) error {
+		var findErr error
+		connection, findErr = r.ConnectionByName(stepCtx, name)
+
+		return findErr
+	})
 	if err != nil {
 		manifest.Add(name+".connection", "FAIL", "missing_connection", bootstrapAction, 0)
 		return fmt.Errorf("%s: %w\nreason: missing_connection\naction: %s", name, ErrNeedsReconnect, bootstrapAction)
@@ -267,16 +281,22 @@ func (r *Runtime) runConnection(ctx context.Context, manifest *Manifest, name st
 
 	service := r.Service()
 	var refreshed controlplane.Connection
+	var attempts int
 
-	attempts, err := r.Retry.Run(ctx, name+".refresh", func() error {
+	err = r.withTimeout(ctx, func(stepCtx context.Context) error {
 		var refreshErr error
+		attempts, refreshErr = r.Retry.Run(stepCtx, name+".refresh", func() error {
+			var callErr error
 
-		refreshed, refreshErr = service.Refresh(ctx, r.Actor(), connection.ID)
-		if refreshErr != nil {
-			return wrapAcceptanceError(refreshErr)
-		}
+			refreshed, callErr = service.Refresh(stepCtx, r.Actor(), connection.ID)
+			if callErr != nil {
+				return wrapAcceptanceError(callErr)
+			}
 
-		return nil
+			return nil
+		})
+
+		return refreshErr
 	})
 	if err != nil {
 		category := string(controlplane_auth_category(err))
@@ -296,22 +316,31 @@ func (r *Runtime) runConnection(ctx context.Context, manifest *Manifest, name st
 
 	manifest.Add(name+".refresh", "PASS", "", string(refreshed.Status), attempts)
 
-	grant, err := r.EnabledGrant(ctx, connection.ID)
+	var grant controlplane.ResourceGrant
+
+	err = r.withTimeout(ctx, func(stepCtx context.Context) error {
+		var grantErr error
+		grant, grantErr = r.EnabledGrant(stepCtx, connection.ID)
+
+		return grantErr
+	})
 	if err != nil {
 		manifest.Add(name+".read", "FAIL", "resource_grant_unavailable", "enable one resource during bootstrap", 0)
 		return FailFast("resource_grant_unavailable", "enable one resource during bootstrap", name+" has no enabled grant")
 	}
 
-	readCtx, cancel := context.WithTimeout(ctx, r.Timeout)
-	defer cancel()
+	err = r.withTimeout(ctx, func(stepCtx context.Context) error {
+		var readErr error
+		attempts, readErr = r.Retry.Run(stepCtx, name+".read", func() error {
+			_, token, tokenErr := service.FreshToken(stepCtx, r.Actor(), connection.ID)
+			if tokenErr != nil {
+				return wrapAcceptanceError(tokenErr)
+			}
 
-	attempts, err = r.Retry.Run(readCtx, name+".read", func() error {
-		_, token, tokenErr := service.FreshToken(readCtx, r.Actor(), connection.ID)
-		if tokenErr != nil {
-			return wrapAcceptanceError(tokenErr)
-		}
+			return r.Reader.Read(stepCtx, connection, token, grant)
+		})
 
-		return r.Reader.Read(readCtx, connection, token, grant)
+		return readErr
 	})
 	if err != nil {
 		category := string(controlplane_auth_category(err))

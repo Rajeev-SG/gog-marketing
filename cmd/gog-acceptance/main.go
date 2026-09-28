@@ -29,20 +29,22 @@ func run(args []string) error {
 	}
 	command := args[0]
 	fs := flag.NewFlagSet(command, flag.ContinueOnError)
-	var profileRoot, outputRoot, databaseURL, ownerEmail, googleClientID, googleClientSecretFile, gmailRefreshTokenFile, singulyrRefreshTokenFile, exportGog string
+	var profileRoot, outputRoot, databaseURL, ownerEmail, gmailEmail, singulyrEmail, googleClientID, googleClientSecretFile, gmailRefreshTokenFile, singulyrRefreshTokenFile, exportGog string
 	var runs int
 	var timeout time.Duration
 	fs.StringVar(&profileRoot, "profile-root", "", "stable acceptance profile directory")
 	fs.StringVar(&outputRoot, "output-root", "", "acceptance manifest output directory")
 	fs.StringVar(&databaseURL, "database-url", "", "Postgres URL")
-	fs.StringVar(&ownerEmail, "owner-email", "owner@example.test", "control-plane owner email")
+	fs.StringVar(&ownerEmail, "owner-email", "", "control-plane owner email")
+	fs.StringVar(&gmailEmail, "gmail-email", "", "gmail connection Google email")
+	fs.StringVar(&singulyrEmail, "singulyr-email", "", "singulyr connection Google email")
 	fs.StringVar(&googleClientID, "google-client-id", "", "central OAuth client ID")
 	fs.StringVar(&googleClientSecretFile, "google-client-secret-file", "", "file containing the central OAuth client secret")
 	fs.StringVar(&gmailRefreshTokenFile, "gmail-refresh-token-file", "", "file containing the gmail refresh token export")
 	fs.StringVar(&singulyrRefreshTokenFile, "singulyr-refresh-token-file", "", "file containing the singulyr refresh token export")
-	fs.StringVar(&exportGog, "export-gog", "/opt/homebrew/bin/gog", "stable signed gog binary used only by bootstrap token export")
+	fs.StringVar(&exportGog, "export-gog", "", "stable signed gog binary used only by bootstrap token export")
 	fs.IntVar(&runs, "runs", 1, "live acceptance repetitions")
-	fs.DurationVar(&timeout, "timeout", 30*time.Second, "per-step timeout")
+	fs.DurationVar(&timeout, "timeout", 30*time.Second, "per-operation timeout")
 	if err := fs.Parse(args[1:]); err != nil {
 		return wrapMainError(err)
 	}
@@ -63,8 +65,6 @@ func run(args []string) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	ctx, cancel := context.WithTimeout(ctx, timeout*time.Duration(maxInt(1, runs)))
-	defer cancel()
 
 	switch command {
 	case "doctor":
@@ -130,27 +130,34 @@ func run(args []string) error {
 				break
 			}
 			_, runErr := runtime.RunLive(ctx, fmt.Sprintf("live-repeat-%02d", i+1))
-			_ = runtime.Close()
+			closeErr := runtime.Close()
 			if runErr != nil {
 				finalErr = runErr
+				break
+			}
+			if closeErr != nil {
+				finalErr = closeErr
 				break
 			}
 		}
 		return finalErr
 	case "bootstrap":
-		return runBootstrap(ctx, paths, databaseURL, ownerEmail, googleClientID, googleClientSecretFile, gmailRefreshTokenFile, singulyrRefreshTokenFile, exportGog)
+		return runBootstrap(ctx, paths, databaseURL, ownerEmail, gmailEmail, singulyrEmail, googleClientID, googleClientSecretFile, gmailRefreshTokenFile, singulyrRefreshTokenFile, exportGog, timeout)
 	default:
 		return fmt.Errorf("%w: %q", errAcceptanceUnknown, command)
 	}
 }
 
-func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, ownerEmail, googleClientID, secretFile, gmailTokenFile, singulyrTokenFile, exportGog string) error {
+func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, ownerEmail, gmailEmail, singulyrEmail, googleClientID, secretFile, gmailTokenFile, singulyrTokenFile, exportGog string, timeout time.Duration) error {
 	if strings.TrimSpace(databaseURL) == "" || strings.TrimSpace(googleClientID) == "" || strings.TrimSpace(secretFile) == "" {
+		return errBootstrapArguments
+	}
+	if strings.TrimSpace(gmailEmail) == "" || strings.TrimSpace(singulyrEmail) == "" || strings.TrimSpace(exportGog) == "" {
 		return errBootstrapArguments
 	}
 	if strings.TrimSpace(gmailTokenFile) == "" || strings.TrimSpace(singulyrTokenFile) == "" {
 		var err error
-		gmailTokenFile, singulyrTokenFile, err = exportBootstrapTokens(ctx, exportGog)
+		gmailTokenFile, singulyrTokenFile, err = exportBootstrapTokens(ctx, exportGog, gmailEmail, singulyrEmail)
 		if err != nil {
 			return wrapMainError(err)
 		}
@@ -178,7 +185,7 @@ func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, owne
 		OrganizationSlug: "acceptance", GoogleClientID: googleClientID,
 	}
 	if profileErr := acceptance.EnsureProfile(paths, profile); profileErr != nil {
-		return wrapMainError(err)
+		return wrapMainError(profileErr)
 	}
 	_, key, err := acceptance.LoadProfile(paths)
 	if err != nil {
@@ -192,19 +199,12 @@ func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, owne
 	if err != nil {
 		return wrapMainError(err)
 	}
-	if err := saveClientSecretRef(paths, reference); err != nil {
+	if err := acceptance.SetGoogleClientSecretRef(paths, reference); err != nil {
 		return wrapMainError(err)
 	}
-	if err := importBootstrapConnections(ctx, paths, profile, clientSecret, gmailTokenFile, singulyrTokenFile, exportGog); err != nil {
+	if err := importBootstrapConnections(ctx, paths, profile, clientSecret, gmailTokenFile, singulyrTokenFile, exportGog, gmailEmail, singulyrEmail, timeout); err != nil {
 		return wrapMainError(err)
 	}
 	fmt.Println("acceptance bootstrap complete; run make acceptance-live")
 	return nil
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

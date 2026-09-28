@@ -31,7 +31,12 @@ make acceptance-live-repeat N=3
 The only human action is:
 
 ```bash
-GOOGLE_CLIENT_SECRET_FILE=/path/to/client_secret.json make acceptance-bootstrap
+ACCEPTANCE_OWNER_EMAIL=owner@example.com \
+ACCEPTANCE_GMAIL_EMAIL=gmail-account@example.com \
+ACCEPTANCE_SINGULYR_EMAIL=singulyr-account@example.com \
+GOG_STABLE_BIN=/path/to/signed/gog \
+GOOGLE_CLIENT_SECRET_FILE=/path/to/client_secret.json \
+make acceptance-bootstrap
 ```
 
 This is the single deterministic bootstrap action. It uses the stable signed `gog` binary to export the existing `gmail` and `singulyr` refresh tokens. If either token is genuinely revoked or expired, that same command opens the deliberate browser consent once for the affected account, then exports the replacement token. It imports the central client and tokens into the non-Keychain acceptance SecretStore, silently refreshes both, discovers resources, and enables one resource per connection.

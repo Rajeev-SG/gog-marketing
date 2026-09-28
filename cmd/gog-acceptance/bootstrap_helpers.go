@@ -23,34 +23,7 @@ func newSecretStore(paths acceptance.Paths, key []byte) (controlplane.SecretStor
 	return store, nil
 }
 
-func saveClientSecretRef(paths acceptance.Paths, reference string) error {
-	raw, err := os.ReadFile(paths.Config)
-	if err != nil {
-		return wrapMainError(err)
-	}
-	var stored map[string]any
-	if decodeErr := json.Unmarshal(raw, &stored); decodeErr != nil {
-		return wrapMainError(err)
-	}
-	stored["google_client_secret_ref"] = reference
-	updated, err := json.MarshalIndent(stored, "", "  ")
-	if err != nil {
-		return wrapMainError(err)
-	}
-	if err := os.WriteFile(paths.Config, append(updated, '\n'), 0o600); err != nil {
-		return wrapMainError(err)
-	}
-	return nil
-}
-
-type bootstrapTokenExport struct {
-	Email         string   `json:"email"`
-	Subject       string   `json:"subject"`
-	RefreshToken  string   `json:"refresh_token"`
-	GrantedScopes []string `json:"scopes"`
-}
-
-func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, profile acceptance.Profile, clientSecret, gmailTokenFile, singulyrTokenFile, exportGog string) error {
+func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, profile acceptance.Profile, clientSecret, gmailTokenFile, singulyrTokenFile, exportGog, gmailEmail, singulyrEmail string, timeout time.Duration) error {
 	keyRaw, err := os.ReadFile(paths.MasterKey)
 	if err != nil {
 		return wrapMainError(err)
@@ -75,7 +48,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	actor := controlplane.Actor{UserID: owner.ID, OrganizationID: org.ID, Role: "owner"}
 	provider := controlplane.NewGoogleOAuthProvider(profile.GoogleClientID, clientSecret, "http://127.0.0.1/oauth/google/callback")
 	service := &controlplane.Service{Store: store, Secrets: secrets, OAuth: provider}
-	for _, item := range []struct{ name, file string }{{"gmail", gmailTokenFile}, {"singulyr", singulyrTokenFile}} {
+	for _, item := range []struct{ name, file, email string }{{"gmail", gmailTokenFile, gmailEmail}, {"singulyr", singulyrTokenFile, singulyrEmail}} {
 		connection, err := ensureBootstrapConnection(ctx, service, actor, item.name)
 		if err != nil {
 			return wrapMainError(err)
@@ -88,7 +61,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 			if controlplane.AuthFailureCategoryFor(installErr) != controlplane.AuthFailureInvalidGrant {
 				return fmt.Errorf("validate %s refresh token: %w", item.name, installErr)
 			}
-			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.name, item.file); reauthErr != nil {
+			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.email, item.file, timeout); reauthErr != nil {
 				return reauthErr
 			}
 			token, err = readBootstrapToken(item.file)
@@ -171,6 +144,13 @@ func redact(value string) string {
 	return value
 }
 
+type bootstrapTokenExport struct {
+	Email         string   `json:"email"`
+	Subject       string   `json:"subject"`
+	RefreshToken  string   `json:"refresh_token"`
+	GrantedScopes []string `json:"scopes"`
+}
+
 func readBootstrapToken(path string) (controlplane.OAuthToken, error) {
 	raw, err := os.ReadFile(path) //nolint:gosec // operator-provided bootstrap token path
 	if err != nil {
@@ -187,7 +167,7 @@ func readBootstrapToken(path string) (controlplane.OAuthToken, error) {
 	return controlplane.OAuthToken{RefreshToken: token}, nil
 }
 
-func exportBootstrapTokens(ctx context.Context, exportGog string) (string, string, error) {
+func exportBootstrapTokens(ctx context.Context, exportGog, gmailEmail, singulyrEmail string) (string, string, error) {
 	if strings.TrimSpace(exportGog) == "" {
 		return "", "", errBootstrapExportBinary
 	}
@@ -200,8 +180,8 @@ func exportBootstrapTokens(ctx context.Context, exportGog string) (string, strin
 	for _, item := range []struct {
 		email, path string
 	}{
-		{"rajeev.sgill@gmail.com", gmailPath},
-		{"rajeev@singulyr.com", singulyrPath},
+		{gmailEmail, gmailPath},
+		{singulyrEmail, singulyrPath},
 	} {
 		cmd := exec.CommandContext(ctx, exportGog, "auth", "tokens", "export", item.email, "--client", "personal-owned", "--out", item.path, "--overwrite", "--no-input") //nolint:gosec // bootstrap-only stable signed binary path
 		cmd.Env = append(os.Environ(), "GOG_KEYRING_BACKEND=keychain")
@@ -212,7 +192,9 @@ func exportBootstrapTokens(ctx context.Context, exportGog string) (string, strin
 	return gmailPath, singulyrPath, nil
 }
 
-func reauthorizeBootstrapToken(ctx context.Context, exportGog, email, tokenPath string) error {
+func reauthorizeBootstrapToken(ctx context.Context, exportGog, email, tokenPath string, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
 	cmd := exec.CommandContext(ctx, exportGog, "auth", "add", email, "--client", "personal-owned", "--services", "analytics,searchconsole,bigquery,ads", "--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly", "--force-consent", "--login") //nolint:gosec // bootstrap-only stable signed binary path
 	cmd.Env = append(os.Environ(), "GOG_KEYRING_BACKEND=keychain")
 	if output, err := cmd.CombinedOutput(); err != nil {

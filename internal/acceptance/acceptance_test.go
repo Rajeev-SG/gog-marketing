@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
 var (
@@ -129,5 +131,59 @@ func TestManifestRedactsAndHashesResources(t *testing.T) {
 
 	if manifest.Interaction["go_run"] != 0 {
 		t.Fatal("manifest allows go_run")
+	}
+}
+
+func TestEnsureProfileRejectsMissingOwner(t *testing.T) {
+	if err := EnsureProfile(Paths{}, Profile{DatabaseURL: "postgres://example"}); !errors.Is(err, ErrInvalidProfile) {
+		t.Fatalf("missing owner error = %v", err)
+	}
+}
+
+func TestDoctorOAuthClientCheckMatchesBootstrapProfile(t *testing.T) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := os.MkdirTemp(configDir, "gog-acceptance-doctor-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = os.RemoveAll(root) }()
+
+	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}
+	if profileErr := EnsureProfile(paths, Profile{Version: 1, DatabaseURL: "postgres://example", OwnerEmail: "owner@example.test", OrganizationSlug: "acceptance", GoogleClientID: "client-id"}); profileErr != nil {
+		t.Fatal(profileErr)
+	}
+
+	_, key, err := LoadProfile(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secrets, err := controlplane.NewFileSecretStore(paths.Secrets, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	reference, err := secrets.Put(context.Background(), "acceptance-org", []byte("secret"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if refErr := SetGoogleClientSecretRef(paths, reference); refErr != nil {
+		t.Fatal(refErr)
+	}
+
+	profile, _, err := LoadProfile(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	check := doctorOAuthClientCheck(context.Background(), profile, secrets)
+	if check.Result != "PASS" {
+		t.Fatalf("doctor OAuth check = %+v", check)
 	}
 }
