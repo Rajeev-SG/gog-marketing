@@ -28,7 +28,7 @@
 - Unit tests: stdlib `testing` (and `httptest` where needed).
 - Integration tests (local only):
   - `GOG_IT_ACCOUNT=you@gmail.com go test -tags=integration ./internal/integration`
-  - Requires OAuth client credentials + a stored refresh token in your keyring.
+  - Requires OAuth client credentials + a stored refresh token in your keyring. For unattended acceptance, use the stable profile workflow in `docs/acceptance.md` instead.
 
 ## Commit & Pull Request Guidelines
 
@@ -45,6 +45,10 @@
 - **Landing mode:** temp branch from `main`; bring in PR (squash default; rebase/merge when needed); fix; update `CHANGELOG.md` (PR #/issue + thanks); run `make ci`; final commit; merge to `main`; delete temp; end on `main`.
 - If landing contributor work, always add `Co-authored-by:` trailers for PR authors, even when we partially rewrite, group, or manually apply their changes; leave a PR comment with what landed + SHAs.
 - New contributor: thank in `CHANGELOG.md` (and update README contributors list if present).
+
+## Acceptance and authentication
+
+For `gog-marketing` acceptance work, use `make acceptance-local`, `make acceptance-doctor`, `make acceptance-live`, and `make acceptance-live-repeat N=3`. Never use `go run` for authenticated acceptance or credential access. Routine acceptance must not open a browser, start OAuth consent, trigger macOS Keychain dialogs, or wait for terminal input. Use the stable developer profile and control-plane SecretStore described in `docs/acceptance.md`; only the explicit human bootstrap command may import credentials or request re-consent. If live credentials are unavailable, stop at the deterministic bootstrap action instead of retrying auth.
 
 ## Security & Configuration Tips
 

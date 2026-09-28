@@ -16,6 +16,7 @@ var (
 	ErrDiscovererNotConfigured = errors.New("resource discoverer is not configured")
 	ErrSessionKey              = errors.New("session key must be at least 16 bytes")
 	ErrWebDependencies         = errors.New("web handler dependencies are required")
+	ErrMissingScopes           = errors.New("missing required scopes")
 	ErrGoogleAdsUnavailable    = errors.New("google ads API unavailable")
 )
 

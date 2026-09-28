@@ -13,11 +13,14 @@ import (
 )
 
 type fakeOAuth struct {
-	token OAuthToken
-	err   error
+	token              OAuthToken
+	err                error
+	authorizationCalls int
+	refreshCalls       int
 }
 
 func (f *fakeOAuth) AuthorizationURL(input OAuthStartInput) string {
+	f.authorizationCalls++
 	return "https://accounts.example.test/auth?state=" + input.State
 }
 
@@ -30,6 +33,7 @@ func (f *fakeOAuth) Exchange(_ context.Context, _ OAuthStartInput, _ string) (OA
 }
 
 func (f *fakeOAuth) Refresh(_ context.Context, token OAuthToken) (OAuthToken, error) {
+	f.refreshCalls++
 	if f.err != nil {
 		return OAuthToken{}, f.err
 	}
@@ -73,7 +77,7 @@ func testService(t *testing.T) (*Service, *MemoryStore, *FileSecretStore) {
 	oauth := &fakeOAuth{token: OAuthToken{
 		AccessToken: "access-secret-value", RefreshToken: "refresh-secret-value",
 		Expiry: time.Now().Add(time.Hour), Subject: "subject-1", Email: "owner@example.com",
-		GrantedScopes: []string{"openid", "https://www.googleapis.com/auth/analytics.readonly"},
+		GrantedScopes: []string{"openid", "email", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/analytics.readonly"},
 	}}
 	service := &Service{
 		Store: store, Secrets: secrets, OAuth: oauth, RedirectURI: "http://example.test/oauth/google/callback",
@@ -113,7 +117,7 @@ func TestConnectionOAuthDiscoveryPolicyAndSecretIsolation(t *testing.T) {
 		t.Fatalf("status = %q", connection.Status)
 	}
 
-	start, err := service.BeginOAuth(ctx, actor, connection.ID)
+	start, err := service.BeginOAuth(ctx, actor, connection.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +148,7 @@ func TestConnectionOAuthDiscoveryPolicyAndSecretIsolation(t *testing.T) {
 		t.Fatal("OAuth state should be single-use")
 	}
 
-	reconnect, err := service.BeginOAuth(ctx, actor, connection.ID)
+	reconnect, err := service.BeginOAuth(ctx, actor, connection.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +234,7 @@ func TestOAuthDeniedAndInvalidState(t *testing.T) {
 	}
 	service.OAuth = &fakeOAuth{err: http.ErrHandlerTimeout}
 
-	start, err := service.BeginOAuth(ctx, actor, connection.ID)
+	start, err := service.BeginOAuth(ctx, actor, connection.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +296,7 @@ func TestWebRequiresSessionAndNeverRendersTokens(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	start, err := service.BeginOAuth(ctx, actor, connection.ID)
+	start, err := service.BeginOAuth(ctx, actor, connection.ID, false)
 	if err != nil {
 		t.Fatal(err)
 	}

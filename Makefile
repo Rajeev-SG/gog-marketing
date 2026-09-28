@@ -4,7 +4,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := build
 
 .PHONY: build build-safe gog gogcli gog-help gogcli-help help fmt fmt-check lint deadcode test ci tools docker-version-check docs-commands docs-site docs-check agent-skills agent-skills-check
-.PHONY: worker-ci eval-gws eval-gws-agents eval-gws-test
+.PHONY: worker-ci eval-gws eval-gws-agents eval-gws-test build-acceptance acceptance-doctor acceptance-local acceptance-live acceptance-live-repeat acceptance-bootstrap
 
 BIN_DIR := $(CURDIR)/bin
 BIN := $(BIN_DIR)/gog
@@ -153,7 +153,30 @@ eval-gws-agents: build
 eval-gws-test:
 	@node --test scripts/eval-gws.test.mjs scripts/eval-gws-agents.test.mjs
 
-ci: docker-version-check fmt-check lint deadcode test docs-check agent-skills-check
+build-acceptance:
+	@mkdir -p $(BIN_DIR)
+	@go build -ldflags "$(LDFLAGS)" -o $(BIN_DIR)/gog-acceptance ./cmd/gog-acceptance
+
+acceptance-doctor: build-acceptance
+	@ACCEPTANCE_JSON=1 $(BIN_DIR)/gog-acceptance doctor
+
+acceptance-local: build-acceptance
+	@scripts/acceptance-local.sh
+
+acceptance-live: build-acceptance
+	@$(BIN_DIR)/gog-acceptance live
+
+acceptance-live-repeat: build-acceptance
+	@scripts/acceptance-live-repeat.sh $(or $(N),3)
+
+acceptance-guard:
+	@scripts/check-acceptance-guard.sh
+
+acceptance-bootstrap: build-acceptance
+	@docker start gog-control-plane-postgres >/dev/null 2>&1 || docker run -d --name gog-control-plane-postgres -e POSTGRES_USER=gog -e POSTGRES_PASSWORD=gog-test -e POSTGRES_DB=gog_control_plane -p 55432:5432 postgres:17-alpine >/dev/null
+	@$(BIN_DIR)/gog-acceptance bootstrap --database-url "postgres://gog:gog-test@127.0.0.1:55432/gog_control_plane?sslmode=disable" --owner-email "$${ACCEPTANCE_OWNER_EMAIL:?set ACCEPTANCE_OWNER_EMAIL}" --gmail-email "$${ACCEPTANCE_GMAIL_EMAIL:?set ACCEPTANCE_GMAIL_EMAIL}" --singulyr-email "$${ACCEPTANCE_SINGULYR_EMAIL:?set ACCEPTANCE_SINGULYR_EMAIL}" --google-client-secret-file "$${GOOGLE_CLIENT_SECRET_FILE:?set GOOGLE_CLIENT_SECRET_FILE}" --export-gog "$${GOG_STABLE_BIN:?set GOG_STABLE_BIN}"
+
+ci: docker-version-check fmt-check lint deadcode test docs-check agent-skills-check acceptance-guard
 
 worker-ci:
 	@pnpm -C internal/tracking/worker lint

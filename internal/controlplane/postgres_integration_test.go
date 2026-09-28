@@ -21,7 +21,7 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 		t.Fatal(storeErr)
 	}
 
-	if rollbackErr := store.RollBackMigration001(ctx); rollbackErr != nil {
+	if rollbackErr := store.RollBackMigrations(ctx); rollbackErr != nil {
 		t.Fatal(rollbackErr)
 	}
 
@@ -56,7 +56,7 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 		t.Fatal(createErr)
 	}
 
-	start, startErr := service.BeginOAuth(ctx, actor, connection.ID)
+	start, startErr := service.BeginOAuth(ctx, actor, connection.ID, false)
 	if startErr != nil {
 		t.Fatal(startErr)
 	}
@@ -106,7 +106,7 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 		t.Fatalf("connection did not persist across reopen: %+v", persisted)
 	}
 
-	if rollbackErr := reopened.RollBackMigration001(ctx); rollbackErr != nil {
+	if rollbackErr := reopened.RollBackMigrations(ctx); rollbackErr != nil {
 		t.Fatal(rollbackErr)
 	}
 

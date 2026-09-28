@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/openclaw/gogcli/internal/googleauth"
@@ -19,6 +21,7 @@ type Actor struct {
 }
 
 type Service struct {
+	tokenLocks  sync.Map
 	Store       Store
 	Secrets     SecretStore
 	OAuth       OAuthProvider
@@ -120,7 +123,7 @@ func (s *Service) RenameConnection(ctx context.Context, actor Actor, id, name st
 	return updated, nil
 }
 
-func (s *Service) BeginOAuth(ctx context.Context, actor Actor, id string) (OAuthStart, error) {
+func (s *Service) BeginOAuth(ctx context.Context, actor Actor, id string, forceConsent bool) (OAuthStart, error) {
 	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
 	if err != nil {
 		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
@@ -164,7 +167,8 @@ func (s *Service) BeginOAuth(ctx context.Context, actor Actor, id string) (OAuth
 
 	return OAuthStart{
 		URL: s.OAuth.AuthorizationURL(OAuthStartInput{
-			State: state, CodeVerifier: verifier, Nonce: nonce, RedirectURI: s.RedirectURI, Scopes: scopes,
+			ForceConsent: forceConsent, State: state, CodeVerifier: verifier, Nonce: nonce,
+			RedirectURI: s.RedirectURI, Scopes: scopes,
 		}),
 		State: state,
 	}, nil
@@ -202,6 +206,7 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 	connection.GrantedScopes = token.GrantedScopes
 	connection.Status = ConnectionHealthy
 	connection.LastError = ""
+	connection.LastErrorCategory = ""
 	validated := s.now()
 	connection.LastValidatedAt = &validated
 
@@ -216,49 +221,127 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 }
 
 func (s *Service) Refresh(ctx context.Context, actor Actor, id string) (Connection, error) {
-	connection, token, err := s.loadToken(ctx, actor, id)
+	connection, token, err := s.ensureFreshToken(ctx, actor, id)
 	if err != nil {
-		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
-	}
-
-	if token.Expiry.IsZero() || token.Expiry.Before(s.now().Add(time.Minute)) {
-		token, err = s.OAuth.Refresh(ctx, token)
-		if err != nil {
-			connection.Status = ConnectionExpired
-			connection.LastError = safeOAuthError(err)
-			_, _ = s.Store.UpdateConnection(ctx, connection)
-			s.audit(ctx, actor, id, "token.refresh", "error", connection.LastError)
-
-			return Connection{}, fmt.Errorf("control-plane operation: %w", err)
-		}
-
-		if saveErr := s.saveToken(ctx, &connection, token); saveErr != nil {
-			return Connection{}, fmt.Errorf("control plane: %w", saveErr)
-		}
+		return Connection{}, err
 	}
 	validated := s.now()
 	connection.Status = ConnectionHealthy
 	connection.LastError = ""
+	connection.LastErrorCategory = ""
 	connection.LastValidatedAt = &validated
 	connection.GoogleEmail = token.Email
 	connection.GrantedScopes = token.GrantedScopes
 
 	updated, err := s.Store.UpdateConnection(ctx, connection)
-	if err == nil {
-		s.audit(ctx, actor, id, "connection.validated", "ok", "")
-	}
-
 	if err != nil {
 		return updated, fmt.Errorf("update connection: %w", err)
 	}
 
+	s.audit(ctx, actor, id, "connection.validated", "ok", "")
+
 	return updated, nil
 }
 
-func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {
+func (s *Service) FreshToken(ctx context.Context, actor Actor, id string) (Connection, OAuthToken, error) {
+	return s.ensureFreshToken(ctx, actor, id)
+}
+
+func (s *Service) ensureFreshToken(ctx context.Context, actor Actor, id string) (Connection, OAuthToken, error) {
+	lockValue, _ := s.tokenLocks.LoadOrStore(id, &sync.Mutex{})
+	lock := lockValue.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
+
 	connection, token, err := s.loadToken(ctx, actor, id)
 	if err != nil {
-		return nil, fmt.Errorf("control-plane operation: %w", err)
+		return Connection{}, OAuthToken{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if token.Expiry.IsZero() || token.Expiry.Before(s.now().Add(time.Minute)) {
+		token, err = s.refreshStoredToken(ctx, actor, connection, token)
+		if err != nil {
+			return Connection{}, OAuthToken{}, err
+		}
+	}
+
+	if missing := missingScopes(serviceScopeRequirements(connection.Services), token.GrantedScopes); len(missing) > 0 {
+		connection.Status = ConnectionNeedsReconnect
+		connection.LastError = "granted scopes no longer cover the configured services"
+		connection.LastErrorCategory = AuthFailureScopeMismatch
+		_, _ = s.Store.UpdateConnection(ctx, connection)
+		s.audit(ctx, actor, id, "scope.validation", "error", strings.Join(missing, " "))
+
+		return Connection{}, OAuthToken{}, &AuthFailure{Category: AuthFailureScopeMismatch, Operation: "validate scopes", Err: fmt.Errorf("%w: %s", ErrMissingScopes, strings.Join(missing, " "))}
+	}
+
+	return connection, token, nil
+}
+
+func (s *Service) refreshStoredToken(ctx context.Context, actor Actor, connection Connection, token OAuthToken) (OAuthToken, error) {
+	refreshed, err := s.OAuth.Refresh(ctx, token)
+	if err != nil {
+		category := classifyAuthError(err)
+		connection.Status = ConnectionNeedsReconnect
+		connection.LastError = safeOAuthError(err)
+		connection.LastErrorCategory = category
+		_, _ = s.Store.UpdateConnection(ctx, connection)
+		s.audit(ctx, actor, connection.ID, "token.refresh", "error", string(category))
+
+		return OAuthToken{}, wrapAuthFailure("refresh token", err)
+	}
+
+	if saveErr := s.saveToken(ctx, &connection, refreshed); saveErr != nil {
+		return OAuthToken{}, fmt.Errorf("persist refreshed token: %w", saveErr)
+	}
+
+	return refreshed, nil
+}
+
+func serviceScopeRequirements(services []string) []string {
+	required, err := googleauth.ScopesForManageWithOptions(serviceTypes(services), googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		return nil
+	}
+
+	filtered := make([]string, 0, len(required))
+	for _, scope := range required {
+		if scope == "openid" || scope == "email" || scope == "https://www.googleapis.com/auth/userinfo.email" {
+			continue
+		}
+		filtered = append(filtered, scope)
+	}
+
+	return filtered
+}
+
+func missingScopes(requested, granted []string) []string {
+	if len(requested) == 0 {
+		return nil
+	}
+
+	available := make(map[string]bool, len(granted))
+	for _, scope := range granted {
+		available[strings.TrimSpace(scope)] = true
+	}
+	missing := make([]string, 0)
+
+	for _, scope := range requested {
+		scope = strings.TrimSpace(scope)
+		if scope != "" && !available[scope] {
+			missing = append(missing, scope)
+		}
+	}
+
+	sort.Strings(missing)
+
+	return missing
+}
+
+func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {
+	connection, token, err := s.ensureFreshToken(ctx, actor, id)
+	if err != nil {
+		return nil, err
 	}
 
 	if s.Discoverer == nil {
@@ -339,6 +422,7 @@ func (s *Service) Disconnect(ctx context.Context, actor Actor, id string) error 
 	connection.SecretRef = ""
 	connection.Status = ConnectionDisconnected
 	connection.LastError = ""
+	connection.LastErrorCategory = ""
 	connection.GoogleEmail = ""
 	connection.GoogleSubject = ""
 
@@ -364,6 +448,16 @@ func (s *Service) loadToken(ctx context.Context, actor Actor, id string) (Connec
 
 	raw, err := s.Secrets.Get(ctx, actor.OrganizationID, connection.SecretRef)
 	if err != nil {
+		if errors.Is(err, ErrSecretNotFound) {
+			connection.Status = ConnectionNeedsReconnect
+			connection.LastError = "stored refresh token is missing"
+			connection.LastErrorCategory = AuthFailureInvalidGrant
+			_, _ = s.Store.UpdateConnection(ctx, connection)
+			s.audit(ctx, actor, id, "token.validation", "error", string(AuthFailureInvalidGrant))
+
+			return Connection{}, OAuthToken{}, &AuthFailure{Category: AuthFailureInvalidGrant, Operation: "load token", Err: err}
+		}
+
 		return Connection{}, OAuthToken{}, fmt.Errorf("control-plane operation: %w", err)
 	}
 
