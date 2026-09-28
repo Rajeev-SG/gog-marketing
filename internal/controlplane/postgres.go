@@ -85,9 +85,9 @@ func (s *PostgresStore) RollBackMigration001(ctx context.Context) error {
 	return wrapControlPlaneError(err)
 }
 
-func (s *PostgresStore) BootstrapOwner(ctx context.Context, user User, organization Organization, role string) error {
+func (s *PostgresStore) BootstrapOwner(ctx context.Context, user User, organization Organization, role string) (User, Organization, error) {
 	if role != "owner" && role != "admin" {
-		return ErrInvalid
+		return User{}, Organization{}, ErrInvalid
 	}
 
 	if user.ID == "" {
@@ -111,36 +111,36 @@ func (s *PostgresStore) BootstrapOwner(ctx context.Context, user User, organizat
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	defer func() { _ = tx.Rollback() }()
 
 	if _, err := tx.ExecContext(ctx, `INSERT INTO users(id,email,external_subject,display_name,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT (email) DO UPDATE SET external_subject=EXCLUDED.external_subject, display_name=EXCLUDED.display_name, updated_at=EXCLUDED.updated_at`, user.ID, normalizeEmail(user.Email), user.ExternalSubject, user.DisplayName, user.CreatedAt, user.UpdatedAt); err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	if err := tx.QueryRowContext(ctx, `SELECT id FROM users WHERE email=$1`, normalizeEmail(user.Email)).Scan(&user.ID); err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	if _, err := tx.ExecContext(ctx, `INSERT INTO organizations(id,name,slug,created_at,updated_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, updated_at=EXCLUDED.updated_at`, organization.ID, organization.Name, organization.Slug, organization.CreatedAt, organization.UpdatedAt); err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	if err := tx.QueryRowContext(ctx, `SELECT id FROM organizations WHERE slug=$1`, organization.Slug).Scan(&organization.ID); err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	if _, err := tx.ExecContext(ctx, `INSERT INTO memberships(user_id,organization_id,role,created_at) VALUES($1,$2,$3,$4) ON CONFLICT (user_id,organization_id) DO UPDATE SET role=EXCLUDED.role`, user.ID, organization.ID, role, now); err != nil {
-		return wrapControlPlaneError(err)
+		return User{}, Organization{}, wrapControlPlaneError(err)
 	}
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
+		return User{}, Organization{}, fmt.Errorf("commit bootstrap transaction: %w", err)
 	}
 
-	return nil
+	return user, organization, nil
 }
 
 func (s *PostgresStore) CreateConnection(ctx context.Context, connection Connection) (Connection, error) {

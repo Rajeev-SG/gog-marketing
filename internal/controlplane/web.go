@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -15,16 +16,21 @@ import (
 )
 
 type Authenticator interface {
-	Login(ctx context.Context, email string) (Actor, error)
+	Login(ctx context.Context, email, credential string) (Actor, error)
 }
 
 type OwnerAuthenticator struct {
 	Email string
+	Token string
 	Actor Actor
 }
 
-func (a OwnerAuthenticator) Login(_ context.Context, email string) (Actor, error) {
+func (a OwnerAuthenticator) Login(_ context.Context, email, credential string) (Actor, error) {
 	if normalizeEmail(email) != normalizeEmail(a.Email) {
+		return Actor{}, ErrForbidden
+	}
+
+	if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(credential)), []byte(strings.TrimSpace(a.Token))) != 1 {
 		return Actor{}, ErrForbidden
 	}
 
@@ -186,7 +192,7 @@ func (h *WebHandler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	actor, err := h.config.Authenticator.Login(r.Context(), r.FormValue("email"))
+	actor, err := h.config.Authenticator.Login(r.Context(), r.FormValue("email"), r.FormValue("token"))
 	if err != nil {
 		h.render(w, http.StatusUnauthorized, "login", map[string]any{"Error": "This identity is not authorized.", "OwnerEmail": h.config.OwnerEmail})
 		return
@@ -459,6 +465,8 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 <form method="post" action="/login">
 <label for="email">Owner or admin email</label>
 <input id="email" name="email" type="email" required autocomplete="email" value="{{.OwnerEmail}}">
+<label for="token">Admin access token</label>
+<input id="token" name="token" type="password" required autocomplete="current-password">
 <button class="primary" type="submit">Continue</button>
 </form>
 <p class="muted">Control-plane access is separate from Google marketing consent.</p>

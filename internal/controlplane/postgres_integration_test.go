@@ -29,12 +29,13 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 		t.Fatal(migrateErr)
 	}
 
-	actor := Actor{UserID: "postgres-user", OrganizationID: "postgres-org", Role: "owner"}
-	if bootstrapErr := store.BootstrapOwner(ctx, User{
-		ID: actor.UserID, Email: "postgres-owner@example.com", DisplayName: "Owner",
-	}, Organization{ID: actor.OrganizationID, Name: "Postgres", Slug: "postgres"}, "owner"); bootstrapErr != nil {
+	owner, organization, bootstrapErr := store.BootstrapOwner(ctx, User{
+		Email: "postgres-owner@example.com", DisplayName: "Owner",
+	}, Organization{Name: "Postgres", Slug: "postgres"}, "owner")
+	if bootstrapErr != nil {
 		t.Fatal(bootstrapErr)
 	}
+	actor := Actor{UserID: owner.ID, OrganizationID: organization.ID, Role: "owner"}
 
 	secrets, secretErr := NewFileSecretStore(filepath.Join(t.TempDir(), "secrets.json"), []byte("0123456789abcdef0123456789abcdef"))
 	if secretErr != nil {
@@ -74,7 +75,29 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 	}
 	defer func() { _ = reopened.Close() }()
 
-	persisted, getErr := reopened.GetConnection(ctx, actor.OrganizationID, connection.ID)
+	rebootedOwner, rebootedOrganization, rebootErr := reopened.BootstrapOwner(ctx, User{
+		Email: "postgres-owner@example.com", DisplayName: "Owner",
+	}, Organization{Name: "Postgres", Slug: "postgres"}, "owner")
+	if rebootErr != nil {
+		t.Fatal(rebootErr)
+	}
+
+	if rebootedOwner.ID != owner.ID || rebootedOrganization.ID != organization.ID {
+		t.Fatalf("bootstrap IDs changed across restart: user %q -> %q, org %q -> %q", owner.ID, rebootedOwner.ID, organization.ID, rebootedOrganization.ID)
+	}
+
+	rebootedActor := Actor{UserID: rebootedOwner.ID, OrganizationID: rebootedOrganization.ID, Role: "owner"}
+
+	connections, listErr := reopened.ListConnections(ctx, rebootedActor.OrganizationID)
+	if listErr != nil {
+		t.Fatal(listErr)
+	}
+
+	if len(connections) != 1 || connections[0].ID != connection.ID {
+		t.Fatalf("connections did not survive bootstrap restart: %+v", connections)
+	}
+
+	persisted, getErr := reopened.GetConnection(ctx, rebootedActor.OrganizationID, connection.ID)
 	if getErr != nil {
 		t.Fatal(getErr)
 	}

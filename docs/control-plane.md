@@ -16,14 +16,13 @@ gog controlplane \
   --secret-backend secret-manager \
   --secret-manager-project my-gcp-project \
   --owner-email owner@example.com \
+  --admin-token "$GOG_CONTROL_PLANE_ADMIN_TOKEN" \
   --google-client-id "$GOOGLE_CLIENT_ID" \
   --google-client-secret "$GOOGLE_CLIENT_SECRET" \
   --session-key "$GOG_CONTROL_PLANE_SESSION_KEY"
 ```
 
-For a hermetic local smoke run, use `--database-url memory://` and
-`--secret-backend file`; the file backend encrypts values with the supplied
-`--master-key` and stores only ciphertext.
+The secret backend is an explicit required choice. For a hermetic loopback smoke run, use `--database-url memory://`, `--secret-backend file`, and a loopback `--listen` address; the file backend encrypts values with the supplied `--master-key` and stores only ciphertext. The server refuses `file` on a non-loopback listener. `--admin-token` is required and is checked in constant time before a web session is issued.
 
 The OAuth redirect URI is derived from `--external-base-url` and is
 `/oauth/google/callback`. Register that exact URI on the central gog-marketing
@@ -66,8 +65,9 @@ and cross-organisation connection IDs are denied by default.
 
 ## Security boundaries
 
-- Control-plane sign-in and Google marketing consent are separate.
+- Control-plane sign-in requires the configured bootstrap admin token and Google marketing consent remains separate.
 - Session cookies are HttpOnly, SameSite=Strict, signed, and expire.
+- PKCE S256 and OIDC nonce are generated per flow, stored with the single-use state, and verified during exchange.
 - Mutating routes require a per-session CSRF token.
 - OAuth state is single-use, expires after ten minutes, and is bound to the
   connection and organisation.

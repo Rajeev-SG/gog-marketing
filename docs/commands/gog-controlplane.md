@@ -20,6 +20,7 @@ gog controlplane (control-plane) [flags]
 | --- | --- | --- | --- |
 | `--access-token` | `string` |  | Use provided access token directly (bypasses stored refresh tokens; token expires in ~1h) |
 | `-a`<br>`--account`<br>`--acct` | `string` |  | Account email, alias, or auto for authenticated Google API commands |
+| `--admin-token` | `string` |  | Required bootstrap admin token used to sign in |
 | `--bigquery-projects` | `string` |  | Comma-separated BigQuery projects to discover |
 | `--client` | `string` |  | OAuth client name (selects stored credentials + token bucket) |
 | `--color` | `string` | auto | Color output: auto\|always\|never |
@@ -50,7 +51,7 @@ gog controlplane (control-plane) [flags]
 | `--quota-project` | `string` |  | Google Cloud project to bill for API usage (sent as X-Goog-User-Project; some APIs require it with --access-token or ADC) |
 | `--readonly` | `bool` | false | Block mutating API requests at runtime; auth add also requests read-only OAuth scopes |
 | `--results-only` | `bool` |  | In JSON mode, emit only the primary result (drops envelope fields like nextPageToken) |
-| `--secret-backend` | `string` | file | Secret backend: file or secret-manager |
+| `--secret-backend` | `string` |  | Required secret backend: file or secret-manager |
 | `--secret-manager-project` | `string` |  | GCP project for Google Secret Manager |
 | `--secret-store-path` | `string` |  | Encrypted local secret-store path for file backend |
 | `--secure-cookies` | `bool` |  | Mark session cookies Secure (enable behind HTTPS) |

@@ -11,7 +11,7 @@ import (
 )
 
 type Store interface {
-	BootstrapOwner(ctx context.Context, user User, organization Organization, role string) error
+	BootstrapOwner(ctx context.Context, user User, organization Organization, role string) (User, Organization, error)
 	CreateConnection(ctx context.Context, connection Connection) (Connection, error)
 	GetConnection(ctx context.Context, organizationID, id string) (Connection, error)
 	ListConnections(ctx context.Context, organizationID string) ([]Connection, error)
@@ -50,12 +50,30 @@ func NewMemoryStore() *MemoryStore {
 	}
 }
 
-func (s *MemoryStore) BootstrapOwner(_ context.Context, user User, organization Organization, role string) error {
+func (s *MemoryStore) BootstrapOwner(_ context.Context, user User, organization Organization, role string) (User, Organization, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	for _, existing := range s.users {
+		if normalizeEmail(existing.Email) == normalizeEmail(user.Email) {
+			user.ID = existing.ID
+			user.CreatedAt = existing.CreatedAt
+
+			break
+		}
+	}
+
 	if user.ID == "" {
 		user.ID = uuid.NewString()
+	}
+
+	for _, existing := range s.orgs {
+		if existing.Slug == organization.Slug {
+			organization.ID = existing.ID
+			organization.CreatedAt = existing.CreatedAt
+
+			break
+		}
 	}
 
 	if organization.ID == "" {
@@ -78,7 +96,7 @@ func (s *MemoryStore) BootstrapOwner(_ context.Context, user User, organization 
 		UserID: user.ID, OrganizationID: organization.ID, Role: role, CreatedAt: now,
 	}
 
-	return nil
+	return user, organization, nil
 }
 
 func (s *MemoryStore) CreateConnection(_ context.Context, connection Connection) (Connection, error) {

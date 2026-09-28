@@ -89,7 +89,7 @@ func testService(t *testing.T) (*Service, *MemoryStore, *FileSecretStore) {
 func ownerActor(t *testing.T, store *MemoryStore) Actor {
 	t.Helper()
 
-	err := store.BootstrapOwner(context.Background(), User{
+	_, _, err := store.BootstrapOwner(context.Background(), User{
 		ID: "user-1", Email: "owner@example.com", DisplayName: "Owner",
 	}, Organization{ID: "org-1", Name: "Default", Slug: "default"}, "owner")
 	if err != nil {
@@ -188,7 +188,7 @@ func TestConnectionOAuthDiscoveryPolicyAndSecretIsolation(t *testing.T) {
 		t.Fatal("unknown resource must be denied")
 	}
 
-	if bootstrapErr := store.BootstrapOwner(ctx, User{ID: "user-2", Email: "other@example.com"}, Organization{ID: "org-2", Name: "Other", Slug: "other"}, "owner"); bootstrapErr != nil {
+	if _, _, bootstrapErr := store.BootstrapOwner(ctx, User{ID: "user-2", Email: "other@example.com"}, Organization{ID: "org-2", Name: "Other", Slug: "other"}, "owner"); bootstrapErr != nil {
 		t.Fatal(err)
 	}
 
@@ -312,7 +312,7 @@ func TestWebRequiresSessionAndNeverRendersTokens(t *testing.T) {
 
 	handler, err := NewWebHandler(WebConfig{
 		Service: service, Sessions: sessions,
-		Authenticator: OwnerAuthenticator{Email: "owner@example.com", Actor: actor},
+		Authenticator: OwnerAuthenticator{Email: "owner@example.com", Token: "admin-token-0123456789abcdef", Actor: actor},
 		OwnerEmail:    "owner@example.com", DisplayName: "Owner",
 	})
 	if err != nil {
@@ -341,7 +341,7 @@ func TestWebRequiresSessionAndNeverRendersTokens(t *testing.T) {
 		t.Fatalf("unauthenticated response = %d %s", resp.StatusCode, resp.Header.Get("Location"))
 	}
 
-	form := url.Values{"email": {"owner@example.com"}}
+	form := url.Values{"email": {"owner@example.com"}, "token": {"admin-token-0123456789abcdef"}}
 
 	request, requestErr = http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL+"/login", strings.NewReader(form.Encode()))
 	if requestErr != nil {
@@ -417,5 +417,24 @@ func TestMigrationContract(t *testing.T) {
 
 	if !strings.Contains(up, "token_secret_ref text") {
 		t.Fatal("connection schema missing token secret reference")
+	}
+}
+
+func TestOwnerAuthenticatorRequiresCredential(t *testing.T) {
+	authenticator := OwnerAuthenticator{
+		Email: "owner@example.com", Token: "admin-token-0123456789abcdef",
+		Actor: Actor{UserID: "user-1", OrganizationID: "org-1", Role: "owner"},
+	}
+	if _, err := authenticator.Login(context.Background(), "owner@example.com", "wrong"); err == nil {
+		t.Fatal("wrong admin token minted an actor")
+	}
+
+	if _, err := authenticator.Login(context.Background(), "other@example.com", authenticator.Token); err == nil {
+		t.Fatal("unknown email minted an actor")
+	}
+
+	actor, err := authenticator.Login(context.Background(), "owner@example.com", authenticator.Token)
+	if err != nil || actor.UserID != "user-1" {
+		t.Fatalf("valid credential rejected: %+v, %v", actor, err)
 	}
 }

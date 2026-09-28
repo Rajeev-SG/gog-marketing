@@ -5,13 +5,12 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
@@ -25,10 +24,11 @@ type ControlPlaneCmd struct {
 	OrganizationName        string `name:"organization-name" help:"Initial organisation/workspace name" default:"Default"`
 	OrganizationSlug        string `name:"organization-slug" help:"Initial organisation/workspace slug" default:"default"`
 	SecretStorePath         string `name:"secret-store-path" type:"path" help:"Encrypted local secret-store path for file backend" env:"GOG_CONTROL_PLANE_SECRET_STORE_PATH"`
-	SecretBackend           string `name:"secret-backend" help:"Secret backend: file or secret-manager" default:"file" env:"GOG_CONTROL_PLANE_SECRET_BACKEND"`
+	SecretBackend           string `name:"secret-backend" help:"Required secret backend: file or secret-manager" env:"GOG_CONTROL_PLANE_SECRET_BACKEND"`
 	SecretManagerProject    string `name:"secret-manager-project" help:"GCP project for Google Secret Manager" env:"GOG_CONTROL_PLANE_SECRET_MANAGER_PROJECT"`
 	MasterKey               string `name:"master-key" help:"Encryption master key for local secret storage" env:"GOG_CONTROL_PLANE_MASTER_KEY"`
 	SessionKey              string `name:"session-key" help:"Stable signing key for web sessions" env:"GOG_CONTROL_PLANE_SESSION_KEY"`
+	AdminToken              string `name:"admin-token" help:"Required bootstrap admin token used to sign in" env:"GOG_CONTROL_PLANE_ADMIN_TOKEN"`
 	GoogleClientID          string `name:"google-client-id" help:"Central gog-marketing Google OAuth client ID" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_ID"`
 	GoogleClientSecret      string `name:"google-client-secret" help:"Central gog-marketing Google OAuth client secret" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_SECRET"`
 	GoogleAdsDeveloperToken string `name:"google-ads-developer-token" help:"Google Ads developer token used for resource discovery" env:"GOG_GOOGLE_ADS_DEVELOPER_TOKEN"`
@@ -48,6 +48,9 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	}
 	if strings.TrimSpace(c.GoogleClientID) == "" || strings.TrimSpace(c.GoogleClientSecret) == "" {
 		return usage("central Google OAuth client credentials are required")
+	}
+	if err := validateControlPlaneSecurity(c.Listen, c.SecretBackend, c.SecretManagerProject, c.AdminToken); err != nil {
+		return err
 	}
 	masterKey := []byte(strings.TrimSpace(c.MasterKey))
 	if len(masterKey) < 16 {
@@ -96,17 +99,16 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 		return fmt.Errorf("control plane: %w", err)
 	}
 
-	userID := uuid.NewString()
-	orgID := uuid.NewString()
 	owner := controlplane.User{
-		ID: userID, Email: c.OwnerEmail, ExternalSubject: "control-plane-owner:" + strings.ToLower(strings.TrimSpace(c.OwnerEmail)),
+		Email: c.OwnerEmail, ExternalSubject: "control-plane-owner:" + strings.ToLower(strings.TrimSpace(c.OwnerEmail)),
 		DisplayName: c.OwnerName,
 	}
-	org := controlplane.Organization{ID: orgID, Name: c.OrganizationName, Slug: c.OrganizationSlug}
-	if bootstrapErr := store.BootstrapOwner(ctx, owner, org, "owner"); bootstrapErr != nil {
+	org := controlplane.Organization{Name: c.OrganizationName, Slug: c.OrganizationSlug}
+	owner, org, bootstrapErr := store.BootstrapOwner(ctx, owner, org, "owner")
+	if bootstrapErr != nil {
 		return fmt.Errorf("bootstrap control-plane owner: %w", bootstrapErr)
 	}
-	actor := controlplane.Actor{UserID: userID, OrganizationID: orgID, Role: "owner"}
+	actor := controlplane.Actor{UserID: owner.ID, OrganizationID: org.ID, Role: "owner"}
 
 	baseURL := strings.TrimRight(strings.TrimSpace(c.ExternalBaseURL), "/")
 	if baseURL == "" {
@@ -147,7 +149,7 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	}
 	handler, err := controlplane.NewWebHandler(controlplane.WebConfig{
 		Service: service, Sessions: sessions,
-		Authenticator: controlplane.OwnerAuthenticator{Email: c.OwnerEmail, Actor: actor},
+		Authenticator: controlplane.OwnerAuthenticator{Email: c.OwnerEmail, Token: c.AdminToken, Actor: actor},
 		OwnerEmail:    c.OwnerEmail, DisplayName: c.OwnerName, ExternalBaseURL: baseURL,
 	})
 	if err != nil {
@@ -166,4 +168,37 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 		return nil
 	}
 	return fmt.Errorf("control plane: %w", err)
+}
+
+func validateControlPlaneSecurity(listen, secretBackend, secretManagerProject, adminToken string) error {
+	if len(strings.TrimSpace(adminToken)) < 32 {
+		return usage("--admin-token must be at least 32 characters")
+	}
+
+	switch strings.ToLower(strings.TrimSpace(secretBackend)) {
+	case "file":
+		if !isLoopbackListen(listen) {
+			return usage("--secret-backend=file is only allowed with a loopback --listen address")
+		}
+	case "secret-manager":
+		if strings.TrimSpace(secretManagerProject) == "" {
+			return usage("--secret-manager-project is required with --secret-backend=secret-manager")
+		}
+	default:
+		return usage("--secret-backend must be explicitly set to file or secret-manager")
+	}
+
+	return nil
+}
+
+func isLoopbackListen(raw string) bool {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }

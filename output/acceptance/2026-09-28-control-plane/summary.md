@@ -47,3 +47,7 @@ PASS for the runnable offline/browser slice and persistence foundation.
 ## Remaining risk
 
 The issue's live acceptance items for the real `gmail` and `singulyr` Google identities require the production central OAuth client, its registered public callback URL, live Google API access, and one approved resource per connection. Those credentials and deployed callback were not available in this local proof run. Google rejected the intentional `test-client` after the correct consent redirect. Production Secret Manager was implemented behind the same interface but not exercised against a live GCP project. Before closing the production acceptance checklist, deploy with the central client, authorize both identities, discover resources, toggle grants, restart Postgres-backed deployment, and execute one read through the existing engine per connection using an explicitly enabled resource.
+
+## Frontier review #1 repair
+
+PASS. Credential-backed admin login, stable persisted actor IDs, fail-closed secret backend selection, and PKCE S256/nonce enforcement were fixed and re-proved. See `output/acceptance/2026-09-28-control-plane-review1/summary.md`.
