@@ -3,9 +3,12 @@
 package acceptance
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
 func TestStableProfilePermissions(t *testing.T) {
@@ -16,10 +19,25 @@ func TestStableProfilePermissions(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, key, err := LoadProfile(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secrets, err := controlplane.NewFileSecretStore(paths.Secrets, key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := secrets.Put(context.Background(), "acceptance-org", []byte("secret")); err != nil {
+		t.Fatal(err)
+	}
+
 	assertMode(t, paths.Root, 0o700)
 	assertMode(t, paths.OutputRoot, 0o700)
 	assertMode(t, paths.Config, 0o600)
 	assertMode(t, paths.MasterKey, 0o600)
+	assertMode(t, paths.Secrets, 0o600)
 }
 
 func assertMode(t *testing.T, path string, want os.FileMode) {

@@ -63,7 +63,7 @@ func TestStableProfileRoundTrip(t *testing.T) {
 		t.Fatalf("profile round trip failed: %+v", loaded)
 	}
 
-	if err := ValidateStablePaths(paths); err == nil && strings.Contains(root, os.TempDir()) {
+	if err := ValidateStablePaths(paths); err == nil {
 		t.Fatal("temporary profile path was accepted")
 	}
 }

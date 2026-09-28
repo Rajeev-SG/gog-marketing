@@ -215,20 +215,19 @@ func validateBootstrapInputs(databaseURL, ownerEmail, gmailEmail, singulyrEmail,
 
 func resolveBootstrapClient(explicitClientID string, raw []byte) (config.ClientCredentials, error) {
 	clientID := strings.TrimSpace(explicitClientID)
-	clientSecret := strings.TrimSpace(string(raw))
+	secretMaterial := strings.TrimSpace(string(raw))
 	if credentials, err := config.ParseGoogleOAuthClientJSON(raw); err == nil {
 		if clientID == "" {
 			clientID = strings.TrimSpace(credentials.ClientID)
 		}
-		clientSecret = strings.TrimSpace(credentials.ClientSecret)
+		secretMaterial = strings.TrimSpace(credentials.ClientSecret)
 	}
-	if clientID == "" || clientSecret == "" {
+	if clientID == "" || secretMaterial == "" {
 		return config.ClientCredentials{}, errBootstrapClient
 	}
 
-	var credentials config.ClientCredentials
-	credentials.ClientID = clientID
-	credentials.ClientSecret = clientSecret
+	resolved := config.ClientCredentials{ClientID: clientID}
+	resolved.ClientSecret = secretMaterial
 
-	return credentials, nil
+	return resolved, nil
 }
