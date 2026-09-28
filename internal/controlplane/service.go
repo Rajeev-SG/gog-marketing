@@ -1,0 +1,442 @@
+package controlplane
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/openclaw/gogcli/internal/googleauth"
+)
+
+type Actor struct {
+	UserID         string
+	OrganizationID string
+	Role           string
+}
+
+type Service struct {
+	Store       Store
+	Secrets     SecretStore
+	OAuth       OAuthProvider
+	Discoverer  Discoverer
+	RedirectURI string
+	Now         func() time.Time
+}
+
+type OAuthStart struct {
+	URL   string `json:"url"`
+	State string `json:"-"`
+}
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now().UTC()
+	}
+
+	return time.Now().UTC()
+}
+
+func (s *Service) CreateConnection(ctx context.Context, actor Actor, name string, services []string) (Connection, error) {
+	if actor.Role != "owner" && actor.Role != "admin" {
+		return Connection{}, ErrForbidden
+	}
+
+	normalized := make([]string, 0, len(services))
+	for _, service := range services {
+		service = strings.ToLower(strings.TrimSpace(service))
+		if service == "" {
+			continue
+		}
+
+		if _, err := googleauth.Scopes(googleauth.Service(service)); err != nil {
+			return Connection{}, fmt.Errorf("%w: unsupported service %q", ErrInvalid, service)
+		}
+		normalized = append(normalized, service)
+	}
+
+	scopes, err := googleauth.ScopesForManageWithOptions(serviceTypes(normalized), googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	connection, err := s.Store.CreateConnection(ctx, Connection{
+		OrganizationID:  actor.OrganizationID,
+		Name:            name,
+		Services:        normalized,
+		RequestedScopes: scopes,
+		Status:          ConnectionNeedsConnect,
+	})
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	s.audit(ctx, actor, connection.ID, "connection.created", "ok", "")
+
+	return connection, nil
+}
+
+func (s *Service) ListConnections(ctx context.Context, actor Actor) ([]Connection, error) {
+	if actor.OrganizationID == "" {
+		return nil, ErrForbidden
+	}
+
+	connections, err := s.Store.ListConnections(ctx, actor.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("list connections: %w", err)
+	}
+
+	return connections, nil
+}
+
+func (s *Service) GetConnection(ctx context.Context, actor Actor, id string) (Connection, error) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return Connection{}, fmt.Errorf("get connection: %w", err)
+	}
+
+	return connection, nil
+}
+
+func (s *Service) RenameConnection(ctx context.Context, actor Actor, id, name string) (Connection, error) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+	connection.Name = name
+
+	updated, err := s.Store.UpdateConnection(ctx, connection)
+	if err == nil {
+		s.audit(ctx, actor, id, "connection.renamed", "ok", "")
+	}
+
+	if err != nil {
+		return updated, fmt.Errorf("update connection: %w", err)
+	}
+
+	return updated, nil
+}
+
+func (s *Service) BeginOAuth(ctx context.Context, actor Actor, id string) (OAuthStart, error) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	scopes, err := googleauth.ScopesForManageWithOptions(serviceTypes(connection.Services), googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	state, err := randomToken(32)
+	if err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	verifier, err := randomToken(48)
+	if err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	nonce, err := randomToken(24)
+	if err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	stored := OAuthState{
+		State: state, OrganizationID: actor.OrganizationID, ConnectionID: id,
+		CodeVerifier: verifier, RedirectURI: s.RedirectURI, Scope: scopes, Nonce: nonce,
+		ExpiresAt: s.now().Add(10 * time.Minute),
+	}
+	if err := s.Store.PutOAuthState(ctx, stored); err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	connection.RequestedScopes = scopes
+	if _, err := s.Store.UpdateConnection(ctx, connection); err != nil {
+		return OAuthStart{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	s.audit(ctx, actor, id, "oauth.start", "ok", "")
+
+	return OAuthStart{
+		URL: s.OAuth.AuthorizationURL(OAuthStartInput{
+			State: state, CodeVerifier: verifier, Nonce: nonce, RedirectURI: s.RedirectURI, Scopes: scopes,
+		}),
+		State: state,
+	}, nil
+}
+
+func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connection, error) {
+	stored, err := s.Store.TakeOAuthState(ctx, state)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	connection, err := s.Store.GetConnection(ctx, stored.OrganizationID, stored.ConnectionID)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	token, err := s.OAuth.Exchange(ctx, OAuthStartInput{
+		State: stored.State, CodeVerifier: stored.CodeVerifier, Nonce: stored.Nonce,
+		RedirectURI: stored.RedirectURI, Scopes: stored.Scope,
+	}, code)
+	if err != nil {
+		connection.LastError = safeOAuthError(err)
+		connection.Status = ConnectionNeedsReconnect
+		_, _ = s.Store.UpdateConnection(ctx, connection)
+		s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "error", connection.LastError)
+
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if saveErr := s.saveToken(ctx, &connection, token); saveErr != nil {
+		return Connection{}, fmt.Errorf("control plane: %w", saveErr)
+	}
+	connection.GoogleEmail = token.Email
+	connection.GoogleSubject = token.Subject
+	connection.GrantedScopes = token.GrantedScopes
+	connection.Status = ConnectionHealthy
+	connection.LastError = ""
+	validated := s.now()
+	connection.LastValidatedAt = &validated
+
+	updated, err := s.Store.UpdateConnection(ctx, connection)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "ok", "")
+
+	return updated, nil
+}
+
+func (s *Service) Refresh(ctx context.Context, actor Actor, id string) (Connection, error) {
+	connection, token, err := s.loadToken(ctx, actor, id)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if token.Expiry.IsZero() || token.Expiry.Before(s.now().Add(time.Minute)) {
+		token, err = s.OAuth.Refresh(ctx, token)
+		if err != nil {
+			connection.Status = ConnectionExpired
+			connection.LastError = safeOAuthError(err)
+			_, _ = s.Store.UpdateConnection(ctx, connection)
+			s.audit(ctx, actor, id, "token.refresh", "error", connection.LastError)
+
+			return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+		}
+
+		if saveErr := s.saveToken(ctx, &connection, token); saveErr != nil {
+			return Connection{}, fmt.Errorf("control plane: %w", saveErr)
+		}
+	}
+	validated := s.now()
+	connection.Status = ConnectionHealthy
+	connection.LastError = ""
+	connection.LastValidatedAt = &validated
+	connection.GoogleEmail = token.Email
+	connection.GrantedScopes = token.GrantedScopes
+
+	updated, err := s.Store.UpdateConnection(ctx, connection)
+	if err == nil {
+		s.audit(ctx, actor, id, "connection.validated", "ok", "")
+	}
+
+	if err != nil {
+		return updated, fmt.Errorf("update connection: %w", err)
+	}
+
+	return updated, nil
+}
+
+func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {
+	connection, token, err := s.loadToken(ctx, actor, id)
+	if err != nil {
+		return nil, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if s.Discoverer == nil {
+		return nil, ErrDiscovererNotConfigured
+	}
+
+	resources, err := s.Discoverer.Discover(ctx, connection, token)
+	if err != nil {
+		s.audit(ctx, actor, id, "resource.discovery", "error", safeOAuthError(err))
+		return nil, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	out := make([]ResourceGrant, 0, len(resources))
+	for _, resource := range resources {
+		resource.OrganizationID = actor.OrganizationID
+		resource.ConnectionID = id
+		resource.DiscoveredAt = s.now()
+
+		saved, saveErr := s.Store.UpsertResourceGrant(ctx, resource)
+		if saveErr != nil {
+			return nil, fmt.Errorf("save resource grant: %w", saveErr)
+		}
+
+		out = append(out, saved)
+	}
+
+	s.audit(ctx, actor, id, "resource.discovery", "ok", fmt.Sprintf("%d resources", len(out)))
+
+	return out, nil
+}
+
+func (s *Service) ListResources(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {
+	grants, err := s.Store.ListResourceGrants(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return nil, fmt.Errorf("list resource grants: %w", err)
+	}
+
+	return grants, nil
+}
+
+func (s *Service) SetResourceEnabled(ctx context.Context, actor Actor, id, resourceID string, enabled bool) (ResourceGrant, error) {
+	grant, err := s.Store.SetResourceEnabled(ctx, actor.OrganizationID, id, resourceID, enabled)
+	if err != nil {
+		return ResourceGrant{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	action := "asset.disabled"
+	if enabled {
+		action = "asset.enabled"
+	}
+
+	s.audit(ctx, actor, id, action, "ok", resourceID)
+
+	return grant, nil
+}
+
+func (s *Service) Disconnect(ctx context.Context, actor Actor, id string) error {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return wrapControlPlaneError(err)
+	}
+
+	if connection.SecretRef != "" {
+		if tokenRaw, loadErr := s.Secrets.Get(ctx, actor.OrganizationID, connection.SecretRef); loadErr == nil {
+			if token, decodeErr := unmarshalToken(tokenRaw); decodeErr == nil {
+				if revoker, ok := s.OAuth.(interface {
+					Revoke(context.Context, OAuthToken) error
+				}); ok {
+					_ = revoker.Revoke(ctx, token)
+				}
+			}
+		}
+
+		if err := s.Secrets.Delete(ctx, actor.OrganizationID, connection.SecretRef); err != nil && !errors.Is(err, ErrSecretNotFound) {
+			return wrapControlPlaneError(err)
+		}
+	}
+	connection.SecretRef = ""
+	connection.Status = ConnectionDisconnected
+	connection.LastError = ""
+	connection.GoogleEmail = ""
+	connection.GoogleSubject = ""
+
+	connection.GrantedScopes = nil
+	if _, err := s.Store.UpdateConnection(ctx, connection); err != nil {
+		return wrapControlPlaneError(err)
+	}
+
+	s.audit(ctx, actor, id, "connection.disconnected", "ok", "")
+
+	return nil
+}
+
+func (s *Service) loadToken(ctx context.Context, actor Actor, id string) (Connection, OAuthToken, error) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return Connection{}, OAuthToken{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if connection.SecretRef == "" {
+		return Connection{}, OAuthToken{}, fmt.Errorf("%w: connection is not authorized", ErrInvalid)
+	}
+
+	raw, err := s.Secrets.Get(ctx, actor.OrganizationID, connection.SecretRef)
+	if err != nil {
+		return Connection{}, OAuthToken{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	token, err := unmarshalToken(raw)
+	if err != nil {
+		return Connection{}, OAuthToken{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	return connection, token, nil
+}
+
+func (s *Service) saveToken(ctx context.Context, connection *Connection, token OAuthToken) error {
+	raw, err := marshalToken(token)
+	if err != nil {
+		return wrapControlPlaneError(err)
+	}
+
+	reference, err := s.Secrets.Put(ctx, connection.OrganizationID, raw)
+	if err != nil {
+		return wrapControlPlaneError(err)
+	}
+
+	if connection.SecretRef != "" && connection.SecretRef != reference {
+		_ = s.Secrets.Delete(ctx, connection.OrganizationID, connection.SecretRef)
+	}
+
+	connection.SecretRef = reference
+	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
+		return fmt.Errorf("store token secret reference: %w", updateErr)
+	}
+
+	return nil
+}
+
+func (s *Service) audit(ctx context.Context, actor Actor, connectionID, action, result, detail string) {
+	_ = s.Store.AppendAudit(ctx, AuditEvent{
+		OrganizationID: actor.OrganizationID,
+		ActingUserID:   actor.UserID,
+		ConnectionID:   connectionID,
+		Action:         action,
+		Result:         result,
+		Detail:         sanitizeAuditDetail(detail),
+	})
+}
+
+func serviceTypes(services []string) []googleauth.Service {
+	out := make([]googleauth.Service, 0, len(services))
+	for _, service := range services {
+		out = append(out, googleauth.Service(service))
+	}
+
+	return out
+}
+
+func randomToken(bytes int) (string, error) {
+	raw := make([]byte, bytes)
+	if _, err := rand.Read(raw); err != nil {
+		return "", fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
+func safeOAuthError(err error) string {
+	if err == nil {
+		return ""
+	}
+	value := err.Error()
+
+	value = strings.ReplaceAll(value, "\n", " ")
+	if len(value) > 300 {
+		value = value[:300]
+	}
+
+	return value
+}
