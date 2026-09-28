@@ -18,6 +18,7 @@ type EngineDiscoverer struct {
 	GoogleAdsDeveloperToken string
 	GoogleAdsLoginCustomer  string
 	BigQueryProjects        []string
+	GoogleAdsDiscover       func(context.Context, Connection, OAuthToken) ([]ResourceGrant, error)
 }
 
 func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
@@ -41,7 +42,7 @@ func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, t
 
 			out = append(out, items...)
 		case "googleads":
-			items, err := d.googleAds(ctx, connection, token)
+			items, err := d.discoverGoogleAds(ctx, connection, token)
 			if err != nil {
 				return nil, wrapControlPlaneError(err)
 			}
@@ -135,7 +136,19 @@ func (d EngineDiscoverer) tagManager(ctx context.Context, connection Connection,
 	return out, nil
 }
 
+func (d EngineDiscoverer) discoverGoogleAds(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
+	if d.GoogleAdsDiscover != nil {
+		return d.GoogleAdsDiscover(ctx, connection, token)
+	}
+
+	return d.googleAds(ctx, connection, token)
+}
+
 func (d EngineDiscoverer) googleAds(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
+	if strings.TrimSpace(d.GoogleAdsDeveloperToken) == "" {
+		return nil, nil
+	}
+
 	httpClient, err := googleapi.NewGoogleAdsHTTPClient(ctx, connection.GoogleEmail)
 	if err != nil {
 		return nil, wrapControlPlaneError(err)
