@@ -381,7 +381,7 @@ func (h *WebHandler) handleReconnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id)
+	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id, true)
 	if err != nil {
 		http.Redirect(w, r, "/connections/"+url.PathEscape(id)+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
@@ -397,7 +397,7 @@ func (h *WebHandler) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.URL.Query().Get("connection")
 
-	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id)
+	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id, false)
 	if err != nil {
 		http.Redirect(w, r, "/connections?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return

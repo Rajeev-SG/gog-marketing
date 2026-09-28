@@ -45,42 +45,55 @@ func (s *PostgresStore) Migrate(ctx context.Context) error {
 		return fmt.Errorf("create schema_migrations: %w", err)
 	}
 
-	var exists bool
-	if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, "001").Scan(&exists); err != nil {
-		return wrapControlPlaneError(err)
+	migrations := []struct {
+		version string
+		sql     string
+	}{
+		{"001", migration001Up},
+		{"002", migration002Up},
 	}
+	for _, migration := range migrations {
+		var exists bool
+		if err := s.db.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=$1)`, migration.version).Scan(&exists); err != nil {
+			return wrapControlPlaneError(err)
+		}
 
-	if exists {
-		return nil
-	}
+		if exists {
+			continue
+		}
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return wrapControlPlaneError(err)
-	}
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return wrapControlPlaneError(err)
+		}
 
-	defer func() { _ = tx.Rollback() }()
+		if _, err := tx.ExecContext(ctx, migration.sql); err != nil {
+			_ = tx.Rollback()
+			return fmt.Errorf("apply migration %s: %w", migration.version, err)
+		}
 
-	if _, err := tx.ExecContext(ctx, migration001Up); err != nil {
-		return fmt.Errorf("apply migration 001: %w", err)
-	}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations(version, applied_at) VALUES($1, $2)`, migration.version, time.Now().UTC()); err != nil {
+			_ = tx.Rollback()
+			return wrapControlPlaneError(err)
+		}
 
-	if _, err := tx.ExecContext(ctx, `INSERT INTO schema_migrations(version, applied_at) VALUES($1, $2)`, "001", time.Now().UTC()); err != nil {
-		return wrapControlPlaneError(err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit migration %s: %w", migration.version, err)
+		}
 	}
 
 	return nil
 }
 
-func (s *PostgresStore) RollBackMigration001(ctx context.Context) error {
+func (s *PostgresStore) RollBackMigrations(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, migration002Down); err != nil {
+		return wrapControlPlaneError(err)
+	}
+
 	if _, err := s.db.ExecContext(ctx, migration001Down); err != nil {
 		return wrapControlPlaneError(err)
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version=$1`, "001")
+	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version IN ($1,$2)`, "001", "002")
 
 	return wrapControlPlaneError(err)
 }
@@ -216,8 +229,8 @@ func (s *PostgresStore) UpdateConnection(ctx context.Context, connection Connect
 	requested, _ := json.Marshal(connection.RequestedScopes)
 	granted, _ := json.Marshal(connection.GrantedScopes)
 
-	result, err := s.db.ExecContext(ctx, `UPDATE google_connections SET name=$1,google_email=$2,google_subject=$3,oauth_client_id=$4,services_json=$5,requested_scopes_json=$6,granted_scopes_json=$7,status=$8,token_secret_ref=$9,last_validated_at=$10,last_error=$11,updated_at=$12 WHERE organization_id=$13 AND id=$14`,
-		connection.Name, connection.GoogleEmail, connection.GoogleSubject, connection.OAuthClientID, services, requested, granted, connection.Status, connection.SecretRef, connection.LastValidatedAt, connection.LastError, connection.UpdatedAt, connection.OrganizationID, connection.ID)
+	result, err := s.db.ExecContext(ctx, `UPDATE google_connections SET name=$1,google_email=$2,google_subject=$3,oauth_client_id=$4,services_json=$5,requested_scopes_json=$6,granted_scopes_json=$7,status=$8,token_secret_ref=$9,last_validated_at=$10,last_error=$11,last_error_category=$12,updated_at=$13 WHERE organization_id=$14 AND id=$15`,
+		connection.Name, connection.GoogleEmail, connection.GoogleSubject, connection.OAuthClientID, services, requested, granted, connection.Status, connection.SecretRef, connection.LastValidatedAt, connection.LastError, connection.LastErrorCategory, connection.UpdatedAt, connection.OrganizationID, connection.ID)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return Connection{}, ErrConflict
@@ -401,7 +414,7 @@ func (s *PostgresStore) Close() error {
 }
 
 const (
-	connectionSelect = `SELECT id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,created_at,updated_at FROM google_connections`
+	connectionSelect = `SELECT id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,last_error_category,created_at,updated_at FROM google_connections`
 	grantSelect      = `SELECT id,connection_id,organization_id,service,resource_type,resource_id,display_name,parent,metadata_json,enabled,discovered_at,updated_at FROM resource_grants`
 )
 
@@ -411,7 +424,7 @@ func scanConnection(row rowScanner) (Connection, error) {
 	var connection Connection
 	var services, requested, granted string
 
-	err := row.Scan(&connection.ID, &connection.OrganizationID, &connection.Name, &connection.GoogleEmail, &connection.GoogleSubject, &connection.OAuthClientID, &services, &requested, &granted, &connection.Status, &connection.SecretRef, &connection.LastValidatedAt, &connection.LastError, &connection.CreatedAt, &connection.UpdatedAt)
+	err := row.Scan(&connection.ID, &connection.OrganizationID, &connection.Name, &connection.GoogleEmail, &connection.GoogleSubject, &connection.OAuthClientID, &services, &requested, &granted, &connection.Status, &connection.SecretRef, &connection.LastValidatedAt, &connection.LastError, &connection.LastErrorCategory, &connection.CreatedAt, &connection.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Connection{}, ErrNotFound
 	}

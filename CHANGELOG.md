@@ -2,6 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
+- Acceptance: add hermetic local, non-interactive doctor, unattended live/repeat commands, stable non-Keychain developer state, silent refresh and terminal auth-failure classification, bounded transient retries, safe manifests, and agent guidance banning authenticated `go run`/OAuth/Keychain fallback. (#14)
 - Control plane: load the central Google OAuth client from a named `gog` credential/Keychain entry via `--google-client-name`, avoiding copied client secrets and repeated prompts from temporary binaries while retaining explicit secret-injection flags for deployments. Resource discovery skips Google Ads only when its developer token is unconfigured; configured service failures remain atomic. (#12)
 - Control plane: add the first production SaaS slice for Postgres-backed users, organisations, memberships, named Google connections, managed token secret references, central web OAuth, resource discovery/grants, reusable asset policy, audit events, and a minimal authenticated admin UI. The command is `gog controlplane`; local tests use fakes and do not require live Google credentials. (#9)
 - Tenants: add the hosted multi-account SaaS MVP — a tenant registry with per-tenant isolated gog homes, HKDF-derived per-tenant encrypted file keyrings, per-tenant audit logs, explicit allowlists, a read-only-by-default hosted API (`gog tenant add/list/get/remove/audit/serve`), and every hosted call routed through the same typed engine as the CLI. (#5)

@@ -15,6 +15,7 @@ import (
 )
 
 type OAuthStartInput struct {
+	ForceConsent bool
 	State        string
 	CodeVerifier string
 	Nonce        string
@@ -56,12 +57,16 @@ func (p *GoogleOAuthProvider) AuthorizationURL(input OAuthStartInput) string {
 	cfg.RedirectURL = input.RedirectURI
 	cfg.Scopes = input.Scopes
 
-	return cfg.AuthCodeURL(input.State,
+	options := []oauth2.AuthCodeOption{
 		oauth2.AccessTypeOffline,
-		oauth2.SetAuthURLParam("prompt", "consent"),
 		oauth2.SetAuthURLParam("nonce", input.Nonce),
 		oauth2.S256ChallengeOption(input.CodeVerifier),
-	)
+	}
+	if input.ForceConsent {
+		options = append(options, oauth2.SetAuthURLParam("prompt", "consent"))
+	}
+
+	return cfg.AuthCodeURL(input.State, options...)
 }
 
 func (p *GoogleOAuthProvider) Exchange(ctx context.Context, input OAuthStartInput, code string) (OAuthToken, error) {

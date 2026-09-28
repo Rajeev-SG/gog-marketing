@@ -49,3 +49,6 @@ internal/cmd/safety_profile_baked_gen.go
 # Node (optional dev scripts)
 node_modules/
 dist/
+output/acceptance/
+output/playwright/
+.acceptance/

@@ -48,21 +48,22 @@ const (
 )
 
 type Connection struct {
-	ID              string           `json:"id"`
-	OrganizationID  string           `json:"organization_id"`
-	Name            string           `json:"name"`
-	GoogleEmail     string           `json:"google_email,omitempty"`
-	GoogleSubject   string           `json:"-"`
-	OAuthClientID   string           `json:"oauth_client_id,omitempty"`
-	Services        []string         `json:"services"`
-	RequestedScopes []string         `json:"requested_scopes"`
-	GrantedScopes   []string         `json:"granted_scopes"`
-	Status          ConnectionStatus `json:"status"`
-	SecretRef       string           `json:"secret_ref,omitempty"`
-	LastValidatedAt *time.Time       `json:"last_validated_at,omitempty"`
-	LastError       string           `json:"last_error,omitempty"`
-	CreatedAt       time.Time        `json:"created_at"`
-	UpdatedAt       time.Time        `json:"updated_at"`
+	ID                string              `json:"id"`
+	OrganizationID    string              `json:"organization_id"`
+	Name              string              `json:"name"`
+	GoogleEmail       string              `json:"google_email,omitempty"`
+	GoogleSubject     string              `json:"-"`
+	OAuthClientID     string              `json:"oauth_client_id,omitempty"`
+	Services          []string            `json:"services"`
+	RequestedScopes   []string            `json:"requested_scopes"`
+	GrantedScopes     []string            `json:"granted_scopes"`
+	Status            ConnectionStatus    `json:"status"`
+	SecretRef         string              `json:"secret_ref,omitempty"`
+	LastValidatedAt   *time.Time          `json:"last_validated_at,omitempty"`
+	LastError         string              `json:"last_error,omitempty"`
+	LastErrorCategory AuthFailureCategory `json:"last_error_category,omitempty"`
+	CreatedAt         time.Time           `json:"created_at"`
+	UpdatedAt         time.Time           `json:"updated_at"`
 }
 
 type ResourceGrant struct {
