@@ -19,6 +19,8 @@ const (
 
 type Profile struct {
 	Version                 int      `json:"version"`
+	UserID                  string   `json:"user_id,omitempty"`
+	OrganizationID          string   `json:"organization_id,omitempty"`
 	DatabaseURL             string   `json:"database_url"`
 	OwnerEmail              string   `json:"owner_email"`
 	OrganizationSlug        string   `json:"organization_slug"`
@@ -91,12 +93,7 @@ func EnsureProfile(paths Paths, profile Profile) error {
 		return fmt.Errorf("create acceptance output: %w", wrapAcceptanceError(err))
 	}
 
-	raw, err := json.MarshalIndent(profile, "", "  ")
-	if err != nil {
-		return wrapAcceptanceError(err)
-	}
-
-	if err := os.WriteFile(paths.Config, append(raw, '\n'), 0o600); err != nil {
+	if err := SaveProfile(paths, profile); err != nil {
 		return fmt.Errorf("write acceptance profile: %w", wrapAcceptanceError(err))
 	}
 
@@ -109,6 +106,49 @@ func EnsureProfile(paths Paths, profile Profile) error {
 		if err := os.WriteFile(paths.MasterKey, []byte(hex.EncodeToString(key)), 0o600); err != nil {
 			return fmt.Errorf("write acceptance master key: %w", wrapAcceptanceError(err))
 		}
+	}
+
+	return nil
+}
+
+func SaveProfile(paths Paths, profile Profile) error {
+	raw, err := json.MarshalIndent(profile, "", "  ")
+	if err != nil {
+		return wrapAcceptanceError(err)
+	}
+
+	temp, err := os.CreateTemp(filepath.Dir(paths.Config), ".config-*.tmp")
+	if err != nil {
+		return wrapAcceptanceError(err)
+	}
+	tempName := temp.Name()
+
+	defer func() { _ = os.Remove(tempName) }()
+
+	if err := temp.Chmod(0o600); err != nil {
+		_ = temp.Close()
+
+		return wrapAcceptanceError(err)
+	}
+
+	if _, err := temp.Write(append(raw, '\n')); err != nil {
+		_ = temp.Close()
+
+		return wrapAcceptanceError(err)
+	}
+
+	if err := temp.Sync(); err != nil {
+		_ = temp.Close()
+
+		return wrapAcceptanceError(err)
+	}
+
+	if err := temp.Close(); err != nil {
+		return wrapAcceptanceError(err)
+	}
+
+	if err := os.Rename(tempName, paths.Config); err != nil {
+		return wrapAcceptanceError(err)
 	}
 
 	return nil
@@ -152,6 +192,18 @@ func ValidateStablePaths(paths Paths) error {
 	return nil
 }
 
+func SetControlPlaneIdentity(paths Paths, userID, organizationID string) error {
+	profile, _, err := LoadProfile(paths)
+	if err != nil {
+		return wrapAcceptanceError(err)
+	}
+
+	profile.UserID = strings.TrimSpace(userID)
+	profile.OrganizationID = strings.TrimSpace(organizationID)
+
+	return SaveProfile(paths, profile)
+}
+
 func SetGoogleClientSecretRef(paths Paths, reference string) error {
 	profile, _, err := LoadProfile(paths)
 	if err != nil {
@@ -159,14 +211,5 @@ func SetGoogleClientSecretRef(paths Paths, reference string) error {
 	}
 	profile.GoogleClientSecretRef = reference
 
-	raw, err := json.MarshalIndent(profile, "", "  ")
-	if err != nil {
-		return wrapAcceptanceError(err)
-	}
-
-	if err := os.WriteFile(paths.Config, append(raw, '\n'), 0o600); err != nil {
-		return wrapAcceptanceError(err)
-	}
-
-	return nil
+	return SaveProfile(paths, profile)
 }

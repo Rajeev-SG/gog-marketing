@@ -144,6 +144,10 @@ func OpenRuntime(ctx context.Context, paths Paths, requireOAuthClient bool) (*Ru
 	}
 
 	if requireOAuthClient {
+		if strings.TrimSpace(profile.UserID) == "" || strings.TrimSpace(profile.OrganizationID) == "" {
+			return nil, FailFast("profile_invalid", bootstrapAction, "control-plane user and organization identity are missing")
+		}
+
 		if strings.TrimSpace(profile.GoogleClientID) == "" {
 			return nil, FailFast("oauth_client_unavailable", bootstrapAction, "Google client ID is missing")
 		}
@@ -189,7 +193,11 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) Actor() controlplane.Actor {
-	return controlplane.Actor{UserID: AcceptanceOwnerID, OrganizationID: AcceptanceOrganizationID, Role: "owner"}
+	return controlplane.Actor{
+		UserID:         strings.TrimSpace(r.Profile.UserID),
+		OrganizationID: strings.TrimSpace(r.Profile.OrganizationID),
+		Role:           "owner",
+	}
 }
 
 func (r *Runtime) Service() *controlplane.Service {
@@ -197,7 +205,7 @@ func (r *Runtime) Service() *controlplane.Service {
 }
 
 func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlplane.Connection, error) {
-	connections, err := r.Store.ListConnections(ctx, AcceptanceOrganizationID)
+	connections, err := r.Store.ListConnections(ctx, r.Actor().OrganizationID)
 	if err != nil {
 		return controlplane.Connection{}, wrapAcceptanceError(err)
 	}
@@ -212,7 +220,7 @@ func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlpla
 }
 
 func (r *Runtime) EnabledGrant(ctx context.Context, connectionID string) (controlplane.ResourceGrant, error) {
-	grants, err := r.Store.ListResourceGrants(ctx, AcceptanceOrganizationID, connectionID)
+	grants, err := r.Store.ListResourceGrants(ctx, r.Actor().OrganizationID, connectionID)
 	if err != nil {
 		return controlplane.ResourceGrant{}, wrapAcceptanceError(err)
 	}

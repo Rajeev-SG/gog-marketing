@@ -110,6 +110,36 @@ func TestLiveFailsFastWithoutOAuthClient(t *testing.T) {
 	}
 }
 
+func TestLiveFailsFastWithoutControlPlaneIdentity(t *testing.T) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := os.MkdirTemp(configDir, "gog-acceptance-identity-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = os.RemoveAll(root) }()
+
+	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}
+
+	profile := Profile{
+		Version: 1, DatabaseURL: "postgres://unused", OwnerEmail: "owner@example.test",
+		OrganizationSlug: "acceptance", GoogleClientID: "client-id", GoogleClientSecretRef: "secret-ref",
+	}
+
+	if err := EnsureProfile(paths, profile); err != nil {
+		t.Fatal(err)
+	}
+
+	_, runtimeErr := OpenRuntime(context.Background(), paths, true)
+	if runtimeErr == nil || !strings.Contains(runtimeErr.Error(), "make acceptance-bootstrap") {
+		t.Fatalf("missing identity did not fail fast: %v", runtimeErr)
+	}
+}
+
 func TestManifestRedactsAndHashesResources(t *testing.T) {
 	manifest := NewManifest("test", "binary", "commit")
 	manifest.Add("check", "PASS", "", "refresh_token=s3cr3t", 1)
@@ -124,6 +154,28 @@ func TestManifestRedactsAndHashesResources(t *testing.T) {
 
 	if manifest.Interaction["go_run"] != 0 {
 		t.Fatal("manifest allows go_run")
+	}
+}
+
+func TestProfilePersistsControlPlaneIdentity(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "profile")
+	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}
+
+	if err := EnsureProfile(paths, Profile{Version: 1, DatabaseURL: "postgres://example", OwnerEmail: "owner@example.test", OrganizationSlug: "acceptance"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := SetControlPlaneIdentity(paths, "user-1", "org-1"); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, _, err := LoadProfile(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if loaded.UserID != "user-1" || loaded.OrganizationID != "org-1" {
+		t.Fatalf("control-plane identity round trip failed: %+v", loaded)
 	}
 }
 

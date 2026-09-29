@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/openclaw/gogcli/internal/acceptance"
+
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
@@ -46,7 +47,7 @@ func (bootstrapFakeDiscoverer) Discover(context.Context, controlplane.Connection
 	}}, nil
 }
 
-func TestInstallBootstrapTokenRefreshesAndDiscoversUnderAcceptanceOrg(t *testing.T) {
+func TestInstallBootstrapTokenRefreshesAndDiscoversWithPersistedIdentity(t *testing.T) {
 	ctx := context.Background()
 	store := controlplane.NewMemoryStore()
 	secrets, err := controlplane.NewFileSecretStore(t.TempDir()+"/secrets.json", []byte("0123456789abcdef0123456789abcdef"))
@@ -60,13 +61,14 @@ func TestInstallBootstrapTokenRefreshesAndDiscoversUnderAcceptanceOrg(t *testing
 		OAuth:      oauth,
 		Discoverer: bootstrapFakeDiscoverer{},
 	}
-	actor := controlplane.Actor{
-		UserID:         acceptance.AcceptanceOwnerID,
-		OrganizationID: acceptance.AcceptanceOrganizationID,
-		Role:           "owner",
-	}
-	if _, _, ownerErr := store.BootstrapOwner(ctx, controlplane.User{Email: "owner@example.test"}, controlplane.Organization{Name: "Acceptance", Slug: "acceptance"}, "owner"); ownerErr != nil {
+	owner, org, ownerErr := store.BootstrapOwner(ctx, controlplane.User{Email: "owner@example.test"}, controlplane.Organization{Name: "Acceptance", Slug: "acceptance"}, "owner")
+	if ownerErr != nil {
 		t.Fatal(ownerErr)
+	}
+	actor := controlplane.Actor{
+		UserID:         owner.ID,
+		OrganizationID: org.ID,
+		Role:           "owner",
 	}
 
 	connection, err := service.CreateConnection(ctx, actor, "gmail", []string{"analytics"})
@@ -111,11 +113,44 @@ func TestInstallBootstrapTokenRefreshesAndDiscoversUnderAcceptanceOrg(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := secrets.Get(ctx, acceptance.AcceptanceOrganizationID, updated.SecretRef)
+	raw, err := secrets.Get(ctx, org.ID, updated.SecretRef)
 	if err != nil {
 		t.Fatalf("imported token is not readable under acceptance organization: %v", err)
 	}
 	if len(raw) == 0 {
 		t.Fatal("imported token is empty")
+	}
+}
+
+func TestBootstrapOwnerIdentityIsStableAcrossRepeatedRuns(t *testing.T) {
+	ctx := context.Background()
+	store := controlplane.NewMemoryStore()
+	root := t.TempDir()
+	paths := acceptance.Paths{
+		Root:       root,
+		Config:     root + "/config.json",
+		MasterKey:  root + "/master.key",
+		Secrets:    root + "/secrets.json",
+		OutputRoot: root + "/out",
+	}
+	if err := acceptance.EnsureProfile(paths, acceptance.Profile{Version: 1, DatabaseURL: "postgres://example", OwnerEmail: "owner@example.test", OrganizationSlug: "acceptance"}); err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 2; i++ {
+		owner, org, err := store.BootstrapOwner(ctx, controlplane.User{Email: "owner@example.test"}, controlplane.Organization{Name: "Acceptance", Slug: "acceptance"}, "owner")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if identityErr := acceptance.SetControlPlaneIdentity(paths, owner.ID, org.ID); identityErr != nil {
+			t.Fatal(identityErr)
+		}
+		loaded, _, err := acceptance.LoadProfile(paths)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if loaded.UserID != owner.ID || loaded.OrganizationID != org.ID {
+			t.Fatalf("iteration %d identity mismatch: profile=%+v owner=%s org=%s", i, loaded, owner.ID, org.ID)
+		}
 	}
 }
