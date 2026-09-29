@@ -8,11 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/openclaw/gogcli/internal/acceptance"
 	"github.com/openclaw/gogcli/internal/controlplane"
+	"github.com/openclaw/gogcli/internal/googleauth"
 )
 
 func newSecretStore(paths acceptance.Paths, key []byte) (controlplane.SecretStore, error) {
@@ -60,8 +62,28 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 		if err != nil {
 			return wrapMainError(err)
 		}
+		reauthorized := false
+		missingScopes, scopeErr := missingBootstrapScopes(token.GrantedScopes)
+		if scopeErr != nil {
+			return wrapMainError(scopeErr)
+		}
+		if len(missingScopes) > 0 {
+			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.email, item.file, timeout); reauthErr != nil {
+				return reauthErr
+			}
+			token, err = readBootstrapToken(item.file)
+			if err != nil {
+				return wrapMainError(err)
+			}
+			connection, err = ensureBootstrapConnection(ctx, service, actor, item.name)
+			if err != nil {
+				return wrapMainError(err)
+			}
+			reauthorized = true
+		}
 		if installErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, connection, token); installErr != nil {
-			if controlplane.AuthFailureCategoryFor(installErr) != controlplane.AuthFailureInvalidGrant {
+			category := controlplane.AuthFailureCategoryFor(installErr)
+			if reauthorized || (category != controlplane.AuthFailureInvalidGrant && category != controlplane.AuthFailureScopeMismatch) {
 				return fmt.Errorf("validate %s refresh token: %w", item.name, installErr)
 			}
 			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.email, item.file, timeout); reauthErr != nil {
@@ -95,6 +117,34 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	}
 
 	return nil
+}
+
+func missingBootstrapScopes(granted []string) ([]string, error) {
+	required, err := googleauth.ScopesForManageWithOptions([]googleauth.Service{
+		googleauth.ServiceAnalytics,
+		googleauth.ServiceTagManager,
+		googleauth.ServiceGoogleAds,
+		googleauth.ServiceSearchConsole,
+		googleauth.ServiceBigQuery,
+	}, googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		return nil, fmt.Errorf("resolve bootstrap scopes: %w", err)
+	}
+
+	available := make(map[string]bool, len(granted))
+	for _, scope := range granted {
+		available[strings.TrimSpace(scope)] = true
+	}
+
+	missing := make([]string, 0)
+	for _, scope := range required {
+		if !available[scope] {
+			missing = append(missing, scope)
+		}
+	}
+	sort.Strings(missing)
+
+	return missing, nil
 }
 
 func installBootstrapToken(parent context.Context, timeout time.Duration, store controlplane.Store, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {
@@ -197,6 +247,10 @@ func exportBootstrapTokens(ctx context.Context, exportGog, gmailEmail, singulyrE
 	return gmailPath, singulyrPath, nil
 }
 
+const bootstrapAuthServiceNames = "analytics,searchconsole,ads"
+
+const bootstrapExtraScopes = "https://www.googleapis.com/auth/tagmanager.readonly,https://www.googleapis.com/auth/bigquery.readonly"
+
 // Verified against gog v0.42.0 (792107a3). Keep these commands aligned with
 // `gog auth add` and `gog auth tokens export` when upgrading the stable binary.
 func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
@@ -204,8 +258,8 @@ func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
 		{
 			"auth", "add", email,
 			"--client", "personal-owned",
-			"--services", "analytics,searchconsole,bigquery.readonly,ads",
-			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly",
+			"--services", bootstrapAuthServiceNames,
+			"--extra-scopes", bootstrapExtraScopes,
 			"--force-consent",
 		},
 		{

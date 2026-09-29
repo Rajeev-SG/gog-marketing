@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/openclaw/gogcli/internal/acceptance"
-
 	"github.com/openclaw/gogcli/internal/controlplane"
+	"github.com/openclaw/gogcli/internal/googleauth"
 )
 
 func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
@@ -16,8 +19,8 @@ func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
 		{
 			"auth", "add", "user@example.test",
 			"--client", "personal-owned",
-			"--services", "analytics,searchconsole,bigquery.readonly,ads",
-			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly",
+			"--services", "analytics,searchconsole,ads",
+			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly,https://www.googleapis.com/auth/bigquery.readonly",
 			"--force-consent",
 		},
 		{
@@ -41,6 +44,84 @@ func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
 				t.Fatalf("command %d arg %d = %q, want %q", i, j, got[i][j], want[i][j])
 			}
 		}
+	}
+}
+
+func TestBootstrapOAuthScopesMatchRegistry(t *testing.T) {
+	knownScopes := make(map[string]bool)
+	for _, info := range googleauth.ServicesInfo() {
+		for _, scope := range info.Scopes {
+			knownScopes[scope] = true
+		}
+	}
+
+	for _, scope := range strings.Split(bootstrapExtraScopes, ",") {
+		if !knownScopes[scope] {
+			t.Fatalf("extra scope %q is not in the Google scope registry", scope)
+		}
+	}
+
+	for _, service := range strings.Split(bootstrapAuthServiceNames, ",") {
+		registryName := service
+		if service == "ads" {
+			registryName = "googleads"
+		}
+		if _, err := googleauth.Scopes(googleauth.Service(registryName)); err != nil {
+			t.Fatalf("service %q is not in the Google service registry: %v", service, err)
+		}
+	}
+}
+
+func TestMissingBootstrapScopesDetectsOldGrant(t *testing.T) {
+	required, err := googleauth.ScopesForManageWithOptions([]googleauth.Service{
+		googleauth.ServiceAnalytics,
+		googleauth.ServiceTagManager,
+		googleauth.ServiceGoogleAds,
+		googleauth.ServiceSearchConsole,
+		googleauth.ServiceBigQuery,
+	}, googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oldGrant := make([]string, 0, len(required))
+	for _, scope := range required {
+		if scope != "https://www.googleapis.com/auth/bigquery.readonly" {
+			oldGrant = append(oldGrant, scope)
+		}
+	}
+
+	missing, err := missingBootstrapScopes(oldGrant)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(missing) != 1 || missing[0] != "https://www.googleapis.com/auth/bigquery.readonly" {
+		t.Fatalf("missing scopes = %v", missing)
+	}
+	if missing, err := missingBootstrapScopes(required); err != nil || len(missing) != 0 {
+		t.Fatalf("complete grant reported missing scopes: %v, err=%v", missing, err)
+	}
+}
+
+func TestStableGogAcceptsBootstrapAuthAddArguments(t *testing.T) {
+	binary := os.Getenv("GOG_STABLE_BIN")
+	if binary == "" {
+		var err error
+		binary, err = exec.LookPath("gog")
+		if err != nil {
+			t.Skip("stable gog binary is not installed")
+		}
+	}
+
+	args := append([]string{}, reauthorizeBootstrapTokenArgs("user@example.test", "/tmp/token.json")[0]...)
+	args = append(args, "--dry-run", "--no-input")
+	cmd := exec.CommandContext(context.Background(), binary, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("gog rejected bootstrap auth arguments: %v\n%s", err, output)
+	}
+	if !strings.Contains(string(output), "bigquery.readonly") {
+		t.Fatalf("dry-run did not include BigQuery scope: %s", output)
 	}
 }
 
