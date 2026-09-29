@@ -103,6 +103,27 @@ func TestMissingBootstrapScopesDetectsOldGrant(t *testing.T) {
 	}
 }
 
+func TestMissingBootstrapScopesAcceptsExportedGrantShape(t *testing.T) {
+	exported := []string{
+		"email",
+		"https://www.googleapis.com/auth/adwords",
+		"https://www.googleapis.com/auth/analytics.readonly",
+		"https://www.googleapis.com/auth/bigquery.readonly",
+		"https://www.googleapis.com/auth/tagmanager.readonly",
+		"https://www.googleapis.com/auth/userinfo.email",
+		"https://www.googleapis.com/auth/webmasters",
+		"openid",
+	}
+
+	missing, err := missingBootstrapScopes(exported)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(missing) != 0 {
+		t.Fatalf("valid exported grant reported missing scopes: %v", missing)
+	}
+}
+
 func TestStableGogAcceptsBootstrapAuthAddArguments(t *testing.T) {
 	binary := os.Getenv("GOG_STABLE_BIN")
 	if binary == "" {

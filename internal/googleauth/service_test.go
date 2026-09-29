@@ -667,3 +667,33 @@ func TestScopes_UnknownService(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 }
+
+func TestMissingScopesAcceptsFullAnalyticsAndIgnoresBlankRequests(t *testing.T) {
+	missing := MissingScopes(
+		[]string{"", "https://www.googleapis.com/auth/analytics.readonly"},
+		[]string{"https://www.googleapis.com/auth/analytics"},
+	)
+	if len(missing) != 0 {
+		t.Fatalf("full analytics grant reported missing scopes: %v", missing)
+	}
+}
+
+func TestFullScopeGrantsSatisfyReadonlyRequirements(t *testing.T) {
+	cases := []struct {
+		required string
+		full     string
+	}{
+		{"https://www.googleapis.com/auth/analytics.readonly", "https://www.googleapis.com/auth/analytics"},
+		{"https://www.googleapis.com/auth/bigquery.readonly", "https://www.googleapis.com/auth/bigquery"},
+		{"https://www.googleapis.com/auth/webmasters.readonly", "https://www.googleapis.com/auth/webmasters"},
+		{"https://www.googleapis.com/auth/adsense.readonly", "https://www.googleapis.com/auth/adsense"},
+		{"https://www.googleapis.com/auth/sites.readonly", "https://www.googleapis.com/auth/sites"},
+		{"https://www.googleapis.com/auth/youtube.readonly", "https://www.googleapis.com/auth/youtube"},
+	}
+
+	for _, test := range cases {
+		if missing := MissingScopes([]string{test.required}, []string{test.full}); len(missing) != 0 {
+			t.Errorf("%s did not satisfy %s: %v", test.full, test.required, missing)
+		}
+	}
+}
