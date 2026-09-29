@@ -1,150 +1,241 @@
-# gog 🧭 — Google Workspace from the terminal
+# gog-marketing: connect an agent to Google
 
-![gogcli banner](docs/assets/readme-banner.jpg)
+Use this repository when you want an agent to work with Gmail, Calendar, Drive,
+Docs, Sheets, and other Google services without turning Google Cloud into your
+day job.
 
-[![CI](https://img.shields.io/github/actions/workflow/status/openclaw/gogcli/ci.yml?branch=main&style=flat-square&label=ci)](https://github.com/openclaw/gogcli/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/openclaw/gogcli?style=flat-square)](https://github.com/openclaw/gogcli/releases/latest)
-[![Go](https://img.shields.io/github/go-mod/go-version/openclaw/gogcli?style=flat-square)](https://go.dev/)
-[![License](https://img.shields.io/github/license/openclaw/gogcli?style=flat-square)](LICENSE)
-[![Homebrew](https://img.shields.io/badge/Homebrew-openclaw%2Ftap-fbb040?style=flat-square&logo=homebrew)](https://github.com/openclaw/homebrew-tap)
+The project contains:
 
-`gog` is one command-line client for Gmail, Calendar, Drive, Docs, Sheets, and
-the wider Google Workspace surface. It is built for people, scripts, CI, and
-agents that need explicit account routing, machine-readable output, and safety
-controls.
+- `gog`, the command-line client your agent calls;
+- a control plane that stores connection state and encrypted refresh tokens;
+- a one-time bootstrap and an unattended acceptance workflow.
 
-```bash
-gog --readonly gmail search 'is:unread newer_than:7d' --max 10 --json
-gog --readonly calendar events --today --json
-gog --readonly drive audit sharing --parent <folderId> --json
-```
+You only deal with Google Cloud once. After setup, the agent talks to `gog`;
+Google handles login and consent the first time, and `gog` handles API routing,
+scope mapping, and token refresh.
 
-For least-privilege Gmail authorization, use `gog auth add you@example.com --services gmail --gmail-scope send` for sending only, or `--gmail-scope read-send` to also read messages without mailbox-modification or settings-management permissions.
+## Start here: connect one Google account
 
-## Install
+### What you need
 
-Homebrew is the shortest path on macOS and Linux:
+- macOS or Linux.
+- Homebrew.
+- A Google Account or Google Workspace account.
+- Either a `client_secret_*.json` file or permission to create one.
+- Docker, only if you want to run this repository's acceptance checks.
+
+Do not use `go run` for authenticated commands. Use the installed `gog`
+binary.
+
+### 1. Install gog
 
 ```bash
 brew install openclaw/tap/gogcli
 gog --version
 ```
 
-With Go:
+Other installation methods are in [Install](docs/install.md).
+
+### 2. Store the OAuth client file
+
+If someone gave you a `client_secret_*.json` file, store it under the name this
+repository expects:
 
 ```bash
-go install github.com/openclaw/gogcli/cmd/gog@latest
-gog --version
+gog auth credentials set \
+  --client personal-owned \
+  ~/Downloads/client_secret_*.json
 ```
 
-Install scripts using the former `github.com/steipete/gogcli` module path should
-switch to `github.com/openclaw/gogcli` as shown above.
+That is the last time you handle the client secret. `gog` copies it into
+restrictive per-user storage. Your agent does not parse the file or pass the
+secret to Google.
 
-Docker images, Windows archives, raw macOS/Linux binaries, and source builds
-are covered in the [install guide](docs/install.md).
+Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
+repositories, prompts, logs, screenshots, and agent instructions. If the agent
+needs a credential, give it the stable `gog` command instead.
 
-## Quick start
+If you do not have the file, use the guided setup in
+[Google Cloud setup](#google-cloud-setup-only-when-no-client-file-exists).
 
-Create a Desktop OAuth client in a [Google Cloud project](https://console.cloud.google.com/auth/clients),
-download its JSON file, and authorize only the services you need:
+### 3. Connect the account once
+
+Choose only the services the agent needs:
 
 ```bash
-gog auth credentials set ~/Downloads/client_secret_*.json
-gog auth add you@gmail.com --services gmail,calendar,drive
-export GOG_ACCOUNT=you@gmail.com
-gog auth doctor --check
-gog gmail search 'newer_than:7d' --max 10
+gog auth add you@gmail.com \
+  --client personal-owned \
+  --services gmail,calendar,drive,docs,sheets,contacts
 ```
 
-The [five-minute quickstart](docs/quickstart.md) covers API enablement, the OAuth
-consent screen, weekly-token-expiry avoidance, headless authorization, and
-account defaults.
+Google opens a browser for the first login and consent. That is expected once.
+The command stores a refresh token in the operating-system keyring.
 
-## Work with Google services
+A personal `gmail.com` account and most Google Workspace custom domains work
+for Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Contacts, and Tasks.
 
-Commands follow the resource you are working with. These are the common entry
-points; the [examples](docs/examples.md) and generated
-[command index](docs/commands/README.md) cover the full surface.
+### 4. Verify the connection
 
-| Work | Start with |
+```bash
+gog auth doctor --check --no-input
+```
+
+It must report readable tokens and successful refresh-token exchange. If it
+does, the agent can use Google without any further login.
+
+### 5. Give the agent safe read-only commands
+
+Start with read-only, non-interactive, structured output:
+
+```bash
+gog --readonly --no-input --json gmail search 'newer_than:7d' --max 5
+gog --readonly --no-input --json calendar events --today
+gog --readonly --no-input --json drive ls
+```
+
+Those flags matter:
+
+- `--readonly` blocks mutating API requests.
+- `--no-input` prevents terminal prompts.
+- `--json` gives the agent stable structured output.
+- `--account you@gmail.com` selects the account explicitly when more than one
+  is connected.
+- Start with only the services and commands the agent actually needs. Do not
+  give it broad write access just because Google supports it.
+
+For stricter agent permissions, see [Automation](docs/automation.md) and
+[Safety Profiles](docs/safety-profiles.md).
+
+## Google Cloud setup only when no client file exists
+
+Skip this section if you already stored a `client_secret_*.json` file.
+
+`gog` can guide the one-time setup:
+
+```bash
+gog auth setup you@gmail.com \
+  --client personal-owned \
+  --gcloud-project my-gog-project \
+  --enable-apis \
+  --open-console
+```
+
+It helps with the pieces Google requires once:
+
+1. create or select a Cloud project;
+2. enable only the APIs you plan to use;
+3. configure the OAuth consent screen;
+4. create a Desktop OAuth client;
+5. download the `client_secret_*.json` file.
+
+Return to step 2 above after downloading it. The complete manual process is in
+the [five-minute quickstart](docs/quickstart.md).
+
+## What the Google Cloud complexity actually means
+
+This table translates the Google vocabulary you will encounter:
+
+| Google Cloud concept | What you do | What the project handles |
+| --- | --- | --- |
+| Cloud project | Create one only if no client file exists | API and OAuth configuration live here |
+| OAuth client | Download and store one JSON file | `gog` stores it securely and uses it automatically |
+| Consent screen | Publish the app once for long-lived personal use | The first login still requires your approval |
+| OAuth scopes | Name services such as `gmail` or `drive` | `gog` maps service names to the correct scopes |
+| Refresh token | Approve the account in a browser once | Stored in Keychain, Secret Service, or Credential Manager |
+| Access token | Nothing | Refreshed silently before API calls |
+| API endpoints | Nothing | Routed by the `gog` command and typed command schema |
+| Control-plane secrets | Nothing after bootstrap | Stored encrypted outside the repository |
+
+The practical rule is simple: Google Cloud is the one-time key cabinet. `gog`
+is the tool your agent uses every day.
+
+## What is still a one-time human step
+
+Google requires the first account login and approval. If the OAuth app remains
+in Google's **Testing** audience, refresh tokens can expire after seven days.
+For long-lived personal use, publish the app once in the same Cloud project.
+This changes the app to **In production**; it does not submit it for Google
+verification.
+
+Google does not expose that publishing state through a stable public API, so
+`gog auth doctor` verifies everything it can and leaves that one Console check
+to you.
+
+Workspace-only administration APIs (Admin Directory, Cloud Identity Groups, and
+Keep with domain-wide delegation) need a managed Workspace domain and separate
+service-account setup. See [Workspace Admin](docs/workspace-admin.md).
+
+## Run this repository's unattended acceptance
+
+This repository proves the connection remains unattended after bootstrap:
+
+```bash
+make acceptance-local
+make acceptance-doctor
+make acceptance-live-repeat N=3
+```
+
+These checks use the stable binary, the control plane, and encrypted secret
+storage. They must not open a browser, trigger Keychain dialogs, wait for
+terminal input, or use authenticated `go run`.
+
+`make acceptance-bootstrap` is the only human action. It imports the central
+client and connection tokens. It may open Google consent only when a token is
+genuinely missing, revoked, or missing required access. After it succeeds,
+`make acceptance-live-repeat N=3` runs unattended. See
+[Unattended Acceptance](docs/acceptance.md).
+
+## Common problems
+
+| Symptom | Meaning | Fix |
+| --- | --- | --- |
+| `missing client` | No OAuth client is stored | Run `gog auth credentials set --client personal-owned <file>` |
+| `unknown account` | The requested Google email is not connected | Run `gog auth list --check`, then `gog auth add <email> ...` |
+| `needs_reconnect` | The refresh token is invalid or access is incomplete | Reconnect that account once; routine runs must not open OAuth |
+| Browser opens during routine acceptance | The token is missing, revoked, or under-scoped | Do not repeat commands; run the documented bootstrap once |
+| Weekly Google login returns | OAuth app is still in Testing | Publish the app in Google's Audience page |
+| Agent works in Terminal but not its service | The service does not inherit the same credential environment | Configure the service's environment before reauthorizing |
+
+## Commands your agent is likely to need
+
+| Work | Command |
 | --- | --- |
-| Mail and calendars | `gog gmail search`, `gog calendar events` |
-| Files and sharing | `gog drive ls`, `gog drive audit sharing` |
-| Docs, Sheets, Slides, and Forms | `gog docs`, `gog sheets`, `gog slides`, `gog forms` |
+| Search mail | `gog gmail search` |
+| Read calendar | `gog calendar events` |
+| List files | `gog drive ls` |
+| Read and write Docs | `gog docs` |
+| Read and write Sheets | `gog sheets` |
 | Contacts and tasks | `gog contacts`, `gog tasks` |
-| Meetings and chat | `gog meet`, `gog chat`, `gog zoom` |
-| Analytics and publishing | `gog analytics`, `gog tagmanager`, `gog googleads`, `gog searchconsole`, `gog bigquery`, `gog adsense`, `gog youtube` |
-| Workspace administration | `gog admin`, `gog groups`, `gog keep` |
-| Discovery API fallback | `gog api describe`, `gog api call` |
+| Analytics and marketing | `gog analytics`, `gog tagmanager`, `gog googleads`, `gog searchconsole`, `gog bigquery` |
 
-Generic API commands support service-hosted Discovery documents such as Meet v2
-when the default central Directory returns 404. Explicit
-`GOG_DISCOVERY_BASE_URL` overrides retain their existing behavior.
+Run `gog --help`, `gog auth services`, or browse the generated
+[command index](docs/commands/README.md) for the full surface.
 
-Consumer Google accounts work with user-facing APIs. Admin Directory, Cloud
-Identity Groups, Chat, Keep, and domain-wide delegation require a managed
-Google Workspace domain. The [Workspace Admin guide](docs/workspace-admin.md)
-explains that setup.
+## More documentation
 
-## Automate safely
+- [Quickstart](docs/quickstart.md): full Google Cloud walkthrough.
+- [Install](docs/install.md): Homebrew, Docker, Windows, and source builds.
+- [Examples](docs/examples.md): common Gmail, Drive, and Workspace tasks.
+- [Unattended Acceptance](docs/acceptance.md): the no-browser, no-Keychain contract.
+- [Automation](docs/automation.md): JSON output, exit codes, and agent safety.
+- [Auth Clients](docs/auth-clients.md): multiple clients, aliases, and service accounts.
+- [MCP](docs/mcp.md): typed agent access without a generic shell bridge.
 
-`--json` emits structured output and `--plain` emits stable TSV. Prompts,
-progress, and warnings go to stderr. `--no-input`, `--readonly`, exact command
-allowlists, Gmail no-send policy, dry-run plans, and untrusted-content wrapping
-let the caller define a narrower execution boundary.
+## Development
+
+The project requires the Go version declared in `go.mod`.
 
 ```bash
-gog --account you@gmail.com \
-  --enable-commands-exact gmail.search,gmail.get \
-  --gmail-no-send --readonly --no-input --wrap-untrusted --json \
-  gmail search 'newer_than:7d'
+make build
+make test
+make ci
 ```
 
-See [Automation](docs/automation.md) for output and exit-code contracts, and
-[Safety Profiles](docs/safety-profiles.md) for binaries with command policy and
-locked flag values baked in at build time.
+See [live testing](docs/live-testing.md) for opt-in Google API smoke tests and
+[releasing](docs/RELEASING.md) for the maintainer workflow.
 
-## Accounts and authentication
-
-One installation can route among multiple Google accounts, named OAuth client
-projects, direct access tokens, Application Default Credentials, and Workspace
-service accounts. Tokens use the platform keyring by default; headless systems
-can use the encrypted file backend.
-
-```bash
-gog auth list --check
-gog auth alias set work you@company.com
-gog --account work gmail search 'is:unread'
-```
-
-See [OAuth clients](docs/auth-clients.md) for client selection and service
-accounts, and [Paths and State](docs/paths.md) for `GOG_HOME`, XDG paths, and
-keyring storage.
-
-For the hosted control-plane slice, see [Control Plane](docs/control-plane.md)
-and run `gog controlplane` with a Postgres URL, central OAuth client, and
-configured owner identity.
-
-## Discover the contract
-
-The running binary generates its command schema, reference pages, and agent
-skills from the same command tree:
-
-```bash
-gog schema --json
-gog schema gmail search --json
-gog help drive inventory
-```
-
-`gog mcp` exposes a typed stdio MCP server without a generic shell or command
-bridge. It is read-only by default; writes require explicit command and tool
-authorization. See the [MCP guide](docs/mcp.md).
-
-## Supported OAuth services
-
-The generated table below records the user OAuth and Workspace service-account
-surface. `gog auth services` reports the same information from the installed
-binary.
+<details>
+<summary>Full Google service and scope reference</summary>
 
 <!-- auth-services:start -->
 | Service | User | APIs | Scopes | Notes |
@@ -181,37 +272,9 @@ binary.
 | photospicker | no | Photos Picker API | `https://www.googleapis.com/auth/photospicker.mediaitems.readonly` | Consumer OAuth; explicit opt-in with --services photospicker; selected media only |
 <!-- auth-services:end -->
 
-## Documentation
-
-- [Overview and guides](https://gogcli.sh/)
-- [Examples](docs/examples.md)
-- [Command index](docs/commands/README.md)
-- [Gmail workflows](docs/gmail-workflows.md)
-- [Drive audits](docs/drive-audits.md)
-- [AdSense accounts and reports](docs/adsense.md)
-- [Docs, Sheets, and Slides guides](docs/index.md#pick-your-path)
-- [Changelog](CHANGELOG.md)
+</details>
 
 `gog` is open source and is not affiliated with Google.
-
-## Credits
-
-Inspired by Mario Zechner's [gmcli](https://github.com/badlogic/gmcli),
-[gccli](https://github.com/badlogic/gccli), and
-[gdcli](https://github.com/badlogic/gdcli).
-
-## Development
-
-The project requires the Go version declared in `go.mod`.
-
-```bash
-make build
-make test
-make ci
-```
-
-See [live testing](docs/live-testing.md) for opt-in Google API smoke tests and
-[releasing](docs/RELEASING.md) for the maintainer workflow.
 
 ## License
 
