@@ -161,6 +161,7 @@ func TestDiscoveryConfigUsesProfileSettings(t *testing.T) {
 	config := DiscoveryConfig(Profile{
 		BigQueryProjects:        []string{"project-a"},
 		GoogleAdsDeveloperToken: "developer-token",
+		GoogleAdsLoginCustomer:  "123-456-7890",
 	})
 
 	if len(config.BigQueryProjects) != 1 || config.BigQueryProjects[0] != "project-a" {
@@ -169,6 +170,10 @@ func TestDiscoveryConfigUsesProfileSettings(t *testing.T) {
 
 	if config.GoogleAdsDeveloperToken != "developer-token" {
 		t.Fatalf("Google Ads developer token not wired: %+v", config)
+	}
+
+	if config.GoogleAdsLoginCustomer != "123-456-7890" {
+		t.Fatalf("Google Ads login customer not wired: %+v", config)
 	}
 }
 
@@ -191,6 +196,13 @@ func TestProfilePersistsControlPlaneIdentity(t *testing.T) {
 
 	if loaded.UserID != "user-1" || loaded.OrganizationID != "org-1" {
 		t.Fatalf("control-plane identity round trip failed: %+v", loaded)
+	}
+}
+
+func TestEnsureProfileRejectsMissingRequiredAdsToken(t *testing.T) {
+	err := EnsureProfile(Paths{}, Profile{DatabaseURL: "postgres://example", OwnerEmail: "owner@example.test", RequireAdsToken: true})
+	if !errors.Is(err, ErrInvalidProfile) {
+		t.Fatalf("missing required Ads token error = %v", err)
 	}
 }
 

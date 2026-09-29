@@ -31,6 +31,7 @@ type Profile struct {
 	BigQueryProjects        []string `json:"bigquery_projects,omitempty"`
 	RequireAdsToken         bool     `json:"require_ads_token,omitempty"`
 	GoogleAdsDeveloperToken string   `json:"google_ads_developer_token,omitempty"`
+	GoogleAdsLoginCustomer  string   `json:"google_ads_login_customer,omitempty"`
 }
 
 type Paths struct {
@@ -76,6 +77,10 @@ func EnsureProfile(paths Paths, profile Profile) error {
 	}
 
 	if strings.TrimSpace(profile.OwnerEmail) == "" {
+		return ErrInvalidProfile
+	}
+
+	if profile.RequireAdsToken && strings.TrimSpace(profile.GoogleAdsDeveloperToken) == "" {
 		return ErrInvalidProfile
 	}
 
@@ -198,6 +203,7 @@ func DiscoveryConfig(profile Profile) controlplane.EngineDiscoverer {
 	return controlplane.EngineDiscoverer{
 		BigQueryProjects:        profile.BigQueryProjects,
 		GoogleAdsDeveloperToken: profile.GoogleAdsDeveloperToken,
+		GoogleAdsLoginCustomer:  profile.GoogleAdsLoginCustomer,
 	}
 }
 
