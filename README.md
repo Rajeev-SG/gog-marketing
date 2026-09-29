@@ -51,6 +51,10 @@ That is the last time you handle the client secret. `gog` copies it into
 restrictive per-user storage. Your agent does not parse the file or pass the
 secret to Google.
 
+Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
+repositories, prompts, logs, screenshots, and agent instructions. If the agent
+needs a credential, give it the stable `gog` command instead.
+
 If you do not have the file, use the guided setup in
 [Google Cloud setup](#google-cloud-setup-only-when-no-client-file-exists).
 
@@ -96,6 +100,8 @@ Those flags matter:
 - `--json` gives the agent stable structured output.
 - `--account you@gmail.com` selects the account explicitly when more than one
   is connected.
+- Start with only the services and commands the agent actually needs. Do not
+  give it broad write access just because Google supports it.
 
 For stricter agent permissions, see [Automation](docs/automation.md) and
 [Safety Profiles](docs/safety-profiles.md).
