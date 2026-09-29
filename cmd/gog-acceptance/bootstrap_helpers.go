@@ -50,7 +50,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	}
 	actor := controlplane.Actor{UserID: owner.ID, OrganizationID: org.ID, Role: "owner"}
 	provider := controlplane.NewGoogleOAuthProvider(profile.GoogleClientID, clientSecret, "http://127.0.0.1/oauth/google/callback")
-	service := &controlplane.Service{Store: store, Secrets: secrets, OAuth: provider}
+	service := &controlplane.Service{Store: store, Secrets: secrets, OAuth: provider, Discoverer: acceptance.DiscoveryConfig(profile)}
 	for _, item := range []struct{ name, file, email string }{{"gmail", gmailTokenFile, gmailEmail}, {"singulyr", singulyrTokenFile, singulyrEmail}} {
 		connection, err := ensureBootstrapConnection(ctx, service, actor, item.name)
 		if err != nil {

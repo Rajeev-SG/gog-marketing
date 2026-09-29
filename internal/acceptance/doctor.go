@@ -84,7 +84,7 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 	add("migrations", "PASS", "", strings.Join(requiredVersions, ",")+" current")
 
 	for _, name := range []string{"gmail", "singulyr"} {
-		connection, err := (&Runtime{Store: store}).ConnectionByName(ctx, name)
+		connection, err := (&Runtime{Profile: profile, MasterKey: key, Store: store, Secrets: secrets}).ConnectionByName(ctx, name)
 		if err != nil {
 			add(name+".connection", "FAIL", "missing_connection", err.Error())
 			report.Remediation = bootstrapAction
@@ -114,7 +114,7 @@ func RunDoctor(ctx context.Context, paths Paths) (DoctorReport, error) {
 			add(name+".scopes", "PASS", "", fmt.Sprintf("%d scopes", len(connection.GrantedScopes)))
 		}
 
-		if _, err := (&Runtime{Store: store}).EnabledGrant(ctx, connection.ID); err != nil {
+		if _, err := (&Runtime{Profile: profile, MasterKey: key, Store: store, Secrets: secrets}).EnabledGrant(ctx, connection.ID); err != nil {
 			add(name+".resource", "FAIL", "resource_grant_unavailable", "enable one resource")
 		} else {
 			add(name+".resource", "PASS", "", "enabled grant present")
