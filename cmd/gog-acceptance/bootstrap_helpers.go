@@ -41,11 +41,12 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	if err != nil {
 		return wrapMainError(err)
 	}
-	owner, org, err := store.BootstrapOwner(ctx, controlplane.User{Email: profile.OwnerEmail}, controlplane.Organization{Name: "Acceptance", Slug: profile.OrganizationSlug}, "owner")
-	if err != nil {
+	if _, _, err := store.BootstrapOwner(ctx, controlplane.User{Email: profile.OwnerEmail}, controlplane.Organization{Name: "Acceptance", Slug: profile.OrganizationSlug}, "owner"); err != nil {
 		return wrapMainError(err)
 	}
-	actor := controlplane.Actor{UserID: owner.ID, OrganizationID: org.ID, Role: "owner"}
+	// Keep the acceptance runtime identity stable across Postgres and SecretStore.
+	// The Postgres organization UUID is metadata; token ownership must use acceptanceOrg.
+	actor := controlplane.Actor{UserID: "acceptance-owner", OrganizationID: "acceptance-org", Role: "owner"}
 	provider := controlplane.NewGoogleOAuthProvider(profile.GoogleClientID, clientSecret, "http://127.0.0.1/oauth/google/callback")
 	service := &controlplane.Service{Store: store, Secrets: secrets, OAuth: provider}
 	for _, item := range []struct{ name, file, email string }{{"gmail", gmailTokenFile, gmailEmail}, {"singulyr", singulyrTokenFile, singulyrEmail}} {
@@ -57,7 +58,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 		if err != nil {
 			return wrapMainError(err)
 		}
-		if installErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, org.ID, connection, token); installErr != nil {
+		if installErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, connection, token); installErr != nil {
 			if controlplane.AuthFailureCategoryFor(installErr) != controlplane.AuthFailureInvalidGrant {
 				return fmt.Errorf("validate %s refresh token: %w", item.name, installErr)
 			}
@@ -72,7 +73,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 			if err != nil {
 				return wrapMainError(err)
 			}
-			if reinstallErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, org.ID, connection, token); reinstallErr != nil {
+			if reinstallErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, connection, token); reinstallErr != nil {
 				return fmt.Errorf("validate %s refresh token after reauthorization: %w", item.name, reinstallErr)
 			}
 		}
@@ -94,7 +95,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	return nil
 }
 
-func installBootstrapToken(parent context.Context, timeout time.Duration, store *controlplane.PostgresStore, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, orgID string, connection controlplane.Connection, token controlplane.OAuthToken) error {
+func installBootstrapToken(parent context.Context, timeout time.Duration, store *controlplane.PostgresStore, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	token.Expiry = time.Now().Add(-time.Minute)
@@ -102,7 +103,7 @@ func installBootstrapToken(parent context.Context, timeout time.Duration, store 
 	if err != nil {
 		return wrapMainError(err)
 	}
-	reference, err := secrets.Put(ctx, orgID, raw)
+	reference, err := secrets.Put(ctx, actor.OrganizationID, raw)
 	if err != nil {
 		return wrapMainError(err)
 	}

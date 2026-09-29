@@ -3,13 +3,113 @@ package controlplane
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
-var errTestInvalidGoogleGrant = errors.New("oauth2: \"invalid_grant\" \"Bad Request\"")
+var (
+	errTestInvalidGoogleGrant = errors.New("oauth2: \"invalid_grant\" \"Bad Request\"")
+	errTestUpdateConnection   = errors.New("update connection failed")
+)
+
+type failingUpdateStore struct {
+	*MemoryStore
+}
+
+func (failingUpdateStore) UpdateConnection(context.Context, Connection) (Connection, error) {
+	return Connection{}, errTestUpdateConnection
+}
+
+type recordingSecretStore struct {
+	SecretStore
+	lastReference string
+	lastValue     []byte
+}
+
+func (r *recordingSecretStore) Put(ctx context.Context, organizationID string, value []byte) (string, error) {
+	reference, err := r.SecretStore.Put(ctx, organizationID, value)
+	r.lastReference = reference
+
+	r.lastValue = append([]byte(nil), value...)
+
+	if err != nil {
+		return "", fmt.Errorf("store secret: %w", err)
+	}
+
+	return reference, nil
+}
+
+func TestSaveTokenUsesCallerOrganization(t *testing.T) {
+	ctx := context.Background()
+	service, store, secrets := testService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := store.CreateConnection(ctx, Connection{
+		ID: "connection-1", OrganizationID: "wrong-org", Name: "gmail",
+		Status: ConnectionHealthy,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	token := OAuthToken{
+		AccessToken: "access", RefreshToken: "refresh", Expiry: time.Now().Add(time.Hour),
+		GrantedScopes: []string{"https://www.googleapis.com/auth/analytics.readonly"},
+	}
+	if saveErr := service.saveToken(ctx, actor, &connection, token); saveErr != nil {
+		t.Fatal(saveErr)
+	}
+
+	if connection.SecretRef == "" {
+		t.Fatal("saveToken did not set a secret reference")
+	}
+
+	raw, err := secrets.Get(ctx, actor.OrganizationID, connection.SecretRef)
+	if err != nil {
+		t.Fatalf("token not stored under caller organization: %v", err)
+	}
+
+	if _, decodeErr := unmarshalToken(raw); decodeErr != nil {
+		t.Fatal(decodeErr)
+	}
+}
+
+func TestSaveTokenRetainsNewSecretWhenConnectionUpdateFails(t *testing.T) {
+	ctx := context.Background()
+	_, _, secrets := testService(t)
+	recording := &recordingSecretStore{SecretStore: secrets}
+	service := &Service{Store: failingUpdateStore{}, Secrets: recording}
+	connection := Connection{ID: "connection-1", OrganizationID: "connection-org"}
+	token := OAuthToken{
+		AccessToken: "access", RefreshToken: "rotated-refresh", Expiry: time.Now().Add(time.Hour),
+		GrantedScopes: []string{"https://www.googleapis.com/auth/analytics.readonly"},
+	}
+
+	err := service.saveToken(ctx, Actor{OrganizationID: "caller-org"}, &connection, token)
+	if err == nil {
+		t.Fatal("saveToken unexpectedly succeeded")
+	}
+
+	if recording.lastReference == "" {
+		t.Fatal("saveToken did not store a rotated secret")
+	}
+
+	raw, getErr := recording.Get(ctx, "caller-org", recording.lastReference)
+	if getErr != nil {
+		t.Fatalf("rotated secret was discarded after update failure: %v", getErr)
+	}
+
+	if _, decodeErr := unmarshalToken(raw); decodeErr != nil {
+		t.Fatal(decodeErr)
+	}
+
+	if connection.SecretRef != "" {
+		t.Fatalf("failed update left an uncommitted secret ref on the caller connection: %q", connection.SecretRef)
+	}
+}
 
 func TestRefreshAndDiscoverNeverAuthorize(t *testing.T) {
 	ctx := context.Background()

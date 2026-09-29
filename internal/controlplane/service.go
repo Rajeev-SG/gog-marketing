@@ -486,9 +486,8 @@ func (s *Service) saveToken(ctx context.Context, actor Actor, connection *Connec
 
 	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
 		connection.SecretRef = oldReference
-		_ = s.Secrets.Delete(ctx, actor.OrganizationID, reference)
 
-		return fmt.Errorf("store token secret reference: %w", updateErr)
+		return fmt.Errorf("store token secret reference; new secret %q remains stored: %w", reference, updateErr)
 	}
 
 	if oldReference != "" && oldReference != reference {
