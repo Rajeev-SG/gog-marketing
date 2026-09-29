@@ -640,6 +640,10 @@ func scopeSatisfied(required string, available map[string]bool) bool {
 		}
 	}
 
+	if strings.HasSuffix(required, ".readonly") && available[strings.TrimSuffix(required, ".readonly")] {
+		return true
+	}
+
 	return false
 }
 
