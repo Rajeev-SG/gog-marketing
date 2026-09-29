@@ -204,7 +204,7 @@ func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
 		{
 			"auth", "add", email,
 			"--client", "personal-owned",
-			"--services", "analytics,searchconsole,bigquery,ads",
+			"--services", "analytics,searchconsole,bigquery.readonly,ads",
 			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly",
 			"--force-consent",
 		},
