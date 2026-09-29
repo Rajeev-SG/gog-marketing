@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/openclaw/gogcli/internal/acceptance"
-
 	"github.com/openclaw/gogcli/internal/controlplane"
+	"github.com/openclaw/gogcli/internal/googleauth"
 )
 
 func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
@@ -41,6 +42,59 @@ func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
 				t.Fatalf("command %d arg %d = %q, want %q", i, j, got[i][j], want[i][j])
 			}
 		}
+	}
+}
+
+func TestBootstrapOAuthScopesMatchRegistry(t *testing.T) {
+	knownScopes := make(map[string]bool)
+	for _, info := range googleauth.ServicesInfo() {
+		for _, scope := range info.Scopes {
+			knownScopes[scope] = true
+		}
+	}
+
+	for _, scope := range strings.Split(bootstrapExtraScopes, ",") {
+		if !knownScopes[scope] {
+			t.Fatalf("extra scope %q is not in the Google scope registry", scope)
+		}
+	}
+
+	for _, service := range strings.Split(bootstrapAuthServiceNames, ",") {
+		registryName := service
+		if service == "ads" {
+			registryName = "googleads"
+		}
+		if _, err := googleauth.Scopes(googleauth.Service(registryName)); err != nil {
+			t.Fatalf("service %q is not in the Google service registry: %v", service, err)
+		}
+	}
+}
+
+func TestMissingBootstrapScopesDetectsOldGrant(t *testing.T) {
+	required, err := googleauth.ScopesForManageWithOptions([]googleauth.Service{
+		googleauth.ServiceAnalytics,
+		googleauth.ServiceTagManager,
+		googleauth.ServiceGoogleAds,
+		googleauth.ServiceSearchConsole,
+		googleauth.ServiceBigQuery,
+	}, googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oldGrant := make([]string, 0, len(required))
+	for _, scope := range required {
+		if scope != "https://www.googleapis.com/auth/bigquery.readonly" {
+			oldGrant = append(oldGrant, scope)
+		}
+	}
+
+	missing := missingBootstrapScopes(oldGrant)
+	if len(missing) != 1 || missing[0] != "https://www.googleapis.com/auth/bigquery.readonly" {
+		t.Fatalf("missing scopes = %v", missing)
+	}
+	if missing := missingBootstrapScopes(required); len(missing) != 0 {
+		t.Fatalf("complete grant reported missing scopes: %v", missing)
 	}
 }
 
