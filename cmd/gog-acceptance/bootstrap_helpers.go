@@ -95,7 +95,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	return nil
 }
 
-func installBootstrapToken(parent context.Context, timeout time.Duration, store *controlplane.PostgresStore, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {
+func installBootstrapToken(parent context.Context, timeout time.Duration, store controlplane.Store, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {
 	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	token.Expiry = time.Now().Add(-time.Minute)

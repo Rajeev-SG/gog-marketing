@@ -19,7 +19,11 @@ type failingUpdateStore struct {
 	*MemoryStore
 }
 
-func (failingUpdateStore) UpdateConnection(context.Context, Connection) (Connection, error) {
+func (f failingUpdateStore) UpdateConnection(ctx context.Context, connection Connection) (Connection, error) {
+	if _, err := f.GetConnection(ctx, connection.OrganizationID, connection.ID); err != nil {
+		return Connection{}, err
+	}
+
 	return Connection{}, errTestUpdateConnection
 }
 
@@ -81,7 +85,7 @@ func TestSaveTokenRetainsNewSecretWhenConnectionUpdateFails(t *testing.T) {
 	ctx := context.Background()
 	_, _, secrets := testService(t)
 	recording := &recordingSecretStore{SecretStore: secrets}
-	service := &Service{Store: failingUpdateStore{}, Secrets: recording}
+	service := &Service{Store: failingUpdateStore{MemoryStore: NewMemoryStore()}, Secrets: recording}
 	connection := Connection{ID: "connection-1", OrganizationID: "connection-org"}
 	token := OAuthToken{
 		AccessToken: "access", RefreshToken: "rotated-refresh", Expiry: time.Now().Add(time.Hour),

@@ -486,8 +486,16 @@ func (s *Service) saveToken(ctx context.Context, actor Actor, connection *Connec
 
 	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
 		connection.SecretRef = oldReference
+		reclaimCtx := context.WithoutCancel(ctx)
 
-		return fmt.Errorf("store token secret reference; new secret %q remains stored: %w", reference, updateErr)
+		go func() {
+			// Keep the rotated credential long enough for an operator to repair
+			// the connection reference, then reap the orphaned secret.
+			time.Sleep(24 * time.Hour)
+			_ = s.Secrets.Delete(reclaimCtx, actor.OrganizationID, reference)
+		}()
+
+		return fmt.Errorf("store token secret reference; new secret %q remains stored for reclamation: %w", reference, updateErr)
 	}
 
 	if oldReference != "" && oldReference != reference {
