@@ -110,6 +110,36 @@ func TestLiveFailsFastWithoutOAuthClient(t *testing.T) {
 	}
 }
 
+func TestLiveFailsFastWithoutControlPlaneIdentity(t *testing.T) {
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := os.MkdirTemp(configDir, "gog-acceptance-identity-test-")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = os.RemoveAll(root) }()
+
+	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}
+
+	profile := Profile{
+		Version: 1, DatabaseURL: "postgres://unused", OwnerEmail: "owner@example.test",
+		OrganizationSlug: "acceptance", GoogleClientID: "client-id", GoogleClientSecretRef: "secret-ref",
+	}
+
+	if err := EnsureProfile(paths, profile); err != nil {
+		t.Fatal(err)
+	}
+
+	_, runtimeErr := OpenRuntime(context.Background(), paths, true)
+	if runtimeErr == nil || !strings.Contains(runtimeErr.Error(), "make acceptance-bootstrap") {
+		t.Fatalf("missing identity did not fail fast: %v", runtimeErr)
+	}
+}
+
 func TestManifestRedactsAndHashesResources(t *testing.T) {
 	manifest := NewManifest("test", "binary", "commit")
 	manifest.Add("check", "PASS", "", "refresh_token=s3cr3t", 1)

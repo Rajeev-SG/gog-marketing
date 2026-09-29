@@ -144,6 +144,10 @@ func OpenRuntime(ctx context.Context, paths Paths, requireOAuthClient bool) (*Ru
 	}
 
 	if requireOAuthClient {
+		if strings.TrimSpace(profile.UserID) == "" || strings.TrimSpace(profile.OrganizationID) == "" {
+			return nil, FailFast("profile_invalid", bootstrapAction, "control-plane user and organization identity are missing")
+		}
+
 		if strings.TrimSpace(profile.GoogleClientID) == "" {
 			return nil, FailFast("oauth_client_unavailable", bootstrapAction, "Google client ID is missing")
 		}
@@ -189,17 +193,11 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) Actor() controlplane.Actor {
-	userID := strings.TrimSpace(r.Profile.UserID)
-	if userID == "" {
-		userID = AcceptanceOwnerID
+	return controlplane.Actor{
+		UserID:         strings.TrimSpace(r.Profile.UserID),
+		OrganizationID: strings.TrimSpace(r.Profile.OrganizationID),
+		Role:           "owner",
 	}
-
-	organizationID := strings.TrimSpace(r.Profile.OrganizationID)
-	if organizationID == "" {
-		organizationID = AcceptanceOrganizationID
-	}
-
-	return controlplane.Actor{UserID: userID, OrganizationID: organizationID, Role: "owner"}
 }
 
 func (r *Runtime) Service() *controlplane.Service {
