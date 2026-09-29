@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -317,26 +316,7 @@ func serviceScopeRequirements(services []string) []string {
 }
 
 func missingScopes(requested, granted []string) []string {
-	if len(requested) == 0 {
-		return nil
-	}
-
-	available := make(map[string]bool, len(granted))
-	for _, scope := range granted {
-		available[strings.TrimSpace(scope)] = true
-	}
-	missing := make([]string, 0)
-
-	for _, scope := range requested {
-		scope = strings.TrimSpace(scope)
-		if scope != "" && !available[scope] {
-			missing = append(missing, scope)
-		}
-	}
-
-	sort.Strings(missing)
-
-	return missing
+	return googleauth.MissingScopes(requested, granted)
 }
 
 func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {

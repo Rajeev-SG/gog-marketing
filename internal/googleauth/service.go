@@ -578,6 +578,59 @@ func IdentityScopes() []string {
 	return []string{scopeOpenID, scopeEmail, scopeUserinfoEmail}
 }
 
+var broaderScopes = map[string][]string{
+	"https://www.googleapis.com/auth/analytics.readonly": {
+		"https://www.googleapis.com/auth/analytics.edit",
+	},
+	"https://www.googleapis.com/auth/bigquery.readonly": {
+		"https://www.googleapis.com/auth/bigquery",
+	},
+	"https://www.googleapis.com/auth/tagmanager.readonly": {
+		"https://www.googleapis.com/auth/tagmanager.edit.containers",
+		"https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+		"https://www.googleapis.com/auth/tagmanager.publish",
+	},
+	"https://www.googleapis.com/auth/webmasters.readonly": {
+		"https://www.googleapis.com/auth/webmasters",
+	},
+}
+
+// ScopeSatisfied reports whether a grant satisfies a requested scope, including
+// canonical broader grants that imply read-only access.
+func ScopeSatisfied(required string, granted []string) bool {
+	available := make(map[string]bool, len(granted))
+	for _, scope := range granted {
+		available[strings.TrimSpace(scope)] = true
+	}
+
+	if available[strings.TrimSpace(required)] {
+		return true
+	}
+
+	for _, scope := range broaderScopes[required] {
+		if available[scope] {
+			return true
+		}
+	}
+
+	return false
+}
+
+// MissingScopes returns requested scopes not satisfied by the granted set.
+func MissingScopes(requested, granted []string) []string {
+	missing := make([]string, 0)
+
+	for _, scope := range requested {
+		if !ScopeSatisfied(scope, granted) {
+			missing = append(missing, scope)
+		}
+	}
+
+	sort.Strings(missing)
+
+	return missing
+}
+
 func ScopesForManageWithOptions(services []Service, opts ScopeOptions) ([]string, error) {
 	scopes, err := scopesForServicesWithOptions(services, opts)
 	if err != nil {

@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -131,20 +130,7 @@ func missingBootstrapScopes(granted []string) ([]string, error) {
 		return nil, fmt.Errorf("resolve bootstrap scopes: %w", err)
 	}
 
-	available := make(map[string]bool, len(granted))
-	for _, scope := range granted {
-		available[strings.TrimSpace(scope)] = true
-	}
-
-	missing := make([]string, 0)
-	for _, scope := range required {
-		if !available[scope] {
-			missing = append(missing, scope)
-		}
-	}
-	sort.Strings(missing)
-
-	return missing, nil
+	return googleauth.MissingScopes(required, granted), nil
 }
 
 func installBootstrapToken(parent context.Context, timeout time.Duration, store controlplane.Store, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {
