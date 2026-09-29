@@ -46,6 +46,8 @@ This is the single deterministic bootstrap action. It uses the stable signed `go
 
 Bootstrap imports the central client and both connection tokens into the acceptance SecretStore. It re-opens consent only when a stored token is actually invalid. Once it returns, routine acceptance is unattended.
 
+If a connection was imported before the acceptance SecretStore ownership fix, rerun this bootstrap once. It rebuilds the `gmail` and `singulyr` token secrets under the stable acceptance organization; routine live acceptance remains unattended after that single import.
+
 ## Failure contract
 
 - `google_invalid_grant` / `google_scope_mismatch` → `needs_reconnect`, no browser fallback.

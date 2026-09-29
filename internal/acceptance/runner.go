@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	ownerUserID   = "acceptance-owner"
-	acceptanceOrg = "acceptance-org"
+	AcceptanceOwnerID        = "acceptance-owner"
+	AcceptanceOrganizationID = "acceptance-org"
 )
 
 type ResourceReader interface {
@@ -166,7 +166,7 @@ func OpenRuntime(ctx context.Context, paths Paths, requireOAuthClient bool) (*Ru
 	var oauth controlplane.OAuthProvider
 
 	if requireOAuthClient {
-		secretRaw, err := secrets.Get(ctx, acceptanceOrg, profile.GoogleClientSecretRef)
+		secretRaw, err := secrets.Get(ctx, AcceptanceOrganizationID, profile.GoogleClientSecretRef)
 		if err != nil {
 			_ = store.Close()
 			return nil, FailFast("oauth_client_unavailable", bootstrapAction, "Google client secret is missing from the acceptance SecretStore")
@@ -189,7 +189,7 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) Actor() controlplane.Actor {
-	return controlplane.Actor{UserID: ownerUserID, OrganizationID: acceptanceOrg, Role: "owner"}
+	return controlplane.Actor{UserID: AcceptanceOwnerID, OrganizationID: AcceptanceOrganizationID, Role: "owner"}
 }
 
 func (r *Runtime) Service() *controlplane.Service {
@@ -197,7 +197,7 @@ func (r *Runtime) Service() *controlplane.Service {
 }
 
 func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlplane.Connection, error) {
-	connections, err := r.Store.ListConnections(ctx, acceptanceOrg)
+	connections, err := r.Store.ListConnections(ctx, AcceptanceOrganizationID)
 	if err != nil {
 		return controlplane.Connection{}, wrapAcceptanceError(err)
 	}
@@ -212,7 +212,7 @@ func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlpla
 }
 
 func (r *Runtime) EnabledGrant(ctx context.Context, connectionID string) (controlplane.ResourceGrant, error) {
-	grants, err := r.Store.ListResourceGrants(ctx, acceptanceOrg, connectionID)
+	grants, err := r.Store.ListResourceGrants(ctx, AcceptanceOrganizationID, connectionID)
 	if err != nil {
 		return controlplane.ResourceGrant{}, wrapAcceptanceError(err)
 	}
