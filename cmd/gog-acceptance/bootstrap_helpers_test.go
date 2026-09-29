@@ -16,7 +16,7 @@ func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
 		{
 			"auth", "add", "user@example.test",
 			"--client", "personal-owned",
-			"--services", "analytics,searchconsole,bigquery,ads",
+			"--services", "analytics,searchconsole,bigquery.readonly,ads",
 			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly",
 			"--force-consent",
 		},
