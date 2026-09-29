@@ -198,7 +198,7 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
 	}
 
-	if saveErr := s.saveToken(ctx, &connection, token); saveErr != nil {
+	if saveErr := s.saveToken(ctx, Actor{OrganizationID: stored.OrganizationID}, &connection, token); saveErr != nil {
 		return Connection{}, fmt.Errorf("control plane: %w", saveErr)
 	}
 	connection.GoogleEmail = token.Email
@@ -259,10 +259,11 @@ func (s *Service) ensureFreshToken(ctx context.Context, actor Actor, id string) 
 	}
 
 	if token.Expiry.IsZero() || token.Expiry.Before(s.now().Add(time.Minute)) {
-		token, err = s.refreshStoredToken(ctx, actor, connection, token)
-		if err != nil {
-			return Connection{}, OAuthToken{}, err
+		refreshedConnection, refreshedToken, refreshErr := s.refreshStoredToken(ctx, actor, connection, token)
+		if refreshErr != nil {
+			return Connection{}, OAuthToken{}, refreshErr
 		}
+		connection, token = refreshedConnection, refreshedToken
 	}
 
 	if missing := missingScopes(serviceScopeRequirements(connection.Services), token.GrantedScopes); len(missing) > 0 {
@@ -278,7 +279,7 @@ func (s *Service) ensureFreshToken(ctx context.Context, actor Actor, id string) 
 	return connection, token, nil
 }
 
-func (s *Service) refreshStoredToken(ctx context.Context, actor Actor, connection Connection, token OAuthToken) (OAuthToken, error) {
+func (s *Service) refreshStoredToken(ctx context.Context, actor Actor, connection Connection, token OAuthToken) (Connection, OAuthToken, error) {
 	refreshed, err := s.OAuth.Refresh(ctx, token)
 	if err != nil {
 		category := classifyAuthError(err)
@@ -288,14 +289,14 @@ func (s *Service) refreshStoredToken(ctx context.Context, actor Actor, connectio
 		_, _ = s.Store.UpdateConnection(ctx, connection)
 		s.audit(ctx, actor, connection.ID, "token.refresh", "error", string(category))
 
-		return OAuthToken{}, wrapAuthFailure("refresh token", err)
+		return Connection{}, OAuthToken{}, wrapAuthFailure("refresh token", err)
 	}
 
-	if saveErr := s.saveToken(ctx, &connection, refreshed); saveErr != nil {
-		return OAuthToken{}, fmt.Errorf("persist refreshed token: %w", saveErr)
+	if saveErr := s.saveToken(ctx, actor, &connection, refreshed); saveErr != nil {
+		return Connection{}, OAuthToken{}, fmt.Errorf("persist refreshed token: %w", saveErr)
 	}
 
-	return refreshed, nil
+	return connection, refreshed, nil
 }
 
 func serviceScopeRequirements(services []string) []string {
@@ -469,24 +470,29 @@ func (s *Service) loadToken(ctx context.Context, actor Actor, id string) (Connec
 	return connection, token, nil
 }
 
-func (s *Service) saveToken(ctx context.Context, connection *Connection, token OAuthToken) error {
+func (s *Service) saveToken(ctx context.Context, actor Actor, connection *Connection, token OAuthToken) error {
 	raw, err := marshalToken(token)
 	if err != nil {
 		return wrapControlPlaneError(err)
 	}
 
-	reference, err := s.Secrets.Put(ctx, connection.OrganizationID, raw)
+	reference, err := s.Secrets.Put(ctx, actor.OrganizationID, raw)
 	if err != nil {
 		return wrapControlPlaneError(err)
 	}
 
-	if connection.SecretRef != "" && connection.SecretRef != reference {
-		_ = s.Secrets.Delete(ctx, connection.OrganizationID, connection.SecretRef)
+	oldReference := connection.SecretRef
+	connection.SecretRef = reference
+
+	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
+		connection.SecretRef = oldReference
+		_ = s.Secrets.Delete(ctx, actor.OrganizationID, reference)
+
+		return fmt.Errorf("store token secret reference: %w", updateErr)
 	}
 
-	connection.SecretRef = reference
-	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
-		return fmt.Errorf("store token secret reference: %w", updateErr)
+	if oldReference != "" && oldReference != reference {
+		_ = s.Secrets.Delete(ctx, actor.OrganizationID, oldReference)
 	}
 
 	return nil

@@ -58,7 +58,7 @@ func TestInvalidGrantMarksNeedsReconnectWithoutBrowser(t *testing.T) {
 	token, _ := unmarshalToken(mustToken(t, service, actor, connection.ID))
 
 	token.Expiry = time.Now().Add(-time.Minute)
-	if saveErr := service.saveToken(ctx, &connection, token); saveErr != nil {
+	if saveErr := service.saveToken(ctx, actor, &connection, token); saveErr != nil {
 		t.Fatal(err)
 	}
 	before := oauth.authorizationCalls
@@ -100,7 +100,7 @@ func TestScopeDriftMarksNeedsReconnect(t *testing.T) {
 	stale, _ := unmarshalToken(mustToken(t, service, actor, connection.ID))
 
 	stale.Expiry = time.Now().Add(-time.Minute)
-	if saveErr := service.saveToken(ctx, &connection, stale); saveErr != nil {
+	if saveErr := service.saveToken(ctx, actor, &connection, stale); saveErr != nil {
 		t.Fatal(err)
 	}
 
@@ -167,6 +167,60 @@ func serviceSecretRef(t *testing.T, service *Service, actor Actor, id string) st
 	return connection.SecretRef
 }
 
+func TestRefreshedTokenRemainsReadableByCallerOrganization(t *testing.T) {
+	ctx := context.Background()
+	service, store, _ := testService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(ctx, actor, "gmail", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	oauth := service.OAuth.(*fakeOAuth)
+	if _, completeErr := service.CompleteOAuth(ctx, mustOAuthState(t, service, actor, connection.ID), "code"); completeErr != nil {
+		t.Fatal(completeErr)
+	}
+
+	connection, err = service.GetConnection(ctx, actor, connection.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oauth.authorizationCalls = 0
+
+	// Exercise the import/bootstrap path: store a token under the actor organization key,
+	// force a refresh that replaces the secret, then load it for discovery.
+	token, err := unmarshalToken(mustToken(t, service, actor, connection.ID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	token.Expiry = time.Now().Add(-time.Minute)
+	token.Email = "imported@example.com"
+
+	if saveErr := service.saveToken(ctx, actor, &connection, token); saveErr != nil {
+		t.Fatal(saveErr)
+	}
+
+	if _, refreshErr := service.Refresh(ctx, actor, connection.ID); refreshErr != nil {
+		t.Fatal(refreshErr)
+	}
+
+	if _, discoverErr := service.Discover(ctx, actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	if oauth.authorizationCalls != 0 {
+		t.Fatalf("refresh/discover called AuthorizationURL %d times", oauth.authorizationCalls)
+	}
+
+	ref := serviceSecretRef(t, service, actor, connection.ID)
+	if raw, loadErr := service.Secrets.Get(ctx, actor.OrganizationID, ref); loadErr != nil {
+		t.Fatalf("refreshed token not readable under caller organization: %v", loadErr)
+	} else if _, decodeErr := unmarshalToken(raw); decodeErr != nil {
+		t.Fatalf("refreshed token does not decode: %v", decodeErr)
+	}
+}
+
 func TestConcurrentRefreshPersistsOnce(t *testing.T) {
 	ctx := context.Background()
 	service, store, _ := testService(t)
@@ -185,7 +239,7 @@ func TestConcurrentRefreshPersistsOnce(t *testing.T) {
 	stale, _ := unmarshalToken(mustToken(t, service, actor, connection.ID))
 
 	stale.Expiry = time.Now().Add(-time.Minute)
-	if saveErr := service.saveToken(ctx, &connection, stale); saveErr != nil {
+	if saveErr := service.saveToken(ctx, actor, &connection, stale); saveErr != nil {
 		t.Fatal(err)
 	}
 
@@ -222,7 +276,7 @@ func TestMissingSecretMarksNeedsReconnect(t *testing.T) {
 	stale, _ := unmarshalToken(mustToken(t, service, actor, connection.ID))
 	stale.Expiry = time.Now().Add(-time.Minute)
 
-	if err := service.saveToken(ctx, &connection, stale); err != nil {
+	if err := service.saveToken(ctx, actor, &connection, stale); err != nil {
 		t.Fatal(err)
 	}
 
