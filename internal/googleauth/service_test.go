@@ -667,3 +667,13 @@ func TestScopes_UnknownService(t *testing.T) {
 		t.Fatalf("expected error")
 	}
 }
+
+func TestMissingScopesAcceptsFullAnalyticsAndIgnoresBlankRequests(t *testing.T) {
+	missing := MissingScopes(
+		[]string{"", "https://www.googleapis.com/auth/analytics.readonly"},
+		[]string{"https://www.googleapis.com/auth/analytics"},
+	)
+	if len(missing) != 0 {
+		t.Fatalf("full analytics grant reported missing scopes: %v", missing)
+	}
+}

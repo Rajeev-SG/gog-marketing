@@ -580,6 +580,7 @@ func IdentityScopes() []string {
 
 var broaderScopes = map[string][]string{
 	"https://www.googleapis.com/auth/analytics.readonly": {
+		"https://www.googleapis.com/auth/analytics",
 		"https://www.googleapis.com/auth/analytics.edit",
 	},
 	"https://www.googleapis.com/auth/bigquery.readonly": {
@@ -597,13 +598,39 @@ var broaderScopes = map[string][]string{
 
 // ScopeSatisfied reports whether a grant satisfies a requested scope, including
 // canonical broader grants that imply read-only access.
-func ScopeSatisfied(required string, granted []string) bool {
-	available := make(map[string]bool, len(granted))
-	for _, scope := range granted {
-		available[strings.TrimSpace(scope)] = true
+// MissingScopes returns requested scopes not satisfied by the granted set.
+func MissingScopes(requested, granted []string) []string {
+	available := grantedSet(granted)
+	missing := make([]string, 0)
+
+	for _, scope := range requested {
+		scope = strings.TrimSpace(scope)
+		if scope == "" || scopeSatisfied(scope, available) {
+			continue
+		}
+		missing = append(missing, scope)
 	}
 
-	if available[strings.TrimSpace(required)] {
+	sort.Strings(missing)
+
+	return missing
+}
+
+func grantedSet(granted []string) map[string]bool {
+	available := make(map[string]bool, len(granted))
+	for _, scope := range granted {
+		scope = strings.TrimSpace(scope)
+		if scope != "" {
+			available[scope] = true
+		}
+	}
+
+	return available
+}
+
+func scopeSatisfied(required string, available map[string]bool) bool {
+	required = strings.TrimSpace(required)
+	if available[required] {
 		return true
 	}
 
@@ -614,21 +641,6 @@ func ScopeSatisfied(required string, granted []string) bool {
 	}
 
 	return false
-}
-
-// MissingScopes returns requested scopes not satisfied by the granted set.
-func MissingScopes(requested, granted []string) []string {
-	missing := make([]string, 0)
-
-	for _, scope := range requested {
-		if !ScopeSatisfied(scope, granted) {
-			missing = append(missing, scope)
-		}
-	}
-
-	sort.Strings(missing)
-
-	return missing
 }
 
 func ScopesForManageWithOptions(services []Service, opts ScopeOptions) ([]string, error) {
