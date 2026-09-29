@@ -197,6 +197,8 @@ func exportBootstrapTokens(ctx context.Context, exportGog, gmailEmail, singulyrE
 	return gmailPath, singulyrPath, nil
 }
 
+// Verified against gog v0.42.0 (792107a3). Keep these commands aligned with
+// `gog auth add` and `gog auth tokens export` when upgrading the stable binary.
 func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
 	return [][]string{
 		{
@@ -217,19 +219,25 @@ func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
 }
 
 func reauthorizeBootstrapToken(ctx context.Context, exportGog, email, tokenPath string, timeout time.Duration) error {
-	if timeout < 5*time.Minute {
-		timeout = 5 * time.Minute
-	}
+	commands := reauthorizeBootstrapTokenArgs(email, tokenPath)
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	args := reauthorizeBootstrapTokenArgs(email, tokenPath)
-	cmd := exec.CommandContext(ctx, exportGog, args[0]...) //nolint:gosec // bootstrap-only stable signed binary path
+	// The interactive consent command needs its own bounded budget. The caller's
+	// timeout remains the budget for the non-interactive export step.
+	authTimeout := 5 * time.Minute
+	if timeout > authTimeout {
+		authTimeout = timeout
+	}
+	authCtx, cancelAuth := context.WithTimeout(ctx, authTimeout)
+	defer cancelAuth()
+	cmd := exec.CommandContext(authCtx, exportGog, commands[0]...) //nolint:gosec // bootstrap-only stable signed binary path
 	cmd.Env = append(os.Environ(), "GOG_KEYRING_BACKEND=keychain")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("human OAuth bootstrap failed for %s: %w: %s", email, err, redact(string(output)))
 	}
-	export := exec.CommandContext(ctx, exportGog, args[1]...) //nolint:gosec // bootstrap-only stable signed binary path
+
+	exportCtx, cancelExport := context.WithTimeout(ctx, timeout)
+	defer cancelExport()
+	export := exec.CommandContext(exportCtx, exportGog, commands[1]...) //nolint:gosec // bootstrap-only stable signed binary path
 	export.Env = append(os.Environ(), "GOG_KEYRING_BACKEND=keychain")
 	if output, err := export.CombinedOutput(); err != nil {
 		return fmt.Errorf("post-OAuth token export failed for %s: %w: %s", email, err, redact(string(output)))
