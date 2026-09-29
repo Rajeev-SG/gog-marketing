@@ -10,6 +10,40 @@ import (
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
+func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
+	got := reauthorizeBootstrapTokenArgs("user@example.test", "/tmp/token.json")
+	want := [][]string{
+		{
+			"auth", "add", "user@example.test",
+			"--client", "personal-owned",
+			"--services", "analytics,searchconsole,bigquery,ads",
+			"--extra-scopes", "https://www.googleapis.com/auth/tagmanager.readonly",
+			"--force-consent",
+		},
+		{
+			"auth", "tokens", "export", "user@example.test",
+			"--client", "personal-owned",
+			"--out", "/tmp/token.json",
+			"--overwrite",
+			"--no-input",
+		},
+	}
+
+	if len(got) != len(want) {
+		t.Fatalf("command count = %d, want %d: %#v", len(got), len(want), got)
+	}
+	for i := range want {
+		if len(got[i]) != len(want[i]) {
+			t.Fatalf("command %d = %#v, want %#v", i, got[i], want[i])
+		}
+		for j := range want[i] {
+			if got[i][j] != want[i][j] {
+				t.Fatalf("command %d arg %d = %q, want %q", i, j, got[i][j], want[i][j])
+			}
+		}
+	}
+}
+
 type bootstrapFakeOAuth struct {
 	authorizationCalls int
 }
