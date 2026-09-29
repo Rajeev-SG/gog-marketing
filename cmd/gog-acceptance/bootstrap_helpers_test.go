@@ -10,6 +10,26 @@ import (
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
+func TestBootstrapReauthorizeArgumentsMatchStableCLI(t *testing.T) {
+	commands := reauthorizeBootstrapTokenArgs("user@example.test", "/tmp/token.json")
+	if len(commands) != 2 {
+		t.Fatalf("expected auth add and token export commands: %#v", commands)
+	}
+	if commands[0][0] != "auth" || commands[0][1] != "add" {
+		t.Fatalf("reauthorization command is not gog auth add: %v", commands[0])
+	}
+	if commands[1][len(commands[1])-1] != "--no-input" {
+		t.Fatalf("token export is not non-interactive: %v", commands[1])
+	}
+	for _, command := range commands {
+		for _, arg := range command {
+			if arg == "--login" {
+				t.Fatalf("stale auth flag present: %#v", commands)
+			}
+		}
+	}
+}
+
 type bootstrapFakeOAuth struct {
 	authorizationCalls int
 }
