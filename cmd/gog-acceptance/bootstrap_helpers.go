@@ -217,6 +217,10 @@ func reauthorizeBootstrapTokenArgs(email, tokenPath string) [][]string {
 }
 
 func reauthorizeBootstrapToken(ctx context.Context, exportGog, email, tokenPath string, timeout time.Duration) error {
+	if timeout < 5*time.Minute {
+		timeout = 5 * time.Minute
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	args := reauthorizeBootstrapTokenArgs(email, tokenPath)
