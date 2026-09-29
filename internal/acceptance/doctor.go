@@ -194,7 +194,7 @@ func doctorOAuthClientCheck(ctx context.Context, profile Profile, secrets contro
 		return CheckResult{Name: "oauth_client", Result: "FAIL", Category: "oauth_client_unavailable", Detail: "client ID or secret reference missing"}
 	}
 
-	if _, err := secrets.Get(ctx, acceptanceOrg, profile.GoogleClientSecretRef); err != nil {
+	if _, err := secrets.Get(ctx, AcceptanceOrganizationID, profile.GoogleClientSecretRef); err != nil {
 		return CheckResult{Name: "oauth_client", Result: "FAIL", Category: "oauth_client_unavailable", Detail: "secret reference cannot be read"}
 	}
 
