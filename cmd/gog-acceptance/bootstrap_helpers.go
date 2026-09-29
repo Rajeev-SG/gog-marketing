@@ -63,7 +63,11 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 			return wrapMainError(err)
 		}
 		reauthorized := false
-		if len(missingBootstrapScopes(token.GrantedScopes)) > 0 {
+		missingScopes, scopeErr := missingBootstrapScopes(token.GrantedScopes)
+		if scopeErr != nil {
+			return wrapMainError(scopeErr)
+		}
+		if len(missingScopes) > 0 {
 			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.email, item.file, timeout); reauthErr != nil {
 				return reauthErr
 			}
@@ -78,7 +82,8 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 			reauthorized = true
 		}
 		if installErr := installBootstrapToken(ctx, timeout, store, secrets, service, actor, connection, token); installErr != nil {
-			if reauthorized || controlplane.AuthFailureCategoryFor(installErr) != controlplane.AuthFailureInvalidGrant {
+			category := controlplane.AuthFailureCategoryFor(installErr)
+			if reauthorized || (category != controlplane.AuthFailureInvalidGrant && category != controlplane.AuthFailureScopeMismatch) {
 				return fmt.Errorf("validate %s refresh token: %w", item.name, installErr)
 			}
 			if reauthErr := reauthorizeBootstrapToken(ctx, exportGog, item.email, item.file, timeout); reauthErr != nil {
@@ -114,7 +119,7 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	return nil
 }
 
-func missingBootstrapScopes(granted []string) []string {
+func missingBootstrapScopes(granted []string) ([]string, error) {
 	required, err := googleauth.ScopesForManageWithOptions([]googleauth.Service{
 		googleauth.ServiceAnalytics,
 		googleauth.ServiceTagManager,
@@ -123,7 +128,7 @@ func missingBootstrapScopes(granted []string) []string {
 		googleauth.ServiceBigQuery,
 	}, googleauth.ScopeOptions{Readonly: true})
 	if err != nil {
-		return required
+		return nil, fmt.Errorf("resolve bootstrap scopes: %w", err)
 	}
 
 	available := make(map[string]bool, len(granted))
@@ -139,7 +144,7 @@ func missingBootstrapScopes(granted []string) []string {
 	}
 	sort.Strings(missing)
 
-	return missing
+	return missing, nil
 }
 
 func installBootstrapToken(parent context.Context, timeout time.Duration, store controlplane.Store, secrets controlplane.SecretStore, service *controlplane.Service, actor controlplane.Actor, connection controlplane.Connection, token controlplane.OAuthToken) error {

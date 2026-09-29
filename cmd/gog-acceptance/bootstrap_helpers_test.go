@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -89,12 +91,37 @@ func TestMissingBootstrapScopesDetectsOldGrant(t *testing.T) {
 		}
 	}
 
-	missing := missingBootstrapScopes(oldGrant)
+	missing, err := missingBootstrapScopes(oldGrant)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(missing) != 1 || missing[0] != "https://www.googleapis.com/auth/bigquery.readonly" {
 		t.Fatalf("missing scopes = %v", missing)
 	}
-	if missing := missingBootstrapScopes(required); len(missing) != 0 {
-		t.Fatalf("complete grant reported missing scopes: %v", missing)
+	if missing, err := missingBootstrapScopes(required); err != nil || len(missing) != 0 {
+		t.Fatalf("complete grant reported missing scopes: %v, err=%v", missing, err)
+	}
+}
+
+func TestStableGogAcceptsBootstrapAuthAddArguments(t *testing.T) {
+	binary := os.Getenv("GOG_STABLE_BIN")
+	if binary == "" {
+		var err error
+		binary, err = exec.LookPath("gog")
+		if err != nil {
+			t.Skip("stable gog binary is not installed")
+		}
+	}
+
+	args := append([]string{}, reauthorizeBootstrapTokenArgs("user@example.test", "/tmp/token.json")[0]...)
+	args = append(args, "--dry-run", "--no-input")
+	cmd := exec.CommandContext(context.Background(), binary, args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("gog rejected bootstrap auth arguments: %v\n%s", err, output)
+	}
+	if !strings.Contains(string(output), "bigquery.readonly") {
+		t.Fatalf("dry-run did not include BigQuery scope: %s", output)
 	}
 }
 
