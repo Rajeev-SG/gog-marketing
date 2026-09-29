@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/openclaw/gogcli/internal/acceptance"
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
@@ -60,13 +59,14 @@ func TestInstallBootstrapTokenRefreshesAndDiscoversUnderAcceptanceOrg(t *testing
 		OAuth:      oauth,
 		Discoverer: bootstrapFakeDiscoverer{},
 	}
-	actor := controlplane.Actor{
-		UserID:         acceptance.AcceptanceOwnerID,
-		OrganizationID: acceptance.AcceptanceOrganizationID,
-		Role:           "owner",
-	}
-	if _, _, ownerErr := store.BootstrapOwner(ctx, controlplane.User{Email: "owner@example.test"}, controlplane.Organization{Name: "Acceptance", Slug: "acceptance"}, "owner"); ownerErr != nil {
+	owner, org, ownerErr := store.BootstrapOwner(ctx, controlplane.User{Email: "owner@example.test"}, controlplane.Organization{Name: "Acceptance", Slug: "acceptance"}, "owner")
+	if ownerErr != nil {
 		t.Fatal(ownerErr)
+	}
+	actor := controlplane.Actor{
+		UserID:         owner.ID,
+		OrganizationID: org.ID,
+		Role:           "owner",
 	}
 
 	connection, err := service.CreateConnection(ctx, actor, "gmail", []string{"analytics"})
@@ -111,7 +111,7 @@ func TestInstallBootstrapTokenRefreshesAndDiscoversUnderAcceptanceOrg(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw, err := secrets.Get(ctx, acceptance.AcceptanceOrganizationID, updated.SecretRef)
+	raw, err := secrets.Get(ctx, org.ID, updated.SecretRef)
 	if err != nil {
 		t.Fatalf("imported token is not readable under acceptance organization: %v", err)
 	}

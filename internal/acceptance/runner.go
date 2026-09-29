@@ -189,7 +189,17 @@ func (r *Runtime) Close() error {
 }
 
 func (r *Runtime) Actor() controlplane.Actor {
-	return controlplane.Actor{UserID: AcceptanceOwnerID, OrganizationID: AcceptanceOrganizationID, Role: "owner"}
+	userID := strings.TrimSpace(r.Profile.UserID)
+	if userID == "" {
+		userID = AcceptanceOwnerID
+	}
+
+	organizationID := strings.TrimSpace(r.Profile.OrganizationID)
+	if organizationID == "" {
+		organizationID = AcceptanceOrganizationID
+	}
+
+	return controlplane.Actor{UserID: userID, OrganizationID: organizationID, Role: "owner"}
 }
 
 func (r *Runtime) Service() *controlplane.Service {
@@ -197,7 +207,7 @@ func (r *Runtime) Service() *controlplane.Service {
 }
 
 func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlplane.Connection, error) {
-	connections, err := r.Store.ListConnections(ctx, AcceptanceOrganizationID)
+	connections, err := r.Store.ListConnections(ctx, r.Actor().OrganizationID)
 	if err != nil {
 		return controlplane.Connection{}, wrapAcceptanceError(err)
 	}
@@ -212,7 +222,7 @@ func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlpla
 }
 
 func (r *Runtime) EnabledGrant(ctx context.Context, connectionID string) (controlplane.ResourceGrant, error) {
-	grants, err := r.Store.ListResourceGrants(ctx, AcceptanceOrganizationID, connectionID)
+	grants, err := r.Store.ListResourceGrants(ctx, r.Actor().OrganizationID, connectionID)
 	if err != nil {
 		return controlplane.ResourceGrant{}, wrapAcceptanceError(err)
 	}

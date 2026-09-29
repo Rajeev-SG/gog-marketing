@@ -41,12 +41,14 @@ func importBootstrapConnections(ctx context.Context, paths acceptance.Paths, pro
 	if err != nil {
 		return wrapMainError(err)
 	}
-	if _, _, err := store.BootstrapOwner(ctx, controlplane.User{Email: profile.OwnerEmail}, controlplane.Organization{Name: "Acceptance", Slug: profile.OrganizationSlug}, "owner"); err != nil {
+	owner, org, err := store.BootstrapOwner(ctx, controlplane.User{Email: profile.OwnerEmail}, controlplane.Organization{Name: "Acceptance", Slug: profile.OrganizationSlug}, "owner")
+	if err != nil {
 		return wrapMainError(err)
 	}
-	// Keep the acceptance runtime identity stable across Postgres and SecretStore.
-	// The Postgres organization UUID is metadata; token ownership must use acceptanceOrg.
-	actor := controlplane.Actor{UserID: acceptance.AcceptanceOwnerID, OrganizationID: acceptance.AcceptanceOrganizationID, Role: "owner"}
+	if identityErr := acceptance.SetControlPlaneIdentity(paths, owner.ID, org.ID); identityErr != nil {
+		return wrapMainError(identityErr)
+	}
+	actor := controlplane.Actor{UserID: owner.ID, OrganizationID: org.ID, Role: "owner"}
 	provider := controlplane.NewGoogleOAuthProvider(profile.GoogleClientID, clientSecret, "http://127.0.0.1/oauth/google/callback")
 	service := &controlplane.Service{Store: store, Secrets: secrets, OAuth: provider}
 	for _, item := range []struct{ name, file, email string }{{"gmail", gmailTokenFile, gmailEmail}, {"singulyr", singulyrTokenFile, singulyrEmail}} {

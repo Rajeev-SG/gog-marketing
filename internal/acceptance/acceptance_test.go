@@ -127,6 +127,28 @@ func TestManifestRedactsAndHashesResources(t *testing.T) {
 	}
 }
 
+func TestProfilePersistsControlPlaneIdentity(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "profile")
+	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}
+
+	if err := EnsureProfile(paths, Profile{Version: 1, DatabaseURL: "postgres://example", OwnerEmail: "owner@example.test", OrganizationSlug: "acceptance"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := SetControlPlaneIdentity(paths, "user-1", "org-1"); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, _, err := LoadProfile(paths)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if loaded.UserID != "user-1" || loaded.OrganizationID != "org-1" {
+		t.Fatalf("control-plane identity round trip failed: %+v", loaded)
+	}
+}
+
 func TestEnsureProfileRejectsMissingOwner(t *testing.T) {
 	if err := EnsureProfile(Paths{}, Profile{DatabaseURL: "postgres://example"}); !errors.Is(err, ErrInvalidProfile) {
 		t.Fatalf("missing owner error = %v", err)

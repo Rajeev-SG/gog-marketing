@@ -177,6 +177,10 @@ func runBootstrap(ctx context.Context, paths acceptance.Paths, databaseURL, owne
 		Version: 1, DatabaseURL: databaseURL, OwnerEmail: ownerEmail,
 		OrganizationSlug: "acceptance", GoogleClientID: googleClientID,
 	}
+	if existing, _, loadErr := acceptance.LoadProfile(paths); loadErr == nil {
+		profile.UserID = existing.UserID
+		profile.OrganizationID = existing.OrganizationID
+	}
 	if profileErr := acceptance.EnsureProfile(paths, profile); profileErr != nil {
 		return wrapMainError(profileErr)
 	}
