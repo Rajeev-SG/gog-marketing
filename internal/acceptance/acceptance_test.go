@@ -157,6 +157,21 @@ func TestManifestRedactsAndHashesResources(t *testing.T) {
 	}
 }
 
+func TestDiscoveryConfigUsesProfileSettings(t *testing.T) {
+	config := DiscoveryConfig(Profile{
+		BigQueryProjects:        []string{"project-a"},
+		GoogleAdsDeveloperToken: "developer-token",
+	})
+
+	if len(config.BigQueryProjects) != 1 || config.BigQueryProjects[0] != "project-a" {
+		t.Fatalf("BigQuery projects not wired: %+v", config)
+	}
+
+	if config.GoogleAdsDeveloperToken != "developer-token" {
+		t.Fatalf("Google Ads developer token not wired: %+v", config)
+	}
+}
+
 func TestProfilePersistsControlPlaneIdentity(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "profile")
 	paths := Paths{Root: root, Config: filepath.Join(root, "config.json"), MasterKey: filepath.Join(root, "master.key"), Secrets: filepath.Join(root, "secrets.json"), OutputRoot: filepath.Join(root, "out")}

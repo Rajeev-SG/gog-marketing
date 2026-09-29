@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
 const (
@@ -190,6 +192,13 @@ func ValidateStablePaths(paths Paths) error {
 	}
 
 	return nil
+}
+
+func DiscoveryConfig(profile Profile) controlplane.EngineDiscoverer {
+	return controlplane.EngineDiscoverer{
+		BigQueryProjects:        profile.BigQueryProjects,
+		GoogleAdsDeveloperToken: profile.GoogleAdsDeveloperToken,
+	}
 }
 
 func SetControlPlaneIdentity(paths Paths, userID, organizationID string) error {

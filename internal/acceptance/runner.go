@@ -201,7 +201,7 @@ func (r *Runtime) Actor() controlplane.Actor {
 }
 
 func (r *Runtime) Service() *controlplane.Service {
-	return &controlplane.Service{Store: r.Store, Secrets: r.Secrets, OAuth: r.OAuth}
+	return &controlplane.Service{Store: r.Store, Secrets: r.Secrets, OAuth: r.OAuth, Discoverer: DiscoveryConfig(r.Profile)}
 }
 
 func (r *Runtime) ConnectionByName(ctx context.Context, name string) (controlplane.Connection, error) {
