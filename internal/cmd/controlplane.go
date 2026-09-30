@@ -169,8 +169,13 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	rootMux.Handle("/admin", http.RedirectHandler("/admin/", http.StatusPermanentRedirect))
 	rootMux.Handle("/", productHandler)
 
+	rootHandler, bridgeErr := controlPlaneLoopbackBridge(rootMux, baseURL, os.Getenv("PORTLESS_URL"))
+	if bridgeErr != nil {
+		return fmt.Errorf("local OAuth callback bridge: %w", bridgeErr)
+	}
+
 	server := &http.Server{
-		Addr: strings.TrimSpace(c.Listen), Handler: rootMux,
+		Addr: strings.TrimSpace(c.Listen), Handler: rootHandler,
 		ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second,
 		WriteTimeout: 2 * time.Minute, IdleTimeout: 60 * time.Second,
 	}

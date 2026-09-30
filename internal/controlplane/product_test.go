@@ -95,6 +95,8 @@ func productGet(t *testing.T, client *http.Client, serverURL, path string, cooki
 		req.AddCookie(cookie)
 	}
 
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)

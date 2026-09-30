@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
@@ -21,7 +22,11 @@ func (p Policy) Allow(ctx context.Context, actor Actor, connectionID, service, r
 
 	grant, err := p.Store.GetResourceGrant(ctx, actor.OrganizationID, connectionID, resourceID)
 	if err != nil {
-		return fmt.Errorf("%w: resource is not exposed by this connection", ErrForbidden)
+		if errors.Is(err, ErrNotFound) || errors.Is(err, ErrForbidden) {
+			return fmt.Errorf("%w: resource is not exposed by this connection", ErrForbidden)
+		}
+
+		return wrapControlPlaneError(err)
 	}
 
 	if grant.Service != service || !grant.Enabled {

@@ -98,7 +98,22 @@ func (m *SessionManager) FromRequest(r *http.Request) (sessionPayload, bool) {
 		return sessionPayload{}, false
 	}
 
-	parts := strings.Split(cookie.Value, ".")
+	return m.decodeSession(cookie.Value)
+}
+
+func (m *SessionManager) FromProductRequest(r *http.Request) (sessionPayload, bool) {
+	cookie, err := r.Cookie("gog_marketing_product_session")
+	if err != nil {
+		return sessionPayload{}, false
+	}
+
+	payload, ok := m.decodeSession(cookie.Value)
+
+	return payload, ok && !payload.Admin
+}
+
+func (m *SessionManager) decodeSession(value string) (sessionPayload, bool) {
+	parts := strings.Split(value, ".")
 	if len(parts) != 2 || !hmac.Equal([]byte(m.sign(parts[0])), []byte(parts[1])) {
 		return sessionPayload{}, false
 	}
@@ -124,12 +139,30 @@ func (m *SessionManager) Cookie(value string) *http.Cookie {
 	}
 }
 
+// ProductCookie permits the top-level Google callback redirect chain. Product
+// mutations still require CSRF tokens; OAuth additionally verifies state and PKCE.
+func (m *SessionManager) ProductCookie(value string) *http.Cookie {
+	cookie := m.Cookie(value) //nolint:gosec // The tested factory retains Secure/HttpOnly; Lax is required for Google callbacks and mutations remain CSRF-protected.
+	cookie.Name = "gog_marketing_product_session"
+	cookie.SameSite = http.SameSiteLaxMode
+
+	return cookie
+}
+
 func (m *SessionManager) ClearCookie() *http.Cookie {
 	//nolint:gosec // Secure is configurable so the documented local HTTP smoke run works.
 	return &http.Cookie{
 		Name: "gog_control_plane_session", Value: "", Path: "/", HttpOnly: true,
 		Secure: m.secure, SameSite: http.SameSiteStrictMode, MaxAge: -1,
 	}
+}
+
+func (m *SessionManager) ClearProductCookie() *http.Cookie {
+	cookie := m.ClearCookie() //nolint:gosec // Retains the tested clear-cookie attributes while isolating the product cookie name.
+	cookie.Name = "gog_marketing_product_session"
+	cookie.SameSite = http.SameSiteLaxMode
+
+	return cookie
 }
 
 func (m *SessionManager) sign(value string) string {
