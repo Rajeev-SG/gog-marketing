@@ -51,7 +51,9 @@ The normal `/` surface is the marketer product shell:
 5. Select assets and save.
 
 The normal product surface does not ask for Google Cloud Console, OAuth client
-JSON, scopes, service identifiers, GCP projects, tokens, or CLI commands.
+JSON, scopes, service identifiers, GCP projects, tokens, or CLI commands. The v1
+product shell is single-user and accepts only the configured workspace owner;
+multi-member invitations are outside this slice.
 
 ## Operator/admin flow
 

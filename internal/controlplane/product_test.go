@@ -13,6 +13,21 @@ import (
 
 type fakeProductAuth struct{ actor Actor }
 
+type failingResourceStore struct {
+	*MemoryStore
+	failAt int
+	calls  int
+}
+
+func (s *failingResourceStore) SetResourceEnabled(ctx context.Context, organizationID, connectionID, resourceID string, enabled bool) (ResourceGrant, error) {
+	s.calls++
+	if s.calls >= s.failAt {
+		return ResourceGrant{}, errTestUpdateConnection
+	}
+
+	return s.MemoryStore.SetResourceEnabled(ctx, organizationID, connectionID, resourceID, enabled)
+}
+
 func (fakeProductAuth) AuthorizationURL(state, codeVerifier string) string {
 	return "https://accounts.example.test/auth?state=" + url.QueryEscape(state) + "&code_verifier=" + url.QueryEscape(codeVerifier)
 }
@@ -46,6 +61,12 @@ func newProductTestHandler(t *testing.T, service *Service, actor Actor) (*httpte
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	return newProductTestHandlerWithSessions(t, service, actor, sessions)
+}
+
+func newProductTestHandlerWithSessions(t *testing.T, service *Service, actor Actor, sessions *SessionManager) (*httptest.Server, *http.Client) {
+	t.Helper()
 
 	handler, err := NewProductHandler(ProductConfig{
 		Service: service, Sessions: sessions, Auth: fakeProductAuth{actor: actor},
@@ -100,6 +121,7 @@ func productSessionCookies(t *testing.T, client *http.Client, server *httptest.S
 	resp := productGet(t, client, server.URL, "/auth/google/start", nil)
 
 	resp.Body.Close()
+	stateCookies := resp.Cookies()
 
 	if resp.StatusCode != http.StatusSeeOther {
 		t.Fatalf("sign-in start status = %d", resp.StatusCode)
@@ -111,7 +133,7 @@ func productSessionCookies(t *testing.T, client *http.Client, server *httptest.S
 		t.Fatal(err)
 	}
 	state := parsed.Query().Get("state")
-	resp = productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", nil)
+	resp = productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", stateCookies)
 
 	resp.Body.Close()
 
@@ -308,12 +330,14 @@ func connectProduct(t *testing.T, client *http.Client, server *httptest.Server, 
 		t.Fatalf("connect did not start OAuth: %q", location)
 	}
 
+	oauthCookies := append(append([]*http.Cookie{}, cookies...), resp.Cookies()...)
+
 	parsed, err := url.Parse(location)
 	if err != nil {
 		t.Fatal(err)
 	}
 	state := parsed.Query().Get("state")
-	callback := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", cookies)
+	callback := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", oauthCookies)
 	callback.Body.Close()
 
 	if callback.StatusCode != http.StatusSeeOther {
@@ -349,6 +373,7 @@ func TestProductAuthStateIsSingleUse(t *testing.T) {
 	resp := productGet(t, client, server.URL, "/auth/google/start", nil)
 
 	resp.Body.Close()
+	stateCookies := resp.Cookies()
 
 	parsed, err := url.Parse(resp.Header.Get("Location"))
 	if err != nil {
@@ -356,7 +381,7 @@ func TestProductAuthStateIsSingleUse(t *testing.T) {
 	}
 	state := parsed.Query().Get("state")
 
-	first := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", nil)
+	first := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", stateCookies)
 	first.Body.Close()
 	second := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", nil)
 
@@ -472,5 +497,159 @@ func TestProductHomeDoesNotCreateConnectionOnGET(t *testing.T) {
 
 	if len(connections) != 0 {
 		t.Fatalf("GET home created %d connections", len(connections))
+	}
+}
+
+func TestSigninRendersErrorsAndSingleOwnerPolicy(t *testing.T) {
+	service, store := productTestService(t)
+	server, client := newProductTestHandler(t, service, ownerActor(t, store))
+	signinResp := productGet(t, client, server.URL, "/signin?error=Sign-in+failed", nil) //nolint:bodyclose // readProductBody closes this response
+
+	signin := readProductBody(t, signinResp)
+	if !strings.Contains(signin, "Sign-in failed") {
+		t.Fatalf("sign-in error did not render: %s", signin)
+	}
+
+	if strings.Contains(strings.ToLower(signin), "your team") {
+		t.Fatalf("single-user product copy overpromises team access: %s", signin)
+	}
+
+	auth := NewGoogleProductAuthenticator("client-id", "client-secret", "https://example.test/oauth/google/callback", "owner@example.com", Actor{UserID: "user-1", OrganizationID: "org-1", Role: "owner"})
+	if _, err := auth.Actor(context.Background(), ProductIdentity{Email: "other@example.com", EmailVerified: true, Subject: "subject-2"}); err == nil {
+		t.Fatal("non-owner identity was accepted")
+	}
+}
+
+func TestProductAuthStateSurvivesHandlerReconstruction(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	sessions, err := NewSessionManager([]byte("0123456789abcdef0123456789abcdef"), time.Hour, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	firstServer, firstClient := newProductTestHandlerWithSessions(t, service, actor, sessions)
+	startResp := productGet(t, firstClient, firstServer.URL, "/auth/google/start", nil)
+	startResp.Body.Close()
+	stateURL := startResp.Header.Get("Location")
+
+	parsed, err := url.Parse(stateURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state := parsed.Query().Get("state")
+	stateCookies := startResp.Cookies()
+	secondServer, secondClient := newProductTestHandlerWithSessions(t, service, actor, sessions)
+	callbackResp := productGet(t, secondClient, secondServer.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", stateCookies)
+	callbackResp.Body.Close()
+
+	if callbackResp.StatusCode != http.StatusSeeOther || len(callbackResp.Cookies()) == 0 {
+		t.Fatalf("stateless sign-in state did not survive handler reconstruction: %d", callbackResp.StatusCode)
+	}
+
+	for i := 0; i < 128; i++ {
+		resp := productGet(t, firstClient, firstServer.URL, "/auth/google/start", nil)
+
+		resp.Body.Close()
+
+		if len(resp.Cookies()) != 1 || len(resp.Cookies()[0].Value) > 2048 {
+			t.Fatalf("unbounded auth state cookie at iteration %d", i)
+		}
+	}
+}
+
+func TestProductSaveReportsPartialFailureAndSkipsUnchangedGrants(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(context.Background(), actor, productConnectionName, []string{"analytics", "bigquery"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, completeErr := service.CompleteOAuth(context.Background(), start.State, "code"); completeErr != nil {
+		t.Fatal(completeErr)
+	}
+
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	service.Store = &failingResourceStore{MemoryStore: store, failAt: 2}
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	form := url.Values{"csrf": {csrf}, "resource": {"properties/123", "properties/124"}}
+	resp := postProduct(t, client, server, "/assets/"+connection.ID+"/save", form, cookies)
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "error=") {
+		t.Fatalf("partial save did not return a user-visible error redirect: %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+
+	assetsResp := productGet(t, client, server.URL, resp.Header.Get("Location"), cookies) //nolint:bodyclose // readProductBody closes this response
+
+	assets := readProductBody(t, assetsResp)
+	if !strings.Contains(assets, "Some access changes could not be saved") {
+		t.Fatalf("partial save error was not rendered: %s", assets)
+	}
+
+	service.Store = store
+
+	grants, err := service.ListResources(context.Background(), actor, connection.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, grant := range grants {
+		if grant.ResourceID == "properties/123" && !grant.Enabled {
+			t.Fatal("first changed grant was not persisted before partial failure")
+		}
+	}
+}
+
+func TestConnectCallbackRequiresProductSessionAndBoundState(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	resp := postProduct(t, client, server, "/connect/google", url.Values{"csrf": {csrf}}, cookies)
+	resp.Body.Close()
+	stateURL := resp.Header.Get("Location")
+
+	parsed, err := url.Parse(stateURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state := parsed.Query().Get("state")
+	connectionCookies := resp.Cookies()
+	sessionless := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", connectionCookies)
+	sessionless.Body.Close()
+
+	if sessionless.StatusCode != http.StatusSeeOther || !strings.HasPrefix(sessionless.Header.Get("Location"), "/signin") {
+		t.Fatalf("sessionless connect callback was accepted: %d %q", sessionless.StatusCode, sessionless.Header.Get("Location"))
+	}
+
+	unbound := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", cookies)
+	unbound.Body.Close()
+
+	if unbound.StatusCode != http.StatusSeeOther || !strings.Contains(unbound.Header.Get("Location"), "error=") {
+		t.Fatalf("unbound connect callback was accepted: %d %q", unbound.StatusCode, unbound.Header.Get("Location"))
+	}
+
+	signinPrefixed := productGet(t, client, server.URL, "/oauth/google/callback?state=signin_wrong&code=code", connectionCookies)
+	signinPrefixed.Body.Close()
+
+	if signinPrefixed.StatusCode != http.StatusSeeOther || !strings.HasPrefix(signinPrefixed.Header.Get("Location"), "/signin") {
+		t.Fatalf("signin-prefixed state leaked into connect callback: %d %q", signinPrefixed.StatusCode, signinPrefixed.Header.Get("Location"))
 	}
 }

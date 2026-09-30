@@ -12,8 +12,10 @@ A marketer can get started without Google Cloud Console or CLI commands:
 3. Select the properties, accounts, containers, sites, and projects you want to expose.
 4. Save access and start using the connected data.
 
-The product shell uses the centrally managed Google connection and keeps token
-refresh, resource discovery, and service mapping behind the normal journey.
+This v1 product shell is single-user: only the configured workspace owner can
+sign in. Multi-member invitations are outside this slice. The product shell uses
+the centrally managed Google connection and keeps token refresh, resource
+discovery, and service mapping behind the normal journey.
 If Google asks you to reconnect, use **Reconnect Google** and continue from
 there.
 

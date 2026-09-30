@@ -139,6 +139,25 @@ func (m *SessionManager) sign(value string) string {
 	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
+func (m *SessionManager) EncodeSigned(value string) string {
+	encoded := base64.RawURLEncoding.EncodeToString([]byte(value))
+	return encoded + "." + m.sign(encoded)
+}
+
+func (m *SessionManager) DecodeSigned(value string) (string, bool) {
+	parts := strings.Split(value, ".")
+	if len(parts) != 2 || !hmac.Equal([]byte(m.sign(parts[0])), []byte(parts[1])) {
+		return "", false
+	}
+
+	raw, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return "", false
+	}
+
+	return string(raw), true
+}
+
 type WebConfig struct {
 	Service         *Service
 	Sessions        *SessionManager
@@ -212,7 +231,7 @@ func (h *WebHandler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 
 	actor, err := h.config.Authenticator.Login(r.Context(), r.FormValue("email"), r.FormValue("token"))
 	if err != nil {
-		h.render(w, http.StatusUnauthorized, "login", map[string]any{"Error": "This identity is not authorized.", "OwnerEmail": h.config.OwnerEmail})
+		h.render(w, http.StatusUnauthorized, "login", map[string]any{templateErrorField: "This identity is not authorized.", "OwnerEmail": h.config.OwnerEmail})
 		return
 	}
 
@@ -262,7 +281,7 @@ func (h *WebHandler) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	connections, err := h.config.Service.ListConnections(r.Context(), actor)
 	if err != nil {
-		h.render(w, http.StatusInternalServerError, "connections", map[string]any{"Error": safeOAuthError(err)})
+		h.render(w, http.StatusInternalServerError, "connections", map[string]any{templateErrorField: safeOAuthError(err)})
 		return
 	}
 
@@ -301,19 +320,19 @@ func (h *WebHandler) handleConnection(w http.ResponseWriter, r *http.Request) {
 
 	connection, err := h.config.Service.GetConnection(r.Context(), actor, id)
 	if err != nil {
-		h.render(w, http.StatusNotFound, "connection", map[string]any{"Error": "Connection not found."})
+		h.render(w, http.StatusNotFound, "connection", map[string]any{templateErrorField: "Connection not found."})
 		return
 	}
 
 	resources, err := h.config.Service.ListResources(r.Context(), actor, id)
 	if err != nil {
-		h.render(w, http.StatusInternalServerError, "connection", map[string]any{"Error": safeOAuthError(err)})
+		h.render(w, http.StatusInternalServerError, "connection", map[string]any{templateErrorField: safeOAuthError(err)})
 		return
 	}
 
 	h.render(w, http.StatusOK, "connection", map[string]any{
 		"Actor": actor, "CSRF": session.CSRF, "Connection": connection,
-		"Resources": resources, "Message": r.URL.Query().Get("message"), "Error": r.URL.Query().Get("error"),
+		"Resources": resources, "Message": r.URL.Query().Get("message"), templateErrorField: r.URL.Query().Get("error"),
 	})
 }
 
