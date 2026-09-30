@@ -40,10 +40,27 @@ plaintext.
 - `secret-manager`: Google Secret Manager versions, using managed encryption
   at rest. The database stores only the version resource name.
 
-## Control-plane flow
+## Product flow
+
+The normal `/` surface is the marketer product shell:
+
+1. Sign in with Google.
+2. Choose **Connect Google**.
+3. Complete the existing connection OAuth flow.
+4. Discovery runs automatically, then the product shows grouped assets.
+5. Select assets and save.
+
+The normal product surface does not ask for Google Cloud Console, OAuth client
+JSON, scopes, service identifiers, GCP projects, tokens, or CLI commands. The v1
+product shell is single-user and accepts only the configured workspace owner;
+multi-member invitations are outside this slice.
+
+## Operator/admin flow
+
+The low-level control-plane tools remain at `/admin` for operators and support:
 
 1. Sign in as the configured owner/admin.
-2. Open **Connections**. The first run seeds `gmail` and `singulyr`.
+2. Open **Connections**. The admin path retains named connection and diagnostics controls.
 3. Select a connection and choose **Connect Google**.
 4. Complete the central Google OAuth consent flow.
 5. Run **Refresh and discover**.

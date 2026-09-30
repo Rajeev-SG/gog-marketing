@@ -148,17 +148,29 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	if err != nil {
 		return fmt.Errorf("control plane: %w", err)
 	}
-	handler, err := controlplane.NewWebHandler(controlplane.WebConfig{
+	adminHandler, err := controlplane.NewWebHandler(controlplane.WebConfig{
 		Service: service, Sessions: sessions,
 		Authenticator: controlplane.OwnerAuthenticator{Email: c.OwnerEmail, Token: c.AdminToken, Actor: actor},
-		OwnerEmail:    c.OwnerEmail, DisplayName: c.OwnerName, ExternalBaseURL: baseURL,
+		OwnerEmail:    c.OwnerEmail, DisplayName: c.OwnerName, ExternalBaseURL: baseURL, BasePath: "/admin",
 	})
 	if err != nil {
 		return fmt.Errorf("control plane: %w", err)
 	}
+	productHandler, err := controlplane.NewProductHandler(controlplane.ProductConfig{
+		Service: service, Sessions: sessions,
+		Auth:        controlplane.NewGoogleProductAuthenticator(googleClient.ClientID, googleClient.ClientSecret, redirectURI, c.OwnerEmail, actor),
+		DisplayName: c.OwnerName, DefaultServices: splitCSV(c.Services),
+	})
+	if err != nil {
+		return fmt.Errorf("product shell: %w", err)
+	}
+	rootMux := http.NewServeMux()
+	rootMux.Handle("/admin/", adminHandler)
+	rootMux.Handle("/admin", http.RedirectHandler("/admin/", http.StatusPermanentRedirect))
+	rootMux.Handle("/", productHandler)
 
 	server := &http.Server{
-		Addr: strings.TrimSpace(c.Listen), Handler: handler,
+		Addr: strings.TrimSpace(c.Listen), Handler: rootMux,
 		ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second,
 		WriteTimeout: 2 * time.Minute, IdleTimeout: 60 * time.Second,
 	}
