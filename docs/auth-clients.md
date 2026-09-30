@@ -72,31 +72,46 @@ Shows stored credential files plus any configured domain mappings.
 
 ## macOS Keychain prompt loop during development
 
-Symptom: macOS repeatedly shows `gog wants to access key "gogcli" in your keychain`, even after choosing **Always Allow**. Each approval appears to last only for one command.
+Symptom: macOS repeatedly shows `gog wants to use your confidential information stored in "gogcli"`, even after choosing **Always Allow**.
 
-Cause: `go run ./cmd/gog` compiles a fresh temporary executable for every invocation. macOS Keychain access approval is tied to executable identity, so a new build cannot inherit the previous build's **Always Allow** entry. Rebuilding an ad-hoc-signed binary can have the same effect.
+Cause: Keychain approval is tied to executable identity. `go run` creates a new executable every time. A local `make build` creates an ad-hoc-signed `bin/gog`, so every rebuild is a new macOS application. **Always Allow** cannot persist across those identities.
 
-Use one stable executable for authenticated work:
+Use one of these paths:
+
+1. Development: use the encrypted file keyring and do not touch Keychain.
+
+   On Rajeev's local rig:
+
+   ```bash
+   source ~/.codex/scripts/gog-keyring-env.sh
+   ```
+
+   The helper creates a `0600` password file and sets:
+
+   ```bash
+   export GOG_KEYRING_BACKEND=file
+   export GOG_KEYRING_PASSWORD_FILE=/secure/path/gog-keyring-password
+   ```
+
+2. Existing Keychain data: use a stable Developer ID-signed installed binary.
+
+   On Rajeev's local rig:
+
+   ```bash
+   ~/.codex/scripts/gog-stable-auth.sh auth ...
+   ```
+
+   The wrapper uses `/opt/homebrew/bin/gog` and rejects rebuilt ad-hoc binaries.
+
+Do not use `go run` or rebuilt `bin/gog` for Keychain-backed commands.
+
+Migrate existing tokens and client credentials once from your own Terminal:
 
 ```bash
-make build
-bin/gog auth list --json
-bin/gog auth list --json
+~/.codex/scripts/gog-migrate-keychain-to-file.sh <email> [client_secret.json] [client-name]
 ```
 
-When the dialog appears for that stable binary, enter the login Keychain password and choose **Always Allow** once. Repeated reads from `bin/gog` should then complete without prompting. Do not use `go run` for commands that read or write stored credentials.
-
-If the binary is rebuilt and macOS prompts again, approve the new binary once or switch to the encrypted file keyring:
-
-```bash
-bin/gog auth keyring file
-export GOG_KEYRING_BACKEND=file
-export GOG_KEYRING_PASSWORD_FILE=/secure/path/gog-keyring-password
-```
-
-Keep the password file readable only by the account running `gog`. `gog auth keyring file` changes the backend; it does not migrate existing macOS Keychain entries. Export/import stored tokens and re-store OAuth client credentials before relying on the file backend.
-
-This local Keychain dependency is a development compatibility path. The hosted control plane must use managed secret storage instead of customer or operator macOS Keychain state.
+The migration may show one final Keychain approval for the existing items. After it completes, development uses the file keyring and rebuilds do not prompt.
 
 ## Quota project
 
