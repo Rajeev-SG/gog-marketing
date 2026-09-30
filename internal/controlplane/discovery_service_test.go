@@ -3,7 +3,9 @@ package controlplane
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -144,5 +146,111 @@ func TestEngineDiscoveryReportsServiceFailuresWithoutAbortingOtherServices(t *te
 	report, err = discoverer.DiscoverReport(context.Background(), connection, OAuthToken{})
 	if err != nil || report.Statuses["googleads"].State != DiscoveryServiceUnavailable {
 		t.Fatal("unconfigured Google Ads was not represented as unavailable", err)
+	}
+}
+
+func TestDiscoveryStatusSurvivesConcurrentConnectionUpdate(t *testing.T) {
+	store := NewMemoryStore()
+
+	_, org, err := store.BootstrapOwner(context.Background(), User{Email: "concurrent@example.test"}, Organization{Name: "Concurrent", Slug: "concurrent"}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	connection, err := store.CreateConnection(context.Background(), Connection{OrganizationID: org.ID, Name: "google", Services: []string{"analytics"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statuses := map[string]DiscoveryServiceStatus{
+		"analytics": {State: DiscoveryServiceError, Detail: string(AuthFailureUnknown), CheckedAt: time.Now().UTC()},
+	}
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+
+		for i := 0; i < 50; i++ {
+			if statusErr := store.UpdateDiscoveryStatus(context.Background(), org.ID, connection.ID, statuses); statusErr != nil {
+				t.Error(statusErr)
+				return
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+
+		for i := 0; i < 50; i++ {
+			update := connection
+
+			update.Name = fmt.Sprintf("google-%d", i)
+			if _, updateErr := store.UpdateConnection(context.Background(), update); updateErr != nil {
+				t.Error(updateErr)
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	persisted, err := store.GetConnection(context.Background(), org.ID, connection.ID)
+	if err != nil || persisted.DiscoveryStatus["analytics"].State != DiscoveryServiceError {
+		t.Fatalf("concurrent connection update clobbered discovery status: %+v, %v", persisted.DiscoveryStatus, err)
+	}
+}
+
+func TestDiscoveryStatusSurfaceOmitsRemovedAndRejectsUnknownServices(t *testing.T) {
+	discoverer := EngineDiscoverer{}
+
+	report, err := discoverer.DiscoverReport(context.Background(), Connection{
+		ID: "connection", OrganizationID: "org", GoogleEmail: "owner@example.com",
+		Services: []string{"analytics", "typo-service"},
+	}, OAuthToken{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if report.Statuses["typo-service"].State != DiscoveryServiceError {
+		t.Fatalf("unknown service was not marked error: %+v", report.Statuses)
+	}
+
+	surface := productDiscoveryStatuses(Connection{
+		Services: []string{"analytics", "typo-service"},
+		DiscoveryStatus: map[string]DiscoveryServiceStatus{
+			"analytics":    {State: DiscoveryServiceOK, ResourceCount: 1},
+			"typo-service": {State: DiscoveryServiceError},
+			"bigquery":     {State: DiscoveryServiceUnavailable},
+		},
+	})
+	if len(surface) != 2 {
+		t.Fatalf("removed service was still surfaced: %+v", surface)
+	}
+
+	for _, status := range surface {
+		if status.ServiceName == "BigQuery" {
+			t.Fatal("removed service was rendered")
+		}
+
+		if status.ServiceName == "Google service" && status.Detail == "Ready" {
+			t.Fatal("unknown service was rendered as ready")
+		}
+	}
+}
+
+func TestLegacyDiscoveryErrorUsesConfiguredServiceOrder(t *testing.T) {
+	discoverer := EngineDiscoverer{
+		GoogleAdsDeveloperToken: "development-token",
+		GoogleAdsDiscover: func(context.Context, Connection, OAuthToken) ([]ResourceGrant, error) {
+			return nil, errTestGoogleAdsDiscovery
+		},
+	}
+
+	connection := Connection{ID: "connection", OrganizationID: "org", GoogleEmail: "owner@example.com", Services: []string{"googleads", "typo-service"}}
+	for i := 0; i < 25; i++ {
+		_, err := discoverer.Discover(context.Background(), connection, OAuthToken{})
+		if !errors.Is(err, errTestGoogleAdsDiscovery) {
+			t.Fatalf("legacy error was nondeterministic at iteration %d: %v", i, err)
+		}
 	}
 }

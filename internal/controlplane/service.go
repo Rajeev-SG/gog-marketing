@@ -415,8 +415,7 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 	}
 
 	if len(statuses) > 0 {
-		connection.DiscoveryStatus = statuses
-		if _, updateErr := s.Store.UpdateConnection(ctx, connection); updateErr != nil {
+		if updateErr := s.Store.UpdateDiscoveryStatus(ctx, actor.OrganizationID, id, statuses); updateErr != nil {
 			return nil, fmt.Errorf("save discovery status: %w", updateErr)
 		}
 	}

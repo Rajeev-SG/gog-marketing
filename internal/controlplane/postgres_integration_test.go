@@ -252,6 +252,11 @@ func TestPostgresDiscoveryStatusPersistsAcrossReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	connection.Name = "renamed-" + suffix
+	if _, updateErr := store.UpdateConnection(ctx, connection); updateErr != nil {
+		t.Fatal(updateErr)
+	}
+
 	if closeErr := store.Close(); closeErr != nil {
 		t.Fatal(closeErr)
 	}

@@ -40,8 +40,11 @@ func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, t
 		return nil, err
 	}
 
-	for _, status := range report.Statuses {
-		if status.State == DiscoveryServiceError {
+	for _, rawService := range connection.Services {
+		serviceName := strings.ToLower(strings.TrimSpace(rawService))
+
+		status, ok := report.Statuses[serviceName]
+		if ok && status.State == DiscoveryServiceError {
 			return nil, status.err
 		}
 	}
@@ -91,7 +94,7 @@ func (d EngineDiscoverer) discoverService(ctx context.Context, serviceName strin
 	case "bigquery":
 		return d.bigQuery(ctx, connection, token)
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("%w: %s", ErrUnsupportedDiscoveryService, serviceName)
 	}
 }
 

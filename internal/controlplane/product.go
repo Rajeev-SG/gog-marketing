@@ -870,7 +870,7 @@ func productAssetGroups(assets []productAsset, query string, statuses map[string
 }
 
 func productDiscoveryStatuses(connection Connection) []productServiceStatus {
-	services := make([]string, 0, len(connection.Services)+len(connection.DiscoveryStatus))
+	services := make([]string, 0, len(connection.Services))
 	seen := make(map[string]bool)
 
 	for _, rawService := range connection.Services {
@@ -880,13 +880,6 @@ func productDiscoveryStatuses(connection Connection) []productServiceStatus {
 		}
 		seen[serviceName] = true
 		services = append(services, serviceName)
-	}
-
-	for serviceName := range connection.DiscoveryStatus {
-		if !seen[serviceName] {
-			seen[serviceName] = true
-			services = append(services, serviceName)
-		}
 	}
 
 	sort.Strings(services)
