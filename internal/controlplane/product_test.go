@@ -733,6 +733,7 @@ func TestProductFilteredSaveRejectsOutOfSelectionResources(t *testing.T) {
 			}
 
 			id := connections[0].ID
+
 			foreign, createErr := store.CreateConnection(context.Background(), Connection{OrganizationID: "foreign-org", Name: "google"})
 			if createErr != nil {
 				t.Fatal(createErr)
