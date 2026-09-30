@@ -201,13 +201,14 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
 	h.mux.HandleFunc("GET /api/connections/{id}/analytics/property", h.readAnalyticsProperty)
+	h.mux.HandleFunc("GET /assets/{id}/property", h.readAnalyticsPropertyPage)
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
 	h.mux.HandleFunc("POST /assets/{id}/reconnect", h.reconnect)
 }
 
 func (h *ProductHandler) actor(w http.ResponseWriter, r *http.Request) (Actor, sessionPayload, bool) {
-	session, ok := h.config.Sessions.FromRequest(r)
+	session, ok := h.config.Sessions.FromProductRequest(r)
 	if !ok || session.Admin {
 		http.Redirect(w, r, "/signin", http.StatusSeeOther)
 		return Actor{}, sessionPayload{}, false
@@ -314,7 +315,7 @@ func (h *ProductHandler) logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, h.config.Sessions.ClearCookie())
+	http.SetCookie(w, h.config.Sessions.ClearProductCookie())
 	http.Redirect(w, r, "/signin", http.StatusSeeOther)
 }
 
@@ -363,7 +364,7 @@ func (h *ProductHandler) connect(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) {
-	session, ok := h.config.Sessions.FromRequest(r)
+	session, ok := h.config.Sessions.FromProductRequest(r)
 	if !ok || session.Admin {
 		http.Redirect(w, r, "/signin?error="+url.QueryEscape("Your sign-in session expired. Sign in and choose Connect Google again."), http.StatusSeeOther)
 		return
@@ -477,7 +478,7 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	assets := productAssets(grants)
 	for i := range assets {
 		if assets[i].Enabled && assets[i].Service == "analytics" && assets[i].Kind == "Property" {
-			assets[i].ReadURL = "/api/connections/" + url.PathEscape(id) + "/analytics/property?resource=" + url.QueryEscape(assets[i].ResourceID)
+			assets[i].ReadURL = "/assets/" + url.PathEscape(id) + "/property?resource=" + url.QueryEscape(assets[i].ResourceID)
 		}
 	}
 	query := strings.TrimSpace(r.URL.Query().Get("q"))

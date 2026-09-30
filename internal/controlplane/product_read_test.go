@@ -42,7 +42,7 @@ func TestProductReadDeniesBeforeCredentialsOrGoogle(t *testing.T) {
 			}
 
 			audit, err := store.ListAudit(context.Background(), tc.organization, 10)
-			if err != nil || len(audit) != 1 || audit[0].Result != "deny" || !strings.Contains(audit[0].Detail, "google_requests=0") {
+			if err != nil || len(audit) != 1 || audit[0].Result != "deny" || !strings.Contains(audit[0].Detail, "google_api_requests=0") {
 				t.Fatal("missing deny audit", err)
 			}
 		})
@@ -76,7 +76,27 @@ func TestProductSessionCookieAllowsGoogleRedirectWithoutChangingAdmin(t *testing
 	product := sessions.ProductCookie("signed-product-session")
 
 	admin := sessions.Cookie("signed-admin-session")
-	if product.SameSite != http.SameSiteLaxMode || admin.SameSite != http.SameSiteStrictMode || !product.Secure || !product.HttpOnly {
+	if product.SameSite != http.SameSiteLaxMode || admin.SameSite != http.SameSiteStrictMode || product.Name == admin.Name || !product.Secure || !product.HttpOnly {
 		t.Fatal("cookie isolation or redirect safety regressed")
+	}
+}
+
+type unavailableGrantStore struct{ *MemoryStore }
+
+func (s unavailableGrantStore) GetResourceGrant(context.Context, string, string, string) (ResourceGrant, error) {
+	return ResourceGrant{}, ErrReadUnavailable
+}
+
+func TestProductReadStorageFailureIsNotPermissionDenial(t *testing.T) {
+	store := NewMemoryStore()
+
+	connection, err := store.CreateConnection(context.Background(), Connection{OrganizationID: "org-1", Name: "google", Services: []string{"analytics"}, Status: ConnectionHealthy})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	service := &Service{Store: unavailableGrantStore{MemoryStore: store}}
+	if _, readErr := service.ReadAnalyticsProperty(context.Background(), Actor{UserID: "user-1", OrganizationID: "org-1", Role: "owner"}, connection.ID, "properties/123"); !errors.Is(readErr, ErrReadUnavailable) {
+		t.Fatalf("storage outage was misreported: %v", readErr)
 	}
 }

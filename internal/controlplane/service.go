@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
+
 	"github.com/openclaw/gogcli/internal/googleauth"
 )
 
@@ -20,13 +22,14 @@ type Actor struct {
 }
 
 type Service struct {
-	tokenLocks  sync.Map
-	Store       Store
-	Secrets     SecretStore
-	OAuth       OAuthProvider
-	Discoverer  Discoverer
-	RedirectURI string
-	Now         func() time.Time
+	tokenLocks            sync.Map
+	Store                 Store
+	Secrets               SecretStore
+	OAuth                 OAuthProvider
+	Discoverer            Discoverer
+	RedirectURI           string
+	Now                   func() time.Time
+	AnalyticsAdminFactory func(context.Context, string) (*analyticsadmin.Service, error)
 }
 
 type OAuthStart struct {
