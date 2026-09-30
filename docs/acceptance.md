@@ -42,7 +42,7 @@ GOOGLE_CLIENT_SECRET_FILE=/path/to/client_secret.json \
 make -C /path/to/gog-marketing acceptance-bootstrap
 ```
 
-This is the single deterministic bootstrap action. It uses the stable signed `gog` binary to export the existing `gmail` and `singulyr` refresh tokens. If either token is genuinely revoked or expired, that same command opens the deliberate browser consent once for the affected account, then exports the replacement token. It imports the central client and tokens into the non-Keychain acceptance SecretStore, silently refreshes both, discovers resources, and enables one resource per connection.
+This is the single deterministic bootstrap action. It uses the installed Developer ID-signed `gog` binary to export the existing `gmail` and `singulyr` refresh tokens. If either token is genuinely revoked or expired, that same command opens the deliberate browser consent once for the affected account, then exports the replacement token. It imports the central client and tokens into the non-Keychain acceptance SecretStore, silently refreshes both, discovers resources, and enables one resource per connection.
 
 Bootstrap imports the central client and both connection tokens into the acceptance SecretStore. It re-opens consent only when a stored token is actually invalid. Once it returns, routine acceptance is unattended.
 

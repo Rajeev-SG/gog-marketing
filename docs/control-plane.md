@@ -23,7 +23,7 @@ gog controlplane \
 
 The secret backend is an explicit required choice. For a hermetic loopback smoke run, use `--database-url memory://`, `--secret-backend file`, and a loopback `--listen` address; the file backend encrypts values with the supplied `--master-key` and stores only ciphertext. The server refuses `file` on a non-loopback listener. `--admin-token` is required and is checked in constant time before a web session is issued.
 
-`--google-client-name` loads the public client ID and protected client secret through the existing `gog` credentials store. Use the stable `bin/gog` binary for this path so macOS can keep one persistent Keychain grant instead of prompting for temporary `go run` binaries. Deployments that inject secrets directly may instead provide both `--google-client-id` and `--google-client-secret`; do not combine the named and explicit forms.
+`--google-client-name` loads the public client ID and protected client secret through the existing `gog` credentials store. On macOS, use a stable Developer ID-signed installed binary, such as `~/.codex/scripts/gog-stable-auth.sh` on Rajeev's local rig. Do not use `go run` or a rebuilt ad-hoc `bin/gog`; macOS treats every rebuild as a new Keychain application. For development and automation, prefer the encrypted file keyring or explicit `--google-client-id` and `--google-client-secret`. Do not combine the named and explicit client forms.
 
 The OAuth redirect URI is derived from `--external-base-url` and is
 `/oauth/google/callback`. Register that exact URI on the central gog-marketing
