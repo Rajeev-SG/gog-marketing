@@ -508,6 +508,7 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Service-wide actions deliberately ignore search; the buttons disclose this scope.
 	if service := r.FormValue("select_all"); service != "" {
 		h.setServiceEnabled(w, r, actor, id, grants, service, true)
 		return
