@@ -279,3 +279,13 @@ See [live testing](docs/live-testing.md) for opt-in Google API smoke tests and
 ## License
 
 [MIT](LICENSE)
+
+### Local owner pilot: permission-controlled GA4 read
+
+This fork's browser product now has one fixed read operation: Google Analytics property metadata. Sign in, connect Google, select an Analytics property, and save access. **Read property** on the asset picker calls the real product API with that connection's stored token. Disabled or unknown properties are denied before credential retrieval or Google requests. Account grants do not imply access to their properties. Other product API tools are not exposed yet; the older tenant-serving route remains an operator interface.
+
+An authenticated local agent can use `GET /api/connections/<connection-id>/analytics/property?resource=properties/<property-id>` with its private product-session cookie. This pilot does not yet issue separate agent keys. Responses are JSON; credential-free audit events record allow/deny/error and observed Google request counts. A missing session requires sign-in; terminal OAuth failures require reconnect. Do not publish session cookies, resource identities, audit details, or account evidence.
+
+For a Portless named `.localhost` browser origin, use this fork's built `bin/gog controlplane` under Portless and configure `--external-base-url` as the Google-supported `http://localhost:$PORT` loopback origin. The product uses `PORTLESS_URL` to redirect only the loopback OAuth callback back to the named browser origin, where the existing signed-cookie, state, and PKCE checks run. No deployed service is required. Central OAuth setup, Postgres, and encrypted secret-store configuration remain operator responsibilities.
+
+This is a narrow implementation milestone, **not completed real-account acceptance or deployment approval**. Issue #36's two-account, restart, reconnect, repeated-run, and full service requirements remain open. Synthetic development checks do not satisfy that gate. Do not deploy or publish automatic previews before the complete local real-account gate passes.

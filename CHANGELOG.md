@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product: add a session-authenticated, grant-controlled Google Analytics property read with central token refresh and credential-free allow/deny/error audit records. Other product tools remain unavailable. A local-only Portless callback bridge preserves the existing cookie/state/PKCE checks without a remote deployment. (#36)
+
 - Acceptance: derive the central OAuth client ID and secret from the downloaded client JSON before bootstrap validation, fixing `bootstrap arguments are incomplete` for the documented one-command flow. (#14)
 - Docs: make the acceptance Make targets location-independent and remove the stale manual reconnect step from the bootstrap instructions. (#14)
 - Acceptance: add hermetic local, non-interactive doctor, unattended live/repeat commands, stable non-Keychain developer state, silent refresh and terminal auth-failure classification, bounded transient retries, safe manifests, and agent guidance banning authenticated `go run`/OAuth/Keychain fallback. (#14)

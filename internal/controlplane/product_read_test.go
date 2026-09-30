@@ -1,0 +1,68 @@
+package controlplane
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"strings"
+	"testing"
+)
+
+func TestProductReadDeniesBeforeCredentialsOrGoogle(t *testing.T) {
+	for _, tc := range []struct {
+		name, resource, organization string
+		enabled                      bool
+		status                       ConnectionStatus
+	}{
+		{"disabled", "properties/123", "org-1", false, ConnectionHealthy},
+		{"unknown", "properties/999", "org-1", true, ConnectionHealthy},
+		{"foreign organization", "properties/123", "foreign-org", true, ConnectionHealthy},
+		{"disconnected", "properties/123", "org-1", true, ConnectionDisconnected},
+		{"reconnect", "properties/123", "org-1", true, ConnectionNeedsReconnect},
+		{"parent is not property", "accounts/123", "org-1", true, ConnectionHealthy},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			store := NewMemoryStore()
+
+			connection, err := store.CreateConnection(context.Background(), Connection{OrganizationID: "org-1", Name: "google", Services: []string{"analytics"}, Status: tc.status})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if _, grantErr := store.UpsertResourceGrant(context.Background(), ResourceGrant{OrganizationID: "org-1", ConnectionID: connection.ID, Service: "analytics", ResourceType: "property", ResourceID: "properties/123", Enabled: tc.enabled}); grantErr != nil {
+				t.Fatal(grantErr)
+			}
+			// Nil credentials/provider make any accidental credential or refresh call fail.
+			service := &Service{Store: store}
+
+			actor := Actor{UserID: "user-1", OrganizationID: tc.organization, Role: "owner"}
+			if _, readErr := service.ReadAnalyticsProperty(context.Background(), actor, connection.ID, tc.resource); !errors.Is(readErr, ErrForbidden) && !errors.Is(readErr, ErrInvalid) {
+				t.Fatalf("read was not denied: %v", readErr)
+			}
+
+			audit, err := store.ListAudit(context.Background(), tc.organization, 10)
+			if err != nil || len(audit) != 1 || audit[0].Result != "deny" || !strings.Contains(audit[0].Detail, "google_requests=0") {
+				t.Fatal("missing deny audit", err)
+			}
+		})
+	}
+}
+
+func TestProductReadAPIRequiresProductSession(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	resp := productGet(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123", nil)
+
+	body := readProductBody(t, resp)
+	if resp.StatusCode != http.StatusUnauthorized || body != "{\"error\":\"sign_in_required\"}\n" {
+		t.Fatalf("unexpected unauthenticated response: %d %s", resp.StatusCode, body)
+	}
+	cookies := productSessionCookies(t, client, server)
+	resp = productGet(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123", cookies)
+
+	body = readProductBody(t, resp)
+	if resp.StatusCode != http.StatusForbidden || body != "{\"error\":\"access_denied\"}\n" {
+		t.Fatalf("unknown connection accepted: %d %s", resp.StatusCode, body)
+	}
+}

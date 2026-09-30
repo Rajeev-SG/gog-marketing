@@ -162,6 +162,7 @@ type productAsset struct {
 	ResourceID  string
 	Parent      string
 	Enabled     bool
+	ReadURL     string
 }
 
 type productAssetGroup struct {
@@ -199,6 +200,7 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /logout", h.logout)
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
+	h.mux.HandleFunc("GET /api/connections/{id}/analytics/property", h.readAnalyticsProperty)
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
 	h.mux.HandleFunc("POST /assets/{id}/reconnect", h.reconnect)
@@ -471,7 +473,13 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
 	assets := productAssets(grants)
+	for i := range assets {
+		if assets[i].Enabled && assets[i].Service == "analytics" && assets[i].Kind == "Property" {
+			assets[i].ReadURL = "/api/connections/" + url.PathEscape(id) + "/analytics/property?resource=" + url.QueryEscape(assets[i].ResourceID)
+		}
+	}
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	state := productConnectionState(connection)
 	h.render(w, "assets", map[string]any{
