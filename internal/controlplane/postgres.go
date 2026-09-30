@@ -267,7 +267,7 @@ func (s *PostgresStore) UpsertResourceGrant(ctx context.Context, grant ResourceG
 	grant.UpdatedAt = now
 	metadata, _ := json.Marshal(grant.Metadata)
 
-	_, err := s.db.ExecContext(ctx, `INSERT INTO resource_grants(id,connection_id,organization_id,service,resource_type,resource_id,display_name,parent,metadata_json,enabled,discovered_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (connection_id,resource_id) DO UPDATE SET service=EXCLUDED.service,resource_type=EXCLUDED.resource_type,display_name=EXCLUDED.display_name,parent=EXCLUDED.parent,metadata_json=EXCLUDED.metadata_json,enabled=EXCLUDED.enabled,updated_at=EXCLUDED.updated_at`,
+	_, err := s.db.ExecContext(ctx, `INSERT INTO resource_grants(id,connection_id,organization_id,service,resource_type,resource_id,display_name,parent,metadata_json,enabled,discovered_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (connection_id,resource_id) DO UPDATE SET service=EXCLUDED.service,resource_type=EXCLUDED.resource_type,display_name=EXCLUDED.display_name,parent=EXCLUDED.parent,metadata_json=EXCLUDED.metadata_json,updated_at=EXCLUDED.updated_at`,
 		grant.ID, grant.ConnectionID, grant.OrganizationID, grant.Service, grant.ResourceType, grant.ResourceID, grant.DisplayName, grant.Parent, metadata, grant.Enabled, grant.DiscoveredAt, grant.UpdatedAt)
 	if err != nil {
 		return ResourceGrant{}, wrapControlPlaneError(err)

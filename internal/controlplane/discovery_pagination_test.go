@@ -136,3 +136,50 @@ func TestTagManagerLaterContainerFailureDoesNotReturnPartialInventory(t *testing
 		t.Fatal("later container failure produced partial successful inventory")
 	}
 }
+
+func TestRediscoveryPreservesEnabledAndDisabledChoices(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(context.Background(), actor, "google", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, callbackErr := service.CompleteOAuth(context.Background(), start.State, "code"); callbackErr != nil {
+		t.Fatal(callbackErr)
+	}
+
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	if _, enableErr := service.SetResourceEnabled(context.Background(), actor, connection.ID, "properties/123", true); enableErr != nil {
+		t.Fatal(enableErr)
+	}
+
+	service.Discoverer = fakeDiscoverer{resources: []ResourceGrant{
+		{Service: "analytics", ResourceType: "property", ResourceID: "properties/123", DisplayName: "Updated name", Enabled: false},
+		{Service: "analytics", ResourceType: "property", ResourceID: "properties/124", Enabled: true},
+		{Service: "analytics", ResourceType: "property", ResourceID: "properties/125", Enabled: true},
+	}}
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	grants, err := service.ListResources(context.Background(), actor, connection.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, grant := range grants {
+		if grant.Enabled != (grant.ResourceID == "properties/123") {
+			t.Fatalf("rediscovery changed selection for %s", grant.ResourceID)
+		}
+	}
+}

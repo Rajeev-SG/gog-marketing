@@ -340,6 +340,8 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 
 	out := make([]ResourceGrant, 0, len(resources))
 	for _, resource := range resources {
+		// Discovery never grants access; only the explicit selection mutation does.
+		resource.Enabled = false
 		resource.OrganizationID = actor.OrganizationID
 		resource.ConnectionID = id
 		resource.DiscoveredAt = s.now()

@@ -218,6 +218,7 @@ func (s *MemoryStore) UpsertResourceGrant(_ context.Context, grant ResourceGrant
 	for id, existing := range s.grants {
 		if existing.ConnectionID == grant.ConnectionID && existing.ResourceID == grant.ResourceID {
 			grant.ID = id
+			grant.Enabled = existing.Enabled
 			grant.DiscoveredAt = existing.DiscoveredAt
 			grant.UpdatedAt = now
 			s.grants[id] = cloneGrant(grant)
