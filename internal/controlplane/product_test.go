@@ -719,6 +719,7 @@ func TestProductFilteredSavePreservesHiddenGrants(t *testing.T) {
 	// Reload the unfiltered page to verify hidden selections remain visible as saved.
 	resp := productGet(t, client, server.URL, "/assets/"+id, cookies) //nolint:bodyclose // readProductBody closes the response
 	body := readProductBody(t, resp)
+
 	if !strings.Contains(body, `name="resource" value="properties/124" type="checkbox" checked`) {
 		t.Fatal("hidden grant was not selected after reload")
 	}
