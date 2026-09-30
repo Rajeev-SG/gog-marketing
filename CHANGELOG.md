@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product: preserve hidden asset permissions on filtered saves, reject out-of-selection resource IDs, and label service-wide selection actions explicitly. (#36)
+
 - Acceptance: derive the central OAuth client ID and secret from the downloaded client JSON before bootstrap validation, fixing `bootstrap arguments are incomplete` for the documented one-command flow. (#14)
 - Docs: make the acceptance Make targets location-independent and remove the stale manual reconnect step from the bootstrap instructions. (#14)
 - Acceptance: add hermetic local, non-interactive doctor, unattended live/repeat commands, stable non-Keychain developer state, silent refresh and terminal auth-failure classification, bounded transient retries, safe manifests, and agent guidance banning authenticated `go run`/OAuth/Keychain fallback. (#14)

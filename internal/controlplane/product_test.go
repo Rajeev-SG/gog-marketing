@@ -666,3 +666,138 @@ func TestOAuthStateCookiesAllowTopLevelCallback(t *testing.T) {
 		}
 	}
 }
+
+func TestProductFilteredSavePreservesHiddenGrants(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	connectProduct(t, client, server, cookies, csrf)
+
+	connections, err := service.ListConnections(context.Background(), actor)
+	if err != nil || len(connections) != 1 {
+		t.Fatal("missing connection", err)
+	}
+
+	id := connections[0].ID
+	for _, resource := range []string{"properties/123", "properties/124", "projects/data"} {
+		if _, err := service.SetResourceEnabled(context.Background(), actor, id, resource, true); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, tc := range []struct {
+		query          string
+		resources      []string
+		visibleEnabled bool
+	}{
+		{"Example GA4", []string{"properties/123"}, true},
+		{"Example GA4", nil, false},
+		{"no matching assets", nil, false},
+	} {
+		resp := postProduct(t, client, server, "/assets/"+id+"/save", url.Values{"csrf": {csrf}, "q": {tc.query}, "resource": tc.resources}, cookies)
+		resp.Body.Close()
+
+		grants, err := service.ListResources(context.Background(), actor, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, grant := range grants {
+			want := true
+			if grant.ResourceID == "properties/123" {
+				want = tc.visibleEnabled
+			}
+
+			if grant.Enabled != want {
+				t.Fatalf("query %q: %s enabled=%v want=%v", tc.query, grant.ResourceID, grant.Enabled, want)
+			}
+		}
+	}
+}
+
+func TestProductFilteredSaveRejectsOutOfSelectionResources(t *testing.T) {
+	for _, resource := range []string{"properties/124", "properties/foreign", "properties/unknown"} {
+		t.Run(resource, func(t *testing.T) {
+			service, store := productTestService(t)
+			actor := ownerActor(t, store)
+			server, client := newProductTestHandler(t, service, actor)
+			cookies := productSessionCookies(t, client, server)
+			csrf := productCSRF(t, server, client, cookies)
+			connectProduct(t, client, server, cookies, csrf)
+
+			connections, err := service.ListConnections(context.Background(), actor)
+			if err != nil || len(connections) != 1 {
+				t.Fatal("missing connection", err)
+			}
+
+			id := connections[0].ID
+			foreign, createErr := store.CreateConnection(context.Background(), Connection{OrganizationID: "foreign-org", Name: "google"})
+			if createErr != nil {
+				t.Fatal(createErr)
+			}
+
+			if _, grantErr := store.UpsertResourceGrant(context.Background(), ResourceGrant{OrganizationID: "foreign-org", ConnectionID: foreign.ID, Service: "analytics", ResourceID: "properties/foreign", Enabled: true}); grantErr != nil {
+				t.Fatal(grantErr)
+			}
+
+			if _, enableErr := service.SetResourceEnabled(context.Background(), actor, id, "properties/123", true); enableErr != nil {
+				t.Fatal(enableErr)
+			}
+			resp := postProduct(t, client, server, "/assets/"+id+"/save", url.Values{"csrf": {csrf}, "q": {"Example GA4"}, "resource": {resource}}, cookies)
+			resp.Body.Close()
+
+			if !strings.Contains(resp.Header.Get("Location"), "error=") {
+				t.Fatal("invalid selection accepted")
+			}
+
+			grants, err := service.ListResources(context.Background(), actor, id)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, grant := range grants {
+				if grant.Enabled != (grant.ResourceID == "properties/123") {
+					t.Fatal("invalid selection changed grants")
+				}
+			}
+		})
+	}
+}
+
+func TestProductServiceSelectionIgnoresSearchAndPreservesOtherServices(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	connectProduct(t, client, server, cookies, csrf)
+
+	connections, err := service.ListConnections(context.Background(), actor)
+	if err != nil || len(connections) != 1 {
+		t.Fatal("missing connection", err)
+	}
+
+	id := connections[0].ID
+	if _, err := service.SetResourceEnabled(context.Background(), actor, id, "projects/data", true); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, action := range []string{"select_all", "select_none"} {
+		resp := postProduct(t, client, server, "/assets/"+id+"/save", url.Values{"csrf": {csrf}, "q": {"Example GA4"}, action: {"Google Analytics"}}, cookies)
+		resp.Body.Close()
+
+		grants, err := service.ListResources(context.Background(), actor, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, grant := range grants {
+			want := grant.Service != "analytics" || action == "select_all"
+			if grant.Enabled != want {
+				t.Fatalf("%s: unexpected permission on %s", action, grant.ResourceID)
+			}
+		}
+	}
+}
