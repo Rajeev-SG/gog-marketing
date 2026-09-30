@@ -255,6 +255,9 @@ func (s *PostgresStore) DeleteConnection(ctx context.Context, organizationID, id
 	return nil
 }
 
+// Resource grants are authoritative per connection plus resource. The same
+// Google resource can exist under two connections, but authorization always
+// resolves the exact requested connection and never shares authority across it.
 func (s *PostgresStore) UpsertResourceGrant(ctx context.Context, grant ResourceGrant) (ResourceGrant, error) {
 	if grant.ID == "" {
 		grant.ID = uuid.NewString()
@@ -305,7 +308,10 @@ func (s *PostgresStore) GetResourceGrant(ctx context.Context, organizationID, co
 }
 
 func (s *PostgresStore) SetResourceEnabled(ctx context.Context, organizationID, connectionID, resourceID string, enabled bool) (ResourceGrant, error) {
-	result, err := s.db.ExecContext(ctx, `UPDATE resource_grants SET enabled=$1,updated_at=$2 WHERE organization_id=$3 AND connection_id=$4 AND resource_id=$5`, enabled, time.Now().UTC(), organizationID, connectionID, resourceID)
+	// SetResourceEnabled is the explicit permission mutation; discovery upserts
+	// deliberately leave this column unchanged. Use database time so restarts and
+	// concurrent writers see one consistent audit/update ordering.
+	result, err := s.db.ExecContext(ctx, `UPDATE resource_grants SET enabled=$1,updated_at=now() WHERE organization_id=$2 AND connection_id=$3 AND resource_id=$4`, enabled, organizationID, connectionID, resourceID)
 	if err != nil {
 		return ResourceGrant{}, wrapControlPlaneError(err)
 	}
