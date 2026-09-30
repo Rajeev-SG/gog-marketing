@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -168,8 +169,16 @@ func TestRediscoveryPreservesEnabledAndDisabledChoices(t *testing.T) {
 		{Service: "analytics", ResourceType: "property", ResourceID: "properties/124", Enabled: true},
 		{Service: "analytics", ResourceType: "property", ResourceID: "properties/125", Enabled: true},
 	}}
-	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+
+	discovered, discoverErr := service.Discover(context.Background(), actor, connection.ID)
+	if discoverErr != nil {
 		t.Fatal(discoverErr)
+	}
+
+	for _, grant := range discovered {
+		if grant.Enabled != (grant.ResourceID == "properties/123") {
+			t.Fatalf("Discover returned stale selection state for %s", grant.ResourceID)
+		}
 	}
 
 	grants, err := service.ListResources(context.Background(), actor, connection.ID)
@@ -214,5 +223,89 @@ func TestExplicitSelectionChangeStillPersists(t *testing.T) {
 	disabled, err := service.SetResourceEnabled(context.Background(), actor, connection.ID, "properties/123", false)
 	if err != nil || disabled.Enabled {
 		t.Fatal("explicit disable did not persist", err)
+	}
+}
+
+func TestSuccessfulServiceDisablesMissingGrantsButUnavailableServiceKeepsSelections(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(context.Background(), actor, "google", []string{"analytics", "bigquery"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, callbackErr := service.CompleteOAuth(context.Background(), start.State, "code"); callbackErr != nil {
+		t.Fatal(callbackErr)
+	}
+
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	for _, resource := range []string{"properties/123", "properties/124", "projects/data"} {
+		if _, enableErr := service.SetResourceEnabled(context.Background(), actor, connection.ID, resource, true); enableErr != nil {
+			t.Fatal(enableErr)
+		}
+	}
+
+	service.Discoverer = fakeDiscoverer{resources: []ResourceGrant{
+		{Service: "analytics", ResourceType: "property", ResourceID: "properties/123", DisplayName: "Kept property"},
+	}}
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	grants, err := service.ListResources(context.Background(), actor, connection.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, grant := range grants {
+		want := grant.ResourceID == "properties/123" || grant.ResourceID == "projects/data"
+		if grant.Enabled != want {
+			t.Fatalf("stale/empty-service policy failed for %s: %v", grant.ResourceID, grant.Enabled)
+		}
+	}
+}
+
+func TestSameResourceUnderOtherConnectionDoesNotGrantAccess(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	first, err := service.CreateConnection(context.Background(), actor, "first", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := service.CreateConnection(context.Background(), actor, "second", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, connection := range []Connection{first, second} {
+		if _, grantErr := store.UpsertResourceGrant(context.Background(), ResourceGrant{
+			OrganizationID: actor.OrganizationID, ConnectionID: connection.ID,
+			Service: "analytics", ResourceType: "property", ResourceID: "properties/shared",
+		}); grantErr != nil {
+			t.Fatal(grantErr)
+		}
+	}
+
+	if _, enableErr := service.SetResourceEnabled(context.Background(), actor, first.ID, "properties/shared", true); enableErr != nil {
+		t.Fatal(enableErr)
+	}
+
+	if err := (Policy{Store: store}).Allow(context.Background(), actor, first.ID, "analytics", "properties/shared"); err != nil {
+		t.Fatal("owning connection was denied", err)
+	}
+
+	if err := (Policy{Store: store}).Allow(context.Background(), actor, second.ID, "analytics", "properties/shared"); !errors.Is(err, ErrForbidden) {
+		t.Fatal("other connection reused shared resource grant", err)
 	}
 }
