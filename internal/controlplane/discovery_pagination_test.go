@@ -183,3 +183,36 @@ func TestRediscoveryPreservesEnabledAndDisabledChoices(t *testing.T) {
 		}
 	}
 }
+
+func TestExplicitSelectionChangeStillPersists(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(context.Background(), actor, "google", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, callbackErr := service.CompleteOAuth(context.Background(), start.State, "code"); callbackErr != nil {
+		t.Fatal(callbackErr)
+	}
+
+	if _, discoverErr := service.Discover(context.Background(), actor, connection.ID); discoverErr != nil {
+		t.Fatal(discoverErr)
+	}
+
+	enabled, err := service.SetResourceEnabled(context.Background(), actor, connection.ID, "properties/123", true)
+	if err != nil || !enabled.Enabled {
+		t.Fatal("explicit enable did not persist", err)
+	}
+
+	disabled, err := service.SetResourceEnabled(context.Background(), actor, connection.ID, "properties/123", false)
+	if err != nil || disabled.Enabled {
+		t.Fatal("explicit disable did not persist", err)
+	}
+}

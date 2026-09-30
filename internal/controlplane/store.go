@@ -288,8 +288,10 @@ func (s *MemoryStore) SetResourceEnabled(ctx context.Context, organizationID, co
 		return ResourceGrant{}, wrapControlPlaneError(err)
 	}
 	grant.Enabled = enabled
+	grant.UpdatedAt = time.Now().UTC()
+	s.grants[grant.ID] = cloneGrant(grant)
 
-	return s.UpsertResourceGrant(ctx, grant)
+	return cloneGrant(grant), nil
 }
 
 func (s *MemoryStore) AppendAudit(_ context.Context, event AuditEvent) error {
