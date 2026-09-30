@@ -43,6 +43,7 @@ type sessionPayload struct {
 	Role      string `json:"r"`
 	CSRF      string `json:"c"`
 	ExpiresAt int64  `json:"e"`
+	Admin     bool   `json:"a,omitempty"`
 }
 
 type SessionManager struct {
@@ -64,13 +65,21 @@ func NewSessionManager(key []byte, ttl time.Duration, secure bool) (*SessionMana
 }
 
 func (m *SessionManager) New(actor Actor) (string, sessionPayload, error) {
+	return m.newSession(actor, true)
+}
+
+func (m *SessionManager) NewProduct(actor Actor) (string, sessionPayload, error) {
+	return m.newSession(actor, false)
+}
+
+func (m *SessionManager) newSession(actor Actor, admin bool) (string, sessionPayload, error) {
 	csrf, err := randomToken(24)
 	if err != nil {
 		return "", sessionPayload{}, wrapControlPlaneError(err)
 	}
 	payload := sessionPayload{
 		UserID: actor.UserID, OrgID: actor.OrganizationID, Role: actor.Role,
-		CSRF: csrf, ExpiresAt: time.Now().Add(m.ttl).Unix(),
+		CSRF: csrf, ExpiresAt: time.Now().Add(m.ttl).Unix(), Admin: admin,
 	}
 
 	raw, err := json.Marshal(payload)
@@ -137,6 +146,7 @@ type WebConfig struct {
 	OwnerEmail      string
 	DisplayName     string
 	ExternalBaseURL string
+	BasePath        string
 }
 
 type WebHandler struct {
@@ -150,7 +160,10 @@ func NewWebHandler(config WebConfig) (*WebHandler, error) {
 		return nil, ErrWebDependencies
 	}
 
-	templates, err := template.New("root").Parse(webTemplates)
+	basePath := strings.TrimRight(strings.TrimSpace(config.BasePath), "/")
+	config.BasePath = basePath
+
+	templates, err := template.New("root").Funcs(template.FuncMap{"adminPath": func(path string) string { return basePath + path }}).Parse(webTemplates)
 	if err != nil {
 		return nil, wrapControlPlaneError(err)
 	}
@@ -164,22 +177,27 @@ func (h *WebHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
 }
 
+func (h *WebHandler) path(path string) string {
+	return strings.TrimRight(h.config.BasePath, "/") + path
+}
+
 func (h *WebHandler) routes() {
-	h.mux.HandleFunc("GET /{$}", h.handleConnections)
-	h.mux.HandleFunc("GET /login", h.handleLogin)
-	h.mux.HandleFunc("POST /login", h.handleLoginSubmit)
-	h.mux.HandleFunc("POST /logout", h.handleLogout)
-	h.mux.HandleFunc("GET /connections", h.handleConnections)
-	h.mux.HandleFunc("POST /connections", h.handleCreateConnection)
-	h.mux.HandleFunc("GET /connections/{id}", h.handleConnection)
-	h.mux.HandleFunc("POST /connections/{id}/rename", h.handleRename)
-	h.mux.HandleFunc("POST /connections/{id}/reconnect", h.handleReconnect)
-	h.mux.HandleFunc("POST /connections/{id}/disconnect", h.handleDisconnect)
-	h.mux.HandleFunc("POST /connections/{id}/discover", h.handleDiscover)
-	h.mux.HandleFunc("POST /connections/{id}/refresh", h.handleRefresh)
-	h.mux.HandleFunc("POST /connections/{id}/resources/{resourceID...}", h.handleResourceToggle)
-	h.mux.HandleFunc("GET /oauth/google/start", h.handleOAuthStart)
-	h.mux.HandleFunc("GET /oauth/google/callback", h.handleOAuthCallback)
+	base := strings.TrimRight(h.config.BasePath, "/")
+	h.mux.HandleFunc("GET "+base+"/{$}", h.handleConnections)
+	h.mux.HandleFunc("GET "+base+"/login", h.handleLogin)
+	h.mux.HandleFunc("POST "+base+"/login", h.handleLoginSubmit)
+	h.mux.HandleFunc("POST "+base+"/logout", h.handleLogout)
+	h.mux.HandleFunc("GET "+base+"/connections", h.handleConnections)
+	h.mux.HandleFunc("POST "+base+"/connections", h.handleCreateConnection)
+	h.mux.HandleFunc("GET "+base+"/connections/{id}", h.handleConnection)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/rename", h.handleRename)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/reconnect", h.handleReconnect)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/disconnect", h.handleDisconnect)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/discover", h.handleDiscover)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/refresh", h.handleRefresh)
+	h.mux.HandleFunc("POST "+base+"/connections/{id}/resources/{resourceID...}", h.handleResourceToggle)
+	h.mux.HandleFunc("GET "+base+"/oauth/google/start", h.handleOAuthStart)
+	h.mux.HandleFunc("GET "+base+"/oauth/google/callback", h.handleOAuthCallback)
 }
 
 func (h *WebHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -205,18 +223,18 @@ func (h *WebHandler) handleLoginSubmit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, h.config.Sessions.Cookie(token))
-	http.Redirect(w, r, "/connections", http.StatusSeeOther)
+	http.Redirect(w, r, h.path("/connections"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, h.config.Sessions.ClearCookie())
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
+	http.Redirect(w, r, h.path("/login"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) actor(w http.ResponseWriter, r *http.Request) (Actor, sessionPayload, bool) {
 	session, ok := h.config.Sessions.FromRequest(r)
-	if !ok {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	if !ok || !session.Admin {
+		http.Redirect(w, r, h.path("/login"), http.StatusSeeOther)
 		return Actor{}, sessionPayload{}, false
 	}
 
@@ -267,11 +285,11 @@ func (h *WebHandler) handleCreateConnection(w http.ResponseWriter, r *http.Reque
 
 	services := strings.Split(r.FormValue("services"), ",")
 	if _, err := h.config.Service.CreateConnection(r.Context(), actor, r.FormValue("name"), services); err != nil {
-		http.Redirect(w, r, "/connections?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections")+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, "/connections", http.StatusSeeOther)
+	http.Redirect(w, r, h.path("/connections"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) handleConnection(w http.ResponseWriter, r *http.Request) {
@@ -307,11 +325,11 @@ func (h *WebHandler) mutate(w http.ResponseWriter, r *http.Request, action func(
 
 	id := r.PathValue("id")
 	if err := action(r.Context(), actor); err != nil {
-		http.Redirect(w, r, "/connections/"+url.PathEscape(id)+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections/")+url.PathEscape(id)+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, "/connections/"+url.PathEscape(id), http.StatusSeeOther)
+	http.Redirect(w, r, h.path("/connections/")+url.PathEscape(id), http.StatusSeeOther)
 }
 
 func (h *WebHandler) handleRename(w http.ResponseWriter, r *http.Request) {
@@ -383,7 +401,7 @@ func (h *WebHandler) handleReconnect(w http.ResponseWriter, r *http.Request) {
 
 	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id, true)
 	if err != nil {
-		http.Redirect(w, r, "/connections/"+url.PathEscape(id)+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections/")+url.PathEscape(id)+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
 	}
 
@@ -399,7 +417,7 @@ func (h *WebHandler) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
 
 	start, err := h.config.Service.BeginOAuth(r.Context(), actor, id, false)
 	if err != nil {
-		http.Redirect(w, r, "/connections?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections")+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
 	}
 	_ = session
@@ -409,17 +427,17 @@ func (h *WebHandler) handleOAuthStart(w http.ResponseWriter, r *http.Request) {
 
 func (h *WebHandler) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if oauthError := r.URL.Query().Get("error"); oauthError != "" {
-		http.Redirect(w, r, "/connections?error="+url.QueryEscape(oauthError), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections")+"?error="+url.QueryEscape(oauthError), http.StatusSeeOther)
 		return
 	}
 
 	connection, err := h.config.Service.CompleteOAuth(r.Context(), r.URL.Query().Get("state"), r.URL.Query().Get("code"))
 	if err != nil {
-		http.Redirect(w, r, "/connections?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
+		http.Redirect(w, r, h.path("/connections")+"?error="+url.QueryEscape(safeOAuthError(err)), http.StatusSeeOther)
 		return
 	}
 
-	http.Redirect(w, r, "/connections/"+url.PathEscape(connection.ID)+"?message="+url.QueryEscape("Google connection is ready."), http.StatusSeeOther)
+	http.Redirect(w, r, h.path("/connections/")+url.PathEscape(connection.ID)+"?message="+url.QueryEscape("Google connection is ready."), http.StatusSeeOther)
 }
 
 func (h *WebHandler) render(w http.ResponseWriter, status int, name string, data any) {
@@ -462,7 +480,7 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 <div class="panel" style="max-width:520px;margin:60px auto">
 <h1>Sign in</h1>
 {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
-<form method="post" action="/login">
+<form method="post" action="{{adminPath "/login"}}">
 <label for="email">Owner or admin email</label>
 <input id="email" name="email" type="email" required autocomplete="email" value="{{.OwnerEmail}}">
 <label for="token">Admin access token</label>
@@ -476,11 +494,11 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 {{define "connections"}}
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connections · gog-marketing</title>{{template "style" .}}</head>
 <body><header><strong>gog-marketing control plane</strong><span>{{.DisplayName}}</span>
-<form class="inline" method="post" action="/logout"><button>Sign out</button></form></header><main>
+<form class="inline" method="post" action="{{adminPath "/logout"}}"><button>Sign out</button></form></header><main>
 <h1>Connections</h1>
 {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
 <div class="panel"><h2>Add connection</h2>
-<form method="post" action="/connections">
+<form method="post" action="{{adminPath "/connections"}}">
 <input type="hidden" name="csrf" value="{{.CSRF}}">
 <div class="grid"><div><label>Name</label><input name="name" required placeholder="gmail"></div>
 <div><label>Services</label><input name="services" value="analytics,tagmanager,googleads,searchconsole,bigquery"></div></div>
@@ -488,12 +506,12 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 </form></div>
 <table><thead><tr><th>Connection</th><th>Google account</th><th>Services</th><th>Status</th><th>Resources</th><th></th></tr></thead><tbody>
 {{range .Connections}}<tr>
-<td><a href="/connections/{{.ID}}"><strong>{{.Name}}</strong></a></td>
+<td><a href="{{adminPath "/connections"}}/{{.ID}}"><strong>{{.Name}}</strong></a></td>
 <td>{{if .GoogleEmail}}{{.GoogleEmail}}{{else}}<span class="muted">Not connected</span>{{end}}</td>
 <td>{{range .Services}}<span class="badge">{{.}}</span> {{end}}</td>
 <td><span class="badge">{{.Status}}</span></td>
 <td>{{if .LastValidatedAt}}validated {{.LastValidatedAt.Format "2006-01-02 15:04"}}{{else}}—{{end}}</td>
-<td><a class="button" href="/connections/{{.ID}}">Open</a></td>
+<td><a class="button" href="{{adminPath "/connections"}}/{{.ID}}">Open</a></td>
 </tr>{{else}}<tr><td colspan="6">No connections yet.</td></tr>{{end}}
 </tbody></table>
 </main></body></html>
@@ -501,8 +519,8 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 
 {{define "connection"}}
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{.Connection.Name}} · gog-marketing</title>{{template "style" .}}</head>
-<body><header><strong>gog-marketing control plane</strong><a href="/connections">All connections</a>
-<form class="inline" method="post" action="/logout"><button>Sign out</button></form></header><main>
+<body><header><strong>gog-marketing control plane</strong><a href="{{adminPath "/connections"}}">All connections</a>
+<form class="inline" method="post" action="{{adminPath "/logout"}}"><button>Sign out</button></form></header><main>
 <h1>{{.Connection.Name}}</h1>
 {{if .Error}}<div class="error">{{.Error}}</div>{{end}}
 {{if .Message}}<div class="message">{{.Message}}</div>{{end}}
@@ -513,25 +531,25 @@ label{font-size:13px;color:#4b5872;display:block;margin:8px 0 4px}
 {{if .Connection.LastValidatedAt}}<p class="muted">Last validated {{.Connection.LastValidatedAt.Format "2006-01-02 15:04 UTC"}}</p>{{end}}
 {{if .Connection.LastError}}<div class="error">{{.Connection.LastError}}</div>{{end}}
 <div class="stack">
-<form class="inline" method="get" action="/oauth/google/start"><input type="hidden" name="connection" value="{{.Connection.ID}}"><button class="primary">Connect Google</button></form>
-<form class="inline" method="post" action="/connections/{{.Connection.ID}}/reconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Reconnect</button></form>
-<form class="inline" method="post" action="/connections/{{.Connection.ID}}/refresh"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Validate</button></form>
+<form class="inline" method="get" action="{{adminPath "/oauth/google/start"}}"><input type="hidden" name="connection" value="{{.Connection.ID}}"><button class="primary">Connect Google</button></form>
+<form class="inline" method="post" action="{{adminPath "/connections"}}/{{.Connection.ID}}/reconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Reconnect</button></form>
+<form class="inline" method="post" action="{{adminPath "/connections"}}/{{.Connection.ID}}/refresh"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Validate</button></form>
 </div></div>
 <div class="panel"><h2>Services and scopes</h2>
 <p>{{range .Connection.Services}}<span class="badge">{{.}}</span> {{end}}</p>
 <details><summary>Granted OAuth scopes</summary><ul>{{range .Connection.GrantedScopes}}<li class="muted">{{.}}</li>{{else}}<li class="muted">None yet</li>{{end}}</ul></details>
-<form method="post" action="/connections/{{.Connection.ID}}/rename"><input type="hidden" name="csrf" value="{{.CSRF}}">
+<form method="post" action="{{adminPath "/connections"}}/{{.Connection.ID}}/rename"><input type="hidden" name="csrf" value="{{.CSRF}}">
 <label>Rename</label><input name="name" value="{{.Connection.Name}}" required><button type="submit">Save</button></form>
 </div></div>
 <div class="panel"><h2>Approved resources</h2>
-<form class="inline" method="post" action="/connections/{{.Connection.ID}}/discover"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Refresh and discover</button></form>
+<form class="inline" method="post" action="{{adminPath "/connections"}}/{{.Connection.ID}}/discover"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Refresh and discover</button></form>
 <table><thead><tr><th>Service</th><th>Type</th><th>Resource</th><th>Parent</th><th>Expose</th></tr></thead><tbody>
 {{range .Resources}}<tr><td>{{.Service}}</td><td>{{.ResourceType}}</td><td><strong>{{.DisplayName}}</strong><br><span class="muted">{{.ResourceID}}</span></td><td>{{.Parent}}</td>
-<td><form class="inline" method="post" action="/connections/{{$.Connection.ID}}/resources/{{urlquery .ResourceID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="enabled" value="{{if .Enabled}}false{{else}}true{{end}}"><button>{{if .Enabled}}Disable{{else}}Enable{{end}}</button></form></td></tr>
+<td><form class="inline" method="post" action="{{adminPath "/connections"}}/{{$.Connection.ID}}/resources/{{urlquery .ResourceID}}"><input type="hidden" name="csrf" value="{{$.CSRF}}"><input type="hidden" name="enabled" value="{{if .Enabled}}false{{else}}true{{end}}"><button>{{if .Enabled}}Disable{{else}}Enable{{end}}</button></form></td></tr>
 {{else}}<tr><td colspan="5">No discovered resources.</td></tr>{{end}}
 </tbody></table></div>
 <div class="panel"><h2>Disconnect</h2><p class="muted">Deletes the stored encrypted refresh token and revokes it when Google supports revocation.</p>
-<form class="inline" method="post" action="/connections/{{.Connection.ID}}/disconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Disconnect</button></form></div>
+<form class="inline" method="post" action="{{adminPath "/connections"}}/{{.Connection.ID}}/disconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>Disconnect</button></form></div>
 </main></body></html>
 {{end}}
 `

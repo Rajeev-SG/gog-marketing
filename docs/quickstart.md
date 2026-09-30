@@ -1,13 +1,26 @@
 ---
 title: Quickstart
-description: "Five minutes from a clean machine to a working gog setup with one Google account."
+description: "Marketer-first Google onboarding for gog-marketing, with an operator CLI quickstart below."
 ---
 
 # Quickstart
 
-Five minutes from a clean machine to authenticated Gmail, Calendar, and Drive
-queries. For a deeper look at OAuth clients, service accounts, and named
-profiles, read [Auth Clients](auth-clients.md) after this.
+A marketer can get started without Google Cloud Console or CLI commands:
+
+1. Sign in with **Continue with Google**.
+2. Choose **Connect Google**.
+3. Select the properties, accounts, containers, sites, and projects you want to expose.
+4. Save access and start using the connected data.
+
+The product shell uses the centrally managed Google connection and keeps token
+refresh, resource discovery, and service mapping behind the normal journey.
+If Google asks you to reconnect, use **Reconnect Google** and continue from
+there.
+
+## CLI quickstart for operators
+
+The existing local `gog` setup remains useful for operators and developer
+workflows. It is not part of the marketer onboarding flow.
 
 ## 1. Install
 
