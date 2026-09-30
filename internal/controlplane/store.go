@@ -218,6 +218,7 @@ func (s *MemoryStore) UpsertResourceGrant(_ context.Context, grant ResourceGrant
 	for id, existing := range s.grants {
 		if existing.ConnectionID == grant.ConnectionID && existing.ResourceID == grant.ResourceID {
 			grant.ID = id
+			grant.Enabled = existing.Enabled
 			grant.DiscoveredAt = existing.DiscoveredAt
 			grant.UpdatedAt = now
 			s.grants[id] = cloneGrant(grant)
@@ -287,8 +288,10 @@ func (s *MemoryStore) SetResourceEnabled(ctx context.Context, organizationID, co
 		return ResourceGrant{}, wrapControlPlaneError(err)
 	}
 	grant.Enabled = enabled
+	grant.UpdatedAt = time.Now().UTC()
+	s.grants[grant.ID] = cloneGrant(grant)
 
-	return s.UpsertResourceGrant(ctx, grant)
+	return cloneGrant(grant), nil
 }
 
 func (s *MemoryStore) AppendAudit(_ context.Context, event AuditEvent) error {

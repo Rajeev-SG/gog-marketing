@@ -339,10 +339,17 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 	}
 
 	out := make([]ResourceGrant, 0, len(resources))
+	discoveredServices := make(map[string]bool)
+
+	seen := make(map[string]bool, len(resources))
 	for _, resource := range resources {
+		// Discovery never grants access; only the explicit selection mutation does.
+		resource.Enabled = false
 		resource.OrganizationID = actor.OrganizationID
 		resource.ConnectionID = id
 		resource.DiscoveredAt = s.now()
+		discoveredServices[resource.Service] = true
+		seen[resource.Service+"\x00"+resource.ResourceID] = true
 
 		saved, saveErr := s.Store.UpsertResourceGrant(ctx, resource)
 		if saveErr != nil {
@@ -352,7 +359,28 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 		out = append(out, saved)
 	}
 
-	s.audit(ctx, actor, id, "resource.discovery", "ok", fmt.Sprintf("%d resources", len(out)))
+	// A successful non-empty inventory establishes that the service is reachable.
+	// Remove access only for resources missing from that inventory. Services with
+	// no returned inventory may be unavailable, so their existing selections stay.
+	existing, listErr := s.Store.ListResourceGrants(ctx, actor.OrganizationID, id)
+	if listErr != nil {
+		return nil, fmt.Errorf("reconcile resource grants: %w", listErr)
+	}
+	staleDisabled := 0
+
+	for _, grant := range existing {
+		if !grant.Enabled || !discoveredServices[grant.Service] || seen[grant.Service+"\x00"+grant.ResourceID] {
+			continue
+		}
+
+		if _, disableErr := s.Store.SetResourceEnabled(ctx, actor.OrganizationID, id, grant.ResourceID, false); disableErr != nil {
+			return nil, fmt.Errorf("disable stale resource grant: %w", disableErr)
+		}
+
+		staleDisabled++
+	}
+
+	s.audit(ctx, actor, id, "resource.discovery", "ok", fmt.Sprintf("%d resources; stale_disabled=%d", len(out), staleDisabled))
 
 	return out, nil
 }

@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,5 +117,104 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 
 	if _, listErr := reopened.ListConnections(ctx, actor.OrganizationID); listErr != nil {
 		t.Fatal(listErr)
+	}
+}
+
+func TestPostgresRediscoveryPreservesSelections(t *testing.T) {
+	databaseURL := os.Getenv("CONTROL_PLANE_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("isolated CONTROL_PLANE_TEST_DATABASE_URL not set")
+	}
+	ctx := context.Background()
+
+	store, err := OpenPostgresStore(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = store.Close() }()
+
+	_, org, err := store.BootstrapOwner(ctx, User{Email: "rediscovery@example.test", DisplayName: "Development regression"}, Organization{Name: "Rediscovery regression", Slug: "rediscovery-regression"}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	connection, err := store.CreateConnection(ctx, Connection{OrganizationID: org.ID, Name: fmt.Sprintf("google-%d", time.Now().UnixNano()), Services: []string{"analytics"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, initial := range []bool{false, true} {
+		resourceID := map[bool]string{false: "properties/disabled", true: "properties/enabled"}[initial]
+
+		grant := ResourceGrant{OrganizationID: org.ID, ConnectionID: connection.ID, Service: "analytics", ResourceType: "property", ResourceID: resourceID, DisplayName: "Old name", Enabled: initial}
+		if _, grantErr := store.UpsertResourceGrant(ctx, grant); grantErr != nil {
+			t.Fatal(grantErr)
+		}
+		grant.Enabled = !initial
+		grant.DisplayName = "New name"
+
+		saved, grantErr := store.UpsertResourceGrant(ctx, grant)
+		if grantErr != nil || saved.Enabled != initial || saved.DisplayName != "New name" {
+			t.Fatalf("rediscovery did not preserve choice/update metadata: %v", grantErr)
+		}
+	}
+}
+
+func TestPostgresSetResourceEnabledPersistsAcrossReopen(t *testing.T) {
+	databaseURL := os.Getenv("CONTROL_PLANE_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("isolated CONTROL_PLANE_TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	store, err := OpenPostgresStore(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	_, org, err := store.BootstrapOwner(ctx, User{
+		Email: "selection-" + suffix + "@example.test", DisplayName: "Development selection regression",
+	}, Organization{Name: "Selection regression", Slug: "selection-" + suffix}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	connection, err := store.CreateConnection(ctx, Connection{
+		OrganizationID: org.ID, Name: "google-" + suffix, Services: []string{"analytics"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resourceID := "properties/selection-" + suffix
+	if _, grantErr := store.UpsertResourceGrant(ctx, ResourceGrant{
+		OrganizationID: org.ID, ConnectionID: connection.ID,
+		Service: "analytics", ResourceType: "property", ResourceID: resourceID,
+		DisplayName: "Development selection", Enabled: false,
+	}); grantErr != nil {
+		t.Fatal(grantErr)
+	}
+
+	if _, toggleErr := store.SetResourceEnabled(ctx, org.ID, connection.ID, resourceID, true); toggleErr != nil {
+		t.Fatal(toggleErr)
+	}
+
+	if closeErr := store.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	reopened, reopenErr := OpenPostgresStore(ctx, databaseURL)
+	if reopenErr != nil {
+		t.Fatal(reopenErr)
+	}
+	defer func() { _ = reopened.Close() }()
+
+	saved, getErr := reopened.GetResourceGrant(ctx, org.ID, connection.ID, resourceID)
+	if getErr != nil || !saved.Enabled {
+		t.Fatalf("Postgres selection did not survive reopen: %+v, %v", saved, getErr)
 	}
 }

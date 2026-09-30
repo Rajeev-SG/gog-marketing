@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
+	"google.golang.org/api/tagmanager/v2"
+
 	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/googleads"
 	"github.com/openclaw/gogcli/internal/googleapi"
@@ -74,32 +77,39 @@ func (d EngineDiscoverer) analytics(ctx context.Context, connection Connection, 
 		return nil, wrapControlPlaneError(err)
 	}
 
-	response, err := service.AccountSummaries.List().PageSize(200).Context(ctx).Do()
-	if err != nil {
-		return nil, fmt.Errorf("discover GA4 resources: %w", err)
-	}
+	return discoverAnalyticsPages(ctx, service, connection, token)
+}
+
+func discoverAnalyticsPages(ctx context.Context, service *analyticsadmin.Service, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
 	out := make([]ResourceGrant, 0)
 
-	for _, summary := range response.AccountSummaries {
-		if summary == nil {
-			continue
-		}
-
-		out = append(out, grant(connection, "analytics", "account", summary.Account, summary.DisplayName, "", token))
-		for _, property := range summary.PropertySummaries {
-			if property == nil {
+	err := service.AccountSummaries.List().PageSize(200).Pages(ctx, func(response *analyticsadmin.GoogleAnalyticsAdminV1betaListAccountSummariesResponse) error {
+		for _, summary := range response.AccountSummaries {
+			if summary == nil {
 				continue
 			}
 
-			parent := strings.TrimSpace(property.Parent)
-			if parent == "" {
-				parent = summary.Account
+			out = append(out, grant(connection, "analytics", "account", summary.Account, summary.DisplayName, "", token))
+			for _, property := range summary.PropertySummaries {
+				if property == nil {
+					continue
+				}
+
+				parent := strings.TrimSpace(property.Parent)
+				if parent == "" {
+					parent = summary.Account
+				}
+				out = append(out, grant(connection, "analytics", "property", property.Property, property.DisplayName, parent, token))
 			}
-			out = append(out, grant(connection, "analytics", "property", property.Property, property.DisplayName, parent, token))
 		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("discover GA4 resources: %w", err)
 	}
 
-	return out, nil
+	return uniqueDiscoveryResources(out), nil
 }
 
 func (d EngineDiscoverer) tagManager(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
@@ -108,32 +118,60 @@ func (d EngineDiscoverer) tagManager(ctx context.Context, connection Connection,
 		return nil, wrapControlPlaneError(err)
 	}
 
-	response, err := service.Accounts.List().Context(ctx).Do()
+	return discoverTagManagerPages(ctx, service, connection, token)
+}
+
+func discoverTagManagerPages(ctx context.Context, service *tagmanager.Service, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
+	out := make([]ResourceGrant, 0)
+	seenAccounts := make(map[string]bool)
+
+	err := service.Accounts.List().Pages(ctx, func(response *tagmanager.ListAccountsResponse) error {
+		for _, account := range response.Account {
+			if account == nil || seenAccounts[account.Path] {
+				continue
+			}
+			seenAccounts[account.Path] = true
+			out = append(out, grant(connection, "tagmanager", "account", account.Path, account.Name, "", token))
+
+			containersErr := service.Accounts.Containers.List(account.Path).Pages(ctx, func(containers *tagmanager.ListContainersResponse) error {
+				for _, container := range containers.Container {
+					if container == nil {
+						continue
+					}
+					out = append(out, grant(connection, "tagmanager", "container", container.Path, container.Name, account.Path, token))
+				}
+
+				return nil
+			})
+			if containersErr != nil {
+				return fmt.Errorf("discover GTM containers: %w", containersErr)
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("discover GTM resources: %w", err)
 	}
-	out := make([]ResourceGrant, 0)
 
-	for _, account := range response.Account {
-		if account == nil {
+	return uniqueDiscoveryResources(out), nil
+}
+
+func uniqueDiscoveryResources(resources []ResourceGrant) []ResourceGrant {
+	out := make([]ResourceGrant, 0, len(resources))
+
+	seen := make(map[string]bool, len(resources))
+	for _, resource := range resources {
+		key := resource.Service + "\x00" + resource.ResourceID
+		if seen[key] {
 			continue
 		}
-		out = append(out, grant(connection, "tagmanager", "account", account.Path, account.Name, "", token))
+		seen[key] = true
 
-		containers, err := service.Accounts.Containers.List(account.Path).Context(ctx).Do()
-		if err != nil {
-			return nil, fmt.Errorf("discover GTM containers: %w", err)
-		}
-
-		for _, container := range containers.Container {
-			if container == nil {
-				continue
-			}
-			out = append(out, grant(connection, "tagmanager", "container", container.Path, container.Name, account.Path, token))
-		}
+		out = append(out, resource)
 	}
 
-	return out, nil
+	return out
 }
 
 func (d EngineDiscoverer) discoverGoogleAds(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
