@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -332,14 +333,48 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 		return nil, ErrDiscovererNotConfigured
 	}
 
-	resources, err := s.Discoverer.Discover(ctx, connection, token)
-	if err != nil {
-		s.audit(ctx, actor, id, "resource.discovery", "error", safeOAuthError(err))
-		return nil, fmt.Errorf("control-plane operation: %w", err)
+	var resources []ResourceGrant
+	statuses := make(map[string]DiscoveryServiceStatus)
+
+	if reporter, ok := s.Discoverer.(ReportingDiscoverer); ok {
+		report, reportErr := reporter.DiscoverReport(ctx, connection, token)
+		if reportErr != nil {
+			s.audit(ctx, actor, id, "resource.discovery", "error", safeOAuthError(reportErr))
+			return nil, fmt.Errorf("control-plane operation: %w", reportErr)
+		}
+		resources = report.Resources
+		statuses = report.Statuses
+	} else {
+		var discoverErr error
+
+		resources, discoverErr = s.Discoverer.Discover(ctx, connection, token)
+		if discoverErr != nil {
+			s.audit(ctx, actor, id, "resource.discovery", "error", safeOAuthError(discoverErr))
+			return nil, fmt.Errorf("control-plane operation: %w", discoverErr)
+		}
+
+		counts := make(map[string]int)
+		for _, resource := range resources {
+			counts[resource.Service]++
+		}
+
+		for _, service := range connection.Services {
+			name := strings.ToLower(strings.TrimSpace(service))
+			if name == "" {
+				continue
+			}
+			statuses[name] = DiscoveryServiceStatus{State: DiscoveryServiceOK, ResourceCount: counts[name], CheckedAt: s.now()}
+		}
 	}
 
 	out := make([]ResourceGrant, 0, len(resources))
 	discoveredServices := make(map[string]bool)
+
+	for service, status := range statuses {
+		if status.State == DiscoveryServiceOK && status.ResourceCount > 0 {
+			discoveredServices[service] = true
+		}
+	}
 
 	seen := make(map[string]bool, len(resources))
 	for _, resource := range resources {
@@ -348,7 +383,6 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 		resource.OrganizationID = actor.OrganizationID
 		resource.ConnectionID = id
 		resource.DiscoveredAt = s.now()
-		discoveredServices[resource.Service] = true
 		seen[resource.Service+"\x00"+resource.ResourceID] = true
 
 		saved, saveErr := s.Store.UpsertResourceGrant(ctx, resource)
@@ -380,9 +414,42 @@ func (s *Service) Discover(ctx context.Context, actor Actor, id string) ([]Resou
 		staleDisabled++
 	}
 
-	s.audit(ctx, actor, id, "resource.discovery", "ok", fmt.Sprintf("%d resources; stale_disabled=%d", len(out), staleDisabled))
+	if len(statuses) > 0 {
+		connection.DiscoveryStatus = statuses
+		if _, updateErr := s.Store.UpdateConnection(ctx, connection); updateErr != nil {
+			return nil, fmt.Errorf("save discovery status: %w", updateErr)
+		}
+	}
+
+	result := "ok"
+
+	for _, status := range statuses {
+		if status.State != DiscoveryServiceOK {
+			result = "partial"
+			break
+		}
+	}
+
+	s.audit(ctx, actor, id, "resource.discovery", result, fmt.Sprintf("%d resources; stale_disabled=%d; %s", len(out), staleDisabled, discoveryStatusSummary(statuses)))
 
 	return out, nil
+}
+
+func discoveryStatusSummary(statuses map[string]DiscoveryServiceStatus) string {
+	keys := make([]string, 0, len(statuses))
+	for key := range statuses {
+		keys = append(keys, key)
+	}
+
+	sort.Strings(keys)
+
+	parts := make([]string, 0, len(keys))
+	for _, key := range keys {
+		status := statuses[key]
+		parts = append(parts, fmt.Sprintf("%s:%s=%d", key, status.State, status.ResourceCount))
+	}
+
+	return strings.Join(parts, " ")
 }
 
 func (s *Service) ListResources(ctx context.Context, actor Actor, id string) ([]ResourceGrant, error) {

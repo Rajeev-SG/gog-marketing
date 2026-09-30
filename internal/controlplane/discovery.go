@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
 	"google.golang.org/api/tagmanager/v2"
@@ -17,6 +18,15 @@ type Discoverer interface {
 	Discover(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error)
 }
 
+type DiscoveryReport struct {
+	Resources []ResourceGrant
+	Statuses  map[string]DiscoveryServiceStatus
+}
+
+type ReportingDiscoverer interface {
+	DiscoverReport(ctx context.Context, connection Connection, token OAuthToken) (DiscoveryReport, error)
+}
+
 type EngineDiscoverer struct {
 	GoogleAdsDeveloperToken string
 	GoogleAdsLoginCustomer  string
@@ -25,50 +35,64 @@ type EngineDiscoverer struct {
 }
 
 func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
-	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
-	out := make([]ResourceGrant, 0)
+	report, err := d.DiscoverReport(ctx, connection, token)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, service := range connection.Services {
-		switch strings.ToLower(strings.TrimSpace(service)) {
-		case "analytics":
-			items, err := d.analytics(ctx, connection, token)
-			if err != nil {
-				return nil, wrapControlPlaneError(err)
-			}
-
-			out = append(out, items...)
-		case "tagmanager":
-			items, err := d.tagManager(ctx, connection, token)
-			if err != nil {
-				return nil, wrapControlPlaneError(err)
-			}
-
-			out = append(out, items...)
-		case "googleads":
-			items, err := d.discoverGoogleAds(ctx, connection, token)
-			if err != nil {
-				return nil, wrapControlPlaneError(err)
-			}
-
-			out = append(out, items...)
-		case "searchconsole":
-			items, err := d.searchConsole(ctx, connection, token)
-			if err != nil {
-				return nil, wrapControlPlaneError(err)
-			}
-
-			out = append(out, items...)
-		case "bigquery":
-			items, err := d.bigQuery(ctx, connection, token)
-			if err != nil {
-				return nil, wrapControlPlaneError(err)
-			}
-
-			out = append(out, items...)
+	for _, status := range report.Statuses {
+		if status.State == DiscoveryServiceError {
+			return nil, status.err
 		}
 	}
 
-	return out, nil
+	return report.Resources, nil
+}
+
+func (d EngineDiscoverer) DiscoverReport(ctx context.Context, connection Connection, token OAuthToken) (DiscoveryReport, error) {
+	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+	report := DiscoveryReport{Resources: make([]ResourceGrant, 0), Statuses: make(map[string]DiscoveryServiceStatus)}
+	seen := make(map[string]bool)
+
+	for _, rawService := range connection.Services {
+		serviceName := strings.ToLower(strings.TrimSpace(rawService))
+		if serviceName == "" || seen[serviceName] {
+			continue
+		}
+		seen[serviceName] = true
+
+		if serviceName == "googleads" && strings.TrimSpace(d.GoogleAdsDeveloperToken) == "" {
+			report.Statuses[serviceName] = DiscoveryServiceStatus{State: DiscoveryServiceUnavailable, Detail: "google_ads_unconfigured", CheckedAt: time.Now().UTC()}
+			continue
+		}
+
+		items, err := d.discoverService(ctx, serviceName, connection, token)
+		if err != nil {
+			report.Statuses[serviceName] = DiscoveryServiceStatus{State: DiscoveryServiceError, Detail: string(AuthFailureCategoryFor(err)), CheckedAt: time.Now().UTC(), err: err}
+			continue
+		}
+		report.Statuses[serviceName] = DiscoveryServiceStatus{State: DiscoveryServiceOK, ResourceCount: len(items), CheckedAt: time.Now().UTC()}
+		report.Resources = append(report.Resources, items...)
+	}
+
+	return report, nil
+}
+
+func (d EngineDiscoverer) discoverService(ctx context.Context, serviceName string, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
+	switch serviceName {
+	case "analytics":
+		return d.analytics(ctx, connection, token)
+	case "tagmanager":
+		return d.tagManager(ctx, connection, token)
+	case "googleads":
+		return d.discoverGoogleAds(ctx, connection, token)
+	case "searchconsole":
+		return d.searchConsole(ctx, connection, token)
+	case "bigquery":
+		return d.bigQuery(ctx, connection, token)
+	default:
+		return nil, nil
+	}
 }
 
 func (d EngineDiscoverer) analytics(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {

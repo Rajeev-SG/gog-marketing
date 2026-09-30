@@ -218,3 +218,52 @@ func TestPostgresSetResourceEnabledPersistsAcrossReopen(t *testing.T) {
 		t.Fatalf("Postgres selection did not survive reopen: %+v, %v", saved, getErr)
 	}
 }
+
+func TestPostgresDiscoveryStatusPersistsAcrossReopen(t *testing.T) {
+	databaseURL := os.Getenv("CONTROL_PLANE_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("isolated CONTROL_PLANE_TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	store, err := OpenPostgresStore(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	_, org, err := store.BootstrapOwner(ctx, User{
+		Email: "discovery-status-" + suffix + "@example.test", DisplayName: "Development status regression",
+	}, Organization{Name: "Discovery status regression", Slug: "discovery-status-" + suffix}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	connection, err := store.CreateConnection(ctx, Connection{
+		OrganizationID: org.ID, Name: "google-" + suffix, Services: []string{"analytics", "tagmanager"},
+		DiscoveryStatus: map[string]DiscoveryServiceStatus{
+			"analytics":  {State: DiscoveryServiceOK, ResourceCount: 2, CheckedAt: time.Now().UTC()},
+			"tagmanager": {State: DiscoveryServiceUnavailable, Detail: "google_ads_unconfigured", CheckedAt: time.Now().UTC()},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if closeErr := store.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+
+	reopened, reopenErr := OpenPostgresStore(ctx, databaseURL)
+	if reopenErr != nil {
+		t.Fatal(reopenErr)
+	}
+	defer func() { _ = reopened.Close() }()
+
+	saved, getErr := reopened.GetConnection(ctx, org.ID, connection.ID)
+	if getErr != nil || saved.DiscoveryStatus["analytics"].ResourceCount != 2 || saved.DiscoveryStatus["tagmanager"].State != DiscoveryServiceUnavailable {
+		t.Fatalf("discovery statuses did not survive reopen: %+v, %v", saved.DiscoveryStatus, getErr)
+	}
+}
