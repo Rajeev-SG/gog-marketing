@@ -653,3 +653,16 @@ func TestConnectCallbackRequiresProductSessionAndBoundState(t *testing.T) {
 		t.Fatalf("signin-prefixed state leaked into connect callback: %d %q", signinPrefixed.StatusCode, signinPrefixed.Header.Get("Location"))
 	}
 }
+
+func TestOAuthStateCookiesAllowTopLevelCallback(t *testing.T) {
+	service, store := productTestService(t)
+	server, client := newProductTestHandler(t, service, ownerActor(t, store))
+	startResp := productGet(t, client, server.URL, "/auth/google/start", nil)
+	startResp.Body.Close()
+
+	for _, cookie := range startResp.Cookies() {
+		if cookie.Name == productSigninStateCookie && cookie.SameSite != http.SameSiteLaxMode {
+			t.Fatalf("sign-in state cookie SameSite = %v, want Lax", cookie.SameSite)
+		}
+	}
+}

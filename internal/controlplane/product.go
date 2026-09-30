@@ -692,7 +692,7 @@ func (h *ProductHandler) setProductOAuthCookie(w http.ResponseWriter, name strin
 
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure is configurable for documented local HTTP smoke runs.
 		Name: name, Value: h.config.Sessions.EncodeSigned(string(raw)), Path: "/",
-		HttpOnly: true, Secure: h.config.Sessions.secure, SameSite: http.SameSiteStrictMode, MaxAge: 600,
+		HttpOnly: true, Secure: h.config.Sessions.secure, SameSite: http.SameSiteLaxMode, MaxAge: 600,
 	})
 }
 
@@ -714,7 +714,7 @@ func (h *ProductHandler) takeProductOAuthCookie(r *http.Request, w http.Response
 
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure is configurable for documented local HTTP smoke runs.
 		Name: name, Value: "", Path: "/", HttpOnly: true, Secure: h.config.Sessions.secure,
-		SameSite: http.SameSiteStrictMode, MaxAge: -1,
+		SameSite: http.SameSiteLaxMode, MaxAge: -1,
 	})
 
 	return state, true
