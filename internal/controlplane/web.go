@@ -117,10 +117,20 @@ func (m *SessionManager) FromRequest(r *http.Request) (sessionPayload, bool) {
 }
 
 func (m *SessionManager) Cookie(value string) *http.Cookie {
-	//nolint:gosec // Secure is configurable so the documented local HTTP smoke run works.
+	return m.sessionCookie(value, http.SameSiteStrictMode)
+}
+
+// ProductCookie permits the top-level Google callback redirect chain. Product
+// mutations still require CSRF tokens; OAuth additionally verifies state and PKCE.
+func (m *SessionManager) ProductCookie(value string) *http.Cookie {
+	return m.sessionCookie(value, http.SameSiteLaxMode)
+}
+
+func (m *SessionManager) sessionCookie(value string, sameSite http.SameSite) *http.Cookie {
+	//nolint:gosec // Secure is configurable for loopback runs; callers explicitly select the required SameSite policy.
 	return &http.Cookie{
 		Name: "gog_control_plane_session", Value: value, Path: "/", HttpOnly: true,
-		Secure: m.secure, SameSite: http.SameSiteStrictMode, MaxAge: int(m.ttl.Seconds()),
+		Secure: m.secure, SameSite: sameSite, MaxAge: int(m.ttl.Seconds()),
 	}
 }
 

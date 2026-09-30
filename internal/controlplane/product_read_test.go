@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestProductReadDeniesBeforeCredentialsOrGoogle(t *testing.T) {
@@ -64,5 +65,18 @@ func TestProductReadAPIRequiresProductSession(t *testing.T) {
 	body = readProductBody(t, resp)
 	if resp.StatusCode != http.StatusForbidden || body != "{\"error\":\"access_denied\"}\n" {
 		t.Fatalf("unknown connection accepted: %d %s", resp.StatusCode, body)
+	}
+}
+
+func TestProductSessionCookieAllowsGoogleRedirectWithoutChangingAdmin(t *testing.T) {
+	sessions, err := NewSessionManager([]byte("0123456789abcdef0123456789abcdef"), time.Hour, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	product := sessions.ProductCookie("signed-product-session")
+
+	admin := sessions.Cookie("signed-admin-session")
+	if product.SameSite != http.SameSiteLaxMode || admin.SameSite != http.SameSiteStrictMode || !product.Secure || !product.HttpOnly {
+		t.Fatal("cookie isolation or redirect safety regressed")
 	}
 }

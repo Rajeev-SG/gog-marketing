@@ -304,7 +304,7 @@ func (h *ProductHandler) authCallback(w http.ResponseWriter, r *http.Request, st
 		return
 	}
 
-	http.SetCookie(w, h.config.Sessions.Cookie(token))
+	http.SetCookie(w, h.config.Sessions.ProductCookie(token))
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
