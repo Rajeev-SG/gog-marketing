@@ -3,6 +3,7 @@
 ## 0.41.1 - Unreleased
 
 - Product: add a session-authenticated, grant-controlled Google Analytics property read with central token refresh and credential-free allow/deny/error audit records. Other product tools remain unavailable. A local-only Portless callback bridge preserves the existing cookie/state/PKCE checks without a remote deployment. (#36)
+- Product: preserve hidden asset permissions on filtered saves, reject out-of-selection resource IDs, and label service-wide selection actions explicitly. (#36)
 
 - Acceptance: derive the central OAuth client ID and secret from the downloaded client JSON before bootstrap validation, fixing `bootstrap arguments are incomplete` for the documented one-command flow. (#14)
 - Docs: make the acceptance Make targets location-independent and remove the stale manual reconnect step from the bootstrap instructions. (#14)

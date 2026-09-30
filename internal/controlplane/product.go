@@ -516,6 +516,7 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Service-wide actions deliberately ignore search; the buttons disclose this scope.
 	if service := r.FormValue("select_all"); service != "" {
 		h.setServiceEnabled(w, r, actor, id, grants, service, true)
 		return
@@ -526,12 +527,26 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Derive the editable set from scoped grants using the same filter as the page.
+	// Hidden assets retain their current access, including an empty result set.
 	selected := make(map[string]bool, len(grants))
 	for _, grant := range grants {
-		selected[grant.ResourceID] = false
+		selected[grant.ResourceID] = grant.Enabled
+	}
+	editable := make(map[string]bool)
+
+	for _, group := range productAssetGroups(productAssets(grants), r.FormValue("q")) {
+		for _, asset := range group.Assets {
+			editable[asset.ResourceID] = true
+			selected[asset.ResourceID] = false
+		}
 	}
 
 	for _, value := range r.Form["resource"] {
+		if !editable[value] {
+			h.redirectAssetsError(w, r, id, "The selection no longer matches the displayed assets. Reload and try again.")
+			return
+		}
 		selected[value] = true
 	}
 
