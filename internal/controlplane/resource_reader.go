@@ -61,6 +61,10 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return ErrResourceReaderMissing
 	case "tagmanager":
+		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+
 		service, err := googleapi.NewTagManager(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create tag manager reader: %w", err)
@@ -80,6 +84,10 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return nil
 	case "searchconsole":
+		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+
 		service, err := googleapi.NewSearchConsole(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create search console reader: %w", err)
