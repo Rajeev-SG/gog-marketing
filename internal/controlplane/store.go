@@ -15,6 +15,8 @@ type Store interface {
 	CreateConnection(ctx context.Context, connection Connection) (Connection, error)
 	GetConnection(ctx context.Context, organizationID, id string) (Connection, error)
 	ListConnections(ctx context.Context, organizationID string) ([]Connection, error)
+	// DiscoveryStatus is owned exclusively by UpdateDiscoveryStatus; ordinary
+	// connection updates must preserve the persisted status map.
 	UpdateConnection(ctx context.Context, connection Connection) (Connection, error)
 	UpdateDiscoveryStatus(ctx context.Context, organizationID, connectionID string, status map[string]DiscoveryServiceStatus) error
 	DeleteConnection(ctx context.Context, organizationID, id string) error

@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, t
 
 		status, ok := report.Statuses[serviceName]
 		if ok && status.State == DiscoveryServiceError {
-			return nil, status.err
+			return nil, wrapControlPlaneError(status.err)
 		}
 	}
 
@@ -70,6 +71,13 @@ func (d EngineDiscoverer) DiscoverReport(ctx context.Context, connection Connect
 		}
 
 		items, err := d.discoverService(ctx, serviceName, connection, token)
+		if errors.Is(err, ErrUnsupportedDiscoveryService) {
+			// Existing connections may contain retired or mistyped service names.
+			// Preserve valid-service discovery while making the stale entry explicit.
+			report.Statuses[serviceName] = DiscoveryServiceStatus{State: DiscoveryServiceUnsupported, Detail: "unsupported_service", CheckedAt: time.Now().UTC()}
+			continue
+		}
+
 		if err != nil {
 			report.Statuses[serviceName] = DiscoveryServiceStatus{State: DiscoveryServiceError, Detail: string(AuthFailureCategoryFor(err)), CheckedAt: time.Now().UTC(), err: err}
 			continue

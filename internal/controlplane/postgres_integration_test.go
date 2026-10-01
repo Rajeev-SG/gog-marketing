@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -270,5 +271,74 @@ func TestPostgresDiscoveryStatusPersistsAcrossReopen(t *testing.T) {
 	saved, getErr := reopened.GetConnection(ctx, org.ID, connection.ID)
 	if getErr != nil || saved.DiscoveryStatus["analytics"].ResourceCount != 2 || saved.DiscoveryStatus["tagmanager"].State != DiscoveryServiceUnavailable {
 		t.Fatalf("discovery statuses did not survive reopen: %+v, %v", saved.DiscoveryStatus, getErr)
+	}
+}
+
+func TestPostgresDiscoveryStatusConcurrentConnectionUpdates(t *testing.T) {
+	databaseURL := os.Getenv("CONTROL_PLANE_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("isolated CONTROL_PLANE_TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	store, err := OpenPostgresStore(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = store.Close() }()
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	_, org, err := store.BootstrapOwner(ctx, User{
+		Email: "status-concurrency-" + suffix + "@example.test", DisplayName: "Development concurrency regression",
+	}, Organization{Name: "Status concurrency regression", Slug: "status-concurrency-" + suffix}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	connection, err := store.CreateConnection(ctx, Connection{
+		OrganizationID: org.ID, Name: "google-" + suffix, Services: []string{"analytics"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statuses := map[string]DiscoveryServiceStatus{
+		"analytics": {State: DiscoveryServiceError, Detail: string(AuthFailureUnknown), CheckedAt: time.Now().UTC()},
+	}
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+
+		for i := 0; i < 25; i++ {
+			if statusErr := store.UpdateDiscoveryStatus(ctx, org.ID, connection.ID, statuses); statusErr != nil {
+				t.Error(statusErr)
+				return
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+
+		for i := 0; i < 25; i++ {
+			update := connection
+
+			update.Name = fmt.Sprintf("google-%d-%s", i, suffix)
+			if _, updateErr := store.UpdateConnection(ctx, update); updateErr != nil {
+				t.Error(updateErr)
+				return
+			}
+		}
+	}()
+
+	wg.Wait()
+
+	saved, err := store.GetConnection(ctx, org.ID, connection.ID)
+	if err != nil || saved.DiscoveryStatus["analytics"].State != DiscoveryServiceError {
+		t.Fatalf("Postgres connection update clobbered discovery status: %+v, %v", saved.DiscoveryStatus, err)
 	}
 }

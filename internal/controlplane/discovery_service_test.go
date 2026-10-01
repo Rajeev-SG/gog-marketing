@@ -137,8 +137,9 @@ func TestEngineDiscoveryReportsServiceFailuresWithoutAbortingOtherServices(t *te
 		t.Fatalf("unexpected report: %+v", report)
 	}
 
-	if _, discoverErr := discoverer.Discover(context.Background(), connection, OAuthToken{}); discoverErr == nil {
-		t.Fatal("legacy Discover should retain fatal single-service behavior")
+	_, discoverErr := discoverer.Discover(context.Background(), connection, OAuthToken{})
+	if discoverErr == nil || !errors.Is(discoverErr, errTestGoogleAdsDiscovery) || !strings.HasPrefix(discoverErr.Error(), "control plane: ") {
+		t.Fatal("legacy Discover did not retain the wrapped error contract", discoverErr)
 	}
 
 	discoverer.GoogleAdsDeveloperToken = ""
@@ -211,8 +212,12 @@ func TestDiscoveryStatusSurfaceOmitsRemovedAndRejectsUnknownServices(t *testing.
 		t.Fatal(err)
 	}
 
-	if report.Statuses["typo-service"].State != DiscoveryServiceError {
-		t.Fatalf("unknown service was not marked error: %+v", report.Statuses)
+	if report.Statuses["typo-service"].State != DiscoveryServiceUnsupported {
+		t.Fatalf("unknown service was not marked unsupported: %+v", report.Statuses)
+	}
+
+	if len(report.Resources) != 0 {
+		t.Fatal("unknown service unexpectedly returned resources")
 	}
 
 	surface := productDiscoveryStatuses(Connection{

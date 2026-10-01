@@ -58,6 +58,7 @@ type DiscoveryServiceStatus struct {
 const (
 	DiscoveryServiceOK          = "ok"
 	DiscoveryServiceUnavailable = "unavailable"
+	DiscoveryServiceUnsupported = "unsupported"
 	DiscoveryServiceError       = "error"
 )
 

@@ -897,6 +897,8 @@ func productDiscoveryStatuses(connection Connection) []productServiceStatus {
 				detail = "Unavailable; existing selections remain."
 			case DiscoveryServiceError:
 				detail = "Needs attention; existing selections remain."
+			case DiscoveryServiceUnsupported:
+				detail = "Unsupported service; other services remain available."
 			}
 		}
 
