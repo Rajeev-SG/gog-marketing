@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/googleads"
 	"github.com/openclaw/gogcli/internal/googleapi"
 )
@@ -29,6 +30,11 @@ type EngineResourceReader struct {
 func (r EngineResourceReader) Read(ctx context.Context, connection Connection, token OAuthToken, grant ResourceGrant) error {
 	switch grant.Service {
 	case "analytics":
+		// Scope the stored token to guarded analytics clients only.
+		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+
 		service, err := googleapi.NewAnalyticsAdmin(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create analytics reader: %w", err)
