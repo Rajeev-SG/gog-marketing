@@ -1,45 +1,72 @@
-# gog-marketing: connect an agent to Google
+# gog-marketing
 
-Use this repository when you want an agent to work with Gmail, Calendar, Drive,
-Docs, Sheets, and other Google services without turning Google Cloud into your
-day job.
+**Controlled Google marketing access for AI agents and tools.**
 
-The project contains:
+![gog-marketing home and access overview](docs/ui/renders/02-home-access-overview.png)
 
-- `gog`, the command-line client your agent calls;
-- a control plane that stores connection state and encrypted refresh tokens;
-- a one-time bootstrap and an unattended acceptance workflow.
+`gog-marketing` gives teams one clear place to connect approved Google
+accounts, choose the marketing assets AI tools may use, see whether each
+connection is healthy, and review access-configuration changes.
 
-You only deal with Google Cloud once. After setup, the agent talks to `gog`;
-Google handles login and consent the first time, and `gog` handles API routing,
-scope mapping, and token refresh.
+It is an access and permissions layer, not an analytics or reporting
+dashboard. It does not display marketing performance data or recommend actions
+based on customer data.
 
-## Start here: connect one Google account
+## What marketers can see
 
-### What you need
+- Which Google accounts are connected.
+- Which Google services are available.
+- Which properties, accounts, containers, sites, and projects are enabled.
+- Which connections are healthy or need attention.
+- What access-configuration changed, when, and who changed it.
 
-- macOS or Linux.
-- Homebrew.
-- A Google Account or Google Workspace account.
-- Either a `client_secret_*.json` file or permission to create one.
-- Docker, only if you want to run this repository's acceptance checks.
+Supported services are **Google Analytics, Google Ads, Google Tag Manager,
+Search Console, and BigQuery**.
 
-Do not use `go run` for authenticated commands. Use the installed `gog`
-binary.
+## How it works
 
-### 1. Install gog
+1. An administrator connects an approved Google account once.
+2. The team chooses the specific marketing assets AI tools may access.
+3. Agents use only that approved access, with read-only mode available by
+   default.
+4. The team can review connection health and access changes at any time.
+
+Google asks for the first login and approval. After that, `gog-marketing`
+manages token refresh and routes requests to the approved Google services. No
+marketing KPIs, charts, traffic, revenue, ad spend, conversions, impressions,
+campaigns, or reports are exposed by this product.
+
+## The revised product UI
+
+The 12 approved interface references are stored in
+[`docs/ui/renders`](docs/ui/renders) and tracked for implementation in
+[issue #50](https://github.com/Rajeev-SG/gog-marketing/issues/50). They cover the
+application shell, Home, service and account cards, asset selection, loading,
+attention, partial-failure, onboarding, feedback, and mobile states.
+
+## Getting started
+
+Most marketers only need the product interface. A technical administrator
+completes the one-time Google setup below, then the team can connect accounts
+and choose assets without handling OAuth files or tokens.
+
+### For your administrator
+
+You need macOS or Linux, Homebrew, a Google Account or Google Workspace
+account, and either a `client_secret_*.json` file or permission to create one.
+Docker is only needed for the repository acceptance checks.
+
+<details>
+<summary>Open the one-time technical setup</summary>
+
+Install the command-line client:
 
 ```bash
 brew install openclaw/tap/gogcli
 gog --version
 ```
 
-Other installation methods are in [Install](docs/install.md).
-
-### 2. Store the OAuth client file
-
-If someone gave you a `client_secret_*.json` file, store it under the name this
-repository expects:
+If someone gave you a Google OAuth client file, store it securely:
 
 ```bash
 gog auth credentials set \
@@ -47,127 +74,52 @@ gog auth credentials set \
   ~/Downloads/client_secret_*.json
 ```
 
-That is the last time you handle the client secret. `gog` copies it into
-restrictive per-user storage. Your agent does not parse the file or pass the
-secret to Google.
-
-Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
-repositories, prompts, logs, screenshots, and agent instructions. If the agent
-needs a credential, give it the stable `gog` command instead.
-
-If you do not have the file, use the guided setup in
-[Google Cloud setup](#google-cloud-setup-only-when-no-client-file-exists).
-
-### 3. Connect the account once
-
-Choose only the services the agent needs:
+Connect the account and enable only the services the team needs:
 
 ```bash
 gog auth add you@gmail.com \
   --client personal-owned \
-  --services gmail,calendar,drive,docs,sheets,contacts
+  --services analytics,googleads,tagmanager,searchconsole,bigquery
 ```
 
-Google opens a browser for the first login and consent. That is expected once.
-The command stores a refresh token in the operating-system keyring.
-
-A personal `gmail.com` account and most Google Workspace custom domains work
-for Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Contacts, and Tasks.
-
-### 4. Verify the connection
+Google opens a browser for the first login and consent. Verify the connection:
 
 ```bash
 gog auth doctor --check --no-input
 ```
 
-It must report readable tokens and successful refresh-token exchange. If it
-does, the agent can use Google without any further login.
+When no OAuth client file exists, run `gog auth setup you@gmail.com --client
+personal-owned` and follow the guided Google Cloud setup. The full walkthrough
+is in the [quickstart](docs/quickstart.md).
 
-### 5. Give the agent safe read-only commands
+Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
+repositories, prompts, logs, screenshots, and agent instructions. If an agent
+needs access, give it an approved `gog` command rather than a credential.
 
-Start with read-only, non-interactive, structured output:
+</details>
+
+### Safe agent access
+
+Start with approved, read-only, non-interactive commands and explicit account
+selection. For example:
 
 ```bash
-gog --readonly --no-input --json gmail search 'newer_than:7d' --max 5
-gog --readonly --no-input --json calendar events --today
-gog --readonly --no-input --json drive ls
+gog --readonly --no-input --json analytics properties list \
+  --account you@gmail.com
 ```
 
-Those flags matter:
-
-- `--readonly` blocks mutating API requests.
+- `--readonly` blocks writes.
 - `--no-input` prevents terminal prompts.
-- `--json` gives the agent stable structured output.
-- `--account you@gmail.com` selects the account explicitly when more than one
-  is connected.
-- Start with only the services and commands the agent actually needs. Do not
-  give it broad write access just because Google supports it.
+- `--json` gives agents stable structured output.
+- `--account` makes the selected Google account explicit.
 
-For stricter agent permissions, see [Automation](docs/automation.md) and
-[Safety Profiles](docs/safety-profiles.md).
+See [Automation](docs/automation.md) and [Safety Profiles](docs/safety-profiles.md)
+before granting broader access.
 
-## Google Cloud setup only when no client file exists
+## Connection checks
 
-Skip this section if you already stored a `client_secret_*.json` file.
-
-`gog` can guide the one-time setup:
-
-```bash
-gog auth setup you@gmail.com \
-  --client personal-owned \
-  --gcloud-project my-gog-project \
-  --enable-apis \
-  --open-console
-```
-
-It helps with the pieces Google requires once:
-
-1. create or select a Cloud project;
-2. enable only the APIs you plan to use;
-3. configure the OAuth consent screen;
-4. create a Desktop OAuth client;
-5. download the `client_secret_*.json` file.
-
-Return to step 2 above after downloading it. The complete manual process is in
-the [five-minute quickstart](docs/quickstart.md).
-
-## What the Google Cloud complexity actually means
-
-This table translates the Google vocabulary you will encounter:
-
-| Google Cloud concept | What you do | What the project handles |
-| --- | --- | --- |
-| Cloud project | Create one only if no client file exists | API and OAuth configuration live here |
-| OAuth client | Download and store one JSON file | `gog` stores it securely and uses it automatically |
-| Consent screen | Publish the app once for long-lived personal use | The first login still requires your approval |
-| OAuth scopes | Name services such as `gmail` or `drive` | `gog` maps service names to the correct scopes |
-| Refresh token | Approve the account in a browser once | Stored in Keychain, Secret Service, or Credential Manager |
-| Access token | Nothing | Refreshed silently before API calls |
-| API endpoints | Nothing | Routed by the `gog` command and typed command schema |
-| Control-plane secrets | Nothing after bootstrap | Stored encrypted outside the repository |
-
-The practical rule is simple: Google Cloud is the one-time key cabinet. `gog`
-is the tool your agent uses every day.
-
-## What is still a one-time human step
-
-Google requires the first account login and approval. If the OAuth app remains
-in Google's **Testing** audience, refresh tokens can expire after seven days.
-For long-lived personal use, publish the app once in the same Cloud project.
-This changes the app to **In production**; it does not submit it for Google
-verification.
-
-Google does not expose that publishing state through a stable public API, so
-`gog auth doctor` verifies everything it can and leaves that one Console check
-to you.
-
-Workspace-only administration APIs (Admin Directory, Cloud Identity Groups, and
-Keep with domain-wide delegation) need a managed Workspace domain and separate
-service-account setup. See [Workspace Admin](docs/workspace-admin.md).
-
-## Run this repository's unattended acceptance
-
-This repository proves the connection remains unattended after bootstrap:
+The repository includes repeatable checks for setup, token health, and
+unattended operation:
 
 ```bash
 make acceptance-local
@@ -175,50 +127,36 @@ make acceptance-doctor
 make acceptance-live-repeat N=3
 ```
 
-These checks use the stable binary, the control plane, and encrypted secret
-storage. They must not open a browser, trigger Keychain dialogs, wait for
-terminal input, or use authenticated `go run`.
+Routine checks must not open a browser, trigger Keychain dialogs, or wait for
+terminal input. See [Unattended Acceptance](docs/acceptance.md).
 
-`make acceptance-bootstrap` is the only human action. It imports the central
-client and connection tokens. It may open Google consent only when a token is
-genuinely missing, revoked, or missing required access. After it succeeds,
-`make acceptance-live-repeat N=3` runs unattended. See
-[Unattended Acceptance](docs/acceptance.md).
+## Help
 
-## Common problems
-
-| Symptom | Meaning | Fix |
-| --- | --- | --- |
-| `missing client` | No OAuth client is stored | Run `gog auth credentials set --client personal-owned <file>` |
-| `unknown account` | The requested Google email is not connected | Run `gog auth list --check`, then `gog auth add <email> ...` |
-| `needs_reconnect` | The refresh token is invalid or access is incomplete | Reconnect that account once; routine runs must not open OAuth |
-| Browser opens during routine acceptance | The token is missing, revoked, or under-scoped | Do not repeat commands; run the documented bootstrap once |
-| Weekly Google login returns | OAuth app is still in Testing | Publish the app in Google's Audience page |
-| Agent works in Terminal but not its service | The service does not inherit the same credential environment | Configure the service's environment before reauthorizing |
-
-## Commands your agent is likely to need
-
-| Work | Command |
+| Question | Where to look |
 | --- | --- |
-| Search mail | `gog gmail search` |
-| Read calendar | `gog calendar events` |
-| List files | `gog drive ls` |
-| Read and write Docs | `gog docs` |
-| Read and write Sheets | `gog sheets` |
-| Contacts and tasks | `gog contacts`, `gog tasks` |
-| Analytics and marketing | `gog analytics`, `gog tagmanager`, `gog googleads`, `gog searchconsole`, `gog bigquery` |
+| How do I complete Google setup? | [Quickstart](docs/quickstart.md) |
+| How do I install `gog`? | [Install](docs/install.md) |
+| How should an agent use it? | [Automation](docs/automation.md) |
+| How are permissions restricted? | [Safety Profiles](docs/safety-profiles.md) |
+| Why does a connection need attention? | [Common problems](#common-problems) |
 
-Run `gog --help`, `gog auth services`, or browse the generated
-[command index](docs/commands/README.md) for the full surface.
+### Common problems
 
-## More documentation
+| What you see | What it means | What to do |
+| --- | --- | --- |
+| Missing client | No OAuth client is stored | Ask the administrator to run `gog auth credentials set` |
+| Unknown account | The requested Google email is not connected | Check `gog auth list --check`, then reconnect the intended account |
+| Needs reconnect | Google access is invalid or incomplete | Reconnect that account once |
+| Browser opens during a routine check | A token is missing, revoked, or lacks access | Complete the documented one-time bootstrap again |
 
-- [Quickstart](docs/quickstart.md): full Google Cloud walkthrough.
+## Documentation
+
+- [Quickstart](docs/quickstart.md): complete Google Cloud walkthrough.
 - [Install](docs/install.md): Homebrew, Docker, Windows, and source builds.
-- [Examples](docs/examples.md): common Gmail, Drive, and Workspace tasks.
+- [Examples](docs/examples.md): common tasks and command patterns.
 - [Unattended Acceptance](docs/acceptance.md): the no-browser, no-Keychain contract.
 - [Automation](docs/automation.md): JSON output, exit codes, and agent safety.
-- [Auth Clients](docs/auth-clients.md): multiple clients, aliases, and service accounts.
+- [Auth Clients](docs/auth-clients.md): multiple clients and service accounts.
 - [MCP](docs/mcp.md): typed agent access without a generic shell bridge.
 
 ## Development
@@ -273,19 +211,3 @@ See [live testing](docs/live-testing.md) for opt-in Google API smoke tests and
 <!-- auth-services:end -->
 
 </details>
-
-`gog` is open source and is not affiliated with Google.
-
-## License
-
-[MIT](LICENSE)
-
-### Local owner pilot: permission-controlled GA4 read
-
-This fork's browser product supports independently connected personal and work Google accounts. Sign in, connect each Google account, select assets for that account, and save access. The account list provides Manage access, Reconnect Google, and Disconnect for each stable connection; duplicate Google identities cannot overwrite another connection. **Read property** on the asset picker calls the real product API with that connection's stored token. Disabled or unknown properties are denied before credential retrieval or Google requests. Account grants do not imply access to their properties. Other product API tools are not exposed yet; the older tenant-serving route remains an operator interface.
-
-An authenticated local agent selects the intended account through `GET /api/connections/<connection-id>/analytics/property?resource=properties/<property-id>` with its private product-session cookie and the session's `X-CSRF-Token` header. Browser calls must be same-origin; cross-site or same-site navigation is rejected before Google calls. This pilot does not yet issue separate agent keys. API responses identify the selected service and return only fixed resource fields (`id`, `type`, `name`). The GA4 property page remains the rendered browser result. API responses are JSON; credential-free audit events record allow/deny/error and observed GA4 API request counts (excluding OAuth refresh). A missing session requires sign-in; terminal OAuth failures require reconnect. Discovery reports each Google service separately: successful services remain usable, while unavailable or failing services retain existing selections and show a safe customer-facing status. Do not publish session cookies, resource identities, audit details, or account evidence.
-
-For a Portless named `.localhost` browser origin, use this fork's built `bin/gog controlplane` under Portless and configure `--external-base-url` as the Google-supported `http://localhost:$PORT` loopback origin. The product uses `PORTLESS_URL` to redirect only the loopback OAuth callback back to the named browser origin, where the existing signed-cookie, state, and PKCE checks run. No deployed service is required. Central OAuth setup, Postgres, and encrypted secret-store configuration remain operator responsibilities. After starting or restarting Postgres, wait for `pg_isready` before acceptance. Product and admin cookies have distinct names and can coexist; product sign-out does not clear the admin session.
-
-This is a narrow implementation milestone, **not completed real-account acceptance or deployment approval**. Issue #36's two-account, restart, reconnect, repeated-run, and full service requirements remain open. Synthetic development checks do not satisfy that gate. Do not deploy or publish automatic previews before the complete local real-account gate passes.
