@@ -81,9 +81,9 @@ request may proceed
 ```
 
 `controlplane.Policy.Allow` gates resource reads and
-`controlplane.Policy.AllowTool` gates service/tool reads. Unknown resources,
-unknown tools, disabled grants, and cross-organisation connection IDs are
-denied by default.
+`controlplane.Policy.AllowTool` gates curated service/tool reads. Unknown
+resources, unknown tools, wildcard grants, disabled grants, and
+cross-organisation connection IDs are denied by default.
 
 Discovery is atomic across configured services. Google Ads is skipped only when
 its developer token is absent; once configured, an API or permission failure
@@ -106,13 +106,16 @@ uses the same gate and returns a fixed property schema.
 
 ## Product service/tool reads
 
-Capabilities without a stable resource picker use service/tool grants instead
-of synthetic resource IDs. The product exposes
+Capabilities without a stable resource picker use explicit service/tool grants
+instead of synthetic resource IDs. The current curated read-only selectors are
+`gmail_search`, `calendar_events`, and `drive_search`; other services remain
+excluded from the hosted tool path until a safe per-tool selector is added. The product exposes
 `GET /api/connections/{id}/tool?service=<service>&tool=<tool>` for representative
 read-only tools. It requires the same browser-only Fetch Metadata and CSRF
 checks as resource reads, runs `Policy.AllowTool` before token retrieval, and
 uses the stored central token through the existing typed Google clients. Tool
-results are fixed-schema JSON and every allow/deny/error path is audited.
+results are fixed-schema JSON and every allow/deny/error path is audited. No
+wildcard tool grant is accepted.
 
 ## Acceptance evidence policy
 

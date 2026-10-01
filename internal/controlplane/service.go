@@ -584,13 +584,13 @@ func (s *Service) AddConnectionServices(ctx context.Context, actor Actor, id str
 
 	for _, service := range next {
 		definition, _ := productService(service)
-		if definition.ResourceModel {
+		if definition.ResourceModel || definition.Tool == "" {
 			continue
 		}
 
-		key := toolGrantKey(service, productToolSelector(definition))
+		key := toolGrantKey(service, definition.Tool)
 		if _, ok := connection.ToolGrants[key]; !ok {
-			connection.ToolGrants[key] = ToolGrant{Service: service, Tool: productToolSelector(definition)}
+			connection.ToolGrants[key] = ToolGrant{Service: service, Tool: definition.Tool}
 		}
 	}
 
@@ -624,7 +624,7 @@ func (s *Service) SetToolEnabled(ctx context.Context, actor Actor, id, service, 
 	}
 
 	for existingKey, existing := range connection.ToolGrants {
-		if existing.Service == service && existingKey != key {
+		if existing.Service == service && existing.Tool == "*" {
 			delete(connection.ToolGrants, existingKey)
 		}
 	}
@@ -714,12 +714,12 @@ func toolGrantsForServices(services []string) map[string]ToolGrant {
 
 	for _, service := range services {
 		definition, err := productService(service)
-		if err != nil || definition.ResourceModel {
+		if err != nil || definition.ResourceModel || definition.Tool == "" {
 			continue
 		}
-		selector := productToolSelector(definition)
-		key := toolGrantKey(service, selector)
-		out[key] = ToolGrant{Service: service, Tool: selector}
+
+		key := toolGrantKey(service, definition.Tool)
+		out[key] = ToolGrant{Service: service, Tool: definition.Tool}
 	}
 
 	return out

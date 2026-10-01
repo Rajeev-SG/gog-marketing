@@ -80,14 +80,6 @@ func toolGrantKey(service, tool string) string {
 	return strings.ToLower(strings.TrimSpace(service)) + "/" + strings.ToLower(strings.TrimSpace(tool))
 }
 
-func productToolSelector(service ProductService) string {
-	if service.Tool != "" {
-		return service.Tool
-	}
-
-	return "*"
-}
-
 func validProductTool(service ProductService, tool string) bool {
-	return strings.TrimSpace(tool) == productToolSelector(service)
+	return service.Tool != "" && strings.TrimSpace(tool) == service.Tool
 }

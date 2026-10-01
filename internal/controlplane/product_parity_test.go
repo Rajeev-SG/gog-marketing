@@ -143,6 +143,10 @@ func TestToolPolicyDoesNotInventResourceGrants(t *testing.T) {
 		t.Fatalf("unknown tool grant error = %v", err)
 	}
 
+	if _, err := service.SetToolEnabled(ctx, actor, connection.ID, "gmail", "*", true); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("wildcard tool grant error = %v", err)
+	}
+
 	if err := (Policy{Store: store}).AllowTool(ctx, actor, connection.ID, "analytics", "analytics_properties_list"); err == nil || !strings.Contains(err.Error(), "forbidden") {
 		t.Fatalf("resource service tool policy error = %v", err)
 	}

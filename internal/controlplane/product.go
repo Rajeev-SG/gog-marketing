@@ -1147,12 +1147,8 @@ func productServiceGroups(connection Connection) []productServiceGroup {
 			continue
 		}
 
-		tool := productToolSelector(definition)
-
-		toolLabel := "Allow service tools"
-		if definition.Tool != "" {
-			toolLabel = "Allow read tool"
-		}
+		tool := definition.Tool
+		toolLabel := "Allow read tool"
 
 		view := productServiceView{
 			Service: definition.Service, Name: definition.Name, Category: definition.Category,

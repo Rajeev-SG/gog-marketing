@@ -55,11 +55,7 @@ func (p Policy) AllowTool(ctx context.Context, actor Actor, connectionID, servic
 	}
 
 	grant, ok := connection.ToolGrants[toolGrantKey(service, tool)]
-	if !ok {
-		grant, ok = connection.ToolGrants[toolGrantKey(service, "*")]
-	}
-
-	if !ok || !grant.Enabled || strings.TrimSpace(tool) == "" {
+	if !ok || !grant.Enabled {
 		return fmt.Errorf("%w: tool grant is disabled", ErrForbidden)
 	}
 

@@ -48,7 +48,7 @@ checks; until then, source builds are the release path.
 - Build the fork and confirm inherited standard commands and marketing commands.
 - Run `make acceptance-local` and the relevant live acceptance target.
 - Verify the product UI exposes Workspace and Marketing service groups.
-- Verify resource-backed services use resource grants and other services use
-  service/tool grants without synthetic resources.
+- Verify resource-backed services use resource grants and curated read tools use
+  explicit service/tool grants without synthetic resources or wildcard access.
 - Verify incremental service enablement requests the union of existing and
   added scopes, preserves prior grants, and can reconnect the same account.
