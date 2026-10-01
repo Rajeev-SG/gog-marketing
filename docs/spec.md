@@ -74,6 +74,9 @@ The [MCP server](mcp.md) exposes a typed stdio tool surface with read-only
 defaults and explicit write authorization. It does not expose arbitrary shell
 or argv execution.
 
+Fork ownership and upstream synchronization are documented in
+[Upstream sync and fork releases](upstream-sync.md).
+
 ## Development gates
 
 `Makefile` owns development-tool pins and local gates; `.golangci.yml` configures

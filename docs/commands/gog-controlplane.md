@@ -58,7 +58,7 @@ gog controlplane (control-plane) [flags]
 | `--secure-cookies` | `bool` |  | Mark session cookies Secure (enable behind HTTPS) |
 | `--seed-connections` | `string` | gmail,singulyr | Comma-separated named connections to ensure at startup |
 | `--select`<br>`--pick`<br>`--project` | `string` |  | In JSON mode, select comma-separated fields (best-effort; supports dot paths). Desire path: use --fields for most commands. |
-| `--services` | `string` | analytics,tagmanager,googleads,searchconsole,bigquery | Default marketing services for seeded connections |
+| `--services` | `string` |  | Optional services enabled on newly seeded connections; leave empty for user-selected incremental enablement |
 | `--session-key` | `string` |  | Stable signing key for web sessions |
 | `-v`<br>`--verbose` | `bool` |  | Enable verbose logging |
 | `--version` | `kong.VersionFlag` |  | Print version and exit |

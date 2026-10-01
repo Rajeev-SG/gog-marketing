@@ -13,14 +13,18 @@ import (
 )
 
 type fakeOAuth struct {
-	token              OAuthToken
-	err                error
-	authorizationCalls int
-	refreshCalls       int
+	token               OAuthToken
+	err                 error
+	authorizationCalls  int
+	authorizationScopes []string
+	refreshCalls        int
 }
 
 func (f *fakeOAuth) AuthorizationURL(input OAuthStartInput) string {
 	f.authorizationCalls++
+
+	f.authorizationScopes = append([]string(nil), input.Scopes...)
+
 	return "https://accounts.example.test/auth?state=" + input.State
 }
 

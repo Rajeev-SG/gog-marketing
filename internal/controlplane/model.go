@@ -72,6 +72,7 @@ type Connection struct {
 	Services          []string                          `json:"services"`
 	RequestedScopes   []string                          `json:"requested_scopes"`
 	GrantedScopes     []string                          `json:"granted_scopes"`
+	ToolGrants        map[string]ToolGrant              `json:"tool_grants,omitempty"`
 	Status            ConnectionStatus                  `json:"status"`
 	SecretRef         string                            `json:"secret_ref,omitempty"`
 	ProductManaged    bool                              `json:"product_managed,omitempty"`
@@ -81,6 +82,15 @@ type Connection struct {
 	DiscoveryStatus   map[string]DiscoveryServiceStatus `json:"discovery_status,omitempty"`
 	CreatedAt         time.Time                         `json:"created_at"`
 	UpdatedAt         time.Time                         `json:"updated_at"`
+}
+
+// ToolGrant authorizes one typed agent tool when a service has no stable
+// resource-level picker. Resource-backed services continue to use
+// ResourceGrant; this is deliberately not represented as a fake resource.
+type ToolGrant struct {
+	Service string `json:"service"`
+	Tool    string `json:"tool"`
+	Enabled bool   `json:"enabled"`
 }
 
 type ResourceGrant struct {
@@ -156,6 +166,11 @@ func cloneConnection(in Connection) Connection {
 	out.Services = append([]string(nil), in.Services...)
 	out.RequestedScopes = append([]string(nil), in.RequestedScopes...)
 	out.GrantedScopes = append([]string(nil), in.GrantedScopes...)
+
+	out.ToolGrants = make(map[string]ToolGrant, len(in.ToolGrants))
+	for key, value := range in.ToolGrants {
+		out.ToolGrants[key] = value
+	}
 
 	out.DiscoveryStatus = make(map[string]DiscoveryServiceStatus, len(in.DiscoveryStatus))
 	for key, value := range in.DiscoveryStatus {
