@@ -30,6 +30,11 @@ type EngineResourceReader struct {
 func (r EngineResourceReader) Read(ctx context.Context, connection Connection, token OAuthToken, grant ResourceGrant) error {
 	switch grant.Service {
 	case "analytics":
+		// Scope the stored token to guarded analytics clients only.
+		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+
 		service, err := googleapi.NewAnalyticsAdmin(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create analytics reader: %w", err)
@@ -200,11 +205,6 @@ func (s *Service) ReadResource(ctx context.Context, actor Actor, connectionID, r
 	if token.AccessToken == "" {
 		return deny(ErrForbidden)
 	}
-
-	// Inject the stored token into context for the guarded Google API clients.
-	ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
-	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
-	ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
 
 	if err := s.Reader.Read(ctx, connection, token, grant); err != nil {
 		s.audit(ctx, actor, connectionID, action, "error", string(AuthFailureCategoryFor(err)))

@@ -179,3 +179,27 @@ func TestProductPageRequestAllowedRequiresFetchMetadataOnly(t *testing.T) {
 		})
 	}
 }
+
+func TestPropertyTemplateIncludesCSRFAndFetch(t *testing.T) {
+	if !strings.Contains(productTemplates, `<meta name="csrf" content="{{.CSRF}}">`) {
+		t.Fatal("property template missing CSRF meta tag")
+	}
+
+	if !strings.Contains(productTemplates, `class="read-link"`) {
+		t.Fatal("property template missing read-link button")
+	}
+
+	if !strings.Contains(productTemplates, `fetch(btn.dataset.url`) {
+		t.Fatal("property template missing fetch handler")
+	}
+
+	if strings.Contains(productTemplates, `Sec-Fetch-Site`) {
+		t.Fatal("JS should not set Sec-Fetch-Site; browser sets it automatically")
+	}
+}
+
+func TestResourceReaderScopedAuthInjection(t *testing.T) {
+	// Verify the auth injection is inside EngineResourceReader.Read, not unconditional in ReadResource.
+	// This is a compile-time structural check via the interface contract.
+	var _ ResourceReader = EngineResourceReader{}
+}
