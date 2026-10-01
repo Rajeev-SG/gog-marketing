@@ -103,7 +103,7 @@ func RunLocal(ctx context.Context, paths Paths, databaseURL string) (Manifest, e
 		oauth.token.Email = name + "@example.test"
 		oauth.token.Subject = name + "-subject"
 
-		connection, err := service.CreateConnection(ctx, localActor, name, []string{"analytics"})
+		connection, err := service.CreateProductConnection(ctx, localActor, name, []string{"analytics"})
 		if err != nil {
 			manifest.Add(name+".create", "FAIL", "local_store", err.Error(), 0)
 			return manifest, wrapAcceptanceError(err)

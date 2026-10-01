@@ -202,6 +202,7 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 		RedirectURI: stored.RedirectURI, Scopes: stored.Scope,
 	}, code)
 	if err != nil {
+		s.discardOAuthStub(ctx, stored.OrganizationID, connection)
 		connection.LastError = safeOAuthError(err)
 		connection.Status = ConnectionNeedsReconnect
 		_, _ = s.Store.UpdateConnection(ctx, connection)
@@ -211,6 +212,7 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 	}
 
 	if strings.TrimSpace(token.Subject) == "" && strings.TrimSpace(token.Email) == "" {
+		s.discardOAuthStub(ctx, stored.OrganizationID, connection)
 		return Connection{}, ErrInvalid
 	}
 
@@ -232,17 +234,25 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 			connection.LastErrorCategory = AuthFailurePermission
 			_, _ = s.Store.UpdateConnection(ctx, connection)
 			s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "error", "identity_already_connected")
+			s.discardOAuthStub(ctx, stored.OrganizationID, connection)
 
 			return Connection{}, ErrConflict
 		}
 	}
 
-	if saveErr := s.saveToken(ctx, Actor{OrganizationID: stored.OrganizationID}, &connection, token); saveErr != nil {
-		return Connection{}, fmt.Errorf("control plane: %w", saveErr)
-	}
 	connection.GoogleEmail = token.Email
 	connection.GoogleSubject = token.Subject
 	connection.GrantedScopes = token.GrantedScopes
+
+	if saveErr := s.saveToken(ctx, Actor{OrganizationID: stored.OrganizationID}, &connection, token); saveErr != nil {
+		s.discardOAuthStub(ctx, stored.OrganizationID, connection)
+
+		if errors.Is(saveErr, ErrConflict) {
+			return Connection{}, ErrConflict
+		}
+
+		return Connection{}, fmt.Errorf("control plane: %w", saveErr)
+	}
 	connection.Status = ConnectionHealthy
 	connection.LastError = ""
 	connection.LastErrorCategory = ""
@@ -257,6 +267,13 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 	s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "ok", "")
 
 	return updated, nil
+}
+
+func (s *Service) discardOAuthStub(ctx context.Context, organizationID string, connection Connection) {
+	if !connection.ProductManaged || connection.SecretRef != "" || connection.GoogleEmail != "" || connection.GoogleSubject != "" {
+		return
+	}
+	_ = s.Store.DeleteConnection(ctx, organizationID, connection.ID)
 }
 
 func (s *Service) Refresh(ctx context.Context, actor Actor, id string) (Connection, error) {
@@ -599,6 +616,12 @@ func (s *Service) saveToken(ctx context.Context, actor Actor, connection *Connec
 
 	if _, updateErr := s.Store.UpdateConnection(ctx, *connection); updateErr != nil {
 		connection.SecretRef = oldReference
+		if errors.Is(updateErr, ErrConflict) && oldReference == "" {
+			_ = s.Secrets.Delete(ctx, actor.OrganizationID, reference)
+
+			return fmt.Errorf("store token secret reference: %w", updateErr)
+		}
+
 		reclaimCtx := context.WithoutCancel(ctx)
 
 		go func() {

@@ -147,9 +147,8 @@ func TestOAuthIdentityCannotOverwriteAnotherConnection(t *testing.T) {
 		t.Fatal("duplicate Google identity was accepted", completeErr)
 	}
 
-	secondAfter, err := service.GetConnection(context.Background(), actor, second.ID)
-	if err != nil || secondAfter.SecretRef != "" || secondAfter.GoogleSubject != "" {
-		t.Fatalf("duplicate identity overwrote the second connection: %+v, %v", secondAfter, err)
+	if _, lookupErr := service.GetConnection(context.Background(), actor, second.ID); !errors.Is(lookupErr, ErrNotFound) {
+		t.Fatalf("failed duplicate stub was not removed: %+v", lookupErr)
 	}
 
 	start, err = service.BeginOAuth(context.Background(), actor, first.ID, true)
@@ -183,5 +182,78 @@ func TestOAuthRequiresVerifiedGoogleIdentity(t *testing.T) {
 
 	if _, completeErr := service.CompleteOAuth(context.Background(), start.State, "code"); !errors.Is(completeErr, ErrInvalid) {
 		t.Fatal("identity-less OAuth token was accepted", completeErr)
+	}
+}
+
+func TestProductRejectsSecretOnlyOperatorConnection(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+
+	connection, err := service.CreateConnection(context.Background(), actor, "operator", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	connection.GoogleEmail = "operator@example.test"
+	connection.GoogleSubject = "operator-subject"
+
+	connection.SecretRef = "operator-secret"
+	if _, updateErr := store.UpdateConnection(context.Background(), connection); updateErr != nil {
+		t.Fatal(updateErr)
+	}
+
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	resp := productGet(t, client, server.URL, "/assets/"+connection.ID, cookies)
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther || resp.Header.Get("Location") != "/" {
+		t.Fatalf("operator connection was product-manageable: %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+
+	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
+
+	home := readProductBody(t, homeResp)
+	if strings.Contains(home, "operator@example.test") || strings.Contains(home, "Manage access") {
+		t.Fatalf("secret-only operator connection leaked into product UI: %s", home)
+	}
+}
+
+func TestFailedConnectAttemptsReuseOneHiddenStub(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+
+	for i := 0; i < 2; i++ {
+		resp := postProduct(t, client, server, "/connect/google", url.Values{"csrf": {csrf}}, cookies)
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Fatalf("connect attempt %d status = %d", i, resp.StatusCode)
+		}
+	}
+
+	connections, err := service.ListConnections(context.Background(), actor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stubs := 0
+
+	for _, connection := range connections {
+		if isProductConnection(connection) {
+			stubs++
+		}
+	}
+
+	if stubs != 1 {
+		t.Fatalf("failed attempts accumulated %d product connections", stubs)
+	}
+
+	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
+
+	home := readProductBody(t, homeResp)
+	if strings.Contains(home, "Manage access") || strings.Contains(home, "Google account pending") {
+		t.Fatalf("unconnected stub leaked into account list: %s", home)
 	}
 }

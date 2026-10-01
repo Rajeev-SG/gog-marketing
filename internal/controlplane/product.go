@@ -438,7 +438,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	needsReconnect := false
 
 	for _, connection := range connections {
-		if !isProductConnection(connection) {
+		if !isVisibleProductConnection(connection) {
 			continue
 		}
 		state := productConnectionState(connection)
@@ -732,6 +732,12 @@ func (h *ProductHandler) createProductConnection(ctx context.Context, actor Acto
 		return Connection{}, err
 	}
 
+	for _, connection := range connections {
+		if isProductConnection(connection) && connection.SecretRef == "" && connection.GoogleEmail == "" && connection.GoogleSubject == "" {
+			return connection, nil
+		}
+	}
+
 	name := productConnectionName
 
 	for _, connection := range connections {
@@ -754,9 +760,11 @@ func (h *ProductHandler) productConnectionByID(ctx context.Context, actor Actor,
 }
 
 func isProductConnection(connection Connection) bool {
-	// Imported connected accounts are product-visible so the local acceptance
-	// profile can reuse existing personal and work credentials without re-consent.
-	return connection.ProductManaged || connection.Name == productConnectionName || connection.SecretRef != ""
+	return connection.ProductManaged || connection.Name == productConnectionName
+}
+
+func isVisibleProductConnection(connection Connection) bool {
+	return isProductConnection(connection) && (connection.SecretRef != "" || connection.GoogleEmail != "")
 }
 
 func (h *ProductHandler) setProductOAuthCookie(w http.ResponseWriter, name string, state productOAuthState) {

@@ -2,6 +2,7 @@ package controlplane
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -340,5 +341,100 @@ func TestPostgresDiscoveryStatusConcurrentConnectionUpdates(t *testing.T) {
 	saved, err := store.GetConnection(ctx, org.ID, connection.ID)
 	if err != nil || saved.DiscoveryStatus["analytics"].State != DiscoveryServiceError {
 		t.Fatalf("Postgres connection update clobbered discovery status: %+v, %v", saved.DiscoveryStatus, err)
+	}
+}
+
+func TestPostgresConcurrentOAuthIdentityHasSingleWinner(t *testing.T) {
+	databaseURL := os.Getenv("CONTROL_PLANE_TEST_DATABASE_URL")
+	if databaseURL == "" {
+		t.Skip("isolated CONTROL_PLANE_TEST_DATABASE_URL not set")
+	}
+
+	ctx := context.Background()
+
+	store, err := OpenPostgresStore(ctx, databaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() { _ = store.Close() }()
+
+	secrets, err := NewFileSecretStore(filepath.Join(t.TempDir(), "secrets.json"), []byte("0123456789abcdef0123456789abcdef"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	oauth := &fakeOAuth{token: OAuthToken{
+		AccessToken: "shared-access", RefreshToken: "shared-refresh", Expiry: time.Now().Add(time.Hour),
+		Subject: "shared-subject", Email: "shared@example.test",
+		GrantedScopes: []string{"https://www.googleapis.com/auth/analytics.readonly"},
+	}}
+	service := &Service{Store: store, Secrets: secrets, OAuth: oauth, RedirectURI: "http://example.test/oauth/google/callback"}
+
+	suffix := fmt.Sprintf("%d", time.Now().UnixNano())
+
+	_, org, err := store.BootstrapOwner(ctx, User{
+		Email: "identity-race-" + suffix + "@example.test", DisplayName: "Development identity race",
+	}, Organization{Name: "Identity race", Slug: "identity-race-" + suffix}, "owner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	actor := Actor{UserID: "user-" + suffix, OrganizationID: org.ID, Role: "owner"}
+
+	first, err := service.CreateProductConnection(ctx, actor, "google-"+suffix+"-a", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := service.CreateProductConnection(ctx, actor, "google-"+suffix+"-b", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	firstStart, err := service.BeginOAuth(ctx, actor, first.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secondStart, err := service.BeginOAuth(ctx, actor, second.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	results := make(chan error, 2)
+	var wg sync.WaitGroup
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+
+		_, completeErr := service.CompleteOAuth(ctx, firstStart.State, "code")
+		results <- completeErr
+	}()
+	go func() {
+		defer wg.Done()
+
+		_, completeErr := service.CompleteOAuth(ctx, secondStart.State, "code")
+		results <- completeErr
+	}()
+
+	wg.Wait()
+	close(results)
+
+	successes := 0
+	conflicts := 0
+
+	for completeErr := range results {
+		switch {
+		case completeErr == nil:
+			successes++
+		case errors.Is(completeErr, ErrConflict):
+			conflicts++
+		default:
+			t.Fatal("unexpected concurrent OAuth error", completeErr)
+		}
+	}
+
+	if successes != 1 || conflicts != 1 {
+		t.Fatalf("identity uniqueness produced successes=%d conflicts=%d", successes, conflicts)
 	}
 }
