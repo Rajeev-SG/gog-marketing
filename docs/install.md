@@ -35,6 +35,9 @@ marketing/product changes.
 Fork-owned packaging and release parity are tracked in
 [issue #52](https://github.com/Rajeev-SG/gog-marketing/issues/52).
 
+See [Upstream sync and fork releases](upstream-sync.md) for the sync contract and
+the fork-owned release path.
+
 ## Headless agents and systemd
 
 For headless agents, configure `gog` with the encrypted file keyring and pass

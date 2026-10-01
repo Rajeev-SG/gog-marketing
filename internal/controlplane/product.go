@@ -189,6 +189,22 @@ type productAssetGroup struct {
 	StatusDetail string
 }
 
+type productServiceView struct {
+	Service       string
+	Name          string
+	Category      string
+	Enabled       bool
+	ResourceModel bool
+	Tool          string
+	ToolLabel     string
+	ToolEnabled   bool
+}
+
+type productServiceGroup struct {
+	Category string
+	Services []productServiceView
+}
+
 func NewProductHandler(config ProductConfig) (*ProductHandler, error) {
 	if config.Service == nil || config.Sessions == nil || config.Auth == nil {
 		return nil, ErrWebDependencies
@@ -197,7 +213,7 @@ func NewProductHandler(config ProductConfig) (*ProductHandler, error) {
 	t, err := template.New("product").Funcs(template.FuncMap{
 		"serviceLabel": serviceLabel,
 		"kindLabel":    kindLabel,
-	}).Parse(productTemplates)
+	}).Parse(productTemplates + productServicesTemplates)
 	if err != nil {
 		return nil, wrapControlPlaneError(err)
 	}
@@ -217,10 +233,13 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /logout", h.logout)
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
+	h.mux.HandleFunc("GET /assets/{id}/services", h.services)
 	h.mux.HandleFunc("GET /api/connections/{id}/analytics/property", h.readAnalyticsProperty)
 	h.mux.HandleFunc("GET /api/connections/{id}/resource", h.readProductResource)
+	h.mux.HandleFunc("GET /api/connections/{id}/tool", h.readProductTool)
 	h.mux.HandleFunc("GET /assets/{id}/property", h.readAnalyticsPropertyPage)
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
+	h.mux.HandleFunc("POST /assets/{id}/services/save", h.saveServices)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
 	h.mux.HandleFunc("POST /assets/{id}/reconnect", h.reconnect)
 	h.mux.HandleFunc("POST /assets/{id}/disconnect", h.disconnect)
@@ -534,6 +553,80 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (h *ProductHandler) services(w http.ResponseWriter, r *http.Request) {
+	actor, session, ok := h.actor(w, r)
+	if !ok {
+		return
+	}
+
+	connection, err := h.productConnectionByID(r.Context(), actor, r.PathValue("id"))
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	h.render(w, "services", map[string]any{
+		"Connection": connection,
+		"Groups":     productServiceGroups(connection),
+		"CSRF":       session.CSRF,
+		"Message":    r.URL.Query().Get("message"),
+		"Error":      r.URL.Query().Get("error"),
+	})
+}
+
+func (h *ProductHandler) saveServices(w http.ResponseWriter, r *http.Request) {
+	actor, session, ok := h.actor(w, r)
+	if !ok || !h.csrfOK(w, r, session) {
+		return
+	}
+
+	id := r.PathValue("id")
+	if _, err := h.productConnectionByID(r.Context(), actor, id); err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	connection, err := h.config.Service.AddConnectionServices(r.Context(), actor, id, r.Form["new_service"])
+	if err != nil {
+		http.Redirect(w, r, "/assets/"+url.PathEscape(id)+"/services?error="+url.QueryEscape("Services could not be enabled."), http.StatusSeeOther)
+		return
+	}
+
+	desiredTools := make(map[string]bool)
+	for _, value := range r.Form["tool"] {
+		desiredTools[value] = true
+	}
+
+	for _, group := range productServiceGroups(connection) {
+		for _, definition := range group.Services {
+			if !definition.Enabled || definition.ResourceModel || definition.Tool == "" {
+				continue
+			}
+
+			key := definition.Service + "/" + definition.Tool
+			if _, err := h.config.Service.SetToolEnabled(r.Context(), actor, id, definition.Service, definition.Tool, desiredTools[key]); err != nil && !errors.Is(err, ErrInvalid) {
+				http.Redirect(w, r, "/assets/"+url.PathEscape(id)+"/services?error="+url.QueryEscape("Tool access could not be saved."), http.StatusSeeOther)
+				return
+			}
+		}
+	}
+
+	if len(r.Form["new_service"]) > 0 {
+		start, err := h.config.Service.BeginOAuth(r.Context(), actor, id, true)
+		if err != nil {
+			http.Redirect(w, r, "/assets/"+url.PathEscape(id)+"/services?error="+url.QueryEscape("Google needs you to reconnect this account."), http.StatusSeeOther)
+			return
+		}
+
+		h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute)})
+		http.Redirect(w, r, start.URL, http.StatusSeeOther)
+
+		return
+	}
+
+	http.Redirect(w, r, "/assets/"+url.PathEscape(id)+"/services?message="+url.QueryEscape("Service and tool access saved."), http.StatusSeeOther)
+}
+
 func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 	actor, session, ok := h.actor(w, r)
 	if !ok || !h.csrfOK(w, r, session) {
@@ -756,6 +849,43 @@ func (h *ProductHandler) readProductResource(w http.ResponseWriter, r *http.Requ
 		"operation": "resource.read", "service": grant.Service,
 		"resource": map[string]any{"id": grant.ResourceID, "type": grant.ResourceType, "name": grant.DisplayName},
 	})
+}
+
+func (h *ProductHandler) readProductTool(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+
+	session, ok := h.config.Sessions.FromProductRequest(r)
+	if !ok || session.Admin {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "sign_in_required"})
+
+		return
+	}
+
+	if !productAPIRequestAllowed(r, session) {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "same_origin_required"})
+
+		return
+	}
+	actor := Actor{UserID: session.UserID, OrganizationID: session.OrgID, Role: session.Role}
+	service := r.URL.Query().Get("service")
+	tool := r.URL.Query().Get("tool")
+
+	result, err := h.config.Service.RunTool(r.Context(), actor, r.PathValue("id"), service, tool)
+	if err != nil {
+		status, code := http.StatusBadGateway, "read_failed"
+		if errors.Is(err, ErrForbidden) || errors.Is(err, ErrInvalid) {
+			status, code = http.StatusForbidden, "access_denied"
+		}
+
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": code})
+
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"operation": "tool.read", "service": service, "tool": tool, "result": result})
 }
 
 func (h *ProductHandler) render(w http.ResponseWriter, name string, data any) {
@@ -999,6 +1129,47 @@ func productDiscoveryStatuses(connection Connection) []productServiceStatus {
 		}
 
 		out = append(out, productServiceStatus{ServiceName: serviceLabel(serviceName), Detail: detail})
+	}
+
+	return out
+}
+
+func productServiceGroups(connection Connection) []productServiceGroup {
+	groups := map[string]*productServiceGroup{
+		ProductCategoryWorkspace: {Category: ProductCategoryWorkspace},
+		ProductCategoryMarketing: {Category: ProductCategoryMarketing},
+	}
+	order := []string{ProductCategoryWorkspace, ProductCategoryMarketing}
+
+	for _, definition := range ProductServices() {
+		group := groups[definition.Category]
+		if group == nil {
+			continue
+		}
+
+		tool := productToolSelector(definition)
+
+		toolLabel := "Allow service tools"
+		if definition.Tool != "" {
+			toolLabel = "Allow read tool"
+		}
+
+		view := productServiceView{
+			Service: definition.Service, Name: definition.Name, Category: definition.Category,
+			Enabled: containsString(connection.Services, definition.Service), ResourceModel: definition.ResourceModel, Tool: tool, ToolLabel: toolLabel,
+		}
+		if grant, ok := connection.ToolGrants[toolGrantKey(definition.Service, tool)]; ok {
+			view.ToolEnabled = grant.Enabled
+		}
+
+		group.Services = append(group.Services, view)
+	}
+
+	out := make([]productServiceGroup, 0, len(order))
+	for _, category := range order {
+		if len(groups[category].Services) > 0 {
+			out = append(out, *groups[category])
+		}
 	}
 
 	return out

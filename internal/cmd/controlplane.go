@@ -38,7 +38,7 @@ type ControlPlaneCmd struct {
 	GoogleAdsLoginCustomer  string `name:"google-ads-login-customer-id" help:"Optional Google Ads manager customer ID" env:"GOG_GOOGLE_ADS_LOGIN_CUSTOMER_ID"`
 	BigQueryProjects        string `name:"bigquery-projects" help:"Comma-separated BigQuery projects to discover" env:"GOG_CONTROL_PLANE_BIGQUERY_PROJECTS"`
 	SeedConnections         string `name:"seed-connections" help:"Comma-separated named connections to ensure at startup" default:"gmail,singulyr"`
-	Services                string `name:"services" help:"Default marketing services for seeded connections" default:"analytics,tagmanager,googleads,searchconsole,bigquery"`
+	Services                string `name:"services" help:"Optional services enabled on newly seeded connections; leave empty for user-selected incremental enablement"`
 	SecureCookies           bool   `name:"secure-cookies" help:"Mark session cookies Secure (enable behind HTTPS)" env:"GOG_CONTROL_PLANE_SECURE_COOKIES"`
 }
 
@@ -124,6 +124,7 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	service := &controlplane.Service{
 		Store: store, Secrets: secretStore, OAuth: provider, RedirectURI: redirectURI,
 		Reader:     controlplane.EngineResourceReader{GoogleAdsDeveloperToken: c.GoogleAdsDeveloperToken, GoogleAdsLoginCustomer: c.GoogleAdsLoginCustomer},
+		ToolReader: controlplane.EngineToolReader{},
 		Discoverer: controlPlaneDiscoverer(c),
 	}
 	for _, name := range splitCSV(c.SeedConnections) {

@@ -34,9 +34,8 @@ The fork adds or expands typed marketing capabilities including **Google
 Analytics, Google Ads, Google Tag Manager, Search Console and BigQuery**, plus
 the existing marketing-adjacent surfaces already inherited from `gog`.
 
-The product UI should group these capabilities clearly (for example
-**Workspace** and **Marketing**) rather than hard-code a five-service product
-boundary.
+The product UI groups these capabilities clearly as **Workspace** and
+**Marketing** rather than hard-coding a five-service product boundary.
 
 ## What users can control
 

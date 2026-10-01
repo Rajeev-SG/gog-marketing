@@ -26,6 +26,12 @@ var migration004Up string
 //go:embed migrations/004_down.sql
 var migration004Down string
 
+//go:embed migrations/005_up.sql
+var migration005Up string
+
+//go:embed migrations/005_down.sql
+var migration005Down string
+
 type Migration struct {
 	Version string
 	Up      string
@@ -38,6 +44,7 @@ func ControlPlaneMigrations() []Migration {
 		{Version: "002", Up: migration002Up, Down: migration002Down},
 		{Version: "003", Up: migration003Up, Down: migration003Down},
 		{Version: "004", Up: migration004Up, Down: migration004Down},
+		{Version: "005", Up: migration005Up, Down: migration005Down},
 	}
 }
 

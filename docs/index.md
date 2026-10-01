@@ -1,7 +1,7 @@
 ---
 title: Overview
 permalink: /
-description: "gog is a single Go CLI for Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Apps Script, Contacts, Tasks, and Workspace admin — built for terminals, scripts, CI, and coding agents."
+description: "gog-marketing is a superset Go CLI for Google Workspace and marketing APIs, with controlled agent access for terminals, scripts, CI, and coding agents."
 ---
 
 ## Try it
@@ -49,7 +49,7 @@ live binary.
 
 ## Pick your path
 
-- **Trying it.** [Install](install.md) → [Quickstart](quickstart.md). Five minutes from `brew install` to your first authenticated query.
+- **Trying it.** [Install](install.md) → [Quickstart](quickstart.md). Build this fork from source, then run your first authenticated query.
 - **Understanding the design.** [Why gog](why-gog.md) explains what the project optimizes for and where its boundaries are.
 - **Wiring up automation.** [Automation](automation.md), [Safety Profiles](safety-profiles.md), and [Agent skills](agent-skills.md). Discover the active contract and lock the binary down before handing it to an untrusted caller.
 - **Serving MCP tools.** [MCP server](mcp.md) exposes typed, allowlisted tools for agent clients without a generic command bridge.
@@ -68,6 +68,7 @@ live binary.
 - **Verifying real API behavior.** [Live testing](live-testing.md) covers the dedicated-account smoke suite, cleanup, retries, and optional infrastructure.
 - **Looking up a flag.** The [Command Index](commands/) has a generated page for every subcommand.
 - **Comparing Discovery-driven CLIs.** Reproduce the [gog and gws evaluation](gws-comparison.md) instead of relying on a stale feature table.
+- **Maintaining the fork.** [Upstream sync and fork releases](upstream-sync.md) defines how standard `gog` improvements land without dropping the marketing/product additions.
 
 ## Project
 

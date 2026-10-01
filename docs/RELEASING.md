@@ -4,6 +4,11 @@ summary: "Unified GitHub Actions release process for GogCLI"
 
 # Releasing `gogcli`
 
+This page describes the upstream `openclaw/gogcli` release workflow. The
+`gog-marketing` fork currently uses the source-build and fork-owned release path
+described in [Upstream sync and fork releases](upstream-sync.md); do not treat an
+upstream Homebrew, container or GitHub release as a fork release.
+
 Official releases run only through `.github/workflows/release-unified.yml`, which calls the fleet-standard `openclaw/release-workflows` Go CLI pipeline at `@v1`. Do not create or push release tags locally, and do not use local signing or notarization credentials.
 
 Release authorization is repository Actions write access combined with a protected, required-check-green `main` commit and the organization-scoped signing, notarization, and tap credentials. The shared workflow creates the immutable annotated tag; GogCLI intentionally has no separate local tag-signer authorization step.

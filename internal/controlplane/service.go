@@ -29,6 +29,7 @@ type Service struct {
 	OAuth                 OAuthProvider
 	Discoverer            Discoverer
 	Reader                ResourceReader
+	ToolReader            ToolReader
 	RedirectURI           string
 	Now                   func() time.Time
 	AnalyticsAdminFactory func(context.Context, string) (*analyticsadmin.Service, error)
@@ -85,6 +86,7 @@ func (s *Service) createConnection(ctx context.Context, actor Actor, name string
 		RequestedScopes: scopes,
 		Status:          ConnectionNeedsConnect,
 		ProductManaged:  productManaged,
+		ToolGrants:      toolGrantsForServices(normalized),
 	})
 	if err != nil {
 		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
@@ -243,7 +245,7 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 
 	connection.GoogleEmail = token.Email
 	connection.GoogleSubject = token.Subject
-	connection.GrantedScopes = token.GrantedScopes
+	connection.GrantedScopes = mergeScopeLists(connection.GrantedScopes, token.GrantedScopes)
 
 	if saveErr := s.saveToken(ctx, Actor{OrganizationID: stored.OrganizationID}, &connection, token); saveErr != nil {
 		s.discardOAuthStub(ctx, stored.OrganizationID, connection)
@@ -530,6 +532,199 @@ func (s *Service) SetResourceEnabled(ctx context.Context, actor Actor, id, resou
 	return grant, nil
 }
 
+// AddConnectionServices enables additional services without replacing the
+// already connected surface. The caller starts a reconnect OAuth flow so Google
+// can issue any newly required scopes incrementally.
+func (s *Service) AddConnectionServices(ctx context.Context, actor Actor, id string, services []string) (Connection, error) {
+	if actor.Role != "owner" && actor.Role != "admin" {
+		return Connection{}, ErrForbidden
+	}
+
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	next := append([]string(nil), connection.Services...)
+	changed := false
+
+	for _, raw := range services {
+		service := strings.ToLower(strings.TrimSpace(raw))
+		if service == "" {
+			continue
+		}
+
+		if _, parseErr := productService(service); parseErr != nil {
+			return Connection{}, parseErr
+		}
+
+		if containsString(next, service) {
+			continue
+		}
+		next = append(next, service)
+		changed = true
+	}
+
+	if !changed {
+		return connection, nil
+	}
+
+	sort.Strings(next)
+
+	scopes, err := googleauth.ScopesForManageWithOptions(serviceTypes(next), googleauth.ScopeOptions{Readonly: true})
+	if err != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+	connection.Services = next
+
+	connection.RequestedScopes = scopes
+	if connection.ToolGrants == nil {
+		connection.ToolGrants = map[string]ToolGrant{}
+	}
+
+	for _, service := range next {
+		definition, _ := productService(service)
+		if definition.ResourceModel {
+			continue
+		}
+
+		key := toolGrantKey(service, productToolSelector(definition))
+		if _, ok := connection.ToolGrants[key]; !ok {
+			connection.ToolGrants[key] = ToolGrant{Service: service, Tool: productToolSelector(definition)}
+		}
+	}
+
+	updated, err := s.Store.UpdateConnection(ctx, connection)
+	if err != nil {
+		return Connection{}, fmt.Errorf("update connection services: %w", err)
+	}
+
+	s.audit(ctx, actor, id, "connection.services.updated", "ok", strings.Join(next, ","))
+
+	return updated, nil
+}
+
+func (s *Service) SetToolEnabled(ctx context.Context, actor Actor, id, service, tool string, enabled bool) (ToolGrant, error) {
+	service = strings.ToLower(strings.TrimSpace(service))
+	tool = strings.TrimSpace(tool)
+
+	definition, err := productService(service)
+	if err != nil || definition.ResourceModel || !validProductTool(definition, tool) {
+		return ToolGrant{}, ErrInvalid
+	}
+
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil || !containsString(connection.Services, service) {
+		return ToolGrant{}, ErrForbidden
+	}
+	key := toolGrantKey(service, tool)
+
+	if connection.ToolGrants == nil {
+		connection.ToolGrants = map[string]ToolGrant{}
+	}
+
+	for existingKey, existing := range connection.ToolGrants {
+		if existing.Service == service && existingKey != key {
+			delete(connection.ToolGrants, existingKey)
+		}
+	}
+	grant := ToolGrant{Service: service, Tool: tool, Enabled: enabled}
+
+	connection.ToolGrants[key] = grant
+	if _, err := s.Store.UpdateConnection(ctx, connection); err != nil {
+		return ToolGrant{}, fmt.Errorf("update tool grant: %w", err)
+	}
+
+	action := "tool.disabled"
+	if enabled {
+		action = "tool.enabled"
+	}
+
+	s.audit(ctx, actor, id, action, "ok", key)
+
+	return grant, nil
+}
+
+func (s *Service) ListToolGrants(ctx context.Context, actor Actor, id string) ([]ToolGrant, error) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil {
+		return nil, fmt.Errorf("list tool grants: %w", err)
+	}
+
+	out := make([]ToolGrant, 0, len(connection.ToolGrants))
+	for _, grant := range connection.ToolGrants {
+		out = append(out, grant)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return toolGrantKey(out[i].Service, out[i].Tool) < toolGrantKey(out[j].Service, out[j].Tool)
+	})
+
+	return out, nil
+}
+
+func (s *Service) RunTool(ctx context.Context, actor Actor, id, service, tool string) (ToolReadResult, error) {
+	const action = "agent.tool.read"
+
+	deny := func(err error) (ToolReadResult, error) {
+		s.audit(ctx, actor, id, action, "deny", "tool access denied")
+		return ToolReadResult{}, err
+	}
+	if actor.UserID == "" || actor.OrganizationID == "" || s.ToolReader == nil {
+		return deny(ErrForbidden)
+	}
+
+	definition, err := productService(service)
+	if err != nil || definition.ResourceModel || !validProductTool(definition, tool) {
+		return deny(ErrInvalid)
+	}
+
+	if policyErr := (Policy{Store: s.Store}).AllowTool(ctx, actor, id, service, tool); policyErr != nil {
+		return deny(ErrForbidden)
+	}
+
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
+	if err != nil || (connection.Status != ConnectionHealthy && connection.Status != ConnectionExpired) {
+		return deny(ErrForbidden)
+	}
+
+	connection, token, err := s.FreshToken(ctx, actor, id)
+	if err != nil {
+		s.audit(ctx, actor, id, action, "error", string(AuthFailureCategoryFor(err)))
+		return ToolReadResult{}, err
+	}
+
+	if token.AccessToken == "" {
+		return deny(ErrForbidden)
+	}
+
+	result, err := s.ToolReader.Read(ctx, connection, token, tool)
+	if err != nil {
+		s.audit(ctx, actor, id, action, "error", string(AuthFailureCategoryFor(err)))
+		return ToolReadResult{}, fmt.Errorf("read tool: %w", err)
+	}
+
+	s.audit(ctx, actor, id, action, "ok", service+";"+tool)
+
+	return result, nil
+}
+
+func toolGrantsForServices(services []string) map[string]ToolGrant {
+	out := make(map[string]ToolGrant)
+
+	for _, service := range services {
+		definition, err := productService(service)
+		if err != nil || definition.ResourceModel {
+			continue
+		}
+		selector := productToolSelector(definition)
+		key := toolGrantKey(service, selector)
+		out[key] = ToolGrant{Service: service, Tool: selector}
+	}
+
+	return out
+}
+
 func (s *Service) Disconnect(ctx context.Context, actor Actor, id string) error {
 	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, id)
 	if err != nil {
@@ -658,6 +853,26 @@ func serviceTypes(services []string) []googleauth.Service {
 	for _, service := range services {
 		out = append(out, googleauth.Service(service))
 	}
+
+	return out
+}
+
+func mergeScopeLists(values ...[]string) []string {
+	seen := make(map[string]bool)
+	out := make([]string, 0)
+
+	for _, list := range values {
+		for _, value := range list {
+			value = strings.TrimSpace(value)
+			if value == "" || seen[value] {
+				continue
+			}
+			seen[value] = true
+			out = append(out, value)
+		}
+	}
+
+	sort.Strings(out)
 
 	return out
 }

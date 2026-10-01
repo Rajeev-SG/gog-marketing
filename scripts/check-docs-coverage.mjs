@@ -40,6 +40,7 @@ const requiredFeatureDocs = [
   "slides-structure.md",
   "backup.md",
   "dates.md",
+  "upstream-sync.md",
 ];
 
 function main() {
