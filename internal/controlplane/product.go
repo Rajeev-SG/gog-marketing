@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -19,6 +20,7 @@ import (
 const (
 	templateErrorField           = "Error"
 	productConnectionName        = "google"
+	productConnectionPrefix      = "google-"
 	productSigninStatePrefix     = "signin_"
 	productSigninStateCookie     = "gog_product_signin_oauth"
 	productConnectionStateCookie = "gog_product_connection_oauth"
@@ -165,6 +167,13 @@ type productAsset struct {
 	ReadURL     string
 }
 
+type productConnectionView struct {
+	Connection
+	State          string
+	StateLabel     string
+	NeedsReconnect bool
+}
+
 type productServiceStatus struct {
 	ServiceName string
 	Detail      string
@@ -213,6 +222,7 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
 	h.mux.HandleFunc("POST /assets/{id}/reconnect", h.reconnect)
+	h.mux.HandleFunc("POST /assets/{id}/disconnect", h.disconnect)
 }
 
 func (h *ProductHandler) actor(w http.ResponseWriter, r *http.Request) (Actor, sessionPayload, bool) {
@@ -333,27 +343,9 @@ func (h *ProductHandler) connect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, err := h.productConnection(r.Context(), actor)
+	connection, err := h.createProductConnection(r.Context(), actor)
 	if err != nil {
 		http.Redirect(w, r, "/?error="+url.QueryEscape("We couldn't start Google onboarding."), http.StatusSeeOther)
-
-		return
-	}
-
-	if productConnectionState(connection) == "connected" {
-		if _, discoverErr := h.config.Service.Discover(r.Context(), actor, connection.ID); discoverErr != nil {
-			message, needsReconnect := productFailureMessage(discoverErr)
-			if needsReconnect {
-				http.Redirect(w, r, "/?error="+url.QueryEscape(message), http.StatusSeeOther)
-				return
-			}
-
-			http.Redirect(w, r, "/assets/"+url.PathEscape(connection.ID)+"?error="+url.QueryEscape(message), http.StatusSeeOther)
-
-			return
-		}
-
-		http.Redirect(w, r, "/assets/"+url.PathEscape(connection.ID), http.StatusSeeOther)
 
 		return
 	}
@@ -393,6 +385,11 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	connection, err := h.config.Service.CompleteOAuth(r.Context(), r.URL.Query().Get("state"), r.URL.Query().Get("code"))
+	if errors.Is(err, ErrConflict) {
+		http.Redirect(w, r, "/?error="+url.QueryEscape("This Google account is already connected."), http.StatusSeeOther)
+		return
+	}
+
 	if err != nil || connection.ID != stored.ConnectionID {
 		http.Redirect(w, r, "/?error="+url.QueryEscape("Google needs you to reconnect this account."), http.StatusSeeOther)
 
@@ -421,10 +418,11 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connection, err := h.existingProductConnection(r.Context(), actor)
+	connections, err := h.config.Service.ListConnections(r.Context(), actor)
 	if err != nil {
 		h.render(w, "home", map[string]any{
 			"DisplayName":      h.config.DisplayName,
+			"Connections":      []productConnectionView{},
 			"State":            "disconnected",
 			"StateLabel":       "Disconnected",
 			templateErrorField: "We couldn't load your Google data.",
@@ -434,27 +432,49 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	state := productConnectionState(connection)
+	views := make([]productConnectionView, 0, len(connections))
 	assets := []productAsset{}
+	serviceNames := make(map[string]bool)
+	needsReconnect := false
 
-	errorMessage := r.URL.Query().Get("error")
-	if connection.ID != "" {
-		if grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID); listErr == nil {
-			assets = productAssets(grants)
+	for _, connection := range connections {
+		if !isVisibleProductConnection(connection) {
+			continue
 		}
+		state := productConnectionState(connection)
+		views = append(views, productConnectionView{
+			Connection:     connection,
+			State:          state,
+			StateLabel:     productStateLabel(state),
+			NeedsReconnect: state == "needs_attention",
+		})
+		needsReconnect = needsReconnect || state == "needs_attention"
+
+		if grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID); listErr == nil {
+			for _, asset := range productAssets(grants) {
+				assets = append(assets, asset)
+				serviceNames[asset.Service] = true
+			}
+		}
+	}
+
+	var first Connection
+	if len(views) > 0 {
+		first = views[0].Connection
 	}
 
 	h.render(w, "home", map[string]any{
 		"DisplayName":      h.config.DisplayName,
-		"Connection":       connection,
-		"State":            state,
-		"StateLabel":       productStateLabel(state),
+		"Connections":      views,
+		"Connection":       first,
+		"State":            productConnectionState(first),
+		"StateLabel":       productStateLabel(productConnectionState(first)),
 		"Assets":           assets,
 		"AssetCount":       len(assets),
-		"ServiceCount":     len(productAssetGroups(assets, "", connection.DiscoveryStatus)),
-		"NeedsReconnect":   state == "needs_attention",
+		"ServiceCount":     len(serviceNames),
+		"NeedsReconnect":   needsReconnect,
 		"Message":          r.URL.Query().Get("message"),
-		templateErrorField: errorMessage,
+		templateErrorField: r.URL.Query().Get("error"),
 		"CSRF":             session.CSRF,
 	})
 }
@@ -673,6 +693,26 @@ func (h *ProductHandler) reconnect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
 }
 
+func (h *ProductHandler) disconnect(w http.ResponseWriter, r *http.Request) {
+	actor, session, ok := h.actor(w, r)
+	if !ok || !h.csrfOK(w, r, session) {
+		return
+	}
+	id := r.PathValue("id")
+
+	if _, err := h.productConnectionByID(r.Context(), actor, id); err != nil {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	if err := h.config.Service.Disconnect(r.Context(), actor, id); err != nil {
+		http.Redirect(w, r, "/?error="+url.QueryEscape("This Google account could not be disconnected."), http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/?message="+url.QueryEscape("Google account disconnected."), http.StatusSeeOther)
+}
+
 func (h *ProductHandler) render(w http.ResponseWriter, name string, data any) {
 	var body bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&body, name, data); err != nil {
@@ -686,36 +726,45 @@ func (h *ProductHandler) render(w http.ResponseWriter, name string, data any) {
 	_, _ = w.Write(body.Bytes())
 }
 
-func (h *ProductHandler) existingProductConnection(ctx context.Context, actor Actor) (Connection, error) {
+func (h *ProductHandler) createProductConnection(ctx context.Context, actor Actor) (Connection, error) {
 	connections, err := h.config.Service.ListConnections(ctx, actor)
 	if err != nil {
 		return Connection{}, err
 	}
 
-	return findProductConnection(connections), nil
-}
-
-func (h *ProductHandler) productConnection(ctx context.Context, actor Actor) (Connection, error) {
-	connections, err := h.config.Service.ListConnections(ctx, actor)
-	if err != nil {
-		return Connection{}, err
+	for _, connection := range connections {
+		if isProductConnection(connection) && connection.SecretRef == "" && connection.GoogleEmail == "" && connection.GoogleSubject == "" {
+			return connection, nil
+		}
 	}
 
-	connection := findProductConnection(connections)
-	if connection.ID != "" {
-		return connection, nil
+	name := productConnectionName
+
+	for _, connection := range connections {
+		if isProductConnection(connection) {
+			name = fmt.Sprintf("%s%d", productConnectionPrefix, time.Now().UnixNano())
+			break
+		}
 	}
 
-	return h.config.Service.CreateConnection(ctx, actor, productConnectionName, h.config.DefaultServices)
+	return h.config.Service.CreateProductConnection(ctx, actor, name, h.config.DefaultServices)
 }
 
 func (h *ProductHandler) productConnectionByID(ctx context.Context, actor Actor, id string) (Connection, error) {
 	connection, err := h.config.Service.GetConnection(ctx, actor, id)
-	if err != nil || connection.Name != productConnectionName {
+	if err != nil || !isProductConnection(connection) {
 		return Connection{}, ErrNotFound
 	}
 
 	return connection, nil
+}
+
+func isProductConnection(connection Connection) bool {
+	return connection.ProductManaged || connection.Name == productConnectionName
+}
+
+func isVisibleProductConnection(connection Connection) bool {
+	return isProductConnection(connection) && (connection.SecretRef != "" || connection.GoogleEmail != "")
 }
 
 func (h *ProductHandler) setProductOAuthCookie(w http.ResponseWriter, name string, state productOAuthState) {
@@ -753,16 +802,6 @@ func (h *ProductHandler) takeProductOAuthCookie(r *http.Request, w http.Response
 	})
 
 	return state, true
-}
-
-func findProductConnection(items []Connection) Connection {
-	for _, item := range items {
-		if item.Name == productConnectionName {
-			return item
-		}
-	}
-
-	return Connection{}
 }
 
 func productConnectionState(connection Connection) string {

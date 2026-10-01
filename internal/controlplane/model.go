@@ -74,6 +74,7 @@ type Connection struct {
 	GrantedScopes     []string                          `json:"granted_scopes"`
 	Status            ConnectionStatus                  `json:"status"`
 	SecretRef         string                            `json:"secret_ref,omitempty"`
+	ProductManaged    bool                              `json:"product_managed,omitempty"`
 	LastValidatedAt   *time.Time                        `json:"last_validated_at,omitempty"`
 	LastError         string                            `json:"last_error,omitempty"`
 	LastErrorCategory AuthFailureCategory               `json:"last_error_category,omitempty"`
