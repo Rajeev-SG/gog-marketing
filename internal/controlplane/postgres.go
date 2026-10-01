@@ -219,6 +219,8 @@ func (s *PostgresStore) ListConnections(ctx context.Context, organizationID stri
 	return out, nil
 }
 
+// UpdateConnection deliberately does not write discovery_status_json. That
+// status is owned exclusively by UpdateDiscoveryStatus to avoid stale clobbering.
 func (s *PostgresStore) UpdateConnection(ctx context.Context, connection Connection) (Connection, error) {
 	name, err := normalizeName(connection.Name)
 	if err != nil {
@@ -247,6 +249,7 @@ func (s *PostgresStore) UpdateConnection(ctx context.Context, connection Connect
 	return cloneConnection(connection), nil
 }
 
+// UpdateDiscoveryStatus is the sole writer for per-service discovery status.
 func (s *PostgresStore) UpdateDiscoveryStatus(ctx context.Context, organizationID, connectionID string, status map[string]DiscoveryServiceStatus) error {
 	discovery, _ := json.Marshal(status)
 
