@@ -51,7 +51,7 @@ func ProductServices() []ProductService {
 
 		out = append(out, ProductService{
 			Service: service, Name: name, Category: category,
-			ResourceModel: productResourceServices[service], Tool: productToolByService[service],
+			ResourceModel: productResourceServices[service], Tool: productToolForService(service),
 		})
 	}
 
@@ -64,6 +64,12 @@ func ProductServices() []ProductService {
 	})
 
 	return out
+}
+
+// productToolForService is the single source of truth for curated hosted-tool
+// selectors. Keep migration 006 aligned with this map when adding a selector.
+func productToolForService(service string) string {
+	return productToolByService[strings.ToLower(strings.TrimSpace(service))]
 }
 
 func productService(service string) (ProductService, error) {
