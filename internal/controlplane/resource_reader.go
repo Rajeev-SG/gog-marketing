@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/googleads"
 	"github.com/openclaw/gogcli/internal/googleapi"
 )
@@ -199,6 +200,11 @@ func (s *Service) ReadResource(ctx context.Context, actor Actor, connectionID, r
 	if token.AccessToken == "" {
 		return deny(ErrForbidden)
 	}
+
+	// Inject the stored token into context for the guarded Google API clients.
+	ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+	ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
 
 	if err := s.Reader.Read(ctx, connection, token, grant); err != nil {
 		s.audit(ctx, actor, connectionID, action, "error", string(AuthFailureCategoryFor(err)))
