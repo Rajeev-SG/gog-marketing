@@ -124,7 +124,7 @@ func TestProductReadSuccessUsesCentralTokenAndCountsOnlyAPI(t *testing.T) {
 			}
 			server, client := newProductTestHandler(t, service, actor)
 			cookies := productSessionCookies(t, client, server)
-			resp := productGet(t, client, server.URL, "/api/connections/"+connection.ID+"/analytics/property?resource=properties/123&csrf="+productCSRF(t, server, client, cookies), cookies)
+			resp := productGetWithCSRF(t, client, server.URL, "/api/connections/"+connection.ID+"/analytics/property?resource=properties/123", cookies, productCSRF(t, server, client, cookies))
 
 			body := readProductBody(t, resp)
 			if resp.StatusCode != http.StatusOK || !strings.Contains(body, "analytics.property.get") || strings.Contains(body, "industryCategory") {

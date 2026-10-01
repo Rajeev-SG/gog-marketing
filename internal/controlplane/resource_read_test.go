@@ -148,7 +148,7 @@ func TestProductResourceReadAPIReturnsFixedSchema(t *testing.T) {
 	service.Reader = reader
 	server, client := newProductTestHandler(t, service, actor)
 	cookies := productSessionCookies(t, client, server)
-	resp := productGet(t, client, server.URL, "/api/connections/unknown/resource?resource=properties/123&csrf="+productCSRF(t, server, client, cookies), cookies)
+	resp := productGetWithCSRF(t, client, server.URL, "/api/connections/unknown/resource?resource=properties/123", cookies, productCSRF(t, server, client, cookies))
 
 	body := readProductBody(t, resp)
 	if resp.StatusCode != 403 || !strings.Contains(body, "access_denied") || len(reader.calls) != 0 {

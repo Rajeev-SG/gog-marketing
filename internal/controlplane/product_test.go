@@ -83,6 +83,32 @@ func newProductTestHandlerWithSessions(t *testing.T, service *Service, actor Act
 	return server, client
 }
 
+func productGetWithCSRF(t *testing.T, client *http.Client, serverURL, path string, cookies []*http.Cookie, csrf string) *http.Response {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, serverURL+path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, cookie := range cookies {
+		req.AddCookie(cookie)
+	}
+
+	req.Header.Set("Sec-Fetch-Site", "same-origin")
+
+	if csrf != "" {
+		req.Header.Set("X-CSRF-Token", csrf)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return resp
+}
+
 func productGet(t *testing.T, client *http.Client, serverURL, path string, cookies []*http.Cookie) *http.Response {
 	t.Helper()
 
