@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product/docs: define `gog-marketing` as a superset of standard `gog`, retain the inherited Workspace command surface alongside marketing extensions, remove the five-service product boundary, and distinguish this fork's source build from upstream `openclaw/gogcli` packages. (#50, #52)
+
 - Docs: rewrite the README for marketers, add the revised UI hero, and check in all 12 UI development references. (#50)
 
 - Product: extend grant-controlled agent/API reads to GA4 accounts and properties, Tag Manager accounts and containers, Search Console sites, Google Ads customers, and BigQuery projects/datasets using the existing typed Google clients and read-only guards. (#36)

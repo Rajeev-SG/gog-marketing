@@ -1,54 +1,39 @@
 # Install
 
-`gog` ships as a single binary. The visible version is injected at build time:
-release builds use the tag, while local builds use `git describe`.
+`gog-marketing` builds the same `gog` binary name as upstream and retains the standard `gog` command surface while adding this fork's marketing, connection and product/control-plane capabilities. The visible version is injected at build time: release builds use the tag, while local builds use `git describe`.
 
-## Homebrew (macOS, Linux)
+## Install gog-marketing
+
+Until this fork has its own packaged release, build **this repository** from
+source:
+
+```bash
+git clone https://github.com/Rajeev-SG/gog-marketing.git
+cd gog-marketing
+make build
+./bin/gog --version
+./bin/gog --help
+```
+
+This is the build that contains both the inherited standard `gog` commands and
+the fork's marketing/product additions.
+
+### Upstream packages are not this fork
+
+The following installs **upstream `openclaw/gogcli`**:
 
 ```bash
 brew install openclaw/tap/gogcli
-gog --version
 ```
 
-The Homebrew formula lives in `openclaw/homebrew-tap` and installs the `gog`
-binary. Release verification should run:
+Likewise, `ghcr.io/openclaw/gogcli` and releases published from
+`openclaw/gogcli` are upstream artifacts. They are useful when you only need
+standard `gog`, but they must not be used as acceptance evidence for
+`gog-marketing` because they do not necessarily contain this fork's
+marketing/product changes.
 
-```bash
-brew test openclaw/tap/gogcli
-gog --version
-```
-
-## Docker / GHCR
-
-The separate Docker workflow publishes a non-root GitHub Container Registry
-image. Tags created by the unified release workflow do not trigger it
-automatically; maintainers [dispatch Docker after release publication](RELEASING.md#docker-closeout).
-Once the Docker workflow succeeds:
-
-```bash
-docker run --rm ghcr.io/openclaw/gogcli:latest version
-docker run --rm ghcr.io/openclaw/gogcli:v0.38.2 version
-```
-
-Authenticated container runs should mount a persistent `GOG_HOME` directory and
-use the encrypted file keyring:
-
-```bash
-docker volume create gogcli-state
-
-docker run --rm -it \
-  -e GOG_HOME=/persist/gogcli \
-  -e GOG_KEYRING_BACKEND=file \
-  -e GOG_KEYRING_PASSWORD \
-  -v gogcli-state:/persist/gogcli \
-  ghcr.io/openclaw/gogcli:latest \
-  auth add you@gmail.com --services gmail,calendar,drive
-```
-
-Keep `GOG_KEYRING_PASSWORD` in the shell session or your CI secret store. Do
-not bake it into images, scripts, or checked-in profiles.
-See [Paths and State](paths.md) for `GOG_HOME`, per-kind `GOG_*_DIR`
-overrides, and legacy path compatibility.
+Fork-owned packaging and release parity are tracked in
+[issue #52](https://github.com/Rajeev-SG/gog-marketing/issues/52).
 
 ## Headless agents and systemd
 
@@ -84,41 +69,19 @@ If the shell command succeeds but the agent still reports `keyring.password`,
 fix the agent or service environment first. Re-authenticating usually does not
 help when `gog auth doctor --check` already shows readable tokens in the shell.
 
-## Windows
+## Source builds and platforms
 
-Download the matching ZIP from the
-[latest release](https://github.com/openclaw/gogcli/releases):
+The current supported `gog-marketing` installation path is a source build from
+this repository. macOS and Linux can use `make build`. Other platforms can
+build the Go command directly with the toolchain declared in `go.mod`.
 
-- `gogcli_<version>_windows_amd64.zip`
-- `gogcli_<version>_windows_arm64.zip`
+Do not download an `openclaw/gogcli` release archive and treat it as a
+`gog-marketing` release.
 
-Extract `gog.exe` and put its directory on `PATH`.
+Source builds require at least the Go version declared in `go.mod`. The
+`toolchain` directive records the preferred toolchain for normal builds and
+CI.
 
-## GitHub releases (raw binaries)
-
-Release assets are uploaded by GoReleaser:
-
-- `gogcli_<version>_darwin_amd64.tar.gz`
-- `gogcli_<version>_darwin_arm64.tar.gz`
-- `gogcli_<version>_linux_amd64.tar.gz`
-- `gogcli_<version>_linux_arm64.tar.gz`
-- `gogcli_<version>_windows_amd64.zip`
-- `gogcli_<version>_windows_arm64.zip`
-- `checksums.txt`
-
-Browse the [releases page](https://github.com/openclaw/gogcli/releases) for
-the latest tag and the full asset list.
-
-## Build from source
-
-```bash
-git clone https://github.com/openclaw/gogcli.git
-cd gogcli
-make
-./bin/gog --version
-```
-
-Source builds require at least the `go` version declared in `go.mod` (Go 1.26.0). The `toolchain` directive recommends Go 1.27.0 for normal builds and CI; Docker uses the same preferred toolchain. Environments with `GOTOOLCHAIN=local`, including CodeQL default setup, can use their installed Go 1.26 toolchain.
 
 ## Safety-profile binaries
 
@@ -145,15 +108,19 @@ keyring health, refresh-token validity, and Workspace-specific failure modes.
 
 ## Updating
 
-- **Homebrew:** `brew upgrade openclaw/tap/gogcli`.
-- **Docker:** pull a new tag (`ghcr.io/openclaw/gogcli:vX.Y.Z`).
-- **GitHub release archives:** download the new tarball/ZIP and replace the
-  binary.
-- **Source builds:** `git pull && make` — the version string comes from
-  `git describe`.
+For the fork's current source-build installation:
 
-Refresh tokens and OAuth clients are forward-compatible across point releases;
-no migration step is required for normal upgrades.
+```bash
+git pull
+make build
+./bin/gog --version
+```
+
+Do not use an upstream Homebrew/Docker/release upgrade as though it updates this
+fork. Fork-owned packaged upgrades will be documented when #52 lands.
+
+Refresh tokens and OAuth clients remain compatible with ordinary source-build
+updates unless a release note explicitly says otherwise.
 
 ## Related command pages
 

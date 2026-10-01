@@ -1,38 +1,54 @@
 ---
 title: Quickstart
-description: "Marketer-first Google onboarding for gog-marketing, with an operator CLI quickstart below."
+description: "Connect Google once, enable standard gog and marketing services, and use them safely from the product, CLI, or agents."
 ---
 
 # Quickstart
+
+`gog-marketing` retains the standard `gog` service surface and adds richer
+marketing access. The product UI is the permissions layer over that same engine.
 
 A marketer can get started without Google Cloud Console or CLI commands:
 
 1. Sign in with **Continue with Google**.
 2. Choose **Connect Google**.
-3. Select the properties, accounts, containers, sites, and projects you want to expose.
-4. Save access and start using the connected data.
+3. Enable the Workspace and/or Marketing services needed for the workflow.
+4. Where resource-level permissions exist, choose the specific properties,
+   accounts, containers, sites, projects or datasets the agent may use.
+5. Save access and start using the approved capabilities.
+
+Do not authorise every service by default. Additional services can be enabled
+later when a workflow needs them.
 
 This v1 product shell is single-user: only the configured workspace owner can
-sign in. Multi-member invitations are outside this slice. The product shell uses
-the centrally managed Google connection and keeps token refresh, resource
-discovery, and service mapping behind the normal journey.
-If Google asks you to reconnect, use **Reconnect Google** and continue from
-there.
+sign in. Multi-member invitations are outside this slice. The product shell
+keeps token refresh, resource discovery, service mapping and permission checks
+behind the normal journey. If Google asks you to reconnect, use **Reconnect
+Google** and continue from there.
 
-## CLI quickstart for operators
+## CLI quickstart
 
-The existing local `gog` setup remains useful for operators and developer
-workflows. It is not part of the marketer onboarding flow.
+The fork still ships the `gog` CLI. Standard Workspace commands and the
+marketing extensions use the same account routing, output modes and safety
+controls. The CLI is useful for operators, developers, scripts and agents even
+when marketers use the web product.
 
-## 1. Install
+## 1. Install this fork
+
+Until `gog-marketing` has a fork-owned packaged release, build this repository
+directly:
 
 ```bash
-brew install openclaw/tap/gogcli
+git clone https://github.com/Rajeev-SG/gog-marketing.git
+cd gog-marketing
+make build
+export PATH="$PWD/bin:$PATH"
 gog --version
 ```
 
-Other options (Docker, Windows ZIPs, source builds) are documented on
-[Install](install.md).
+`brew install openclaw/tap/gogcli` installs upstream standard `gog`, not
+this fork's marketing/product additions. See [Install](install.md) and
+[#52](https://github.com/Rajeev-SG/gog-marketing/issues/52).
 
 ## 2. Get an OAuth client
 
@@ -57,10 +73,12 @@ enabling APIs, storing credentials, opening a browser, or starting OAuth.
 setup is:
 
 1. Open <https://console.cloud.google.com/projectcreate> and create a project.
-2. Enable the APIs you intend to use: Gmail, Calendar, Drive, Docs, Sheets,
-   Slides, Forms, Apps Script, People (Contacts), Tasks, Classroom — whatever
-   you actually need. The [API library](https://console.cloud.google.com/apis/library)
-   is the fastest way to enable several at once.
+2. Enable only the APIs you intend to use. This can include standard Workspace
+   APIs such as Gmail, Calendar, Drive, Docs, Sheets, Slides, Forms, Apps
+   Script, People (Contacts), Tasks and Classroom, plus marketing APIs such as
+   Analytics, Tag Manager, Search Console, Google Ads or BigQuery when needed.
+   The [API library](https://console.cloud.google.com/apis/library) is the
+   fastest way to enable several at once.
 3. Configure the [OAuth consent screen](https://console.cloud.google.com/auth/branding)
    for "External" + your email; that is enough for personal use.
 4. Create a **Desktop app** OAuth client at
@@ -95,10 +113,10 @@ OS-equivalent) with mode `0600`.
 ## 4. Authorize an account
 
 ```bash
-gog auth add you@gmail.com --services gmail,calendar,drive,docs,sheets,contacts
+gog auth add you@gmail.com --services gmail,calendar,drive,analytics
 ```
 
-A browser tab opens, you grant the requested scopes, and `gog` stores a
+A browser tab opens, you grant only the requested scopes, and `gog` stores a
 refresh token in your OS keyring (Keychain on macOS, Secret Service on Linux,
 Credential Manager on Windows). Headless? Add `--manual` for a paste-the-URL
 flow, or `--remote --step 1`/`--step 2` for fully split server runs.
@@ -166,6 +184,9 @@ gog drive shortcut create <fileId> --parent <folderId>
 gog docs cat <docId> --tab "Notes"
 gog sheets get <spreadsheetId> 'Sheet1!A1:D20' --json
 gog slides create-from-markdown "Weekly update" --content-file slides.md
+
+# Marketing (same binary)
+gog analytics properties list
 
 # Profile
 gog me
