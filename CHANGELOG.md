@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product: support independently connected personal and work Google accounts with stable connection identity, account-specific asset grants, duplicate-identity protection, reconnect/disconnect controls, and product-managed persistence. (#36)
+
 - Product: report discovery readiness per Google service, keep successful inventories and saved selections usable when another service fails, persist service status across restarts, and surface safe customer-facing service states. (#36)
 
 - Product: follow all Google Analytics account-summary and Tag Manager account/container discovery pages, deduplicate repeated resources, reject incomplete inventories after later-page failures, and preserve existing enabled/disabled choices in both stores during rediscovery. (#36)

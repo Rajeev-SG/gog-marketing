@@ -98,7 +98,11 @@ func RunLocal(ctx context.Context, paths Paths, databaseURL string) (Manifest, e
 	}
 
 	localActor := controlplane.Actor{UserID: actor.ID, OrganizationID: org.ID, Role: "owner"}
+
 	for _, name := range []string{"gmail", "singulyr"} {
+		oauth.token.Email = name + "@example.test"
+		oauth.token.Subject = name + "-subject"
+
 		connection, err := service.CreateConnection(ctx, localActor, name, []string{"analytics"})
 		if err != nil {
 			manifest.Add(name+".create", "FAIL", "local_store", err.Error(), 0)

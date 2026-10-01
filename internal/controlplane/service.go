@@ -47,6 +47,14 @@ func (s *Service) now() time.Time {
 }
 
 func (s *Service) CreateConnection(ctx context.Context, actor Actor, name string, services []string) (Connection, error) {
+	return s.createConnection(ctx, actor, name, services, false)
+}
+
+func (s *Service) CreateProductConnection(ctx context.Context, actor Actor, name string, services []string) (Connection, error) {
+	return s.createConnection(ctx, actor, name, services, true)
+}
+
+func (s *Service) createConnection(ctx context.Context, actor Actor, name string, services []string, productManaged bool) (Connection, error) {
 	if actor.Role != "owner" && actor.Role != "admin" {
 		return Connection{}, ErrForbidden
 	}
@@ -75,6 +83,7 @@ func (s *Service) CreateConnection(ctx context.Context, actor Actor, name string
 		Services:        normalized,
 		RequestedScopes: scopes,
 		Status:          ConnectionNeedsConnect,
+		ProductManaged:  productManaged,
 	})
 	if err != nil {
 		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
@@ -199,6 +208,33 @@ func (s *Service) CompleteOAuth(ctx context.Context, state, code string) (Connec
 		s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "error", connection.LastError)
 
 		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
+	}
+
+	if strings.TrimSpace(token.Subject) == "" && strings.TrimSpace(token.Email) == "" {
+		return Connection{}, ErrInvalid
+	}
+
+	existing, listErr := s.Store.ListConnections(ctx, stored.OrganizationID)
+	if listErr != nil {
+		return Connection{}, fmt.Errorf("control-plane operation: %w", listErr)
+	}
+
+	for _, item := range existing {
+		if item.ID == connection.ID {
+			continue
+		}
+		sameSubject := token.Subject != "" && item.GoogleSubject == token.Subject
+
+		sameEmail := token.Email != "" && normalizeEmail(item.GoogleEmail) == normalizeEmail(token.Email)
+		if sameSubject || sameEmail {
+			connection.Status = ConnectionNeedsReconnect
+			connection.LastError = "Google account is already connected"
+			connection.LastErrorCategory = AuthFailurePermission
+			_, _ = s.Store.UpdateConnection(ctx, connection)
+			s.audit(ctx, Actor{OrganizationID: stored.OrganizationID}, connection.ID, "oauth.callback", "error", "identity_already_connected")
+
+			return Connection{}, ErrConflict
+		}
 	}
 
 	if saveErr := s.saveToken(ctx, Actor{OrganizationID: stored.OrganizationID}, &connection, token); saveErr != nil {

@@ -243,7 +243,7 @@ func TestPostgresDiscoveryStatusPersistsAcrossReopen(t *testing.T) {
 	}
 
 	connection, err := store.CreateConnection(ctx, Connection{
-		OrganizationID: org.ID, Name: "google-" + suffix, Services: []string{"analytics", "tagmanager"},
+		OrganizationID: org.ID, Name: "google-" + suffix, Services: []string{"analytics", "tagmanager"}, ProductManaged: true,
 		DiscoveryStatus: map[string]DiscoveryServiceStatus{
 			"analytics":  {State: DiscoveryServiceOK, ResourceCount: 2, CheckedAt: time.Now().UTC()},
 			"tagmanager": {State: DiscoveryServiceUnavailable, Detail: "google_ads_unconfigured", CheckedAt: time.Now().UTC()},
@@ -269,7 +269,7 @@ func TestPostgresDiscoveryStatusPersistsAcrossReopen(t *testing.T) {
 	defer func() { _ = reopened.Close() }()
 
 	saved, getErr := reopened.GetConnection(ctx, org.ID, connection.ID)
-	if getErr != nil || saved.DiscoveryStatus["analytics"].ResourceCount != 2 || saved.DiscoveryStatus["tagmanager"].State != DiscoveryServiceUnavailable {
+	if getErr != nil || !saved.ProductManaged || saved.DiscoveryStatus["analytics"].ResourceCount != 2 || saved.DiscoveryStatus["tagmanager"].State != DiscoveryServiceUnavailable {
 		t.Fatalf("discovery statuses did not survive reopen: %+v, %v", saved.DiscoveryStatus, getErr)
 	}
 }
