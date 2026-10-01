@@ -99,6 +99,10 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return nil
 	case "bigquery":
+		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+
 		parts := strings.SplitN(grant.ResourceID, ":", 2)
 
 		project := strings.TrimSpace(parts[0])
