@@ -28,6 +28,7 @@ type ResourceReader interface {
 func withGoogleAuth(ctx context.Context, token OAuthToken) context.Context {
 	ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
 	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+
 	return googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
 }
 

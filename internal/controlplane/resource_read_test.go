@@ -3,12 +3,13 @@ package controlplane
 import (
 	"context"
 	"errors"
-	"github.com/openclaw/gogcli/internal/authclient"
-	"github.com/openclaw/gogcli/internal/googleapi"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openclaw/gogcli/internal/authclient"
+	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
 type recordingResourceReader struct {
