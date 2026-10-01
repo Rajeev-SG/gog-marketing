@@ -66,7 +66,7 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
 
 	home := readProductBody(t, homeResp)
-	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Disconnect", "Connect Google account"} {
+	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Reconnect Google", "Disconnect", "Connect Google account"} {
 		if !strings.Contains(home, want) {
 			t.Fatalf("account list missing %q: %s", want, home)
 		}
@@ -95,6 +95,7 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 		}
 	}
 
+	firstEmail := first.GoogleEmail
 	resp := postProduct(t, client, server, "/assets/"+first.ID+"/disconnect", url.Values{"csrf": {csrf}}, cookies)
 	resp.Body.Close()
 
@@ -110,6 +111,17 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 	secondAfter, err := service.GetConnection(context.Background(), actor, second.ID)
 	if err != nil || secondAfter.Status != ConnectionHealthy || secondAfter.GoogleEmail != "singulyr@example.test" || secondAfter.SecretRef == "" {
 		t.Fatalf("second account changed during first disconnect: %+v, %v", secondAfter, err)
+	}
+
+	homeResp = productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
+
+	home = readProductBody(t, homeResp)
+	if strings.Contains(home, firstEmail) || strings.Contains(home, "/assets/"+first.ID+"/reconnect") {
+		t.Fatal("disconnected account remained visible for reconnect")
+	}
+
+	if !strings.Contains(home, "Connect Google account") {
+		t.Fatal("disconnected account lost the add/reconnect product path")
 	}
 }
 
@@ -158,6 +170,67 @@ func TestOAuthIdentityCannotOverwriteAnotherConnection(t *testing.T) {
 
 	if _, completeErr := service.CompleteOAuth(context.Background(), start.State, "code"); completeErr != nil {
 		t.Fatal("same connection could not reconnect", completeErr)
+	}
+}
+
+func TestProductReconnectNeedsAttentionConnection(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	setFakeGoogleIdentity(t, service, "attention-subject", "attention@example.test")
+
+	connection, err := service.CreateProductConnection(context.Background(), actor, "google", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, completeErr := service.CompleteOAuth(context.Background(), start.State, "code"); completeErr != nil {
+		t.Fatal(completeErr)
+	}
+
+	connection.Status = ConnectionNeedsReconnect
+	connection.LastError = "development invalid grant"
+
+	connection.LastErrorCategory = AuthFailureInvalidGrant
+	if _, updateErr := store.UpdateConnection(context.Background(), connection); updateErr != nil {
+		t.Fatal(updateErr)
+	}
+
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	resp := postProduct(t, client, server, "/assets/"+connection.ID+"/reconnect", url.Values{"csrf": {csrf}}, cookies)
+	location := resp.Header.Get("Location")
+	oauthCookies := append(append([]*http.Cookie{}, cookies...), resp.Cookies()...)
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(location, "accounts.example.test") {
+		t.Fatalf("needs-attention reconnect did not start OAuth: %d %q", resp.StatusCode, location)
+	}
+
+	parsed, err := url.Parse(location)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	state := parsed.Query().Get("state")
+	if state == "" {
+		t.Fatal("reconnect OAuth state missing")
+	}
+	callback := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(state)+"&code=code", oauthCookies)
+	callback.Body.Close()
+
+	if callback.StatusCode != http.StatusSeeOther || callback.Header.Get("Location") != "/assets/"+connection.ID {
+		t.Fatalf("reconnect state was not bound to the intended connection: %d %q", callback.StatusCode, callback.Header.Get("Location"))
+	}
+
+	after, err := service.GetConnection(context.Background(), actor, connection.ID)
+	if err != nil || after.Status != ConnectionHealthy || after.GoogleSubject != "attention-subject" || after.SecretRef == "" {
+		t.Fatalf("needs-attention reconnect did not restore the same connection: %+v, %v", after, err)
 	}
 }
 
@@ -255,5 +328,40 @@ func TestFailedConnectAttemptsReuseOneHiddenStub(t *testing.T) {
 	home := readProductBody(t, homeResp)
 	if strings.Contains(home, "Manage access") || strings.Contains(home, "Google account pending") {
 		t.Fatalf("unconnected stub leaked into account list: %s", home)
+	}
+}
+
+func TestProductReconnectHealthyConnection(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	setFakeGoogleIdentity(t, service, "healthy-subject", "healthy@example.test")
+
+	connection, err := service.CreateProductConnection(context.Background(), actor, "google", []string{"analytics"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	start, err := service.BeginOAuth(context.Background(), actor, connection.ID, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, completeErr := service.CompleteOAuth(context.Background(), start.State, "code"); completeErr != nil {
+		t.Fatal(completeErr)
+	}
+
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	resp := postProduct(t, client, server, "/assets/"+connection.ID+"/reconnect", url.Values{"csrf": {csrf}}, cookies)
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther || !strings.Contains(resp.Header.Get("Location"), "accounts.example.test") {
+		t.Fatalf("healthy reconnect did not start OAuth: %d %q", resp.StatusCode, resp.Header.Get("Location"))
+	}
+
+	after, err := service.GetConnection(context.Background(), actor, connection.ID)
+	if err != nil || after.Status != ConnectionHealthy || after.GoogleSubject != "healthy-subject" || after.SecretRef == "" {
+		t.Fatalf("healthy reconnect changed connection state: %+v, %v", after, err)
 	}
 }
