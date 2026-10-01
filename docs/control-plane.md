@@ -85,6 +85,21 @@ Discovery is atomic across configured services. Google Ads is skipped only when
 its developer token is absent; once configured, an API or permission failure
 fails the discovery operation rather than silently returning partial results.
 
+## Product resource reads
+
+The product exposes `GET /api/connections/{id}/resource?resource=<resource-id>`
+for permission-controlled reads through the agent/API path. The endpoint
+requires `Sec-Fetch-Site: same-origin|none` and a matching `X-CSRF-Token`
+header (browser-only; non-browser clients are intentionally unsupported).
+
+Reads are gated by `Policy.Allow` before any Google API call. Disabled or
+cross-account resources return `403 access_denied` without calling Google.
+Available resources return a fixed-schema JSON response with the resource ID,
+type, and display name.
+
+The analytics property endpoint `GET /api/connections/{id}/analytics/property`
+uses the same gate and returns a fixed property schema.
+
 ## Acceptance evidence policy
 
 Do not commit screenshots or manifests containing real account emails, Google
