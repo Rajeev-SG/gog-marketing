@@ -126,8 +126,7 @@ Google opens a browser for the first login and consent. Verify the connection:
 ./bin/gog auth doctor --check --no-input
 ```
 
-When no OAuth client file exists, run `./bin/gog auth setup you@gmail.com --client
-personal-owned` and follow the guided Google Cloud setup. The full walkthrough
+When no OAuth client file exists, run `./bin/gog auth setup you@gmail.com --client personal-owned` and follow the guided Google Cloud setup. The full walkthrough
 is in the [quickstart](docs/quickstart.md).
 
 Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
