@@ -60,7 +60,7 @@ func TestProductReadAPIRequiresProductSession(t *testing.T) {
 		t.Fatalf("unexpected unauthenticated response: %d %s", resp.StatusCode, body)
 	}
 	cookies := productSessionCookies(t, client, server)
-	resp = productGet(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123", cookies)
+	resp = productGet(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123&csrf="+productCSRF(t, server, client, cookies), cookies)
 
 	body = readProductBody(t, resp)
 	if resp.StatusCode != http.StatusForbidden || body != "{\"error\":\"access_denied\"}\n" {
