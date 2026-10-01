@@ -15,7 +15,10 @@ type Store interface {
 	CreateConnection(ctx context.Context, connection Connection) (Connection, error)
 	GetConnection(ctx context.Context, organizationID, id string) (Connection, error)
 	ListConnections(ctx context.Context, organizationID string) ([]Connection, error)
+	// DiscoveryStatus is owned exclusively by UpdateDiscoveryStatus; ordinary
+	// connection updates must preserve the persisted status map.
 	UpdateConnection(ctx context.Context, connection Connection) (Connection, error)
+	UpdateDiscoveryStatus(ctx context.Context, organizationID, connectionID string, status map[string]DiscoveryServiceStatus) error
 	DeleteConnection(ctx context.Context, organizationID, id string) error
 	UpsertResourceGrant(ctx context.Context, grant ResourceGrant) (ResourceGrant, error)
 	ListResourceGrants(ctx context.Context, organizationID, connectionID string) ([]ResourceGrant, error)
@@ -179,10 +182,30 @@ func (s *MemoryStore) UpdateConnection(_ context.Context, connection Connection)
 	}
 	connection.Name = name
 	connection.CreatedAt = existing.CreatedAt
+	connection.DiscoveryStatus = existing.DiscoveryStatus
 	connection.UpdatedAt = time.Now().UTC()
 	s.connections[connection.ID] = cloneConnection(connection)
 
 	return cloneConnection(connection), nil
+}
+
+func (s *MemoryStore) UpdateDiscoveryStatus(_ context.Context, organizationID, connectionID string, status map[string]DiscoveryServiceStatus) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	connection, ok := s.connections[connectionID]
+	if !ok || connection.OrganizationID != organizationID {
+		return ErrForbidden
+	}
+
+	connection.DiscoveryStatus = make(map[string]DiscoveryServiceStatus, len(status))
+	for key, value := range status {
+		connection.DiscoveryStatus[key] = value
+	}
+	connection.UpdatedAt = time.Now().UTC()
+	s.connections[connectionID] = cloneConnection(connection)
+
+	return nil
 }
 
 func (s *MemoryStore) DeleteConnection(_ context.Context, organizationID, id string) error {

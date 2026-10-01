@@ -47,23 +47,39 @@ const (
 	ConnectionDisconnected   ConnectionStatus = "disconnected"
 )
 
+type DiscoveryServiceStatus struct {
+	State         string    `json:"state"`
+	Detail        string    `json:"detail,omitempty"`
+	ResourceCount int       `json:"resource_count"`
+	CheckedAt     time.Time `json:"checked_at"`
+	err           error     `json:"-"`
+}
+
+const (
+	DiscoveryServiceOK          = "ok"
+	DiscoveryServiceUnavailable = "unavailable"
+	DiscoveryServiceUnsupported = "unsupported"
+	DiscoveryServiceError       = "error"
+)
+
 type Connection struct {
-	ID                string              `json:"id"`
-	OrganizationID    string              `json:"organization_id"`
-	Name              string              `json:"name"`
-	GoogleEmail       string              `json:"google_email,omitempty"`
-	GoogleSubject     string              `json:"-"`
-	OAuthClientID     string              `json:"oauth_client_id,omitempty"`
-	Services          []string            `json:"services"`
-	RequestedScopes   []string            `json:"requested_scopes"`
-	GrantedScopes     []string            `json:"granted_scopes"`
-	Status            ConnectionStatus    `json:"status"`
-	SecretRef         string              `json:"secret_ref,omitempty"`
-	LastValidatedAt   *time.Time          `json:"last_validated_at,omitempty"`
-	LastError         string              `json:"last_error,omitempty"`
-	LastErrorCategory AuthFailureCategory `json:"last_error_category,omitempty"`
-	CreatedAt         time.Time           `json:"created_at"`
-	UpdatedAt         time.Time           `json:"updated_at"`
+	ID                string                            `json:"id"`
+	OrganizationID    string                            `json:"organization_id"`
+	Name              string                            `json:"name"`
+	GoogleEmail       string                            `json:"google_email,omitempty"`
+	GoogleSubject     string                            `json:"-"`
+	OAuthClientID     string                            `json:"oauth_client_id,omitempty"`
+	Services          []string                          `json:"services"`
+	RequestedScopes   []string                          `json:"requested_scopes"`
+	GrantedScopes     []string                          `json:"granted_scopes"`
+	Status            ConnectionStatus                  `json:"status"`
+	SecretRef         string                            `json:"secret_ref,omitempty"`
+	LastValidatedAt   *time.Time                        `json:"last_validated_at,omitempty"`
+	LastError         string                            `json:"last_error,omitempty"`
+	LastErrorCategory AuthFailureCategory               `json:"last_error_category,omitempty"`
+	DiscoveryStatus   map[string]DiscoveryServiceStatus `json:"discovery_status,omitempty"`
+	CreatedAt         time.Time                         `json:"created_at"`
+	UpdatedAt         time.Time                         `json:"updated_at"`
 }
 
 type ResourceGrant struct {
@@ -139,6 +155,11 @@ func cloneConnection(in Connection) Connection {
 	out.Services = append([]string(nil), in.Services...)
 	out.RequestedScopes = append([]string(nil), in.RequestedScopes...)
 	out.GrantedScopes = append([]string(nil), in.GrantedScopes...)
+
+	out.DiscoveryStatus = make(map[string]DiscoveryServiceStatus, len(in.DiscoveryStatus))
+	for key, value := range in.DiscoveryStatus {
+		out.DiscoveryStatus[key] = value
+	}
 
 	return out
 }

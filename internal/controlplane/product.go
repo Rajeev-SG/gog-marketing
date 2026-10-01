@@ -165,11 +165,19 @@ type productAsset struct {
 	ReadURL     string
 }
 
+type productServiceStatus struct {
+	ServiceName string
+	Detail      string
+}
+
 type productAssetGroup struct {
+	Service      string
 	ServiceName  string
 	Assets       []productAsset
 	Count        int
 	EnabledCount int
+	StatusLabel  string
+	StatusDetail string
 }
 
 func NewProductHandler(config ProductConfig) (*ProductHandler, error) {
@@ -443,7 +451,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		"StateLabel":       productStateLabel(state),
 		"Assets":           assets,
 		"AssetCount":       len(assets),
-		"ServiceCount":     len(productAssetGroups(assets, "")),
+		"ServiceCount":     len(productAssetGroups(assets, "", connection.DiscoveryStatus)),
 		"NeedsReconnect":   state == "needs_attention",
 		"Message":          r.URL.Query().Get("message"),
 		templateErrorField: errorMessage,
@@ -488,9 +496,10 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 		"State":            state,
 		"StateLabel":       productStateLabel(state),
 		"Assets":           assets,
-		"Groups":           productAssetGroups(assets, query),
+		"Groups":           productAssetGroups(assets, query, connection.DiscoveryStatus),
+		"ServiceStatuses":  productDiscoveryStatuses(connection),
 		"Query":            query,
-		"HasAssets":        len(productAssetGroups(assets, query)) > 0,
+		"HasAssets":        len(productAssetGroups(assets, query, connection.DiscoveryStatus)) > 0,
 		"NeedsReconnect":   state == "needs_attention",
 		"CanRetry":         state == "connected",
 		templateErrorField: r.URL.Query().Get("error"),
@@ -505,7 +514,9 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.PathValue("id")
-	if _, err := h.productConnectionByID(r.Context(), actor, id); err != nil {
+
+	connection, err := h.productConnectionByID(r.Context(), actor, id)
+	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 
 		return
@@ -536,7 +547,7 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 	}
 	editable := make(map[string]bool)
 
-	for _, group := range productAssetGroups(productAssets(grants), r.FormValue("q")) {
+	for _, group := range productAssetGroups(productAssets(grants), r.FormValue("q"), connection.DiscoveryStatus) {
 		for _, asset := range group.Assets {
 			editable[asset.ResourceID] = true
 			selected[asset.ResourceID] = false
@@ -824,7 +835,7 @@ func productAssets(grants []ResourceGrant) []productAsset {
 	return out
 }
 
-func productAssetGroups(assets []productAsset, query string) []productAssetGroup {
+func productAssetGroups(assets []productAsset, query string, statuses map[string]DiscoveryServiceStatus) []productAssetGroup {
 	query = strings.ToLower(strings.TrimSpace(query))
 	groups := make([]productAssetGroup, 0, 5)
 	index := make(map[string]int)
@@ -834,11 +845,17 @@ func productAssetGroups(assets []productAsset, query string) []productAssetGroup
 			continue
 		}
 
-		position, ok := index[asset.ServiceName]
+		position, ok := index[asset.Service]
 		if !ok {
 			position = len(groups)
-			index[asset.ServiceName] = position
-			groups = append(groups, productAssetGroup{ServiceName: asset.ServiceName})
+			index[asset.Service] = position
+			groups = append(groups, productAssetGroup{Service: asset.Service, ServiceName: asset.ServiceName, StatusLabel: "Not checked"})
+
+			status, statusOK := statuses[asset.Service]
+			if statusOK {
+				groups[position].StatusLabel = discoveryStatusLabel(status.State)
+				groups[position].StatusDetail = ""
+			}
 		}
 
 		groups[position].Assets = append(groups[position].Assets, asset)
@@ -850,6 +867,58 @@ func productAssetGroups(assets []productAsset, query string) []productAssetGroup
 	}
 
 	return groups
+}
+
+func productDiscoveryStatuses(connection Connection) []productServiceStatus {
+	services := make([]string, 0, len(connection.Services))
+	seen := make(map[string]bool)
+
+	for _, rawService := range connection.Services {
+		serviceName := strings.ToLower(strings.TrimSpace(rawService))
+		if serviceName == "" || seen[serviceName] {
+			continue
+		}
+		seen[serviceName] = true
+		services = append(services, serviceName)
+	}
+
+	sort.Strings(services)
+
+	out := make([]productServiceStatus, 0, len(services))
+	for _, serviceName := range services {
+		status, ok := connection.DiscoveryStatus[serviceName]
+		detail := "Not checked"
+
+		if ok {
+			switch status.State {
+			case DiscoveryServiceOK:
+				detail = "Ready"
+			case DiscoveryServiceUnavailable:
+				detail = "Unavailable; existing selections remain."
+			case DiscoveryServiceError:
+				detail = "Needs attention; existing selections remain."
+			case DiscoveryServiceUnsupported:
+				detail = "Unsupported service; other services remain available."
+			}
+		}
+
+		out = append(out, productServiceStatus{ServiceName: serviceLabel(serviceName), Detail: detail})
+	}
+
+	return out
+}
+
+func discoveryStatusLabel(state string) string {
+	switch state {
+	case DiscoveryServiceOK:
+		return "Ready"
+	case DiscoveryServiceUnavailable:
+		return "Unavailable"
+	case DiscoveryServiceError:
+		return "Needs attention"
+	default:
+		return "Not checked"
+	}
 }
 
 func serviceLabel(service string) string {

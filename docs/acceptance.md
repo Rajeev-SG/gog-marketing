@@ -66,3 +66,7 @@ Official Google OAuth guidance explains the relevant failure classes:
 A refresh token can be invalidated by revocation, six months of non-use, password changes when Gmail scopes are present, exceeding the live refresh-token limit, time-based access, admin restrictions, or GCP session-control policies (`invalid_rapt`). External apps still in **Testing** issue refresh tokens that expire after seven days unless the scopes are limited to basic profile/email. Repeated `prompt=consent` creates additional grants and can cross the per-client live-token limit, silently invalidating the oldest token. The acceptance harness therefore classifies these conditions, never retries terminal auth failures, and does not use forced consent during routine reads.
 
 The Google OAuth publishing/testing status is not exposed through a stable public API or CLI. `acceptance-doctor` reports what it can prove and leaves publishing status as a one-time operator check in the Google Cloud Console.
+
+## Open live acceptance follow-up
+
+Live mixed-service discovery failure acceptance is tracked in issue [#43](https://github.com/Rajeev-SG/gog-marketing/issues/43). Required scenario: through the locally built product and real owner Google accounts, one configured service must fail in a real API/permission path while another service succeeds, with successful assets remaining usable and existing selections preserved. This scenario is currently NOT RUN and must not be inferred from mocked discovery fixtures or CI. Keep #43 open until private evidence is recorded against the tested commit.

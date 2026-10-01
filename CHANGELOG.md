@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product: report discovery readiness per Google service, keep successful inventories and saved selections usable when another service fails, persist service status across restarts, and surface safe customer-facing service states. (#36)
+
 - Product: follow all Google Analytics account-summary and Tag Manager account/container discovery pages, deduplicate repeated resources, reject incomplete inventories after later-page failures, and preserve existing enabled/disabled choices in both stores during rediscovery. (#36)
 
 - Product: add a session-authenticated, grant-controlled Google Analytics property read with central token refresh and credential-free allow/deny/error audit records. Other product tools remain unavailable. A local-only Portless callback bridge preserves the existing cookie/state/PKCE checks without a remote deployment. (#36)

@@ -82,6 +82,10 @@ func (s *PostgresStore) Migrate(ctx context.Context) error {
 }
 
 func (s *PostgresStore) RollBackMigrations(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, migration003Down); err != nil {
+		return wrapControlPlaneError(err)
+	}
+
 	if _, err := s.db.ExecContext(ctx, migration002Down); err != nil {
 		return wrapControlPlaneError(err)
 	}
@@ -89,7 +93,7 @@ func (s *PostgresStore) RollBackMigrations(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, migration001Down); err != nil {
 		return wrapControlPlaneError(err)
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version IN ($1,$2)`, "001", "002")
+	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version IN ($1,$2,$3)`, "001", "002", "003")
 
 	return wrapControlPlaneError(err)
 }
@@ -172,9 +176,10 @@ func (s *PostgresStore) CreateConnection(ctx context.Context, connection Connect
 	services, _ := json.Marshal(connection.Services)
 	requested, _ := json.Marshal(connection.RequestedScopes)
 	granted, _ := json.Marshal(connection.GrantedScopes)
+	discovery, _ := json.Marshal(connection.DiscoveryStatus)
 
-	_, err = s.db.ExecContext(ctx, `INSERT INTO google_connections(id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
-		connection.ID, connection.OrganizationID, connection.Name, connection.GoogleEmail, connection.GoogleSubject, connection.OAuthClientID, services, requested, granted, connection.Status, connection.SecretRef, connection.LastValidatedAt, connection.LastError, connection.CreatedAt, connection.UpdatedAt)
+	_, err = s.db.ExecContext(ctx, `INSERT INTO google_connections(id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,discovery_status_json,created_at,updated_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+		connection.ID, connection.OrganizationID, connection.Name, connection.GoogleEmail, connection.GoogleSubject, connection.OAuthClientID, services, requested, granted, connection.Status, connection.SecretRef, connection.LastValidatedAt, connection.LastError, discovery, connection.CreatedAt, connection.UpdatedAt)
 	if isUniqueViolation(err) {
 		return Connection{}, ErrConflict
 	}
@@ -214,6 +219,8 @@ func (s *PostgresStore) ListConnections(ctx context.Context, organizationID stri
 	return out, nil
 }
 
+// UpdateConnection deliberately does not write discovery_status_json. That
+// status is owned exclusively by UpdateDiscoveryStatus to avoid stale clobbering.
 func (s *PostgresStore) UpdateConnection(ctx context.Context, connection Connection) (Connection, error) {
 	name, err := normalizeName(connection.Name)
 	if err != nil {
@@ -240,6 +247,22 @@ func (s *PostgresStore) UpdateConnection(ctx context.Context, connection Connect
 	}
 
 	return cloneConnection(connection), nil
+}
+
+// UpdateDiscoveryStatus is the sole writer for per-service discovery status.
+func (s *PostgresStore) UpdateDiscoveryStatus(ctx context.Context, organizationID, connectionID string, status map[string]DiscoveryServiceStatus) error {
+	discovery, _ := json.Marshal(status)
+
+	result, err := s.db.ExecContext(ctx, `UPDATE google_connections SET discovery_status_json=$1,updated_at=now() WHERE organization_id=$2 AND id=$3`, discovery, organizationID, connectionID)
+	if err != nil {
+		return wrapControlPlaneError(err)
+	}
+
+	if affected, _ := result.RowsAffected(); affected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }
 
 func (s *PostgresStore) DeleteConnection(ctx context.Context, organizationID, id string) error {
@@ -416,7 +439,7 @@ func (s *PostgresStore) Close() error {
 }
 
 const (
-	connectionSelect = `SELECT id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,last_error_category,created_at,updated_at FROM google_connections`
+	connectionSelect = `SELECT id,organization_id,name,google_email,google_subject,oauth_client_id,services_json,requested_scopes_json,granted_scopes_json,status,token_secret_ref,last_validated_at,last_error,last_error_category,discovery_status_json,created_at,updated_at FROM google_connections`
 	grantSelect      = `SELECT id,connection_id,organization_id,service,resource_type,resource_id,display_name,parent,metadata_json,enabled,discovered_at,updated_at FROM resource_grants`
 )
 
@@ -424,9 +447,9 @@ type rowScanner interface{ Scan(dest ...any) error }
 
 func scanConnection(row rowScanner) (Connection, error) {
 	var connection Connection
-	var services, requested, granted string
+	var services, requested, granted, discovery string
 
-	err := row.Scan(&connection.ID, &connection.OrganizationID, &connection.Name, &connection.GoogleEmail, &connection.GoogleSubject, &connection.OAuthClientID, &services, &requested, &granted, &connection.Status, &connection.SecretRef, &connection.LastValidatedAt, &connection.LastError, &connection.LastErrorCategory, &connection.CreatedAt, &connection.UpdatedAt)
+	err := row.Scan(&connection.ID, &connection.OrganizationID, &connection.Name, &connection.GoogleEmail, &connection.GoogleSubject, &connection.OAuthClientID, &services, &requested, &granted, &connection.Status, &connection.SecretRef, &connection.LastValidatedAt, &connection.LastError, &connection.LastErrorCategory, &discovery, &connection.CreatedAt, &connection.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Connection{}, ErrNotFound
 	}
@@ -437,6 +460,7 @@ func scanConnection(row rowScanner) (Connection, error) {
 	_ = json.Unmarshal([]byte(services), &connection.Services)
 	_ = json.Unmarshal([]byte(requested), &connection.RequestedScopes)
 	_ = json.Unmarshal([]byte(granted), &connection.GrantedScopes)
+	_ = json.Unmarshal([]byte(discovery), &connection.DiscoveryStatus)
 
 	return cloneConnection(connection), nil
 }
