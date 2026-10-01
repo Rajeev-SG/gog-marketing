@@ -218,6 +218,7 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
 	h.mux.HandleFunc("GET /api/connections/{id}/analytics/property", h.readAnalyticsProperty)
+	h.mux.HandleFunc("GET /api/connections/{id}/resource", h.readProductResource)
 	h.mux.HandleFunc("GET /assets/{id}/property", h.readAnalyticsPropertyPage)
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
@@ -505,8 +506,8 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 
 	assets := productAssets(grants)
 	for i := range assets {
-		if assets[i].Enabled && assets[i].Service == "analytics" && assets[i].Kind == "Property" {
-			assets[i].ReadURL = "/assets/" + url.PathEscape(id) + "/property?resource=" + url.QueryEscape(assets[i].ResourceID)
+		if assets[i].Enabled {
+			assets[i].ReadURL = "/api/connections/" + url.PathEscape(id) + "/resource?resource=" + url.QueryEscape(assets[i].ResourceID)
 		}
 	}
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -711,6 +712,45 @@ func (h *ProductHandler) disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/?message="+url.QueryEscape("Google account disconnected."), http.StatusSeeOther)
+}
+
+func (h *ProductHandler) readProductResource(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+
+	session, ok := h.config.Sessions.FromProductRequest(r)
+	if !ok || session.Admin {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "sign_in_required"})
+
+		return
+	}
+
+	site := r.Header.Get("Sec-Fetch-Site")
+	if site != "same-origin" && !(site == "" && constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF)) {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "same_origin_required"})
+
+		return
+	}
+	actor := Actor{UserID: session.UserID, OrganizationID: session.OrgID, Role: session.Role}
+
+	grant, err := h.config.Service.ReadResource(r.Context(), actor, r.PathValue("id"), r.URL.Query().Get("resource"))
+	if err != nil {
+		status, code := http.StatusBadGateway, "read_failed"
+		if errors.Is(err, ErrForbidden) || errors.Is(err, ErrInvalid) {
+			status, code = http.StatusForbidden, "access_denied"
+		}
+
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": code})
+
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"operation": "resource.read", "service": grant.Service,
+		"resource": map[string]any{"id": grant.ResourceID, "type": grant.ResourceType, "name": grant.DisplayName},
+	})
 }
 
 func (h *ProductHandler) render(w http.ResponseWriter, name string, data any) {

@@ -28,6 +28,7 @@ type Service struct {
 	Secrets               SecretStore
 	OAuth                 OAuthProvider
 	Discoverer            Discoverer
+	Reader                ResourceReader
 	RedirectURI           string
 	Now                   func() time.Time
 	AnalyticsAdminFactory func(context.Context, string) (*analyticsadmin.Service, error)

@@ -29,7 +29,7 @@ func (p Policy) Allow(ctx context.Context, actor Actor, connectionID, service, r
 		return wrapControlPlaneError(err)
 	}
 
-	if grant.Service != service || !grant.Enabled {
+	if (service != "" && grant.Service != service) || !grant.Enabled {
 		return fmt.Errorf("%w: resource grant is disabled", ErrForbidden)
 	}
 
