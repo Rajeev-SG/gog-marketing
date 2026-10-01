@@ -218,6 +218,7 @@ func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
 	h.mux.HandleFunc("GET /api/connections/{id}/analytics/property", h.readAnalyticsProperty)
+	h.mux.HandleFunc("GET /api/connections/{id}/resource", h.readProductResource)
 	h.mux.HandleFunc("GET /assets/{id}/property", h.readAnalyticsPropertyPage)
 	h.mux.HandleFunc("POST /assets/{id}/save", h.saveAssets)
 	h.mux.HandleFunc("POST /assets/{id}/discover", h.discover)
@@ -436,6 +437,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	assets := []productAsset{}
 	serviceNames := make(map[string]bool)
 	needsReconnect := false
+	partialLoad := false
 
 	for _, connection := range connections {
 		if !isVisibleProductConnection(connection) {
@@ -450,11 +452,15 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		})
 		needsReconnect = needsReconnect || state == "needs_attention"
 
-		if grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID); listErr == nil {
-			for _, asset := range productAssets(grants) {
-				assets = append(assets, asset)
-				serviceNames[asset.Service] = true
-			}
+		grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID)
+		if listErr != nil {
+			partialLoad = true
+			continue
+		}
+
+		for _, asset := range productAssets(grants) {
+			assets = append(assets, asset)
+			serviceNames[asset.Service] = true
 		}
 	}
 
@@ -474,7 +480,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		"ServiceCount":     len(serviceNames),
 		"NeedsReconnect":   needsReconnect,
 		"Message":          r.URL.Query().Get("message"),
-		templateErrorField: r.URL.Query().Get("error"),
+		templateErrorField: homeErrorMessage(r.URL.Query().Get("error"), partialLoad),
 		"CSRF":             session.CSRF,
 	})
 }
@@ -505,21 +511,22 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 
 	assets := productAssets(grants)
 	for i := range assets {
-		if assets[i].Enabled && assets[i].Service == "analytics" && assets[i].Kind == "Property" {
-			assets[i].ReadURL = "/assets/" + url.PathEscape(id) + "/property?resource=" + url.QueryEscape(assets[i].ResourceID)
+		if assets[i].Enabled {
+			assets[i].ReadURL = "/api/connections/" + url.PathEscape(id) + "/resource?resource=" + url.QueryEscape(assets[i].ResourceID)
 		}
 	}
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	groups := productAssetGroups(assets, query, connection.DiscoveryStatus)
 	state := productConnectionState(connection)
 	h.render(w, "assets", map[string]any{
 		"Connection":       connection,
 		"State":            state,
 		"StateLabel":       productStateLabel(state),
 		"Assets":           assets,
-		"Groups":           productAssetGroups(assets, query, connection.DiscoveryStatus),
+		"Groups":           groups,
 		"ServiceStatuses":  productDiscoveryStatuses(connection),
 		"Query":            query,
-		"HasAssets":        len(productAssetGroups(assets, query, connection.DiscoveryStatus)) > 0,
+		"HasAssets":        len(groups) > 0,
 		"NeedsReconnect":   state == "needs_attention",
 		"CanRetry":         state == "connected",
 		templateErrorField: r.URL.Query().Get("error"),
@@ -713,6 +720,44 @@ func (h *ProductHandler) disconnect(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/?message="+url.QueryEscape("Google account disconnected."), http.StatusSeeOther)
 }
 
+func (h *ProductHandler) readProductResource(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+
+	session, ok := h.config.Sessions.FromProductRequest(r)
+	if !ok || session.Admin {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "sign_in_required"})
+
+		return
+	}
+
+	if !productAPIRequestAllowed(r, session) {
+		w.WriteHeader(http.StatusForbidden)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "same_origin_required"})
+
+		return
+	}
+	actor := Actor{UserID: session.UserID, OrganizationID: session.OrgID, Role: session.Role}
+
+	grant, err := h.config.Service.ReadResource(r.Context(), actor, r.PathValue("id"), r.URL.Query().Get("resource"))
+	if err != nil {
+		status, code := http.StatusBadGateway, "read_failed"
+		if errors.Is(err, ErrForbidden) || errors.Is(err, ErrInvalid) {
+			status, code = http.StatusForbidden, "access_denied"
+		}
+
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": code})
+
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"operation": "resource.read", "service": grant.Service,
+		"resource": map[string]any{"id": grant.ResourceID, "type": grant.ResourceType, "name": grant.DisplayName},
+	})
+}
+
 func (h *ProductHandler) render(w http.ResponseWriter, name string, data any) {
 	var body bytes.Buffer
 	if err := h.templates.ExecuteTemplate(&body, name, data); err != nil {
@@ -826,6 +871,18 @@ func productStateLabel(state string) string {
 	default:
 		return "Disconnected"
 	}
+}
+
+func homeErrorMessage(explicit string, partialLoad bool) string {
+	if explicit != "" {
+		return explicit
+	}
+
+	if partialLoad {
+		return "Some Google data could not be loaded. Existing selections are unchanged."
+	}
+
+	return ""
 }
 
 func productFailureMessage(err error) (string, bool) {

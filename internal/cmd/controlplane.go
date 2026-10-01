@@ -123,6 +123,7 @@ func (c *ControlPlaneCmd) Run(ctx context.Context, _ *RootFlags) error {
 	provider := controlplane.NewGoogleOAuthProvider(googleClient.ClientID, googleClient.ClientSecret, redirectURI)
 	service := &controlplane.Service{
 		Store: store, Secrets: secretStore, OAuth: provider, RedirectURI: redirectURI,
+		Reader:     controlplane.EngineResourceReader{GoogleAdsDeveloperToken: c.GoogleAdsDeveloperToken, GoogleAdsLoginCustomer: c.GoogleAdsLoginCustomer},
 		Discoverer: controlPlaneDiscoverer(c),
 	}
 	for _, name := range splitCSV(c.SeedConnections) {

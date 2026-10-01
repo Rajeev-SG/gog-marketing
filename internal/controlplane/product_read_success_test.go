@@ -124,7 +124,7 @@ func TestProductReadSuccessUsesCentralTokenAndCountsOnlyAPI(t *testing.T) {
 			}
 			server, client := newProductTestHandler(t, service, actor)
 			cookies := productSessionCookies(t, client, server)
-			resp := productGet(t, client, server.URL, "/api/connections/"+connection.ID+"/analytics/property?resource=properties/123", cookies)
+			resp := productGetWithCSRF(t, client, server.URL, "/api/connections/"+connection.ID+"/analytics/property?resource=properties/123", cookies, productCSRF(t, server, client, cookies))
 
 			body := readProductBody(t, resp)
 			if resp.StatusCode != http.StatusOK || !strings.Contains(body, "analytics.property.get") || strings.Contains(body, "industryCategory") {
@@ -176,7 +176,7 @@ func TestProductReadRejectsCrossOriginBeforePolicyOrCredentials(t *testing.T) {
 	}
 
 	server, client := newProductTestHandlerWithSessions(t, service, actor, sessions)
-	for _, site := range []string{"cross-site", "same-site", "none", ""} {
+	for _, site := range []string{"cross-site", "same-site", ""} {
 		req, requestErr := http.NewRequestWithContext(context.Background(), http.MethodGet, server.URL+"/api/connections/unknown/analytics/property?resource=properties/123", nil)
 		if requestErr != nil {
 			t.Fatal(requestErr)

@@ -110,15 +110,41 @@ type AnalyticsPropertyData struct {
 	CurrencyCode string `json:"currency_code"`
 }
 
-func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPropertyData, int, string) {
+func productFetchMetadataAllowed(r *http.Request) bool {
+	site := r.Header.Get("Sec-Fetch-Site")
+	return site == "same-origin" || site == "none"
+}
+
+// productAPIRequestAllowed requires Fetch Metadata and a CSRF header for JSON API reads.
+func productAPIRequestAllowed(r *http.Request, session sessionPayload) bool {
+	if !productFetchMetadataAllowed(r) {
+		return false
+	}
+
+	return constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF)
+}
+
+// productPageRequestAllowed requires Fetch Metadata only for HTML page reads
+// that are reached by same-origin navigation and change no state.
+func productPageRequestAllowed(r *http.Request) bool {
+	return productFetchMetadataAllowed(r)
+}
+
+func (h *ProductHandler) analyticsPropertyRequest(r *http.Request, requireCSRF bool) (AnalyticsPropertyData, int, string) {
 	session, ok := h.config.Sessions.FromProductRequest(r)
 	if !ok {
 		return AnalyticsPropertyData{}, http.StatusUnauthorized, "sign_in_required"
 	}
-	// Browsers cannot forge Fetch Metadata. Native agents must supply the
-	// session's private CSRF header when Fetch Metadata is absent.
-	site := r.Header.Get("Sec-Fetch-Site")
-	if site != "same-origin" && !(site == "" && constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF)) {
+	// Browsers cannot forge Fetch Metadata. This endpoint is browser-only:
+	// requests must carry Sec-Fetch-Site: same-origin (or none) AND a matching
+	// X-CSRF-Token header. Non-browser clients are intentionally unsupported.
+	allowed := productPageRequestAllowed(r)
+
+	if requireCSRF {
+		allowed = productAPIRequestAllowed(r, session)
+	}
+
+	if !allowed {
 		return AnalyticsPropertyData{}, http.StatusForbidden, "same_origin_required"
 	}
 	actor := Actor{UserID: session.UserID, OrganizationID: session.OrgID, Role: session.Role}
@@ -127,7 +153,6 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 	if err != nil {
 		status, code := http.StatusBadGateway, "read_failed"
 
-		_, needsReconnect := productFailureMessage(err)
 		switch {
 		case errors.Is(err, ErrForbidden):
 			status, code = http.StatusForbidden, "access_denied"
@@ -135,8 +160,10 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 			status, code = http.StatusServiceUnavailable, "temporarily_unavailable"
 		case errors.Is(err, ErrInvalid):
 			status, code = http.StatusBadRequest, "invalid_resource"
-		case needsReconnect:
-			status, code = http.StatusConflict, "reconnect_required"
+		default:
+			if _, needsReconnect := productFailureMessage(err); needsReconnect {
+				status, code = http.StatusConflict, "reconnect_required"
+			}
 		}
 
 		return AnalyticsPropertyData{}, status, code
@@ -152,7 +179,7 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 func (h *ProductHandler) readAnalyticsProperty(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	property, status, code := h.analyticsPropertyRequest(r)
+	property, status, code := h.analyticsPropertyRequest(r, true)
 	w.WriteHeader(status)
 
 	if code != "" {
@@ -168,7 +195,7 @@ func (h *ProductHandler) readAnalyticsProperty(w http.ResponseWriter, r *http.Re
 func (h *ProductHandler) readAnalyticsPropertyPage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
-	property, status, code := h.analyticsPropertyRequest(r)
+	property, status, code := h.analyticsPropertyRequest(r, false)
 	w.WriteHeader(status)
 	h.render(w, "property", map[string]any{"Property": property, "Error": code, "ConnectionID": r.PathValue("id")})
 }

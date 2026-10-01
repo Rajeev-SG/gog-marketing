@@ -8,9 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/controlplane"
-	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
 const (
@@ -18,108 +16,9 @@ const (
 	AcceptanceOrganizationID = "acceptance-org"
 )
 
-type ResourceReader interface {
-	Read(context.Context, controlplane.Connection, controlplane.OAuthToken, controlplane.ResourceGrant) error
-}
+type ResourceReader = controlplane.ResourceReader
 
-type EngineResourceReader struct{}
-
-func (EngineResourceReader) Read(ctx context.Context, connection controlplane.Connection, token controlplane.OAuthToken, grant controlplane.ResourceGrant) error {
-	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
-
-	switch grant.Service {
-	case "analytics":
-		service, err := googleapi.NewAnalyticsAdmin(ctx, connection.GoogleEmail)
-		if err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		if grant.ResourceType == "property" {
-			if _, propertyErr := service.Properties.Get(grant.ResourceID).Context(ctx).Do(); propertyErr != nil {
-				return wrapAcceptanceError(propertyErr)
-			}
-
-			return nil
-		}
-
-		response, err := service.AccountSummaries.List().PageSize(200).Context(ctx).Do()
-		if err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		for _, summary := range response.AccountSummaries {
-			if summary != nil && summary.Account == grant.ResourceID {
-				return nil
-			}
-		}
-
-		return ErrMissingEnabledGrant
-	case "tagmanager":
-		service, err := googleapi.NewTagManager(ctx, connection.GoogleEmail)
-		if err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		if grant.ResourceType == "container" {
-			if _, err := service.Accounts.Containers.Get(grant.ResourceID).Context(ctx).Do(); err != nil {
-				return wrapAcceptanceError(err)
-			}
-
-			return nil
-		}
-
-		if _, err := service.Accounts.Get(grant.ResourceID).Context(ctx).Do(); err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		return nil
-	case "searchconsole":
-		service, err := googleapi.NewSearchConsole(ctx, connection.GoogleEmail)
-		if err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		if _, err := service.Sites.Get(grant.ResourceID).Context(ctx).Do(); err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		return nil
-	case "bigquery":
-		parts := strings.SplitN(grant.ResourceID, ":", 2)
-
-		project := strings.TrimSpace(parts[0])
-		if project == "" {
-			return ErrBigQueryGrant
-		}
-
-		client, err := googleapi.NewBigQuery(ctx, connection.GoogleEmail, project)
-		if err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		defer func() { _ = client.Close() }()
-
-		if grant.ResourceType == "dataset" {
-			if len(parts) != 2 {
-				return ErrBigQueryGrant
-			}
-
-			if _, err := client.GetDataset(ctx, parts[1]); err != nil {
-				return wrapAcceptanceError(err)
-			}
-
-			return nil
-		}
-
-		if _, err := client.ListDatasets(ctx); err != nil {
-			return wrapAcceptanceError(err)
-		}
-
-		return nil
-	default:
-		return fmt.Errorf("%w %q", ErrUnsupportedReader, grant.Service)
-	}
-}
+type EngineResourceReader = controlplane.EngineResourceReader
 
 type Runtime struct {
 	Paths     Paths
@@ -180,7 +79,7 @@ func OpenRuntime(ctx context.Context, paths Paths, requireOAuthClient bool) (*Ru
 
 	return &Runtime{
 		Paths: paths, Profile: profile, MasterKey: key, Store: store, Secrets: secrets,
-		OAuth: oauth, Reader: EngineResourceReader{}, Retry: DefaultRetryPolicy(), Timeout: 30 * time.Second,
+		OAuth: oauth, Reader: controlplane.EngineResourceReader{GoogleAdsDeveloperToken: profile.GoogleAdsDeveloperToken, GoogleAdsLoginCustomer: profile.GoogleAdsLoginCustomer}, Retry: DefaultRetryPolicy(), Timeout: 30 * time.Second,
 	}, nil
 }
 

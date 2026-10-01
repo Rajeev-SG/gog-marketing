@@ -60,7 +60,7 @@ func TestProductReadAPIRequiresProductSession(t *testing.T) {
 		t.Fatalf("unexpected unauthenticated response: %d %s", resp.StatusCode, body)
 	}
 	cookies := productSessionCookies(t, client, server)
-	resp = productGet(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123", cookies)
+	resp = productGetWithCSRF(t, client, server.URL, "/api/connections/unknown/analytics/property?resource=properties/123", cookies, productCSRF(t, server, client, cookies))
 
 	body = readProductBody(t, resp)
 	if resp.StatusCode != http.StatusForbidden || body != "{\"error\":\"access_denied\"}\n" {
@@ -98,5 +98,84 @@ func TestProductReadStorageFailureIsNotPermissionDenial(t *testing.T) {
 	service := &Service{Store: unavailableGrantStore{MemoryStore: store}}
 	if _, readErr := service.ReadAnalyticsProperty(context.Background(), Actor{UserID: "user-1", OrganizationID: "org-1", Role: "owner"}, connection.ID, "properties/123"); !errors.Is(readErr, ErrReadUnavailable) {
 		t.Fatalf("storage outage was misreported: %v", readErr)
+	}
+}
+
+func TestProductAPIRequestAllowedGate(t *testing.T) {
+	sessions, err := NewSessionManager([]byte("0123456789abcdef0123456789abcdef"), time.Hour, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, store := productTestService(t)
+
+	_, payload, err := sessions.NewProduct(ownerActor(t, store))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		site string
+		csrf string
+		want bool
+	}{
+		{"same-origin with valid token", "same-origin", payload.CSRF, true},
+		{"same-origin without token", "same-origin", "", false},
+		{"cross-site with valid token", "cross-site", payload.CSRF, false},
+		{"cross-site without token", "cross-site", "", false},
+		{"none with valid token", "none", payload.CSRF, true},
+		{"none without token", "none", "", false},
+		{"missing fetch metadata with token", "", payload.CSRF, false},
+		{"same-site with token", "same-site", payload.CSRF, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, "/api/test", nil)
+			if reqErr != nil {
+				t.Fatal(reqErr)
+			}
+
+			if tt.site != "" {
+				req.Header.Set("Sec-Fetch-Site", tt.site)
+			}
+
+			if tt.csrf != "" {
+				req.Header.Set("X-CSRF-Token", tt.csrf)
+			}
+
+			if got := productAPIRequestAllowed(req, payload); got != tt.want {
+				t.Fatalf("productAPIRequestAllowed(site=%q, csrf=%q) = %v, want %v", tt.site, tt.csrf, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProductPageRequestAllowedRequiresFetchMetadataOnly(t *testing.T) {
+	tests := []struct {
+		name string
+		site string
+		want bool
+	}{
+		{"same-origin", "same-origin", true},
+		{"none", "none", true},
+		{"cross-site", "cross-site", false},
+		{"missing", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, "/assets/test/property", nil)
+			if reqErr != nil {
+				t.Fatal(reqErr)
+			}
+
+			if tt.site != "" {
+				req.Header.Set("Sec-Fetch-Site", tt.site)
+			}
+
+			if got := productPageRequestAllowed(req); got != tt.want {
+				t.Fatalf("productPageRequestAllowed(site=%q) = %v, want %v", tt.site, got, tt.want)
+			}
+		})
 	}
 }

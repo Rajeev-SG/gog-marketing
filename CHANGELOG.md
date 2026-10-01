@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product: extend grant-controlled agent/API reads to GA4 accounts and properties, Tag Manager accounts and containers, Search Console sites, Google Ads customers, and BigQuery projects/datasets using the existing typed Google clients and read-only guards. (#36)
+
 - Product: support independently connected personal and work Google accounts with stable connection identity, account-specific asset grants, duplicate-identity protection, reconnect/disconnect controls, and product-managed persistence. Keep Reconnect Google available for every managed account and keep raw connection identifiers out of default account copy. (#36)
 
 - Product: report discovery readiness per Google service, keep successful inventories and saved selections usable when another service fails, persist service status across restarts, and surface safe customer-facing service states. (#36)
