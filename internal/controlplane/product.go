@@ -437,6 +437,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	assets := []productAsset{}
 	serviceNames := make(map[string]bool)
 	needsReconnect := false
+	partialLoad := false
 
 	for _, connection := range connections {
 		if !isVisibleProductConnection(connection) {
@@ -451,11 +452,15 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		})
 		needsReconnect = needsReconnect || state == "needs_attention"
 
-		if grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID); listErr == nil {
-			for _, asset := range productAssets(grants) {
-				assets = append(assets, asset)
-				serviceNames[asset.Service] = true
-			}
+		grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID)
+		if listErr != nil {
+			partialLoad = true
+			continue
+		}
+
+		for _, asset := range productAssets(grants) {
+			assets = append(assets, asset)
+			serviceNames[asset.Service] = true
 		}
 	}
 
@@ -475,7 +480,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		"ServiceCount":     len(serviceNames),
 		"NeedsReconnect":   needsReconnect,
 		"Message":          r.URL.Query().Get("message"),
-		templateErrorField: r.URL.Query().Get("error"),
+		templateErrorField: homeErrorMessage(r.URL.Query().Get("error"), partialLoad),
 		"CSRF":             session.CSRF,
 	})
 }
@@ -511,16 +516,17 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	groups := productAssetGroups(assets, query, connection.DiscoveryStatus)
 	state := productConnectionState(connection)
 	h.render(w, "assets", map[string]any{
 		"Connection":       connection,
 		"State":            state,
 		"StateLabel":       productStateLabel(state),
 		"Assets":           assets,
-		"Groups":           productAssetGroups(assets, query, connection.DiscoveryStatus),
+		"Groups":           groups,
 		"ServiceStatuses":  productDiscoveryStatuses(connection),
 		"Query":            query,
-		"HasAssets":        len(productAssetGroups(assets, query, connection.DiscoveryStatus)) > 0,
+		"HasAssets":        len(groups) > 0,
 		"NeedsReconnect":   state == "needs_attention",
 		"CanRetry":         state == "connected",
 		templateErrorField: r.URL.Query().Get("error"),
@@ -865,6 +871,18 @@ func productStateLabel(state string) string {
 	default:
 		return "Disconnected"
 	}
+}
+
+func homeErrorMessage(explicit string, partialLoad bool) string {
+	if explicit != "" {
+		return explicit
+	}
+
+	if partialLoad {
+		return "Some Google data could not be loaded. Existing selections are unchanged."
+	}
+
+	return ""
 }
 
 func productFailureMessage(err error) (string, bool) {

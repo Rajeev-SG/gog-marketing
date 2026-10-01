@@ -135,7 +135,6 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 	if err != nil {
 		status, code := http.StatusBadGateway, "read_failed"
 
-		_, needsReconnect := productFailureMessage(err)
 		switch {
 		case errors.Is(err, ErrForbidden):
 			status, code = http.StatusForbidden, "access_denied"
@@ -143,8 +142,10 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 			status, code = http.StatusServiceUnavailable, "temporarily_unavailable"
 		case errors.Is(err, ErrInvalid):
 			status, code = http.StatusBadRequest, "invalid_resource"
-		case needsReconnect:
-			status, code = http.StatusConflict, "reconnect_required"
+		default:
+			if _, needsReconnect := productFailureMessage(err); needsReconnect {
+				status, code = http.StatusConflict, "reconnect_required"
+			}
 		}
 
 		return AnalyticsPropertyData{}, status, code
