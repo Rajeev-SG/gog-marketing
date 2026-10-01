@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/openclaw/gogcli/internal/googleads"
@@ -170,12 +171,22 @@ func (s *Service) ReadResource(ctx context.Context, actor Actor, connectionID, r
 		return deny(ErrForbidden)
 	}
 
-	if err := (Policy{Store: s.Store}).Allow(ctx, actor, connectionID, "", resourceID); err != nil {
+	grant, err := s.Store.GetResourceGrant(ctx, actor.OrganizationID, connectionID, resourceID)
+	if err != nil || !validResourceRead(grant.Service, grant.ResourceType) {
 		return deny(ErrForbidden)
 	}
 
-	grant, err := s.Store.GetResourceGrant(ctx, actor.OrganizationID, connectionID, resourceID)
-	if err != nil || !validResourceRead(grant.Service, grant.ResourceType) {
+	connection, err := s.Store.GetConnection(ctx, actor.OrganizationID, connectionID)
+	if err != nil {
+		return deny(ErrForbidden)
+	}
+
+	if (connection.Status != ConnectionHealthy && connection.Status != ConnectionExpired) || !slices.Contains(connection.Services, grant.Service) {
+		s.audit(ctx, actor, connectionID, action, "unavailable", "connection_not_ready")
+		return ResourceGrant{}, ErrForbidden
+	}
+
+	if policyErr := (Policy{Store: s.Store}).Allow(ctx, actor, connectionID, grant.Service, resourceID); policyErr != nil {
 		return deny(ErrForbidden)
 	}
 

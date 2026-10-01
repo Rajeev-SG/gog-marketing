@@ -110,6 +110,15 @@ type AnalyticsPropertyData struct {
 	CurrencyCode string `json:"currency_code"`
 }
 
+func productAPIRequestAllowed(r *http.Request, session sessionPayload) bool {
+	site := r.Header.Get("Sec-Fetch-Site")
+	if site != "same-origin" && site != "none" {
+		return false
+	}
+
+	return constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF) || constantTimeEqual(r.FormValue("csrf"), session.CSRF)
+}
+
 func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPropertyData, int, string) {
 	session, ok := h.config.Sessions.FromProductRequest(r)
 	if !ok {
@@ -117,8 +126,7 @@ func (h *ProductHandler) analyticsPropertyRequest(r *http.Request) (AnalyticsPro
 	}
 	// Browsers cannot forge Fetch Metadata. Native agents must supply the
 	// session's private CSRF header when Fetch Metadata is absent.
-	site := r.Header.Get("Sec-Fetch-Site")
-	if site != "same-origin" && !(site == "" && constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF)) {
+	if !productAPIRequestAllowed(r, session) {
 		return AnalyticsPropertyData{}, http.StatusForbidden, "same_origin_required"
 	}
 	actor := Actor{UserID: session.UserID, OrganizationID: session.OrgID, Role: session.Role}

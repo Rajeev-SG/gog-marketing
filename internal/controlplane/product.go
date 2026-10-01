@@ -726,8 +726,7 @@ func (h *ProductHandler) readProductResource(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	site := r.Header.Get("Sec-Fetch-Site")
-	if site != "same-origin" && !(site == "" && constantTimeEqual(r.Header.Get("X-CSRF-Token"), session.CSRF)) {
+	if !productAPIRequestAllowed(r, session) {
 		w.WriteHeader(http.StatusForbidden)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "same_origin_required"})
 
