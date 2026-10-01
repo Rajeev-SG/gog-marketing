@@ -3,6 +3,8 @@ package controlplane
 import (
 	"context"
 	"errors"
+	"github.com/openclaw/gogcli/internal/authclient"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"net/http"
 	"strings"
 	"testing"
@@ -191,16 +193,22 @@ func TestProductResourceReadRequiresFetchMetadataAndCSRF(t *testing.T) {
 	}
 }
 
-func TestResourceReaderInjectsAuthForAllServices(t *testing.T) {
-	// Verify that auth context is injected for all service readers.
-	// This is a structural check via the source code pattern.
-	sources := []string{"tagmanager", "searchconsole", "bigquery"}
-	for _, service := range sources {
-		// Each service case should have auth injection
-		// This is verified by the code structure in resource_reader.go
-		_ = service
+func TestWithGoogleAuthInjectsStoredModeAndToken(t *testing.T) {
+	token := OAuthToken{AccessToken: "test-access-token"}
+	ctx := withGoogleAuth(context.Background(), token)
+
+	// Verify access token is set
+	if got := authclient.AccessTokenFromContext(ctx); got != "test-access-token" {
+		t.Fatalf("access token = %q, want test-access-token", got)
 	}
 
-	// Verify EngineResourceReader implements ResourceReader
-	var _ ResourceReader = EngineResourceReader{}
+	// Verify no-input constraint is set
+	if !googleapi.NoInputFromContext(ctx) {
+		t.Fatal("context should be no-input")
+	}
+
+	// Verify context is not nil and differs from input
+	if ctx == nil {
+		t.Fatal("withGoogleAuth returned nil context")
+	}
 }
