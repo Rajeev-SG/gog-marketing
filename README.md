@@ -1,75 +1,113 @@
 # gog-marketing
 
-**Controlled Google marketing access for AI agents and tools.**
+**Standard gog, extended with marketing APIs and controlled agent access.**
 
 ![gog-marketing home and access overview](docs/ui/renders/02-home-access-overview.png)
 
-`gog-marketing` gives teams one clear place to connect approved Google
-accounts, choose the marketing assets AI tools may use, see whether each
-connection is healthy, and review access-configuration changes.
+`gog-marketing` is a **superset of standard `gog`**. It retains the existing
+Google Workspace command surface for Gmail, Calendar, Drive, Docs, Sheets,
+Slides, Chat, Contacts, Tasks, People, Forms, Meet, Classroom, Apps Script,
+Workspace administration and the other capabilities already present in the
+fork, while adding richer marketing access such as Google Analytics, Google
+Ads, Google Tag Manager, Search Console and BigQuery.
 
-It is an access and permissions layer, not an analytics or reporting
-dashboard. It does not display marketing performance data or recommend actions
-based on customer data.
+The same typed `gog` engine powers people, scripts and agents. The product
+layer adds centrally managed connections, service/resource permissions,
+connection health, auditability and a marketer-friendly UI. It does **not**
+replace standard `gog` with a five-service marketing client.
 
-## What marketers can see
+The web interface is an access and permissions layer, not an analytics or
+reporting dashboard. Normal product screens show what an agent may use rather
+than customer marketing performance.
+
+## Product surface
+
+### Workspace / standard gog
+
+Standard `gog` functionality remains part of this fork. Existing commands such
+as Gmail, Calendar, Drive, Docs, Sheets, Slides and the wider Workspace surface
+continue to work through the `gog` binary.
+
+### Marketing
+
+The fork adds or expands typed marketing capabilities including **Google
+Analytics, Google Ads, Google Tag Manager, Search Console and BigQuery**, plus
+the existing marketing-adjacent surfaces already inherited from `gog`.
+
+The product UI should group these capabilities clearly (for example
+**Workspace** and **Marketing**) rather than hard-code a five-service product
+boundary.
+
+## What users can control
 
 - Which Google accounts are connected.
-- Which Google services are available.
-- Which properties, accounts, containers, sites, and projects are enabled.
+- Which Workspace and Marketing services are enabled.
+- Which marketing properties, accounts, containers, sites, projects and
+  datasets are enabled where resource-level grants exist.
+- Which service/tool capabilities agents may use where a resource picker is
+  not meaningful.
 - Which connections are healthy or need attention.
-- What access-configuration changed, when, and who changed it.
+- What access configuration changed, when, and who changed it.
 
-Supported services are **Google Analytics, Google Ads, Google Tag Manager,
-Search Console, and BigQuery**.
+Least privilege remains the default: enable only the services/scopes required
+for the intended workflow instead of authorising the entire surface at once.
 
 ## How it works
 
-1. An administrator connects an approved Google account once.
-2. The team chooses the specific marketing assets AI tools may access.
-3. Agents use only that approved access, with read-only mode available by
-   default.
-4. The team can review connection health and access changes at any time.
+1. An administrator connects an approved Google account.
+2. The team enables the Workspace and/or Marketing services it needs.
+3. Where a service has a resource model, the team chooses the specific assets
+   agents may access.
+4. Agents use only the approved service/tool/resource access, with read-only
+   mode available by default.
+5. The team can review connection health and access changes at any time.
 
 Google asks for the first login and approval. After that, `gog-marketing`
-manages token refresh and routes requests to the approved Google services. No
-marketing KPIs, charts, traffic, revenue, ad spend, conversions, impressions,
-campaigns, or reports are exposed by this product.
+manages token refresh and routes requests through the existing typed `gog`
+clients and permission checks.
 
 ## The revised product UI
 
 The 12 approved interface references are stored in
 [`docs/ui/renders`](docs/ui/renders) and tracked for implementation in
-[issue #50](https://github.com/Rajeev-SG/gog-marketing/issues/50). They cover the
+[issue #50](https://github.com/Rajeev-SG/gog-marketing/issues/50). Full standard-`gog` + marketing product-surface parity is tracked in [issue #52](https://github.com/Rajeev-SG/gog-marketing/issues/52). The references cover the
 application shell, Home, service and account cards, asset selection, loading,
 attention, partial-failure, onboarding, feedback, and mobile states.
 
 ## Getting started
 
-Most marketers only need the product interface. A technical administrator
-completes the one-time Google setup below, then the team can connect accounts
-and choose assets without handling OAuth files or tokens.
+Most users should interact through the product interface or the shipped `gog`
+binary. A technical administrator completes the one-time Google setup below;
+users then enable only the services and assets they need without handling OAuth
+files or tokens.
 
 ### For your administrator
 
-You need macOS or Linux, Homebrew, a Google Account or Google Workspace
-account, and either a `client_secret_*.json` file or permission to create one.
-Docker is only needed for the repository acceptance checks.
+You need a Google Account or Google Workspace account, the Go toolchain
+declared in `go.mod`, and either a `client_secret_*.json` file or permission
+to create one. Docker is only needed for the repository acceptance checks.
 
 <details>
 <summary>Open the one-time technical setup</summary>
 
-Install the command-line client:
+Build this fork's command-line client:
 
 ```bash
-brew install openclaw/tap/gogcli
-gog --version
+git clone https://github.com/Rajeev-SG/gog-marketing.git
+cd gog-marketing
+make build
+./bin/gog --version
 ```
+
+Do **not** use `brew install openclaw/tap/gogcli` when validating
+`gog-marketing`: that installs upstream standard `gog`, not this fork's
+marketing/product additions. A fork-owned packaged release is tracked in
+[#52](https://github.com/Rajeev-SG/gog-marketing/issues/52).
 
 If someone gave you a Google OAuth client file, store it securely:
 
 ```bash
-gog auth credentials set \
+./bin/gog auth credentials set \
   --client personal-owned \
   ~/Downloads/client_secret_*.json
 ```
@@ -77,18 +115,18 @@ gog auth credentials set \
 Connect the account and enable only the services the team needs:
 
 ```bash
-gog auth add you@gmail.com \
+./bin/gog auth add you@gmail.com \
   --client personal-owned \
-  --services analytics,googleads,tagmanager,searchconsole,bigquery
+  --services gmail,calendar,drive,analytics
 ```
 
 Google opens a browser for the first login and consent. Verify the connection:
 
 ```bash
-gog auth doctor --check --no-input
+./bin/gog auth doctor --check --no-input
 ```
 
-When no OAuth client file exists, run `gog auth setup you@gmail.com --client
+When no OAuth client file exists, run `./bin/gog auth setup you@gmail.com --client
 personal-owned` and follow the guided Google Cloud setup. The full walkthrough
 is in the [quickstart](docs/quickstart.md).
 
@@ -101,11 +139,14 @@ needs access, give it an approved `gog` command rather than a credential.
 ### Safe agent access
 
 Start with approved, read-only, non-interactive commands and explicit account
-selection. For example:
+selection. Standard `gog` and marketing commands use the same safety controls:
 
 ```bash
-gog --readonly --no-input --json analytics properties list \
-  --account you@gmail.com
+./bin/gog --readonly --no-input --json --account you@gmail.com \
+  gmail search 'newer_than:7d' --max 10
+
+./bin/gog --readonly --no-input --json --account you@gmail.com \
+  analytics properties list
 ```
 
 - `--readonly` blocks writes.
@@ -152,7 +193,7 @@ terminal input. See [Unattended Acceptance](docs/acceptance.md).
 ## Documentation
 
 - [Quickstart](docs/quickstart.md): complete Google Cloud walkthrough.
-- [Install](docs/install.md): Homebrew, Docker, Windows, and source builds.
+- [Install](docs/install.md): build/install this fork and understand the upstream package distinction.
 - [Examples](docs/examples.md): common tasks and command patterns.
 - [Unattended Acceptance](docs/acceptance.md): the no-browser, no-Keychain contract.
 - [Automation](docs/automation.md): JSON output, exit codes, and agent safety.
