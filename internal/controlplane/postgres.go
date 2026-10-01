@@ -82,6 +82,10 @@ func (s *PostgresStore) Migrate(ctx context.Context) error {
 }
 
 func (s *PostgresStore) RollBackMigrations(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, migration006Down); err != nil {
+		return wrapControlPlaneError(err)
+	}
+
 	if _, err := s.db.ExecContext(ctx, migration005Down); err != nil {
 		return wrapControlPlaneError(err)
 	}
@@ -101,7 +105,7 @@ func (s *PostgresStore) RollBackMigrations(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, migration001Down); err != nil {
 		return wrapControlPlaneError(err)
 	}
-	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version IN ($1,$2,$3,$4,$5)`, "001", "002", "003", "004", "005")
+	_, err := s.db.ExecContext(ctx, `DELETE FROM schema_migrations WHERE version IN ($1,$2,$3,$4,$5,$6)`, "001", "002", "003", "004", "005", "006")
 
 	return wrapControlPlaneError(err)
 }

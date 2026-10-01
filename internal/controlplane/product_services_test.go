@@ -21,7 +21,7 @@ func TestProductServicesPageShowsWorkspaceAndMarketingGrants(t *testing.T) {
 	resp := productGet(t, client, server.URL, "/assets/"+connection.ID+"/services", cookies) //nolint:bodyclose // readProductBody closes this response
 
 	body := readProductBody(t, resp)
-	for _, want := range []string{"Workspace", "Marketing", "Enable service", "Allow read tool", "Gmail API", "Analytics Admin API"} {
+	for _, want := range []string{"Workspace", "Marketing", "Enable service", "Allow read tool", "Curated read-tool access", "Excluded from hosted tool path", "Gmail API", "Analytics Admin API"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("services page missing %q: %s", want, body)
 		}

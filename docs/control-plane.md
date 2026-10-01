@@ -117,6 +117,12 @@ uses the stored central token through the existing typed Google clients. Tool
 results are fixed-schema JSON and every allow/deny/error path is audited. No
 wildcard tool grant is accepted.
 
+Migration `006` rewrites any legacy `service/*` grant for Gmail, Calendar or
+Drive to its enumerated read tool, preserves its enabled state, and removes
+unsafe or uncurated legacy grants. Its down migration is intentionally a no-op
+because restoring wildcard authority would reintroduce the least-privilege
+defect.
+
 ## Acceptance evidence policy
 
 Do not commit screenshots or manifests containing real account emails, Google

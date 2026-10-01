@@ -109,6 +109,37 @@ func TestPostgresStoreMigrationsAndRestart(t *testing.T) {
 		t.Fatalf("connection did not persist across reopen: %+v", persisted)
 	}
 
+	legacyToolGrants := `{"gmail/*":{"service":"gmail","tool":"*","enabled":true},"gmail/gmail_send":{"service":"gmail","tool":"gmail_send","enabled":true},"docs/*":{"service":"docs","tool":"*","enabled":true}}`
+	if _, updateErr := reopened.db.ExecContext(ctx, `UPDATE google_connections SET tool_grants_json=$1 WHERE id=$2`, legacyToolGrants, connection.ID); updateErr != nil {
+		t.Fatal(updateErr)
+	}
+
+	if _, migrationErr := reopened.db.ExecContext(ctx, migration006Up); migrationErr != nil {
+		t.Fatal(migrationErr)
+	}
+
+	normalized, normalizedErr := reopened.GetConnection(ctx, rebootedActor.OrganizationID, connection.ID)
+	if normalizedErr != nil {
+		t.Fatal(normalizedErr)
+	}
+
+	rewritten, ok := normalized.ToolGrants["gmail/gmail_search"]
+	if !ok || !rewritten.Enabled {
+		t.Fatalf("legacy wildcard grant was not rewritten: %#v", normalized.ToolGrants)
+	}
+
+	if _, ok := normalized.ToolGrants["gmail/*"]; ok {
+		t.Fatalf("legacy wildcard grant remained: %#v", normalized.ToolGrants)
+	}
+
+	if _, ok := normalized.ToolGrants["gmail/gmail_send"]; ok {
+		t.Fatalf("unsafe tool grant remained: %#v", normalized.ToolGrants)
+	}
+
+	if _, ok := normalized.ToolGrants["docs/*"]; ok {
+		t.Fatalf("uncurated wildcard grant remained: %#v", normalized.ToolGrants)
+	}
+
 	if rollbackErr := reopened.RollBackMigrations(ctx); rollbackErr != nil {
 		t.Fatal(rollbackErr)
 	}

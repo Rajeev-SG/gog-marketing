@@ -92,7 +92,7 @@ func (s *Service) createConnection(ctx context.Context, actor Actor, name string
 		return Connection{}, fmt.Errorf("control-plane operation: %w", err)
 	}
 
-	s.audit(ctx, actor, connection.ID, "connection.created", "ok", "")
+	s.audit(ctx, actor, connection.ID, "connection.created", "ok", toolUnavailableDetail(normalized))
 
 	return connection, nil
 }
@@ -582,6 +582,8 @@ func (s *Service) AddConnectionServices(ctx context.Context, actor Actor, id str
 		connection.ToolGrants = map[string]ToolGrant{}
 	}
 
+	removeWildcardToolGrants(connection.ToolGrants)
+
 	for _, service := range next {
 		definition, _ := productService(service)
 		if definition.ResourceModel || definition.Tool == "" {
@@ -599,7 +601,7 @@ func (s *Service) AddConnectionServices(ctx context.Context, actor Actor, id str
 		return Connection{}, fmt.Errorf("update connection services: %w", err)
 	}
 
-	s.audit(ctx, actor, id, "connection.services.updated", "ok", strings.Join(next, ","))
+	s.audit(ctx, actor, id, "connection.services.updated", "ok", strings.Join(next, ",")+toolUnavailableDetail(next))
 
 	return updated, nil
 }
@@ -623,11 +625,7 @@ func (s *Service) SetToolEnabled(ctx context.Context, actor Actor, id, service, 
 		connection.ToolGrants = map[string]ToolGrant{}
 	}
 
-	for existingKey, existing := range connection.ToolGrants {
-		if existing.Service == service && existing.Tool == "*" {
-			delete(connection.ToolGrants, existingKey)
-		}
-	}
+	removeWildcardToolGrants(connection.ToolGrants)
 	grant := ToolGrant{Service: service, Tool: tool, Enabled: enabled}
 
 	connection.ToolGrants[key] = grant
@@ -723,6 +721,33 @@ func toolGrantsForServices(services []string) map[string]ToolGrant {
 	}
 
 	return out
+}
+
+func removeWildcardToolGrants(grants map[string]ToolGrant) {
+	for key, grant := range grants {
+		if grant.Tool == "*" {
+			delete(grants, key)
+		}
+	}
+}
+
+func toolUnavailableDetail(services []string) string {
+	unavailable := make([]string, 0)
+
+	for _, service := range services {
+		definition, err := productService(service)
+		if err == nil && !definition.ResourceModel && definition.Tool == "" {
+			unavailable = append(unavailable, service)
+		}
+	}
+
+	if len(unavailable) == 0 {
+		return ""
+	}
+
+	sort.Strings(unavailable)
+
+	return ";tool_unavailable=" + strings.Join(unavailable, ",")
 }
 
 func (s *Service) Disconnect(ctx context.Context, actor Actor, id string) error {

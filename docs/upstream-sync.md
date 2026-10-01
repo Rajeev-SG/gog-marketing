@@ -52,3 +52,5 @@ checks; until then, source builds are the release path.
   explicit service/tool grants without synthetic resources or wildcard access.
 - Verify incremental service enablement requests the union of existing and
   added scopes, preserves prior grants, and can reconnect the same account.
+- Run control-plane migration up/down/up against legacy tool grants and confirm
+  migration `006` leaves no wildcard or uncurated grant keys.

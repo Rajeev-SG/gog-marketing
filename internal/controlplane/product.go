@@ -197,6 +197,7 @@ type productServiceView struct {
 	ResourceModel bool
 	Tool          string
 	ToolLabel     string
+	AccessLabel   string
 	ToolEnabled   bool
 }
 
@@ -1150,12 +1151,21 @@ func productServiceGroups(connection Connection) []productServiceGroup {
 		tool := definition.Tool
 		toolLabel := "Allow read tool"
 
+		accessLabel := "Excluded from hosted tool path"
+		if definition.ResourceModel {
+			accessLabel = "Resource-level access"
+		} else if tool != "" {
+			accessLabel = "Curated read-tool access"
+		}
+
 		view := productServiceView{
 			Service: definition.Service, Name: definition.Name, Category: definition.Category,
-			Enabled: containsString(connection.Services, definition.Service), ResourceModel: definition.ResourceModel, Tool: tool, ToolLabel: toolLabel,
+			Enabled: containsString(connection.Services, definition.Service), ResourceModel: definition.ResourceModel, Tool: tool, ToolLabel: toolLabel, AccessLabel: accessLabel,
 		}
-		if grant, ok := connection.ToolGrants[toolGrantKey(definition.Service, tool)]; ok {
-			view.ToolEnabled = grant.Enabled
+		if tool != "" {
+			if grant, ok := connection.ToolGrants[toolGrantKey(definition.Service, tool)]; ok {
+				view.ToolEnabled = grant.Enabled
+			}
 		}
 
 		group.Services = append(group.Services, view)
