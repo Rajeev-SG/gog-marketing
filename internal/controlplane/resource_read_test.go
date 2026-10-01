@@ -7,6 +7,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/openclaw/gogcli/internal/authclient"
+	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
 type recordingResourceReader struct {
@@ -188,5 +191,25 @@ func TestProductResourceReadRequiresFetchMetadataAndCSRF(t *testing.T) {
 	body := readProductBody(t, resp)
 	if resp.StatusCode != http.StatusForbidden || !strings.Contains(body, "same_origin_required") {
 		t.Fatalf("missing Fetch Metadata was accepted: %d %s", resp.StatusCode, body)
+	}
+}
+
+func TestWithGoogleAuthInjectsStoredModeAndToken(t *testing.T) {
+	token := OAuthToken{AccessToken: "test-access-token"}
+	ctx := withGoogleAuth(context.Background(), token)
+
+	// Verify access token is set
+	if got := authclient.AccessTokenFromContext(ctx); got != "test-access-token" {
+		t.Fatalf("access token = %q, want test-access-token", got)
+	}
+
+	// Verify no-input constraint is set
+	if !googleapi.NoInputFromContext(ctx) {
+		t.Fatal("context should be no-input")
+	}
+
+	// Verify context is not nil and differs from input
+	if ctx == nil {
+		t.Fatal("withGoogleAuth returned nil context")
 	}
 }

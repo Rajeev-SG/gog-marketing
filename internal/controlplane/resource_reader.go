@@ -22,6 +22,16 @@ type ResourceReader interface {
 	Read(context.Context, Connection, OAuthToken, ResourceGrant) error
 }
 
+// withGoogleAuth injects the stored access token and read-only constraints
+// for guarded Google API clients. All service readers must use this helper
+// to ensure consistent credential handling.
+func withGoogleAuth(ctx context.Context, token OAuthToken) context.Context {
+	ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
+	ctx = authclient.WithAccessToken(ctx, token.AccessToken)
+
+	return googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+}
+
 type EngineResourceReader struct {
 	GoogleAdsDeveloperToken string
 	GoogleAdsLoginCustomer  string
@@ -30,10 +40,7 @@ type EngineResourceReader struct {
 func (r EngineResourceReader) Read(ctx context.Context, connection Connection, token OAuthToken, grant ResourceGrant) error {
 	switch grant.Service {
 	case "analytics":
-		// Scope the stored token to guarded analytics clients only.
-		ctx = googleapi.WithAuthDependencies(ctx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
-		ctx = authclient.WithAccessToken(ctx, token.AccessToken)
-		ctx = googleapi.WithReadOnly(googleapi.WithNoInput(ctx), true)
+		ctx = withGoogleAuth(ctx, token)
 
 		service, err := googleapi.NewAnalyticsAdmin(ctx, connection.GoogleEmail)
 		if err != nil {
@@ -61,6 +68,8 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return ErrResourceReaderMissing
 	case "tagmanager":
+		ctx = withGoogleAuth(ctx, token)
+
 		service, err := googleapi.NewTagManager(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create tag manager reader: %w", err)
@@ -80,6 +89,8 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return nil
 	case "searchconsole":
+		ctx = withGoogleAuth(ctx, token)
+
 		service, err := googleapi.NewSearchConsole(ctx, connection.GoogleEmail)
 		if err != nil {
 			return fmt.Errorf("create search console reader: %w", err)
@@ -91,6 +102,8 @@ func (r EngineResourceReader) Read(ctx context.Context, connection Connection, t
 
 		return nil
 	case "bigquery":
+		ctx = withGoogleAuth(ctx, token)
+
 		parts := strings.SplitN(grant.ResourceID, ":", 2)
 
 		project := strings.TrimSpace(parts[0])
