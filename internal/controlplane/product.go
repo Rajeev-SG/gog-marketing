@@ -150,10 +150,11 @@ type ProductHandler struct {
 }
 
 type productOAuthState struct {
-	State        string    `json:"state"`
-	CodeVerifier string    `json:"code_verifier,omitempty"`
-	ConnectionID string    `json:"connection_id,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	State          string    `json:"state"`
+	CodeVerifier   string    `json:"code_verifier,omitempty"`
+	ConnectionID   string    `json:"connection_id,omitempty"`
+	SkipOnboarding bool      `json:"skip_onboarding,omitempty"`
+	ExpiresAt      time.Time `json:"expires_at"`
 }
 
 type productAsset struct {
@@ -214,7 +215,9 @@ func NewProductHandler(config ProductConfig) (*ProductHandler, error) {
 	t, err := template.New("product").Funcs(template.FuncMap{
 		"serviceLabel": serviceLabel,
 		"kindLabel":    kindLabel,
-	}).Parse(productTemplates + productServicesTemplates)
+		"icon":         productIcon,
+		"dict":         templateDict,
+	}).Parse(productTemplates)
 	if err != nil {
 		return nil, wrapControlPlaneError(err)
 	}
@@ -228,9 +231,11 @@ func (h *ProductHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) { h.m
 
 func (h *ProductHandler) routes() {
 	h.mux.HandleFunc("GET /{$}", h.home)
+	h.mux.HandleFunc("GET /static/product.css", h.staticProductCSS)
 	h.mux.HandleFunc("GET /signin", h.signin)
 	h.mux.HandleFunc("GET /auth/google/start", h.authStart)
 	h.mux.HandleFunc("GET /oauth/google/callback", h.oauthCallback)
+	h.mux.HandleFunc("GET /onboarding/{id}", h.onboarding)
 	h.mux.HandleFunc("POST /logout", h.logout)
 	h.mux.HandleFunc("POST /connect/google", h.connect)
 	h.mux.HandleFunc("GET /assets/{id}", h.assets)
@@ -379,7 +384,9 @@ func (h *ProductHandler) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{
-		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
+		State: start.State, ConnectionID: connection.ID,
+		SkipOnboarding: connection.Status != ConnectionNeedsConnect,
+		ExpiresAt:      time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
 }
@@ -407,7 +414,7 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 
 	connection, err := h.config.Service.CompleteOAuth(r.Context(), r.URL.Query().Get("state"), r.URL.Query().Get("code"))
 	if errors.Is(err, ErrConflict) {
-		http.Redirect(w, r, "/?error="+url.QueryEscape("This Google account is already connected."), http.StatusSeeOther)
+		http.Redirect(w, r, "/?notice=duplicate_google_account", http.StatusSeeOther)
 		return
 	}
 
@@ -416,6 +423,11 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 
 		return
 	}
+
+	// Decide the destination from the pre-consent state: a staged connection
+	// never presenting the consent flow is first-time onboarding. Reconnect
+	// (the flag set by BeginOAuth(force=true)) returns to the picker.
+	freshOnboarding := !stored.SkipOnboarding
 
 	discoverActor := Actor{UserID: actor.UserID, OrganizationID: connection.OrganizationID, Role: actor.Role}
 	if _, err := h.config.Service.Discover(r.Context(), discoverActor, connection.ID); err != nil {
@@ -430,7 +442,11 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, "/assets/"+url.PathEscape(connection.ID), http.StatusSeeOther)
+	if freshOnboarding {
+		http.Redirect(w, r, "/onboarding/"+url.PathEscape(connection.ID), http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/assets/"+url.PathEscape(connection.ID), http.StatusSeeOther)
+	}
 }
 
 func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
@@ -443,6 +459,14 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.render(w, "home", map[string]any{
 			"DisplayName":      h.config.DisplayName,
+			"PageTitle":        "Home",
+			"Connection":       Connection{},
+			"Active":           "home",
+			"AccountCount":     0,
+			"ConnectedCount":   0,
+			"SelectedCount":    0,
+			"AssetCount":       0,
+			"ServiceCount":     0,
 			"Connections":      []productConnectionView{},
 			"State":            "disconnected",
 			"StateLabel":       "Disconnected",
@@ -458,6 +482,8 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	serviceNames := make(map[string]bool)
 	needsReconnect := false
 	partialLoad := false
+	selectedCount := 0
+	connectedCount := 0
 
 	for _, connection := range connections {
 		if !isVisibleProductConnection(connection) {
@@ -471,6 +497,9 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 			NeedsReconnect: state == "needs_attention",
 		})
 		needsReconnect = needsReconnect || state == "needs_attention"
+		if state == "connected" {
+			connectedCount++
+		}
 
 		grants, listErr := h.config.Service.ListResources(r.Context(), actor, connection.ID)
 		if listErr != nil {
@@ -481,12 +510,21 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		for _, asset := range productAssets(grants) {
 			assets = append(assets, asset)
 			serviceNames[asset.Service] = true
+			if asset.Enabled {
+				selectedCount++
+			}
 		}
 	}
 
 	var first Connection
 	if len(views) > 0 {
 		first = views[0].Connection
+	}
+
+	notice := productHomeNotice(r.URL.Query().Get("notice"), r.URL.Query().Get("error"))
+	homeError := homeErrorMessage(r.URL.Query().Get("error"), partialLoad)
+	if notice != "" {
+		homeError = ""
 	}
 
 	h.render(w, "home", map[string]any{
@@ -500,7 +538,11 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		"ServiceCount":     len(serviceNames),
 		"NeedsReconnect":   needsReconnect,
 		"Message":          r.URL.Query().Get("message"),
-		templateErrorField: homeErrorMessage(r.URL.Query().Get("error"), partialLoad),
+		"Notice":           notice,
+		"AccountCount":     len(views),
+		"ConnectedCount":   connectedCount,
+		"SelectedCount":    selectedCount,
+		templateErrorField: homeError,
 		"CSRF":             session.CSRF,
 	})
 }
@@ -523,6 +565,7 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.render(w, "assets", map[string]any{
 			"Connection": connection, "State": productConnectionState(connection), "StateLabel": productStateLabel(productConnectionState(connection)),
+			"PageTitle": "Choose assets", "Active": "assets", "DisplayName": h.config.DisplayName,
 			templateErrorField: "We couldn't load your Google assets.", "CSRF": session.CSRF,
 		})
 
@@ -538,8 +581,15 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	query := strings.TrimSpace(r.URL.Query().Get("q"))
 	groups := productAssetGroups(assets, query, connection.DiscoveryStatus)
 	state := productConnectionState(connection)
+	railGroups := productRailGroups(connection)
+	failedServices := productFailedServices(connection)
 	h.render(w, "assets", map[string]any{
 		"Connection":       connection,
+		"PageTitle":        "Choose assets",
+		"Active":           "assets",
+		"DisplayName":      h.config.DisplayName,
+		"RailGroups":       railGroups,
+		"FailedServices":   failedServices,
 		"State":            state,
 		"StateLabel":       productStateLabel(state),
 		"Assets":           assets,
@@ -567,11 +617,14 @@ func (h *ProductHandler) services(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.render(w, "services", map[string]any{
-		"Connection": connection,
-		"Groups":     productServiceGroups(connection),
-		"CSRF":       session.CSRF,
-		"Message":    r.URL.Query().Get("message"),
-		"Error":      r.URL.Query().Get("error"),
+		"Connection":  connection,
+		"Groups":      productServiceGroups(connection),
+		"CSRF":        session.CSRF,
+		"Message":     r.URL.Query().Get("message"),
+		"Error":       r.URL.Query().Get("error"),
+		"PageTitle":   "Services and tools",
+		"Active":      "services",
+		"DisplayName": h.config.DisplayName,
 	})
 }
 
@@ -688,7 +741,7 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/?message="+url.QueryEscape("Access saved."), http.StatusSeeOther)
+	http.Redirect(w, r, "/onboarding/"+url.PathEscape(id)+"?message="+url.QueryEscape("Access saved."), http.StatusSeeOther)
 }
 
 func (h *ProductHandler) setServiceEnabled(w http.ResponseWriter, r *http.Request, actor Actor, id string, grants []ResourceGrant, serviceName string, enabled bool) {
@@ -789,7 +842,8 @@ func (h *ProductHandler) reconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{
-		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
+		State: start.State, ConnectionID: connection.ID, SkipOnboarding: true,
+		ExpiresAt: time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
 }

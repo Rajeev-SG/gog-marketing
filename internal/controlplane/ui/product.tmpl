@@ -1,0 +1,321 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.PageTitle}} · gog-marketing</title>
+<link rel="stylesheet" href="/static/product.css">
+{{if .CSRF}}<meta name="csrf" content="{{.CSRF}}">{{end}}
+</head>
+<body>
+{{end}}
+
+{{define "shell"}}
+<header class="shell-top">
+<a class="shell-brand" href="/">{{icon "shield"}} gog-marketing</a>
+<nav class="shell-nav" aria-label="Primary">
+{{if .CSRF}}
+<a href="/"{{if eq .Active "home"}} aria-current="page"{{end}}>Home</a>
+{{if .Connection.ID}}<a href="/assets/{{.Connection.ID}}/services"{{if eq .Active "services"}} aria-current="page"{{end}}>Services and tools</a>{{end}}
+<span class="shell-account">{{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}{{.DisplayName}}{{end}}</span>
+<form class="inline" method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="small">Sign out</button></form>
+{{end}}
+</nav>
+</header>
+<main>
+{{end}}
+
+{{define "shell-end"}}</main>{{end}}
+
+{{define "toast"}}
+<div class="toast{{if .Kind}} {{.Kind}}{{end}}" role="status" aria-live="polite">{{icon "check"}}<span>{{.Text}}</span></div>
+{{end}}
+
+{{define "status"}}<span class="status{{if .Class}} {{.Class}}{{end}}">{{.Label}}</span>{{end}}
+
+{{define "signin"}}
+{{template "head" .}}
+<header class="shell-top"><a class="shell-brand" href="/">{{icon "shield"}} gog-marketing</a></header>
+<main>
+<div class="card intro" style="max-width:520px;margin:48px auto">
+<p class="eyebrow">Get started</p>
+<h1>Connect your Google account</h1>
+<p>Connect a Google account and choose exactly what your agents can use. You stay in control of every connection and asset.</p>
+{{if .Error}}<div class="alert error"><h3>{{.Error}}</h3></div>{{end}}
+<div class="stack">
+<a class="button primary" href="/auth/google/start">{{icon "globe"}} Continue with Google</a>
+</div>
+<p class="faint" style="margin-top:16px">This version supports the configured workspace owner. Use that Google account; we take care of the connection details.</p>
+</div>
+</main>
+</body>
+</html>
+{{end}}
+
+{{define "home"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Home</p>
+<h1>Your Google accounts</h1>
+<p>Connect personal and work Google accounts independently, then choose what each one can use.</p>
+</div>
+{{if .Error}}<div class="alert error" role="alert"><h2>{{.Error}}</h2></div>{{end}}
+{{if .Message}}{{template "toast" (dict "Text" .Message)}}{{end}}
+{{if .Notice}}{{template "toast" (dict "Text" .Notice "Kind" "info")}}{{end}}
+<div class="tiles">
+<div class="tile"><p class="tile-label">Google accounts</p><p class="tile-value">{{.AccountCount}}</p><small>{{.ConnectedCount}} connected</small></div>
+<div class="tile"><p class="tile-label">Services</p><p class="tile-value">{{.ServiceCount}}</p><small>with discovered assets</small></div>
+<div class="tile"><p class="tile-label">Assets selected</p><p class="tile-value">{{.SelectedCount}}</p><small>of {{.AssetCount}} discovered</small></div>
+</div>
+{{if .Connections}}
+<section aria-label="Connected accounts">
+{{range .Connections}}
+<div class="card">
+<div class="card-head">
+<div>
+<h3>{{if .GoogleEmail}}{{.GoogleEmail}}{{else}}Google account pending{{end}}</h3>
+<p class="muted" style="margin:4px 0 0">{{template "status" (dict "Label" .StateLabel "Class" .State)}}</p>
+</div>
+<div class="card-actions">
+<a class="button" href="/assets/{{.ID}}">Manage access</a>
+{{if .NeedsReconnect}}
+<form class="inline" method="post" action="/assets/{{.ID}}/reconnect"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button class="attention">{{icon "refresh"}} Reconnect Google</button></form>
+{{end}}
+<form class="inline" method="post" action="/assets/{{.ID}}/disconnect"><input type="hidden" name="csrf" value="{{$.CSRF}}"><button>Disconnect</button></form>
+</div>
+</div>
+{{if .NeedsReconnect}}
+<div class="alert attention" style="margin-top:16px">
+<h3>Google needs you to reconnect this account</h3>
+<p>Google access has expired. Reconnect to refresh it — your selected assets are unchanged.</p>
+</div>
+{{end}}
+</div>
+{{end}}
+</section>
+{{else}}
+<div class="card empty">
+{{icon "home"}}
+<h2>No Google accounts connected yet</h2>
+<p>Connect a Google account to see its services and choose what agents can use.</p>
+</div>
+{{end}}
+<div class="stack">
+<form method="post" action="/connect/google"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">{{icon "plus"}} Connect Google account</button></form>
+</div>
+<div class="card">
+<h2>Agent access</h2>
+<p>Every agent read uses exactly one connected account and one asset you selected. Accounts never share credentials or grants, so access stays independent and auditable.</p>
+</div>
+{{template "shell-end"}}
+<script>document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(){var button=form.querySelector("button");if(button){button.setAttribute("aria-busy","true")}})});</script>
+</body>
+</html>
+{{end}}
+
+{{define "assets"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Access · {{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}Google account{{end}}</p>
+<h1>Choose what this account can access</h1>
+<p>Select the Google assets agents may use. Everything you do not select stays hidden from agents.</p>
+</div>
+{{if .Error}}<div class="alert error" role="alert"><h2>{{.Error}}</h2></div>{{end}}
+{{if .NeedsReconnect}}
+<div class="alert attention">
+<h2>Google needs you to reconnect this account</h2>
+<p>Reconnect to refresh Google access and keep working with your selected assets.</p>
+<div class="step-actions">
+<form class="inline" method="post" action="/assets/{{.Connection.ID}}/reconnect"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="attention">{{icon "refresh"}} Reconnect Google</button></form>
+</div>
+</div>
+{{else if .CanRetry}}
+<form class="stack" method="post" action="/assets/{{.Connection.ID}}/discover"><input type="hidden" name="csrf" value="{{.CSRF}}"><button>{{icon "refresh"}} Re-check Google services</button></form>
+{{end}}
+{{if .FailedServices}}
+<div class="alert attention">
+<h2>Some Google services could not be checked</h2>
+<p>Healthy services keep working. Existing selections are unchanged.</p>
+<ul>{{range .FailedServices}}<li>{{.ServiceName}}: {{.Detail}}</li>{{end}}</ul>
+</div>
+{{end}}
+<form method="get" action="/assets/{{.Connection.ID}}" class="searchbar" role="search">
+	<input type="search" name="q" value="{{.Query}}" placeholder="Search assets" aria-label="Search assets">
+	<button type="submit">Search</button>
+</form>
+{{if .HasAssets}}
+<div class="picker">
+<nav class="rail" aria-label="Google services">
+{{range .RailGroups}}
+<p class="rail-group-label">{{.Name}}</p>
+{{range .Items}}<a class="rail-item" href="#service-{{.Key}}"><span>{{.Name}}</span>{{if .State}}<span class="status {{.State}}">{{.StateLabel}}</span>{{end}}</a>{{end}}
+{{end}}
+</nav>
+<form method="post" action="/assets/{{.Connection.ID}}/save">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+<input type="hidden" name="q" value="{{.Query}}">
+<div>
+{{range .Groups}}
+<section class="service-block" style="margin-bottom:16px" id="service-{{.Service}}">
+<div class="card-head">
+<h3>{{.ServiceName}}</h3>
+<div class="card-actions">
+<button class="small" name="select_all" value="{{.ServiceName}}">Select all</button>
+<button class="small" name="select_none" value="{{.ServiceName}}">Select none</button>
+</div>
+</div>
+<p class="service-meta"><span>{{.ServiceName}}: {{.StatusLabel}}</span><span>{{.Count}} assets</span><span>{{.EnabledCount}} selected</span></p>
+<div class="rows">
+{{range .Assets}}
+<div class="row">
+<input name="resource" value="{{.ResourceID}}" type="checkbox"{{if .Enabled}} checked{{end}} id="asset-{{.ResourceID}}">
+<label class="row-label" for="asset-{{.ResourceID}}">
+<strong>{{.Name}}</strong>
+<small>{{.Kind}}{{if .Parent}} · {{.Parent}}{{end}}</small>
+</label>
+<div class="row-side">
+<details class="row-details">
+	<summary>Asset details</summary>
+	<code>{{.ResourceID}}</code>
+	{{if .ReadURL}}<button type="button" class="small read-link" data-url="{{.ReadURL}}">Read this asset as JSON</button>{{end}}
+</details>
+</div>
+</div>
+{{end}}
+</div>
+</section>
+{{end}}
+</div>
+<div class="savebar">
+<p>Changes apply when you save. Unselected assets stay hidden from agents.</p>
+<button class="primary" type="submit">Save access</button>
+</div>
+</form>
+</div>
+{{else}}
+<div class="card empty">
+{{icon "search"}}
+<h2>No assets found yet</h2>
+<p>Google is connected. Try discovery again in a moment.</p>
+{{if .CanRetry}}<form method="post" action="/assets/{{.Connection.ID}}/discover"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Try again</button></form>{{end}}
+</div>
+{{end}}
+{{template "shell-end"}}
+<script>
+document.querySelectorAll(".read-link").forEach(function(btn){btn.addEventListener("click",function(){var token=document.querySelector("meta[name=csrf]").content;fetch(btn.dataset.url,{headers:{"X-CSRF-Token":token}}).then(function(r){return r.json()}).then(function(d){var pre=document.createElement("pre");pre.textContent=JSON.stringify(d,null,2);btn.parentNode.appendChild(pre);btn.disabled=true;btn.textContent="Read complete"}).catch(function(){btn.textContent="Read failed"})})});
+document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(){var button=form.querySelector("button");if(button){button.setAttribute("aria-busy","true");button.setAttribute("data-busy-label",button.textContent);button.textContent="Checking Google services…"}})});
+</script>
+</body>
+</html>
+{{end}}
+
+{{define "services"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Access · {{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}Google account{{end}}</p>
+<h1>Services and tools</h1>
+<p>Enable only the Workspace or Marketing services this account needs. Resource-backed marketing services use specific asset grants after discovery; curated read-only tools use explicit service/tool grants, and other capabilities remain excluded until a safe per-tool selector exists.</p>
+</div>
+{{if .Error}}<div class="alert error" role="alert"><h2>{{.Error}}</h2></div>{{end}}
+{{if .Message}}{{template "toast" (dict "Text" .Message)}}{{end}}
+<form method="post" action="/assets/{{.Connection.ID}}/services/save">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+{{range .Groups}}
+<section class="service-block" style="margin-bottom:16px">
+<h3>{{.Category}}</h3>
+{{range .Services}}
+<div class="row">
+<div style="flex:1;min-width:0">
+<strong style="display:block;font-weight:600">{{.Name}}</strong>
+<small class="muted" style="display:block">{{.AccessLabel}}{{if .Enabled}} · Enabled{{end}}</small>
+</div>
+<div class="card-actions">
+{{if .Enabled}}<input type="checkbox" checked disabled aria-label="{{.Name}} enabled">{{else}}<label style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600"><input type="checkbox" name="new_service" value="{{.Service}}" style="width:18px;height:18px;accent-color:var(--action)"> Enable service</label>{{end}}
+{{if .Tool}}{{if .ResourceModel}}{{else}}<label style="display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600"><input type="checkbox" name="tool" value="{{.Service}}/{{.Tool}}"{{if .ToolEnabled}} checked{{end}} style="width:18px;height:18px;accent-color:var(--action)"> {{.ToolLabel}}</label>{{end}}{{end}}
+</div>
+</div>
+{{end}}
+</section>
+{{end}}
+<div class="savebar">
+<p>Changes apply when you save.</p>
+<button class="primary" type="submit">Save service access</button>
+</div>
+</form>
+{{template "shell-end"}}
+</body>
+</html>
+{{end}}
+
+{{define "property"}}
+{{template "head" .}}
+{{template "shell" .}}
+{{if .Error}}
+<h1>This property could not be read</h1>
+<p>Review its access selection or reconnect Google, then try again.</p>
+<details><summary>Request details</summary><code>{{.Error}}</code></details>
+{{else}}
+<div class="intro">
+<p class="eyebrow">Google Analytics property</p>
+<h1>{{.Property.DisplayName}}</h1>
+<p>Live Google Analytics property information.</p>
+</div>
+<div class="card">
+<h2>Property settings</h2>
+<p>Time zone: {{.Property.TimeZone}}</p>
+<p>Currency: {{.Property.CurrencyCode}}</p>
+</div>
+<details class="card"><summary style="cursor:pointer;font-weight:600">Agent/API details</summary>
+<code>{{.Property.Name}}</code>
+<p style="margin-top:8px">The authenticated API uses the same asset permission.</p>
+<button type="button" class="read-link" data-url="/api/connections/{{.ConnectionID}}/analytics/property?resource={{.Property.Name}}">Read JSON for an agent</button>
+</details>
+{{end}}
+{{template "shell-end"}}
+<script>document.querySelectorAll(".read-link").forEach(function(btn){btn.addEventListener("click",function(){var token=document.querySelector("meta[name=csrf]").content;fetch(btn.dataset.url,{headers:{"X-CSRF-Token":token}}).then(function(r){return r.json()}).then(function(d){var pre=document.createElement("pre");pre.textContent=JSON.stringify(d,null,2);btn.parentNode.appendChild(pre);btn.disabled=true;btn.textContent="Read complete"}).catch(function(){btn.textContent="Read failed"})})});</script>
+</body>
+</html>
+{{end}}
+
+{{define "onboarding"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Onboarding</p>
+<h1>{{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}Google account{{end}} is connected</h1>
+<p>Google consent is done. Next, choose exactly what this account can share with agents.</p>
+</div>
+{{if .Error}}<div class="alert error" role="alert"><h2>{{.Error}}</h2></div>{{end}}
+{{if .Message}}{{template "toast" (dict "Text" .Message)}}{{end}}
+<div class="card">
+<ol class="steps">
+<li class="step-done">
+<span class="step-dot">{{icon "check"}}</span>
+<div class="step-body"><h3>Connect Google</h3><p>Consent granted. Tokens are stored encrypted and never shown.</p></div>
+</li>
+<li class="{{if gt .EnabledCount 0}}step-done{{else}}step-current{{end}}">
+<span class="step-dot">{{if gt .EnabledCount 0}}{{icon "check"}}{{else}}2{{end}}</span>
+<div class="step-body">
+<h3>Choose what this account can access</h3>
+<p>{{if gt .EnabledCount 0}}{{.EnabledCount}} assets selected. You can change this any time.{{else}}No assets selected yet.{{end}}</p>
+<div class="step-actions">
+<a class="button{{if eq .EnabledCount 0}} primary{{end}}" href="/assets/{{.Connection.ID}}/services">Services and tools</a>
+<a class="button{{if gt .EnabledCount 0}}{{else}} primary{{end}}" href="/assets/{{.Connection.ID}}">{{if gt .EnabledCount 0}}Manage assets{{else}}Choose assets{{end}}</a>
+</div>
+</div>
+</li>
+<li class="{{if gt .EnabledCount 0}}step-current{{else}}{{end}}">
+<span class="step-dot">{{if gt .EnabledCount 0}}{{icon "check"}}{{else}}3{{end}}</span>
+<div class="step-body"><h3>Finish</h3><p>Once you save access, agents can read only what you selected.</p>
+{{if gt .EnabledCount 0}}<div class="step-actions"><a class="button primary" href="/">Go to Home</a></div>{{end}}
+</div>
+</li>
+</ol>
+</div>
+{{template "shell-end"}}
+</body>
+</html>
+{{end}}

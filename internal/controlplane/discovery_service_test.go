@@ -112,7 +112,7 @@ func TestDiscoveryKeepsSuccessesAndSelectionsWhenOneServiceFails(t *testing.T) {
 	resp := productGet(t, client, server.URL, "/assets/"+connection.ID, cookies) //nolint:bodyclose // readProductBody closes this response
 
 	body := readProductBody(t, resp)
-	for _, want := range []string{"Service discovery", "Google Analytics: Ready", "Google Tag Manager: Needs attention", "BigQuery: Unavailable"} {
+	for _, want := range []string{"Some Google services could not be checked", "Google Analytics: Ready", "Google Tag Manager: Needs attention", "BigQuery: Unavailable"} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("assets page missing %q: %s", want, body)
 		}

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Product/UI: rebuild the marketer product interface as a persistent shell with static design tokens, a service rail plus asset list, needs-attention and partial-service alerts, informational duplicate-account toast, onboarding completion route, and responsive mobile treatment; screenshots axe-checked at 1440/1280/390. (#50)
+
 - Product/control plane: expose Workspace and Marketing services incrementally, persist service/tool grants without synthetic resources, guard representative Gmail, Calendar and Drive reads through the existing typed clients and policy/audit boundaries, and add product/command parity regressions. (#52)
 
 - Product/docs: define `gog-marketing` as a superset of standard `gog`, retain the inherited Workspace command surface alongside marketing extensions, remove the five-service product boundary, and distinguish this fork's source build from upstream `openclaw/gogcli` packages. (#50, #52)
