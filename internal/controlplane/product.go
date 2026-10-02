@@ -156,6 +156,11 @@ type productOAuthState struct {
 	ExpiresAt    time.Time `json:"expires_at"`
 }
 
+// productReconnectCookie marks an OAuth round trip started by the explicit
+// reconnect action, so the callback can distinguish it from first-time
+// onboarding without guessing from post-consent status.
+const productReconnectStateCookie = "gog_marketing_reconnect"
+
 type productAsset struct {
 	Service     string
 	ServiceName string
@@ -422,10 +427,10 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Decide the destination from the pre-consent state: a staged connection
-	// that never held tokens is first-time onboarding, anything else is a
-	// reconnect that returns to the picker.
-	pre, preErr := h.productConnectionByID(r.Context(), actor, stored.ConnectionID)
-	freshOnboarding := preErr == nil && pre.Status == ConnectionNeedsConnect
+	// never presenting the consent flow is first-time onboarding. Reconnect
+	// (the flag set by BeginOAuth(force=true)) returns to the picker.
+	_, wasReconnect := h.takeProductOAuthCookie(r, w, productReconnectStateCookie)
+	freshOnboarding := !wasReconnect
 
 	// A fresh product connection goes to onboarding; a reconnect returns
 	// straight to the asset picker because onboarding already finished.
@@ -593,7 +598,7 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 		"Query":            query,
 		"HasAssets":        len(groups) > 0,
 		"NeedsReconnect":   state == "needs_attention",
-		"CanRetry":         false,
+		"CanRetry":         state == "connected",
 		templateErrorField: r.URL.Query().Get("error"),
 		"CSRF":             session.CSRF,
 	})
@@ -837,6 +842,9 @@ func (h *ProductHandler) reconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{
+		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
+	})
+	h.setProductOAuthCookie(w, productReconnectStateCookie, productOAuthState{
 		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
