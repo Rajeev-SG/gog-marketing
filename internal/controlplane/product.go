@@ -150,16 +150,12 @@ type ProductHandler struct {
 }
 
 type productOAuthState struct {
-	State        string    `json:"state"`
-	CodeVerifier string    `json:"code_verifier,omitempty"`
-	ConnectionID string    `json:"connection_id,omitempty"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	State          string    `json:"state"`
+	CodeVerifier   string    `json:"code_verifier,omitempty"`
+	ConnectionID   string    `json:"connection_id,omitempty"`
+	SkipOnboarding bool      `json:"skip_onboarding,omitempty"`
+	ExpiresAt      time.Time `json:"expires_at"`
 }
-
-// productReconnectCookie marks an OAuth round trip started by the explicit
-// reconnect action, so the callback can distinguish it from first-time
-// onboarding without guessing from post-consent status.
-const productReconnectStateCookie = "gog_marketing_reconnect"
 
 type productAsset struct {
 	Service     string
@@ -388,7 +384,9 @@ func (h *ProductHandler) connect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{
-		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
+		State: start.State, ConnectionID: connection.ID,
+		SkipOnboarding: connection.Status != ConnectionNeedsConnect,
+		ExpiresAt:      time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
 }
@@ -429,11 +427,7 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 	// Decide the destination from the pre-consent state: a staged connection
 	// never presenting the consent flow is first-time onboarding. Reconnect
 	// (the flag set by BeginOAuth(force=true)) returns to the picker.
-	_, wasReconnect := h.takeProductOAuthCookie(r, w, productReconnectStateCookie)
-	freshOnboarding := !wasReconnect
-
-	// A fresh product connection goes to onboarding; a reconnect returns
-	// straight to the asset picker because onboarding already finished.
+	freshOnboarding := !stored.SkipOnboarding
 
 	discoverActor := Actor{UserID: actor.UserID, OrganizationID: connection.OrganizationID, Role: actor.Role}
 	if _, err := h.config.Service.Discover(r.Context(), discoverActor, connection.ID); err != nil {
@@ -848,10 +842,8 @@ func (h *ProductHandler) reconnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setProductOAuthCookie(w, productConnectionStateCookie, productOAuthState{
-		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
-	})
-	h.setProductOAuthCookie(w, productReconnectStateCookie, productOAuthState{
-		State: start.State, ConnectionID: connection.ID, ExpiresAt: time.Now().Add(10 * time.Minute),
+		State: start.State, ConnectionID: connection.ID, SkipOnboarding: true,
+		ExpiresAt: time.Now().Add(10 * time.Minute),
 	})
 	http.Redirect(w, r, start.URL, http.StatusSeeOther)
 }
