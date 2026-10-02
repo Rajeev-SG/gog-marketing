@@ -169,13 +169,10 @@ func productFailedServices(connection Connection) []productServiceStatus {
 	return out
 }
 
+// productHomeNotice maps structured notice codes to marketer-safe copy.
 func productHomeNotice(notice, explicitError string) string {
-	if notice != "" {
-		return notice
-	}
-
-	if strings.Contains(strings.ToLower(explicitError), "already connected") {
-		return explicitError
+	if notice == "duplicate_google_account" {
+		return "This Google account is already connected."
 	}
 
 	return ""

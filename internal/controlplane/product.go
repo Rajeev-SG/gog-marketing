@@ -416,7 +416,7 @@ func (h *ProductHandler) googleCallback(w http.ResponseWriter, r *http.Request) 
 
 	connection, err := h.config.Service.CompleteOAuth(r.Context(), r.URL.Query().Get("state"), r.URL.Query().Get("code"))
 	if errors.Is(err, ErrConflict) {
-		http.Redirect(w, r, "/?notice="+url.QueryEscape("This Google account is already connected."), http.StatusSeeOther)
+		http.Redirect(w, r, "/?notice=duplicate_google_account", http.StatusSeeOther)
 		return
 	}
 
@@ -467,6 +467,12 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 			"DisplayName":      h.config.DisplayName,
 			"PageTitle":        "Home",
 			"Connection":       Connection{},
+			"Active":           "home",
+			"AccountCount":     0,
+			"ConnectedCount":   0,
+			"SelectedCount":    0,
+			"AssetCount":       0,
+			"ServiceCount":     0,
 			"Connections":      []productConnectionView{},
 			"State":            "disconnected",
 			"StateLabel":       "Disconnected",
