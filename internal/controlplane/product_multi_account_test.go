@@ -66,10 +66,13 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
 
 	home := readProductBody(t, homeResp)
-	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Reconnect Google", "Disconnect", "Connect Google account"} {
+	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Disconnect", "Connect Google account"} {
 		if !strings.Contains(home, want) {
 			t.Fatalf("account list missing %q: %s", want, home)
 		}
+	}
+	if strings.Contains(home, "Reconnect Google") {
+		t.Fatalf("healthy accounts must not show reconnect actions: %s", home)
 	}
 
 	first := productConnections[0]

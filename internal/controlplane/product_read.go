@@ -197,5 +197,18 @@ func (h *ProductHandler) readAnalyticsPropertyPage(w http.ResponseWriter, r *htt
 	w.Header().Set("Cache-Control", "no-store")
 	property, status, code := h.analyticsPropertyRequest(r, false)
 	w.WriteHeader(status)
-	h.render(w, "property", map[string]any{"Property": property, "Error": code, "ConnectionID": r.PathValue("id")})
+	session, sessionOK := h.config.Sessions.FromProductRequest(r)
+	var csrf string
+	if sessionOK {
+		csrf = session.CSRF
+	}
+
+	h.render(w, "property", map[string]any{
+		"Property":     property,
+		"Error":        code,
+		"ConnectionID": r.PathValue("id"),
+		"CSRF":         csrf,
+		"PageTitle":    "Google Analytics property",
+		"DisplayName":  h.config.DisplayName,
+	})
 }
