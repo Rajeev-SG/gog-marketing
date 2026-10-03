@@ -189,7 +189,7 @@ func TestPropertyTemplateIncludesCSRFAndFetch(t *testing.T) {
 		t.Fatal("property template missing read-link button")
 	}
 
-	if !strings.Contains(productTemplates, `fetch(btn.dataset.url`) {
+	if !strings.Contains(productTemplates, `fetch(button.dataset.url`) {
 		t.Fatal("property template missing fetch handler")
 	}
 

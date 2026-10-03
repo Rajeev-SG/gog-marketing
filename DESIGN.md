@@ -31,7 +31,7 @@ dashboard, not a generic SaaS template.
 | 04 connected account card | Account card on Home with email, state badge, manage/ disconnect. |
 | 05 needs attention | Alert treatment on the account card and the assets page with prominent Reconnect. |
 | 06 asset picker | Dense service rail + asset rows with search, select all/none, save bar. |
-| 07 discovery loading | In-flight button state (`aria-busy`, spinner) while the synchronous discovery POST runs. No fake progress. |
+| 07 discovery loading | In-flight button state (`aria-busy`, pending label) while the synchronous discovery POST runs. No fake progress. |
 | 08 partial service failure | Alert listing failed services with per-service detail; healthy groups stay usable. |
 | 09 advanced diagnostics | Progressive-disclosure panels (connection ID, resource IDs) on the assets page. |
 | 10 onboarding completion | `/onboarding/{id}` step checklist computed from real connection state after Google consent. |

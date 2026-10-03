@@ -71,6 +71,7 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 			t.Fatalf("account list missing %q: %s", want, home)
 		}
 	}
+
 	if strings.Contains(home, "Reconnect Google") {
 		t.Fatalf("healthy accounts must not show reconnect actions: %s", home)
 	}

@@ -38,6 +38,7 @@ func productIcon(name string) template.HTML {
 		return ""
 	}
 
+	//nolint:gosec // SVG paths come only from the fixed internal icon allowlist above.
 	return template.HTML(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` + path + `</svg>`)
 }
 
@@ -76,6 +77,7 @@ func (h *ProductHandler) onboarding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	enabled := 0
+
 	for _, grant := range grants {
 		if grant.Enabled {
 			enabled++
@@ -159,6 +161,7 @@ func productRailStatus(status DiscoveryServiceStatus) (string, string) {
 
 func productFailedServices(connection Connection) []productServiceStatus {
 	out := []productServiceStatus{}
+
 	for _, status := range productDiscoveryStatuses(connection) {
 		if status.Detail == "Ready" || status.Detail == "Not checked" {
 			continue
@@ -170,7 +173,7 @@ func productFailedServices(connection Connection) []productServiceStatus {
 }
 
 // productHomeNotice maps structured notice codes to marketer-safe copy.
-func productHomeNotice(notice, explicitError string) string {
+func productHomeNotice(notice string) string {
 	if notice == "duplicate_google_account" {
 		return "This Google account is already connected."
 	}

@@ -276,9 +276,13 @@ func TestPushSnapshotCanReferenceExistingCheckpointShard(t *testing.T) {
 
 func TestAsyncCheckpointPushDrainsBeforeFinalSnapshot(t *testing.T) {
 	// Keep maintenance attached so temporary-repo cleanup cannot race its writes.
-	t.Setenv("GIT_CONFIG_COUNT", "1")
+	t.Setenv("GIT_CONFIG_COUNT", "2")
 	t.Setenv("GIT_CONFIG_KEY_0", "maintenance.autoDetach")
 	t.Setenv("GIT_CONFIG_VALUE_0", "false")
+	// This fixture pushes only to its disposable local bare remote.
+	// Do not inherit machine-wide hooks intended for real repositories.
+	t.Setenv("GIT_CONFIG_KEY_1", "core.hooksPath")
+	t.Setenv("GIT_CONFIG_VALUE_1", t.TempDir())
 	ctx := context.Background()
 	dir := t.TempDir()
 	repo := filepath.Join(dir, "repo")
