@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"testing"
@@ -161,14 +162,6 @@ func TestAllowedBackends(t *testing.T) {
 
 func TestWrapKeychainError(t *testing.T) {
 	wrapped := wrapKeychainError(errTestKeychain)
-	if runtime.GOOS == "darwin" {
-		if !errors.Is(wrapped, errTestKeychain) || !strings.Contains(wrapped.Error(), "keychain is locked") {
-			t.Fatalf("expected wrapped keychain error, got: %v", wrapped)
-		}
-
-		return
-	}
-
 	if !errors.Is(wrapped, errTestKeychain) || wrapped.Error() != errTestKeychain.Error() {
 		t.Fatalf("expected passthrough error, got: %v", wrapped)
 	}
@@ -176,7 +169,7 @@ func TestWrapKeychainError(t *testing.T) {
 
 func TestFileKeyringPasswordFuncFrom(t *testing.T) {
 	// Non-empty password with passwordSet=true returns that password.
-	fn := fileKeyringPasswordFuncFrom("pw", true, false)
+	fn := fileKeyringPasswordFuncFrom(OpenOptions{Password: "pw", PasswordSet: true})
 	if got, err := fn("prompt"); err != nil {
 		t.Fatalf("expected password, got err: %v", err)
 	} else if got != "pw" {
@@ -184,17 +177,40 @@ func TestFileKeyringPasswordFuncFrom(t *testing.T) {
 	}
 
 	// Empty password with passwordSet=true returns empty string (not an error).
-	fn = fileKeyringPasswordFuncFrom("", true, false)
+	fn = fileKeyringPasswordFuncFrom(OpenOptions{Password: "", PasswordSet: true})
 	if got, err := fn("prompt"); err != nil {
 		t.Fatalf("expected empty password, got err: %v", err)
 	} else if got != "" {
 		t.Fatalf("expected empty password, got: %q", got)
 	}
 
-	// Env var not set and no TTY returns errNoTTY.
-	fn = fileKeyringPasswordFuncFrom("", false, false)
-	if _, err := fn("prompt"); err == nil || !errors.Is(err, errNoTTY) {
-		t.Fatalf("expected no TTY error, got: %v", err)
+	// No password set: gog provisions a 0600 password dotfile instead of
+	// prompting on a terminal.
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	fn = fileKeyringPasswordFuncFrom(OpenOptions{Layout: layout})
+	first, err := fn("prompt")
+	if err != nil {
+		t.Fatalf("expected provisioned password, got err: %v", err)
+	}
+	if first == "" {
+		t.Fatal("expected non-empty provisioned password")
+	}
+
+	info, statErr := os.Stat(layout.KeyringPasswordPath())
+	if statErr != nil {
+		t.Fatalf("password file: %v", statErr)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("password file mode = %v, want 0600", info.Mode().Perm())
+	}
+
+	// The same dotfile password is reused on the next call.
+	second, err := fileKeyringPasswordFuncFrom(OpenOptions{Layout: layout})("prompt")
+	if err != nil {
+		t.Fatalf("expected reused password, got err: %v", err)
+	}
+	if second != first {
+		t.Fatalf("password changed between calls: %q != %q", second, first)
 	}
 }
 

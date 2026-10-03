@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/config"
 	"github.com/openclaw/gogcli/internal/outfmt"
@@ -69,7 +68,6 @@ func (c *AuthDoctorCmd) Run(ctx context.Context, _ *RootFlags) error {
 		add("keyring.backend", doctorError, backendErr.Error(), "")
 	} else {
 		add("keyring.backend", doctorOK, backendInfo.Value+" (source: "+backendInfo.Source+")", "")
-		addKeychainTrustCheck(ctx, add, backendInfo)
 		addKeyringEnvChecks(ctx, add, backendInfo)
 	}
 
@@ -151,30 +149,6 @@ func (c *AuthDoctorCmd) Run(ctx context.Context, _ *RootFlags) error {
 	}
 
 	return writeAuthDoctorResult(ctx, u, checks)
-}
-
-func addKeychainTrustCheck(ctx context.Context, add func(string, string, string, string), backendInfo secrets.KeyringBackendInfo) {
-	appRuntime, ok := app.FromContext(ctx)
-	if !ok || appRuntime.KeyringOptions == nil {
-		return
-	}
-
-	info := secrets.ResolveKeychainTrustApplication(*appRuntime.KeyringOptions, backendInfo)
-	if !info.Applicable {
-		return
-	}
-
-	detail := "application trust disabled (ad-hoc or unsigned binary)"
-	if info.Forced {
-		if info.Enabled {
-			detail = "forced on via GOG_KEYCHAIN_TRUST_APPLICATION"
-		} else {
-			detail = "forced off via GOG_KEYCHAIN_TRUST_APPLICATION"
-		}
-	} else if info.Enabled {
-		detail = "application trust enabled (developer-id signed)"
-	}
-	add("keychain.trust", doctorOK, detail, "")
 }
 
 func authDoctorTokenCheckName(prefix string, client string, email string) string {

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Keyring: remove the macOS Keychain backend entirely. `auto`, `file`, and the legacy `keychain` settings all resolve to the encrypted file keyring; secrets stay in a `0600` `keyring-password` dotfile (or `GOG_KEYRING_PASSWORD`/`GOG_KEYRING_PASSWORD_FILE`) so rebuilt binaries and agents never trigger a Keychain prompt. Accounts connected via the old backend reconnect once to move tokens into the file keyring.
+
 - Product/UI: rebuild the marketer product interface as a persistent shell with static design tokens, a service rail plus asset list, needs-attention and partial-service alerts, informational duplicate-account toast, onboarding completion route, and responsive mobile treatment; screenshots axe-checked at 1440/1280/390. (#50)
 
 - Product/control plane: expose Workspace and Marketing services incrementally, persist service/tool grants without synthetic resources, guard representative Gmail, Calendar and Drive reads through the existing typed clients and policy/audit boundaries, and add product/command parity regressions. (#52)

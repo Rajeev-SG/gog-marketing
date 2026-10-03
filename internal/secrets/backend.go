@@ -1,9 +1,12 @@
 package secrets
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -14,16 +17,15 @@ import (
 )
 
 const (
-	keyringPasswordEnv          = "GOG_KEYRING_PASSWORD"      //nolint:gosec // environment variable name, not a credential
-	keyringPasswordFileEnv      = "GOG_KEYRING_PASSWORD_FILE" //nolint:gosec // environment variable name, not a credential
-	keyringBackendEnv           = "GOG_KEYRING_BACKEND"
-	keyringServiceNameEnv       = "GOG_KEYRING_SERVICE_NAME"
-	keyringOpenTimeoutEnv       = "GOG_KEYRING_OPEN_TIMEOUT"
-	keychainTrustApplicationEnv = "GOG_KEYCHAIN_TRUST_APPLICATION"
+	keyringPasswordEnv     = "GOG_KEYRING_PASSWORD"      //nolint:gosec // environment variable name, not a credential
+	keyringPasswordFileEnv = "GOG_KEYRING_PASSWORD_FILE" //nolint:gosec // environment variable name, not a credential
+	keyringBackendEnv      = "GOG_KEYRING_BACKEND"
+	keyringServiceNameEnv  = "GOG_KEYRING_SERVICE_NAME"
+	keyringOpenTimeoutEnv  = "GOG_KEYRING_OPEN_TIMEOUT"
 )
 
 var (
-	errNoTTY                 = errors.New("no TTY available for keyring file backend password prompt")
+	errKeyringPasswordFile   = errors.New("manage keyring password file")
 	errInvalidKeyringBackend = errors.New("invalid keyring backend")
 	errKeyringTimeout        = errors.New("keyring connection timed out")
 	errNilConfigStore        = errors.New("config store is nil")
@@ -35,20 +37,18 @@ type KeyringBackendInfo struct {
 }
 
 type OpenOptions struct {
-	Layout                   config.Layout
-	Config                   *config.ConfigStore
-	Backend                  string
-	Password                 string
-	PasswordSet              bool
-	ServiceName              string
-	GOOS                     string
-	DBusAddress              string
-	IsTTY                    bool
-	OpenTimeout              time.Duration
-	LockTimeout              time.Duration
-	KeychainTrustApplication string
-	openKeyringFn            func(keyring.Config) (keyring.Keyring, error)
-	codesignRunner           func(string) ([]byte, error)
+	Layout        config.Layout
+	Config        *config.ConfigStore
+	Backend       string
+	Password      string
+	PasswordSet   bool
+	ServiceName   string
+	GOOS          string
+	DBusAddress   string
+	IsTTY         bool
+	OpenTimeout   time.Duration
+	LockTimeout   time.Duration
+	openKeyringFn func(keyring.Config) (keyring.Keyring, error)
 }
 
 const (
@@ -87,26 +87,24 @@ func OpenOptionsFromLookup(
 	dbusAddress, _ := lookup("DBUS_SESSION_BUS_ADDRESS")
 	openTimeoutRaw, _ := lookup(keyringOpenTimeoutEnv)
 	lockTimeoutRaw, _ := lookup(keyringLockTimeoutEnv)
-	keychainTrustApplication, _ := lookup(keychainTrustApplicationEnv)
 
 	return OpenOptions{
-		Layout:                   layout,
-		Config:                   store,
-		Backend:                  backend,
-		Password:                 password,
-		PasswordSet:              passwordSet,
-		ServiceName:              strings.TrimSpace(serviceName),
-		GOOS:                     goos,
-		DBusAddress:              dbusAddress,
-		IsTTY:                    isTTY,
-		OpenTimeout:              parseKeyringOpenTimeout(openTimeoutRaw, goos),
-		LockTimeout:              parseKeyringLockTimeout(lockTimeoutRaw),
-		KeychainTrustApplication: keychainTrustApplication,
+		Layout:      layout,
+		Config:      store,
+		Backend:     backend,
+		Password:    password,
+		PasswordSet: passwordSet,
+		ServiceName: strings.TrimSpace(serviceName),
+		GOOS:        goos,
+		DBusAddress: dbusAddress,
+		IsTTY:       isTTY,
+		OpenTimeout: parseKeyringOpenTimeout(openTimeoutRaw, goos),
+		LockTimeout: parseKeyringLockTimeout(lockTimeoutRaw),
 	}, nil
 }
 
 func ResolveKeyringBackendInfoWithOptions(options OpenOptions) (KeyringBackendInfo, error) {
-	if v := normalizeKeyringBackend(options.Backend); v != "" {
+	if v := effectiveKeyringBackend(options.Backend); v != "" {
 		return KeyringBackendInfo{Value: v, Source: keyringBackendSourceEnv}, nil
 	}
 
@@ -120,7 +118,7 @@ func ResolveKeyringBackendInfoWithOptions(options OpenOptions) (KeyringBackendIn
 	}
 
 	if cfg.KeyringBackend != "" {
-		if v := normalizeKeyringBackend(cfg.KeyringBackend); v != "" {
+		if v := effectiveKeyringBackend(cfg.KeyringBackend); v != "" {
 			return KeyringBackendInfo{Value: v, Source: keyringBackendSourceConfig}, nil
 		}
 	}
@@ -130,43 +128,28 @@ func ResolveKeyringBackendInfoWithOptions(options OpenOptions) (KeyringBackendIn
 
 func allowedBackends(info KeyringBackendInfo) ([]keyring.BackendType, error) {
 	switch info.Value {
-	case "", keyringBackendAuto:
-		return nil, nil
-	case keyringBackendKeychain:
-		return []keyring.BackendType{keyring.KeychainBackend}, nil
-	case "file":
+	case "", keyringBackendAuto, keyringBackendKeychain, "file":
+		// gog-marketing never uses the macOS Keychain. "auto", a legacy
+		// "keychain" setting, and "file" all resolve to the encrypted file
+		// backend so secrets stay in a 0600 dotfile (or GOG_KEYRING_PASSWORD).
 		return []keyring.BackendType{keyring.FileBackend}, nil
 	default:
 		return nil, fmt.Errorf("%w: %q (expected %s, keychain, or file)", errInvalidKeyringBackend, info.Value, keyringBackendAuto)
 	}
 }
 
-// wrapKeychainError wraps keychain errors with helpful guidance on macOS.
 func wrapKeychainError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if IsKeychainLockedError(err.Error()) {
-		return fmt.Errorf("%w\n\nYour macOS keychain is locked. To unlock it, run:\n  security unlock-keychain ~/Library/Keychains/login.keychain-db", err)
-	}
-
 	return err
 }
 
-func fileKeyringPasswordFuncFrom(password string, passwordSet bool, isTTY bool) keyring.PromptFunc {
-	// Treat "set to empty string" as intentional; empty passphrase is valid.
-	if passwordSet {
-		return keyring.FixedStringPrompt(password)
+// effectiveKeyringBackend maps legacy "keychain" selections to the file
+// backend. gog-marketing never touches the macOS Keychain.
+func effectiveKeyringBackend(value string) string {
+	v := normalizeKeyringBackend(value)
+	if v == keyringBackendKeychain {
+		return "file"
 	}
-
-	if isTTY {
-		return keyring.TerminalPrompt
-	}
-
-	return func(_ string) (string, error) {
-		return "", fmt.Errorf("%w; set %s", errNoTTY, keyringPasswordEnv)
-	}
+	return v
 }
 
 func normalizeKeyringBackend(value string) string {
@@ -182,7 +165,7 @@ func serviceNameFor(options OpenOptions) string {
 }
 
 // Keyring timeouts guard against unresponsive backends. macOS gets longer for
-// interactive permission prompts; other platforms retain the existing limit.
+// interactive operations; other platforms retain the existing limit.
 const (
 	keyringOpenTimeout       = 10 * time.Second
 	darwinKeyringOpenTimeout = 30 * time.Second
@@ -223,17 +206,13 @@ func shouldUseKeyringTimeout(goos string, backendInfo KeyringBackendInfo, dbusAd
 }
 
 func shouldUseKeyringOperationTimeout(goos string, backendInfo KeyringBackendInfo, dbusAddr string) bool {
-	if goos == goosDarwin {
-		return backendInfo.Value == keyringBackendAuto || backendInfo.Value == keyringBackendKeychain
-	}
-
 	return goos == goosLinux && backendInfo.Value == keyringBackendAuto && dbusAddr != ""
 }
 
 func keyringTimeoutHint(goos string) string {
 	switch goos {
 	case goosDarwin:
-		return "macOS Keychain may be waiting for a permission prompt; run `gog auth list` from a terminal and click \"Always Allow\" when prompted"
+		return "keyring backend may be unresponsive"
 	case goosLinux:
 		return "D-Bus SecretService may be unresponsive"
 	default:
@@ -278,17 +257,11 @@ func openKeyringWithOptions(options OpenOptions) (keyring.Keyring, error) {
 	}
 
 	cfg := keyring.Config{
-		ServiceName: serviceNameFor(options),
-		// Trust application access only for binaries with a stable signing identity,
-		// so Developer-ID releases keep access across upgrades. Ad-hoc/source builds
-		// retain false because their designated requirement changes each build, the
-		// Homebrew upgrade failure mode documented in issue #86.
-		KeychainTrustApplication: ResolveKeychainTrustApplication(options, backendInfo).Enabled,
-		AllowedBackends:          backends,
-		FileDir:                  keyringDir,
-		FilePasswordFunc:         fileKeyringPasswordFuncFrom(options.Password, options.PasswordSet, options.IsTTY),
+		ServiceName:      serviceNameFor(options),
+		AllowedBackends:  backends,
+		FileDir:          keyringDir,
+		FilePasswordFunc: fileKeyringPasswordFuncFrom(options),
 	}
-	keychainTrustApplication := cfg.KeychainTrustApplication
 
 	openTimeout := options.OpenTimeout
 	if openTimeout <= 0 {
@@ -314,7 +287,7 @@ func openKeyringWithOptions(options OpenOptions) (keyring.Keyring, error) {
 			return nil, timeoutErr
 		}
 
-		return prepareKeyring(timeoutRing, backendInfo, wrapFileKeys, keychainTrustApplication, options), nil
+		return prepareKeyring(timeoutRing, backendInfo, wrapFileKeys, options), nil
 	}
 
 	ring, err := open(cfg)
@@ -322,14 +295,13 @@ func openKeyringWithOptions(options OpenOptions) (keyring.Keyring, error) {
 		return nil, fmt.Errorf("open keyring: %w", err)
 	}
 
-	return prepareKeyring(ring, backendInfo, wrapFileKeys, keychainTrustApplication, options), nil
+	return prepareKeyring(ring, backendInfo, wrapFileKeys, options), nil
 }
 
 func prepareKeyring(
 	ring keyring.Keyring,
 	backendInfo KeyringBackendInfo,
 	wrapFileKeys bool,
-	keychainTrustApplication bool,
 	options OpenOptions,
 ) keyring.Keyring {
 	if wrapFileKeys || isFileKeyring(ring) {
@@ -344,11 +316,60 @@ func prepareKeyring(
 		ring = newTimeoutKeyring(ring, timeout, keyringTimeoutHint(options.GOOS))
 	}
 
-	if options.GOOS == goosDarwin && keychainTrustApplication {
-		ring = newKeychainOwnerRemoveFallback(ring, serviceNameFor(options), nativeKeychainOwnerRemove)
+	return ring
+}
+
+// fileKeyringPasswordFuncFrom returns a deterministic prompt function for the
+// file keyring. Passwords come from GOG_KEYRING_PASSWORD (or
+// GOG_KEYRING_PASSWORD_FILE via the environment lookup). When neither is set,
+// gog provisions a machine-local 0600 password file so the file backend never
+// prompts on a terminal.
+func fileKeyringPasswordFuncFrom(options OpenOptions) keyring.PromptFunc {
+	password, passwordSet, err := ensureFileKeyringPassword(options)
+	if err != nil {
+		return func(_ string) (string, error) {
+			return "", fmt.Errorf("%w: %v", errKeyringPasswordFile, err)
+		}
 	}
 
-	return ring
+	// Treat "set to empty string" as intentional; empty passphrase is valid.
+	if !passwordSet {
+		password = ""
+	}
+
+	return keyring.FixedStringPrompt(password)
+}
+
+func ensureFileKeyringPassword(options OpenOptions) (string, bool, error) {
+	if options.PasswordSet {
+		return options.Password, true, nil
+	}
+
+	path := options.Layout.KeyringPasswordPath()
+	if path == "" {
+		return "", false, errors.New("keyring password path unavailable")
+	}
+
+	if raw, readErr := os.ReadFile(path); readErr == nil {
+		if password := strings.TrimSpace(string(raw)); password != "" {
+			return password, true, nil
+		}
+	}
+
+	raw := make([]byte, 32)
+	if _, randErr := rand.Read(raw); randErr != nil {
+		return "", false, fmt.Errorf("generate keyring password: %w", randErr)
+	}
+
+	password := base64.RawURLEncoding.EncodeToString(raw)
+	if mkdirErr := os.MkdirAll(filepath.Dir(path), 0o700); mkdirErr != nil {
+		return "", false, fmt.Errorf("create keyring password dir: %w", mkdirErr)
+	}
+	if writeErr := os.WriteFile(path, []byte(password+"\n"), 0o600); writeErr != nil {
+		return "", false, fmt.Errorf("write keyring password file: %w", writeErr)
+	}
+
+	return password, true, nil
 }
 
 type keyringResult struct {

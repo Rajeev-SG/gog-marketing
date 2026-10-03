@@ -70,48 +70,24 @@ Shows stored credential files plus any configured domain mappings.
 - Manual or remote authorization started before v0.24.0 cannot be completed
   after upgrading. Run step 1 again to generate a PKCE-bound URL.
 
-## macOS Keychain prompt loop during development
+## macOS keyring is file-backed
 
-Symptom: macOS repeatedly shows `gog wants to use your confidential information stored in "gogcli"`, even after choosing **Always Allow**.
+gog-marketing no longer uses the macOS Keychain. All keyring secrets (refresh
+tokens, client secrets, tracking keys) live in the encrypted **file keyring**
+inside your gog data/config directories.
 
-Cause: Keychain approval is tied to executable identity. `go run` creates a new executable every time. A local `make build` creates an ad-hoc-signed `bin/gog`, so every rebuild is a new macOS application. **Always Allow** cannot persist across those identities.
+- Backend resolution: `auto`, `file`, and the legacy `keychain` value all
+  resolve to the encrypted file backend. The macOS Keychain is never opened.
+- Passphrase: `GOG_KEYRING_PASSWORD` (or `GOG_KEYRING_PASSWORD_FILE`) wins.
+  When neither is set, gog provisions a `0600` `keyring-password` dotfile next
+  to `config.json` on first use, so rebuilds and non-interactive agents never
+  prompt.
+- Keep the password file out of repositories and backups.
 
-Use one of these paths:
-
-1. Development: use the encrypted file keyring and do not touch Keychain.
-
-   On Rajeev's local rig:
-
-   ```bash
-   source ~/.codex/scripts/gog-keyring-env.sh
-   ```
-
-   The helper creates a `0600` password file and sets:
-
-   ```bash
-   export GOG_KEYRING_BACKEND=file
-   export GOG_KEYRING_PASSWORD_FILE=/secure/path/gog-keyring-password
-   ```
-
-2. Existing Keychain data: use a stable Developer ID-signed installed binary.
-
-   On Rajeev's local rig:
-
-   ```bash
-   ~/.codex/scripts/gog-stable-auth.sh auth ...
-   ```
-
-   The wrapper uses `/opt/homebrew/bin/gog` and rejects rebuilt ad-hoc binaries.
-
-Do not use `go run` or rebuilt `bin/gog` for Keychain-backed commands.
-
-Migrate existing tokens and client credentials once from your own Terminal:
-
-```bash
-~/.codex/scripts/gog-migrate-keychain-to-file.sh <email> [client_secret.json] [client-name]
-```
-
-The migration may show one final Keychain approval for the existing items. After it completes, development uses the file keyring and rebuilds do not prompt.
+Accounts connected while the old Keychain backend was active must reconnect
+once (`gog auth add <email> ...`) to store tokens in the file keyring. The
+connection flow opens the browser once and writes directly to the file
+backend; it never reads the Keychain.
 
 ## Quota project
 

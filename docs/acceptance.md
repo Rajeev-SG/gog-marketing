@@ -1,6 +1,6 @@
 # Unattended Acceptance
 
-Routine development, CI, local acceptance, and live read-only acceptance must be unattended after one explicit bootstrap. They must not use `go run`, open a browser, start OAuth consent, prompt for Keychain access, or wait for terminal input.
+Routine development, CI, local acceptance, and live read-only acceptance must be unattended after one explicit bootstrap. They must not use `go run`, open a browser, start OAuth consent, prompt for keyring access, or wait for terminal input. The keyring is the encrypted file backend; the macOS Keychain is never used.
 
 ## Stable developer profile
 

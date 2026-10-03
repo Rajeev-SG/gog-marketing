@@ -128,7 +128,7 @@ Google opens a browser for the first login and consent. Verify the connection:
 When no OAuth client file exists, run `./bin/gog auth setup you@gmail.com --client personal-owned` and follow the guided Google Cloud setup. The full walkthrough
 is in the [quickstart](docs/quickstart.md).
 
-Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of
+Keep `client_secret_*.json`, refresh tokens, and keyring passwords out of
 repositories, prompts, logs, screenshots, and agent instructions. If an agent
 needs access, give it an approved `gog` command rather than a credential.
 
@@ -166,7 +166,7 @@ make acceptance-doctor
 make acceptance-live-repeat N=3
 ```
 
-Routine checks must not open a browser, trigger Keychain dialogs, or wait for
+Routine checks must not open a browser, trigger keyring prompts, or wait for
 terminal input. See [Unattended Acceptance](docs/acceptance.md).
 
 ## Help
@@ -193,7 +193,7 @@ terminal input. See [Unattended Acceptance](docs/acceptance.md).
 - [Quickstart](docs/quickstart.md): complete Google Cloud walkthrough.
 - [Install](docs/install.md): build/install this fork and understand the upstream package distinction.
 - [Examples](docs/examples.md): common tasks and command patterns.
-- [Unattended Acceptance](docs/acceptance.md): the no-browser, no-Keychain contract.
+- [Unattended Acceptance](docs/acceptance.md): the no-browser, no-keychain contract.
 - [Automation](docs/automation.md): JSON output, exit codes, and agent safety.
 - [Auth Clients](docs/auth-clients.md): multiple clients and service accounts.
 - [MCP](docs/mcp.md): typed agent access without a generic shell bridge.

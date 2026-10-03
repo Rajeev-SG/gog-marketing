@@ -31,7 +31,7 @@ type ControlPlaneCmd struct {
 	MasterKey               string `name:"master-key" help:"Encryption master key for local secret storage" env:"GOG_CONTROL_PLANE_MASTER_KEY"`
 	SessionKey              string `name:"session-key" help:"Stable signing key for web sessions" env:"GOG_CONTROL_PLANE_SESSION_KEY"`
 	AdminToken              string `name:"admin-token" help:"Required bootstrap admin token used to sign in" env:"GOG_CONTROL_PLANE_ADMIN_TOKEN"`
-	GoogleClientName        string `name:"google-client-name" help:"Named stored OAuth client supplying the central client ID and Keychain secret" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_NAME"`
+	GoogleClientName        string `name:"google-client-name" help:"Named stored OAuth client supplying the central client ID and client secret from the encrypted file keyring" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_NAME"`
 	GoogleClientID          string `name:"google-client-id" help:"Explicit central Google OAuth client ID for secret-injected deployments" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_ID"`
 	GoogleClientSecret      string `name:"google-client-secret" help:"Explicit central Google OAuth client secret for secret-injected deployments" env:"GOG_CONTROL_PLANE_GOOGLE_CLIENT_SECRET"`
 	GoogleAdsDeveloperToken string `name:"google-ads-developer-token" help:"Google Ads developer token used for resource discovery" env:"GOG_GOOGLE_ADS_DEVELOPER_TOKEN"`

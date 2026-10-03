@@ -47,6 +47,13 @@ func (l Layout) EnsureKeyringDir() (string, error) {
 	return dir, nil
 }
 
+// KeyringPasswordPath returns the 0600 machine-local passphrase file used by
+// the file keyring backend. It lives next to config.json so secrets stay in
+// user-owned dotfiles instead of the macOS Keychain.
+func (l Layout) KeyringPasswordPath() string {
+	return filepath.Join(l.ConfigDir, "keyring-password")
+}
+
 func (l Layout) ClientCredentialsPathFor(client string) (string, error) {
 	return clientCredentialsPathInDir(l.DataDir, client)
 }

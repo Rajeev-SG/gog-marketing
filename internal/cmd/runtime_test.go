@@ -197,7 +197,6 @@ func TestCommandDependenciesMissingRuntimeFailClosed(t *testing.T) {
 				return err
 			},
 		},
-		{name: "keychain", run: func() error { return ensureKeychainAccessIfNeeded(ctx) }},
 		{
 			name: "refresh check",
 			run: func() error {
