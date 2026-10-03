@@ -36,7 +36,7 @@ dashboard, not a generic SaaS template.
 | 09 advanced diagnostics | Progressive-disclosure panels (connection ID, resource IDs) on the assets page. |
 | 10 onboarding completion | `/onboarding/{id}` step checklist computed from real connection state after Google consent. |
 | 11 already-connected toast | `ErrConflict` renders as a non-blocking informational toast, not an error. |
-| 12 mobile Google data | Responsive picker: rail becomes horizontal status chips, rows stack, save bar sticky. |
+| 12 mobile Google data | Responsive picker: rail becomes wrapping status chips, rows stack, save bar sticky. |
 
 ## Tokens
 

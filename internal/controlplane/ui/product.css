@@ -340,3 +340,8 @@ button:disabled { cursor: default; opacity: .7; }
 .savebar button { flex-shrink: 0; white-space: nowrap; }
 .shell-account { max-width: 36ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 600px) { .shell-account { max-width: none; } }
+
+@media (max-width: 600px) {
+  .rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .rail-item { min-width: 0; flex-direction: column; align-items: flex-start; justify-content: flex-start; }
+}

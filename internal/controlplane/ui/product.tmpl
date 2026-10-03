@@ -29,7 +29,7 @@
 {{define "shell-end"}}</main>{{end}}
 
 {{define "toast"}}
-<div class="toast{{if .Kind}} {{.Kind}}{{end}}" role="status" aria-live="polite">{{icon "check"}}<span>{{.Text}}</span></div>
+<div class="toast{{if .Kind}} {{.Kind}}{{end}}" role="status" aria-live="polite">{{if eq .Kind "info"}}{{icon "info"}}{{else}}{{icon "check"}}{{end}}<span>{{.Text}}</span></div>
 {{end}}
 
 {{define "status"}}<span class="status{{if .Class}} {{.Class}}{{end}}">{{.Label}}</span>{{end}}
@@ -149,10 +149,10 @@
 {{if .HasAssets}}
 <div class="picker">
 <nav class="rail" aria-label="Google services">
-{{range .RailGroups}}
+{{range .RailGroups}}{{if .Items}}
 <p class="rail-group-label">{{.Name}}</p>
 {{range .Items}}<a class="rail-item" href="#service-{{.Key}}"><span>{{.Name}}</span>{{if .State}}<span class="status {{.State}}">{{.StateLabel}}</span>{{end}}</a>{{end}}
-{{end}}
+{{end}}{{end}}
 </nav>
 <form method="post" action="/assets/{{.Connection.ID}}/save">
 <input type="hidden" name="csrf" value="{{.CSRF}}">
