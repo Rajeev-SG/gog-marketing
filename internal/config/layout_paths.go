@@ -47,6 +47,21 @@ func (l Layout) EnsureKeyringDir() (string, error) {
 	return dir, nil
 }
 
+// KeyringPasswordPath returns the 0600 machine-local passphrase file used by
+// the file keyring backend. It lives next to config.json so secrets stay in
+// user-owned dotfiles instead of the macOS Keychain.
+//
+// Reduced threat model (accepted trade-off): the key sits next to the
+// ciphertext. Anyone or anything that can read the user's ConfigDir —
+// including backups and file-sync services that copy that directory — gets
+// both the encrypted keyring and the key that opens it. High-value
+// deployments should instead supply GOG_KEYRING_PASSWORD (or
+// GOG_KEYRING_PASSWORD_FILE) from a source outside ConfigDir, and should
+// exclude keyring-password from any backup/sync of ConfigDir.
+func (l Layout) KeyringPasswordPath() string {
+	return filepath.Join(l.ConfigDir, "keyring-password")
+}
+
 func (l Layout) ClientCredentialsPathFor(client string) (string, error) {
 	return clientCredentialsPathInDir(l.DataDir, client)
 }

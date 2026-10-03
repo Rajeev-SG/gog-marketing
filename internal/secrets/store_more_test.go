@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -161,14 +164,6 @@ func TestAllowedBackends(t *testing.T) {
 
 func TestWrapKeychainError(t *testing.T) {
 	wrapped := wrapKeychainError(errTestKeychain)
-	if runtime.GOOS == "darwin" {
-		if !errors.Is(wrapped, errTestKeychain) || !strings.Contains(wrapped.Error(), "keychain is locked") {
-			t.Fatalf("expected wrapped keychain error, got: %v", wrapped)
-		}
-
-		return
-	}
-
 	if !errors.Is(wrapped, errTestKeychain) || wrapped.Error() != errTestKeychain.Error() {
 		t.Fatalf("expected passthrough error, got: %v", wrapped)
 	}
@@ -176,7 +171,7 @@ func TestWrapKeychainError(t *testing.T) {
 
 func TestFileKeyringPasswordFuncFrom(t *testing.T) {
 	// Non-empty password with passwordSet=true returns that password.
-	fn := fileKeyringPasswordFuncFrom("pw", true, false)
+	fn := fileKeyringPasswordFuncFrom(OpenOptions{Password: "pw", PasswordSet: true})
 	if got, err := fn("prompt"); err != nil {
 		t.Fatalf("expected password, got err: %v", err)
 	} else if got != "pw" {
@@ -184,17 +179,183 @@ func TestFileKeyringPasswordFuncFrom(t *testing.T) {
 	}
 
 	// Empty password with passwordSet=true returns empty string (not an error).
-	fn = fileKeyringPasswordFuncFrom("", true, false)
+	fn = fileKeyringPasswordFuncFrom(OpenOptions{Password: "", PasswordSet: true})
 	if got, err := fn("prompt"); err != nil {
 		t.Fatalf("expected empty password, got err: %v", err)
 	} else if got != "" {
 		t.Fatalf("expected empty password, got: %q", got)
 	}
 
-	// Env var not set and no TTY returns errNoTTY.
-	fn = fileKeyringPasswordFuncFrom("", false, false)
-	if _, err := fn("prompt"); err == nil || !errors.Is(err, errNoTTY) {
-		t.Fatalf("expected no TTY error, got: %v", err)
+	// No password set: gog provisions a 0600 password dotfile instead of
+	// prompting on a terminal.
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	fn = fileKeyringPasswordFuncFrom(OpenOptions{Layout: layout})
+	first, err := fn("prompt")
+	if err != nil {
+		t.Fatalf("expected provisioned password, got err: %v", err)
+	}
+	if first == "" {
+		t.Fatal("expected non-empty provisioned password")
+	}
+
+	info, statErr := os.Stat(layout.KeyringPasswordPath())
+	if statErr != nil {
+		t.Fatalf("password file: %v", statErr)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("password file mode = %v, want 0600", info.Mode().Perm())
+	}
+
+	// The same dotfile password is reused on the next call.
+	second, err := fileKeyringPasswordFuncFrom(OpenOptions{Layout: layout})("prompt")
+	if err != nil {
+		t.Fatalf("expected reused password, got err: %v", err)
+	}
+	if second != first {
+		t.Fatalf("password changed between calls: %q != %q", second, first)
+	}
+}
+
+func TestEnsureFileKeyringPassword_RaceReadsWinner(t *testing.T) {
+	layout := config.Layout{ConfigDir: t.TempDir()}
+
+	// Simulate a losing writer: the create call loses the O_EXCL race, and
+	// the winning file appears before the first retry.
+	attempts := 0
+	restore := withKeyringPasswordFakes(
+		func(string) ([]byte, error) {
+			attempts++
+			if attempts == 1 {
+				return nil, fs.ErrNotExist
+			}
+			return []byte("winner-password\n"), nil
+		},
+		func(string) (*os.File, error) { return nil, fs.ErrExist },
+	)
+	t.Cleanup(restore)
+
+	password, ok, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+	if err != nil {
+		t.Fatalf("ensureFileKeyringPassword: %v", err)
+	}
+	if !ok || password != "winner-password" {
+		t.Fatalf("password = %q, ok = %v, want winner-password", password, ok)
+	}
+	if attempts < 2 {
+		t.Fatalf("expected retry after EEXIST, attempts = %d", attempts)
+	}
+}
+
+func TestEnsureFileKeyringPassword_PermissionErrorFailsFast(t *testing.T) {
+	layout := config.Layout{ConfigDir: t.TempDir()}
+
+	restore := withKeyringPasswordFakes(
+		func(string) ([]byte, error) {
+			return nil, os.ErrPermission
+		},
+		nil,
+	)
+	t.Cleanup(restore)
+
+	_, _, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+	if err == nil || !errors.Is(err, os.ErrPermission) {
+		t.Fatalf("expected permission error, got: %v", err)
+	}
+}
+
+func TestEnsureFileKeyringPassword_InFlightWinnerBecomesReadable(t *testing.T) {
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	path := layout.KeyringPasswordPath()
+	if err := os.WriteFile(path, []byte("\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	restore := withKeyringPasswordFakes(
+		func(p string) ([]byte, error) {
+			// Winner's write becomes visible on the first retry.
+			if err := os.WriteFile(p, []byte("winner\n"), 0o600); err != nil {
+				return nil, err
+			}
+			return []byte("winner\n"), nil
+		},
+		nil,
+	)
+	t.Cleanup(restore)
+
+	password, ok, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+	if err != nil {
+		t.Fatalf("ensureFileKeyringPassword: %v", err)
+	}
+	if !ok || password != "winner" {
+		t.Fatalf("password = %q, ok = %v, want winner", password, ok)
+	}
+}
+
+func TestEnsureFileKeyringPassword_EmptyFileFailsWithAction(t *testing.T) {
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	path := layout.KeyringPasswordPath()
+	if err := os.WriteFile(path, []byte("\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	keyringPasswordRetryDelay = 0
+	keyringPasswordRetryDeadline = 10 * time.Millisecond
+	t.Cleanup(func() {
+		keyringPasswordRetryDelay = 20 * time.Millisecond
+		keyringPasswordRetryDeadline = 5 * time.Second
+	})
+
+	_, _, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+	if err == nil || !errors.Is(err, errKeyringPasswordFile) {
+		t.Fatalf("expected actionable empty-file error, got: %v", err)
+	}
+}
+
+func TestEnsureFileKeyringPassword_ReusedAcrossRaces(t *testing.T) {
+	// Real O_EXCL semantics: concurrent provisioners race on the same
+	// directory; losers must read the winner's password, never generate a
+	// second one.
+	layout := config.Layout{ConfigDir: t.TempDir()}
+
+	passwords := make(chan string, 4)
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pw, _, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+			if err != nil {
+				t.Errorf("ensureFileKeyringPassword: %v", err)
+				return
+			}
+			passwords <- pw
+		}()
+	}
+	wg.Wait()
+
+	close(passwords)
+	seen := map[string]int{}
+	for pw := range passwords {
+		seen[pw]++
+	}
+	if len(seen) != 1 {
+		t.Fatalf("expected one password across racing callers, got: %v", seen)
+	}
+}
+
+func withKeyringPasswordFakes(
+	read func(string) ([]byte, error),
+	create func(string) (*os.File, error),
+) func() {
+	origRead, origCreate := readKeyringPasswordFileFn, createKeyringPasswordFn
+	if read != nil {
+		readKeyringPasswordFileFn = read
+	}
+	if create != nil {
+		createKeyringPasswordFn = create
+	}
+	return func() {
+		readKeyringPasswordFileFn, createKeyringPasswordFn = origRead, origCreate
 	}
 }
 

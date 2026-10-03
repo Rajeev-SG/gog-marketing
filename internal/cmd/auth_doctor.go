@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/config"
 	"github.com/openclaw/gogcli/internal/outfmt"
@@ -69,7 +68,6 @@ func (c *AuthDoctorCmd) Run(ctx context.Context, _ *RootFlags) error {
 		add("keyring.backend", doctorError, backendErr.Error(), "")
 	} else {
 		add("keyring.backend", doctorOK, backendInfo.Value+" (source: "+backendInfo.Source+")", "")
-		addKeychainTrustCheck(ctx, add, backendInfo)
 		addKeyringEnvChecks(ctx, add, backendInfo)
 	}
 
@@ -153,30 +151,6 @@ func (c *AuthDoctorCmd) Run(ctx context.Context, _ *RootFlags) error {
 	return writeAuthDoctorResult(ctx, u, checks)
 }
 
-func addKeychainTrustCheck(ctx context.Context, add func(string, string, string, string), backendInfo secrets.KeyringBackendInfo) {
-	appRuntime, ok := app.FromContext(ctx)
-	if !ok || appRuntime.KeyringOptions == nil {
-		return
-	}
-
-	info := secrets.ResolveKeychainTrustApplication(*appRuntime.KeyringOptions, backendInfo)
-	if !info.Applicable {
-		return
-	}
-
-	detail := "application trust disabled (ad-hoc or unsigned binary)"
-	if info.Forced {
-		if info.Enabled {
-			detail = "forced on via GOG_KEYCHAIN_TRUST_APPLICATION"
-		} else {
-			detail = "forced off via GOG_KEYCHAIN_TRUST_APPLICATION"
-		}
-	} else if info.Enabled {
-		detail = "application trust enabled (developer-id signed)"
-	}
-	add("keychain.trust", doctorOK, detail, "")
-}
-
 func authDoctorTokenCheckName(prefix string, client string, email string) string {
 	client = strings.TrimSpace(client)
 	if client == "" {
@@ -226,10 +200,8 @@ func addKeyringEnvChecks(ctx context.Context, add func(string, string, string, s
 		add("keyring.password", doctorWarn, "GOG_KEYRING_PASSWORD is set to an empty string", "empty is valid but easy to set accidentally; keep it identical in every shell/service")
 	case passwordSet:
 		add("keyring.password", doctorOK, "GOG_KEYRING_PASSWORD is set", "keep this value identical across shell, service, and agent configs")
-	case !stdinIsTerminal(ctx):
-		add("keyring.password", doctorError, "file keyring selected but GOG_KEYRING_PASSWORD is not set in a non-interactive process", "set GOG_KEYRING_PASSWORD or switch to a system keyring")
 	default:
-		add("keyring.password", doctorWarn, "file keyring selected and GOG_KEYRING_PASSWORD is not set", "interactive prompts work locally, but CI/ssh/agents need GOG_KEYRING_PASSWORD")
+		add("keyring.password", doctorOK, "file keyring selected; passphrase auto-provisioned in a 0600 keyring-password dotfile", "set GOG_KEYRING_PASSWORD to pin the passphrase, and exclude keyring-password from backups/sync")
 	}
 }
 

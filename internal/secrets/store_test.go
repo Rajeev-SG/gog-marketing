@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -17,14 +18,12 @@ import (
 var errKeyringOpenBlocked = errors.New("keyring open blocked")
 
 // keyringConfig creates a keyring.Config for testing.
-// KeychainTrustApplication is false to match production config (see store.go).
 func keyringConfig(keyringDir string) keyring.Config {
 	return keyring.Config{
-		ServiceName:              config.AppName,
-		KeychainTrustApplication: false,
-		AllowedBackends:          []keyring.BackendType{keyring.FileBackend},
-		FileDir:                  keyringDir,
-		FilePasswordFunc:         fileKeyringPasswordFuncFrom("testpass", true, false),
+		ServiceName:      config.AppName,
+		AllowedBackends:  []keyring.BackendType{keyring.FileBackend},
+		FileDir:          keyringDir,
+		FilePasswordFunc: fileKeyringPasswordFuncFrom(OpenOptions{Password: "testpass", PasswordSet: true}),
 	}
 }
 
@@ -42,12 +41,11 @@ func TestOpenOptionsFromLookupCapturesEnvironment(t *testing.T) {
 	t.Parallel()
 
 	values := map[string]string{
-		keyringBackendEnv:           " file ",
-		keyringPasswordEnv:          "",
-		keyringServiceNameEnv:       " custom-gog ",
-		keychainTrustApplicationEnv: " TRUE ",
-		"DBUS_SESSION_BUS_ADDRESS":  "unix:path=/tmp/dbus",
-		keyringLockTimeoutEnv:       "125ms",
+		keyringBackendEnv:          " file ",
+		keyringPasswordEnv:         "",
+		keyringServiceNameEnv:      " custom-gog ",
+		"DBUS_SESSION_BUS_ADDRESS": "unix:path=/tmp/dbus",
+		keyringLockTimeoutEnv:      "125ms",
 	}
 
 	options, err := OpenOptionsFromLookup(
@@ -66,10 +64,6 @@ func TestOpenOptionsFromLookupCapturesEnvironment(t *testing.T) {
 
 	if options.Backend != " file " || options.ServiceName != "custom-gog" {
 		t.Fatalf("options = %#v", options)
-	}
-
-	if options.KeychainTrustApplication != " TRUE " {
-		t.Fatalf("keychain trust application = %q", options.KeychainTrustApplication)
 	}
 
 	if options.Password != "" || !options.PasswordSet {
@@ -190,34 +184,6 @@ func TestOpenUsesInjectedOptions(t *testing.T) {
 	}
 }
 
-func TestOpenTrustsStableSignedApplicationForKeychain(t *testing.T) {
-	t.Parallel()
-
-	layout := config.Layout{ConfigDir: t.TempDir(), DataDir: t.TempDir()}
-	var opened keyring.Config
-	options := OpenOptions{
-		Layout:  layout,
-		Config:  config.NewConfigStore(layout),
-		Backend: "keychain",
-		GOOS:    "darwin",
-		codesignRunner: func(string) ([]byte, error) {
-			return []byte("Signature=Developer ID Application: Example\nTeamIdentifier=Y5PE65HELJ\n"), nil
-		},
-		openKeyringFn: func(cfg keyring.Config) (keyring.Keyring, error) {
-			opened = cfg
-			return keyring.NewArrayKeyring(nil), nil
-		},
-	}
-
-	if _, err := openKeyringWithOptions(options); err != nil {
-		t.Fatalf("openKeyringWithOptions: %v", err)
-	}
-
-	if !opened.KeychainTrustApplication {
-		t.Fatal("KeychainTrustApplication = false, want true")
-	}
-}
-
 func TestOpenKeepsRuntimeHomesIndependent(t *testing.T) {
 	t.Parallel()
 
@@ -282,7 +248,36 @@ func TestResolveKeyringBackendInfo_Config(t *testing.T) {
 }
 
 func TestResolveKeyringBackendInfo_EnvOverridesConfig(t *testing.T) {
-	assertResolveKeyringBackendConfig(t, "keychain", "keychain", keyringBackendSourceEnv)
+	assertResolveKeyringBackendConfig(t, "keychain", "file", keyringBackendSourceEnv)
+}
+
+func TestResolveKeyringBackendInfo_LegacyKeychainMappedToFile(t *testing.T) {
+	t.Parallel()
+
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	store := config.NewConfigStore(layout)
+	if err := store.Write(config.File{KeyringBackend: "keychain"}); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	info, err := ResolveKeyringBackendInfoWithOptions(OpenOptions{Config: store})
+	if err != nil {
+		t.Fatalf("ResolveKeyringBackendInfoWithOptions: %v", err)
+	}
+	if info.Value != "file" || !info.Legacy || info.Source != keyringBackendSourceConfig {
+		t.Fatalf("backend info = %#v, want file/legacy/config", info)
+	}
+
+	envInfo, err := ResolveKeyringBackendInfoWithOptions(OpenOptions{
+		Config:  store,
+		Backend: "keychain",
+	})
+	if err != nil {
+		t.Fatalf("ResolveKeyringBackendInfoWithOptions: %v", err)
+	}
+	if envInfo.Value != "file" || !envInfo.Legacy || envInfo.Source != keyringBackendSourceEnv {
+		t.Fatalf("backend info = %#v, want file/legacy/env", envInfo)
+	}
 }
 
 func assertResolveKeyringBackendConfig(t *testing.T, envValue, wantValue, wantSource string) {
@@ -356,7 +351,7 @@ func TestResolveKeyringBackendInfoWithOptionsUsesCapturedOverride(t *testing.T) 
 		t.Fatalf("ResolveKeyringBackendInfoWithOptions: %v", err)
 	}
 
-	if info.Value != "keychain" || info.Source != keyringBackendSourceEnv {
+	if info.Value != "file" || info.Source != keyringBackendSourceEnv {
 		t.Fatalf("backend info = %#v", info)
 	}
 }
@@ -592,5 +587,43 @@ func TestOpenKeyring_ExplicitBackend_IgnoresDBusDetection(t *testing.T) {
 
 	if store == nil {
 		t.Fatal("expected non-nil store")
+	}
+}
+
+func TestOpenKeyringOptionsWarnsOnceForLegacyKeychain(t *testing.T) {
+	t.Parallel()
+
+	layout := config.Layout{ConfigDir: t.TempDir(), DataDir: t.TempDir()}
+
+	var notices int
+	restore := setLegacyKeychainNotice(func() { notices++ })
+	t.Cleanup(restore)
+
+	for i := 0; i < 2; i++ {
+		options := OpenOptions{
+			Layout:  layout,
+			Config:  config.NewConfigStore(layout),
+			Backend: "keychain",
+			openKeyringFn: func(keyring.Config) (keyring.Keyring, error) {
+				return keyring.NewArrayKeyring(nil), nil
+			},
+		}
+		if _, err := openKeyringWithOptions(options); err != nil {
+			t.Fatalf("openKeyringWithOptions: %v", err)
+		}
+	}
+
+	if notices != 1 {
+		t.Fatalf("legacy keychain notice count = %d, want exactly 1", notices)
+	}
+}
+
+func setLegacyKeychainNotice(fn func()) func() {
+	orig := legacyKeychainNoticeFn
+	legacyKeychainNoticeFn = fn
+	legacyKeychainNoticeOnce = sync.Once{}
+	return func() {
+		legacyKeychainNoticeFn = orig
+		legacyKeychainNoticeOnce = sync.Once{}
 	}
 }

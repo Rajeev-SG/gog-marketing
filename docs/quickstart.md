@@ -117,7 +117,7 @@ gog auth add you@gmail.com --services gmail,calendar,drive,analytics
 ```
 
 A browser tab opens, you grant only the requested scopes, and `gog` stores a
-refresh token in your OS keyring (Keychain on macOS, Secret Service on Linux,
+refresh token in your OS keyring (encrypted file keyring on macOS, Secret Service on Linux,
 Credential Manager on Windows). Headless? Add `--manual` for a paste-the-URL
 flow, or `--remote --step 1`/`--step 2` for fully split server runs.
 

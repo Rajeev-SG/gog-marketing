@@ -76,18 +76,10 @@ func fetchAuthIdentity(
 	return googleauth.Identity{}, fmt.Errorf("%w: authorized identity", errRuntimeServiceRequired)
 }
 
-func ensureKeychainAccessIfNeeded(ctx context.Context) error {
-	backendInfo, err := resolveKeyringBackendInfo(ctx)
-	if err != nil {
-		return fmt.Errorf("resolve keyring backend: %w", err)
-	}
-	if backendInfo.Value == strFile {
-		return nil
-	}
-	if runtime, ok := app.FromContext(ctx); ok && runtime.Auth.EnsureKeychainAccess != nil {
-		return runtime.Auth.EnsureKeychainAccess(ctx)
-	}
-	return fmt.Errorf("%w: keychain access", errRuntimeServiceRequired)
+func ensureKeychainAccessIfNeeded(context.Context) error {
+	// gog-marketing stores keyring secrets in an encrypted file backend, not
+	// the macOS Keychain, so there is no keychain unlock preflight.
+	return nil
 }
 
 func resolveKeyringBackendInfo(ctx context.Context) (secrets.KeyringBackendInfo, error) {

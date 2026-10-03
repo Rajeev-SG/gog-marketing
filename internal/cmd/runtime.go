@@ -49,7 +49,7 @@ func newDefaultRuntime() *app.Runtime {
 		Auth: app.AuthOperations{
 			AuthorizeGoogle:         googleauth.Authorize,
 			CheckRefreshToken:       googleauth.CheckRefreshToken,
-			EnsureKeychainAccess:    secrets.EnsureKeychainAccessContext,
+			EnsureKeychainAccess:    func(context.Context) error { return nil }, // file keyring needs no keychain unlock
 			FetchAuthorizedIdentity: googleauth.IdentityForRefreshToken,
 			ManualAuthURL:           googleauth.ManualAuthURL,
 		},

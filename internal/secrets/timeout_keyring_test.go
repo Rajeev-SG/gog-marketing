@@ -17,8 +17,8 @@ func TestKeyringOperationTimeoutGuards(t *testing.T) {
 		dbusAddr string
 		wantWrap bool
 	}{
-		{name: "darwin auto", goos: "darwin", backend: "auto", wantWrap: true},
-		{name: "darwin keychain", goos: "darwin", backend: "keychain", wantWrap: true},
+		{name: "darwin auto", goos: "darwin", backend: "auto", wantWrap: false},
+		{name: "darwin keychain", goos: "darwin", backend: "keychain", wantWrap: false},
 		{name: "darwin file", goos: "darwin", backend: "file", wantWrap: false},
 		{name: "linux auto with dbus", goos: "linux", backend: "auto", dbusAddr: "unix:path=/run/user/1000/bus", wantWrap: true},
 		{name: "linux auto without dbus", goos: "linux", backend: "auto", wantWrap: false},
@@ -41,7 +41,7 @@ func TestKeyringTimeoutHint(t *testing.T) {
 		goos       string
 		wantSubstr string
 	}{
-		{"darwin", "Always Allow"},
+		{"darwin", "keyring backend"},
 		{"linux", "D-Bus SecretService"},
 		{"windows", "keyring backend"},
 	}
@@ -68,9 +68,9 @@ func TestTimeoutKeyringTimesOutOperations(t *testing.T) {
 		t.Fatalf("expected timeout error, got %v", err)
 	}
 
-	if !strings.Contains(err.Error(), "listing keyring items") || !strings.Contains(err.Error(), "Always Allow") ||
+	if !strings.Contains(err.Error(), "listing keyring items") || !strings.Contains(err.Error(), "keyring backend") ||
 		!strings.Contains(err.Error(), "GOG_KEYRING_OPEN_TIMEOUT") {
-		t.Fatalf("expected operation, macOS hint, and timeout env in error, got %v", err)
+		t.Fatalf("expected operation, hint, and timeout env in error, got %v", err)
 	}
 }
 

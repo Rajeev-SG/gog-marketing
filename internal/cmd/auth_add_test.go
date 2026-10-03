@@ -33,7 +33,7 @@ func defaultAuthTestOperations() (
 		}
 		return secrets.Open(options)
 	}
-	return openStore, googleauth.Authorize, secrets.EnsureKeychainAccessContext, googleauth.IdentityForRefreshToken
+	return openStore, googleauth.Authorize, func(context.Context) error { return nil }, googleauth.IdentityForRefreshToken
 }
 
 func runtimeWithAuthTestOperations(
@@ -157,52 +157,6 @@ func TestAuthAddCmd_HelpDocumentsGoogleAccountRequirement(t *testing.T) {
 	result := executeWithTestRuntime(t, []string{"auth", "add", "--help"}, nil)
 	if result.err != nil || !strings.Contains(result.stdout, "Google Account or Google Workspace email") {
 		t.Fatalf("auth add help = %q, err = %v", result.stdout, result.err)
-	}
-}
-
-func TestAuthAddCmd_KeychainError(t *testing.T) {
-	t.Setenv("GOG_KEYRING_BACKEND", "keychain")
-
-	var (
-		authorizeGoogle         app.AuthorizeGoogleFunc
-		ensureKeychainAccess    app.EnsureKeychainAccessFunc
-		fetchAuthorizedIdentity app.FetchAuthorizedIdentityFunc
-	)
-
-	// Simulate keychain locked error
-	ensureKeychainAccess = func(context.Context) error {
-		return errors.New("keychain is locked")
-	}
-
-	authCalled := false
-	authorizeGoogle = func(_ context.Context, _ googleauth.AuthorizeOptions) (string, error) {
-		authCalled = true
-		return "rt", nil
-	}
-	fetchAuthorizedIdentity = func(context.Context, string, string, []string, time.Duration) (googleauth.Identity, error) {
-		t.Fatal("fetchAuthorizedIdentity should not be called when keychain check fails")
-		return googleauth.Identity{}, nil
-	}
-
-	store := newMemSecretsStore()
-	openSecretsStore := func() (secrets.Store, error) { return store, nil }
-
-	cmd := &AuthAddCmd{Email: "test@example.com", ServicesCSV: "gmail"}
-	runtime := runtimeWithAuthTestOperations(
-		openSecretsStore, authorizeGoogle, ensureKeychainAccess, fetchAuthorizedIdentity,
-	)
-	runtime.KeyringOptions.Backend = "keychain"
-	ctx := app.WithRuntime(withTestClientResolver(context.Background()), runtime)
-	err := cmd.Run(ctx, &RootFlags{})
-
-	if err == nil {
-		t.Fatal("expected error when keychain is locked")
-	}
-	if !strings.Contains(err.Error(), "keychain") {
-		t.Errorf("expected error to mention keychain, got: %v", err)
-	}
-	if authCalled {
-		t.Error("authorizeGoogle should not be called when keychain check fails")
 	}
 }
 
