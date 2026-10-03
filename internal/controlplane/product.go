@@ -276,7 +276,7 @@ func (h *ProductHandler) csrfOK(w http.ResponseWriter, r *http.Request, session 
 }
 
 func (h *ProductHandler) signin(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "signin", map[string]any{templateErrorField: r.URL.Query().Get("error")})
+	h.render(w, "signin", map[string]any{"PageTitle": "Sign in", templateErrorField: r.URL.Query().Get("error")})
 }
 
 func (h *ProductHandler) authStart(w http.ResponseWriter, r *http.Request) {
