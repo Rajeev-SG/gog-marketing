@@ -496,6 +496,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 			StateLabel:     productStateLabel(state),
 			NeedsReconnect: state == "needs_attention",
 		})
+
 		needsReconnect = needsReconnect || state == "needs_attention"
 		if state == "connected" {
 			connectedCount++
@@ -509,6 +510,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 
 		for _, asset := range productAssets(grants) {
 			assets = append(assets, asset)
+
 			serviceNames[asset.Service] = true
 			if asset.Enabled {
 				selectedCount++
@@ -521,7 +523,8 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		first = views[0].Connection
 	}
 
-	notice := productHomeNotice(r.URL.Query().Get("notice"), r.URL.Query().Get("error"))
+	notice := productHomeNotice(r.URL.Query().Get("notice"))
+
 	homeError := homeErrorMessage(r.URL.Query().Get("error"), partialLoad)
 	if notice != "" {
 		homeError = ""

@@ -20,7 +20,7 @@ func TestReadmeDocumentsSafeAgentContract(t *testing.T) {
 		"make acceptance-local",
 		"make acceptance-doctor",
 		"make acceptance-live-repeat N=3",
-		"Keep `client_secret_*.json`, refresh tokens, and Keychain passwords out of",
+		"Keep `client_secret_*.json`, refresh tokens, and keyring passwords out of",
 	} {
 		if !strings.Contains(readme, required) {
 			t.Fatalf("README is missing %q", required)

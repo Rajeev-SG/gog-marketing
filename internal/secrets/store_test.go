@@ -255,6 +255,7 @@ func TestResolveKeyringBackendInfo_LegacyKeychainMappedToFile(t *testing.T) {
 	t.Parallel()
 
 	layout := config.Layout{ConfigDir: t.TempDir()}
+
 	store := config.NewConfigStore(layout)
 	if err := store.Write(config.File{KeyringBackend: "keychain"}); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -264,6 +265,7 @@ func TestResolveKeyringBackendInfo_LegacyKeychainMappedToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveKeyringBackendInfoWithOptions: %v", err)
 	}
+
 	if info.Value != "file" || !info.Legacy || info.Source != keyringBackendSourceConfig {
 		t.Fatalf("backend info = %#v, want file/legacy/config", info)
 	}
@@ -275,6 +277,7 @@ func TestResolveKeyringBackendInfo_LegacyKeychainMappedToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveKeyringBackendInfoWithOptions: %v", err)
 	}
+
 	if envInfo.Value != "file" || !envInfo.Legacy || envInfo.Source != keyringBackendSourceEnv {
 		t.Fatalf("backend info = %#v, want file/legacy/env", envInfo)
 	}
@@ -622,6 +625,7 @@ func setLegacyKeychainNotice(fn func()) func() {
 	orig := legacyKeychainNoticeFn
 	legacyKeychainNoticeFn = fn
 	legacyKeychainNoticeOnce = sync.Once{}
+
 	return func() {
 		legacyKeychainNoticeFn = orig
 		legacyKeychainNoticeOnce = sync.Once{}

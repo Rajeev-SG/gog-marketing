@@ -23,6 +23,7 @@ var productTemplateSource string
 var productTemplates = productTemplateSource
 
 var productIconPaths = map[string]string{
+	"info":    "<circle cx='12' cy='12' r='10'/><path d='M12 16v-4'/><path d='M12 8h.01'/>",
 	"shield":  "<path d='M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z'/>",
 	"check":   "<path d='M20 6 9 17l-5-5'/>",
 	"refresh": "<path d='M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8'/><path d='M21 3v5h-5'/><path d='M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16'/><path d='M8 16H3v5'/>",
@@ -38,6 +39,7 @@ func productIcon(name string) template.HTML {
 		return ""
 	}
 
+	//nolint:gosec // SVG paths come only from the fixed internal icon allowlist above.
 	return template.HTML(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">` + path + `</svg>`)
 }
 
@@ -76,6 +78,7 @@ func (h *ProductHandler) onboarding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	enabled := 0
+
 	for _, grant := range grants {
 		if grant.Enabled {
 			enabled++
@@ -159,6 +162,7 @@ func productRailStatus(status DiscoveryServiceStatus) (string, string) {
 
 func productFailedServices(connection Connection) []productServiceStatus {
 	out := []productServiceStatus{}
+
 	for _, status := range productDiscoveryStatuses(connection) {
 		if status.Detail == "Ready" || status.Detail == "Not checked" {
 			continue
@@ -170,7 +174,7 @@ func productFailedServices(connection Connection) []productServiceStatus {
 }
 
 // productHomeNotice maps structured notice codes to marketer-safe copy.
-func productHomeNotice(notice, explicitError string) string {
+func productHomeNotice(notice string) string {
 	if notice == "duplicate_google_account" {
 		return "This Google account is already connected."
 	}

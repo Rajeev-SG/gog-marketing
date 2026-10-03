@@ -268,7 +268,7 @@ func TestProductShellDiscoversGroupsSelectsAndPersistsAssets(t *testing.T) {
 	resp := productGet(t, client, server.URL, "/assets/"+connection.ID, cookies) //nolint:bodyclose // readProductBody closes this response
 
 	assets := readProductBody(t, resp)
-	for _, want := range []string{"Google Analytics", "BigQuery", "Select all", "Select none", "Example GA4", "Data project"} {
+	for _, want := range []string{"Google Analytics", "BigQuery", "Allow all and save", "Remove all and save", "Example GA4", "Data project"} {
 		if !strings.Contains(assets, want) {
 			t.Fatalf("asset page missing %q: %s", want, assets)
 		}

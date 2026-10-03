@@ -198,6 +198,7 @@ func (h *ProductHandler) readAnalyticsPropertyPage(w http.ResponseWriter, r *htt
 	property, status, code := h.analyticsPropertyRequest(r, false)
 	w.WriteHeader(status)
 	session, sessionOK := h.config.Sessions.FromProductRequest(r)
+
 	var csrf string
 	if sessionOK {
 		csrf = session.CSRF

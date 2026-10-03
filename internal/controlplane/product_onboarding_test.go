@@ -16,21 +16,27 @@ func TestFreshConnectRedirectsToOnboardingAndReconnectReturnsToPicker(t *testing
 	csrf := productCSRF(t, server, client, cookies)
 
 	setFakeGoogleIdentity(t, service, "fresh-subject", "fresh@example.test")
+
 	freshConnect := postProduct(t, client, server, "/connect/google", url.Values{"csrf": {csrf}}, cookies)
 	defer freshConnect.Body.Close()
+
 	if freshConnect.StatusCode != http.StatusSeeOther {
 		t.Fatalf("connect = %d", freshConnect.StatusCode)
 	}
 	freshOAuth := append(append([]*http.Cookie{}, cookies...), freshConnect.Cookies()...)
+
 	freshStart, parseFresh := url.Parse(freshConnect.Header.Get("Location"))
 	if parseFresh != nil {
 		t.Fatal(parseFresh)
 	}
+
 	freshCallback := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(freshStart.Query().Get("state"))+"&code=code", freshOAuth)
 	defer freshCallback.Body.Close()
+
 	if freshCallback.StatusCode != http.StatusSeeOther {
 		t.Fatalf("fresh callback = %d", freshCallback.StatusCode)
 	}
+
 	if want := "/onboarding/"; !strings.HasPrefix(freshCallback.Header.Get("Location"), want) {
 		t.Fatalf("fresh callback Location = %q, want prefix %q", freshCallback.Header.Get("Location"), want)
 	}
@@ -41,11 +47,13 @@ func TestFreshConnectRedirectsToOnboardingAndReconnectReturnsToPicker(t *testing
 	}
 
 	var fresh Connection
+
 	for _, connection := range connections {
 		if connection.GoogleEmail == "fresh@example.test" {
 			fresh = connection
 		}
 	}
+
 	if fresh.ID == "" {
 		t.Fatal("fresh connection missing")
 	}
@@ -54,6 +62,7 @@ func TestFreshConnectRedirectsToOnboardingAndReconnectReturnsToPicker(t *testing
 	// screen so the final step resolves from real server state.
 	firstSave := postProduct(t, client, server, "/assets/"+fresh.ID+"/save", url.Values{"csrf": {csrf}, "resource": {"properties/123"}}, cookies)
 	defer firstSave.Body.Close()
+
 	if want := "/onboarding/" + fresh.ID + "?message=Access+saved."; firstSave.Header.Get("Location") != want || firstSave.StatusCode != http.StatusSeeOther {
 		t.Fatalf("save redirect = %d %q, want %q", firstSave.StatusCode, firstSave.Header.Get("Location"), want)
 	}
@@ -66,22 +75,26 @@ func TestFreshConnectRedirectsToOnboardingAndReconnectReturnsToPicker(t *testing
 	// Reconnect routes back to the picker, not onboarding.
 	reconnectStart := postProduct(t, client, server, "/assets/"+fresh.ID+"/reconnect", url.Values{"csrf": {csrf}}, cookies)
 	defer reconnectStart.Body.Close()
+
 	if reconnectStart.StatusCode != http.StatusSeeOther {
 		t.Fatalf("reconnect start = %d", reconnectStart.StatusCode)
 	}
 	oauthCookies := append(append([]*http.Cookie{}, cookies...), reconnectStart.Cookies()...)
+
 	parsedStart, parseErr := url.Parse(reconnectStart.Header.Get("Location"))
 	if parseErr != nil {
 		t.Fatal(parseErr)
 	}
 
 	setFakeGoogleIdentity(t, service, "fresh-subject", "fresh@example.test")
+
 	callback := productGet(t, client, server.URL, "/oauth/google/callback?state="+url.QueryEscape(parsedStart.Query().Get("state"))+"&code=code", oauthCookies)
 	defer callback.Body.Close()
 
 	if callback.StatusCode != http.StatusSeeOther {
 		t.Fatalf("reconnect callback = %d", callback.StatusCode)
 	}
+
 	if want := "/assets/" + fresh.ID; callback.Header.Get("Location") != want {
 		t.Fatalf("reconnect callback Location = %q, want %q", callback.Header.Get("Location"), want)
 	}
