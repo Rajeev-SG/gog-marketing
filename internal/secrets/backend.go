@@ -27,10 +27,11 @@ const (
 )
 
 var (
-	errKeyringPasswordFile   = errors.New("manage keyring password file")
-	errInvalidKeyringBackend = errors.New("invalid keyring backend")
-	errKeyringTimeout        = errors.New("keyring connection timed out")
-	errNilConfigStore        = errors.New("config store is nil")
+	errKeyringPasswordFile         = errors.New("manage keyring password file")
+	errKeyringPasswordFileInFlight = errors.New("keyring password file is in flight")
+	errInvalidKeyringBackend       = errors.New("invalid keyring backend")
+	errKeyringTimeout              = errors.New("keyring connection timed out")
+	errNilConfigStore              = errors.New("config store is nil")
 )
 
 // legacyKeychainNotice emits a one-time actionable notice when the legacy
@@ -357,8 +358,13 @@ var (
 	createKeyringPasswordFn   = func(path string) (*os.File, error) {
 		return os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	}
-	keyringPasswordRetryDelay  = 20 * time.Millisecond
-	keyringPasswordMaxAttempts = 5
+	keyringPasswordRetryDelay = 20 * time.Millisecond
+	// Winners create the file first and write/fync/fsync after, so a losing
+	// process can observe a created-but-unwritten (empty) file. That state is
+	// transient: readers retry with backoff until the write lands or the
+	// provision deadline passes (crash orphan), then fail with an actionable
+	// error instead of silently regenerating.
+	keyringPasswordRetryDeadline = 5 * time.Second
 )
 
 // fileKeyringPasswordFuncFrom returns a deterministic prompt function for the
@@ -396,8 +402,18 @@ func ensureFileKeyringPassword(options OpenOptions) (string, bool, error) {
 	if err == nil {
 		return password, true, nil
 	}
-	if !errors.Is(err, fs.ErrNotExist) {
+	if !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, errKeyringPasswordFileInFlight) {
 		return "", false, err
+	}
+
+	if errors.Is(err, errKeyringPasswordFileInFlight) {
+		// The file exists but its winner has not finished writing yet. Wait
+		// for the winner instead of creating a competing password.
+		password, waitErr := waitForKeyringPassword(path)
+		if waitErr == nil {
+			return password, true, nil
+		}
+		return "", false, waitErr
 	}
 
 	raw := make([]byte, 32)
@@ -411,35 +427,31 @@ func ensureFileKeyringPassword(options OpenOptions) (string, bool, error) {
 
 	password = base64.RawURLEncoding.EncodeToString(raw)
 	file, createErr := createKeyringPasswordFn(path)
+	if createErr != nil && !errors.Is(createErr, fs.ErrExist) {
+		return "", false, fmt.Errorf("create keyring password file: %w", createErr)
+	}
 	if createErr == nil {
 		if _, writeErr := file.WriteString(password + "\n"); writeErr != nil {
 			file.Close()
 			return "", false, fmt.Errorf("write keyring password file: %w", writeErr)
+		}
+		if syncErr := file.Sync(); syncErr != nil {
+			file.Close()
+			return "", false, fmt.Errorf("sync keyring password file: %w", syncErr)
 		}
 		if closeErr := file.Close(); closeErr != nil {
 			return "", false, fmt.Errorf("close keyring password file: %w", closeErr)
 		}
 		return password, true, nil
 	}
-	if !errors.Is(createErr, fs.ErrExist) {
-		return "", false, fmt.Errorf("create keyring password file: %w", createErr)
-	}
 
-	// Another process won the race and created the file. Read the winner's
-	// password instead of generating a second one; the file may still be in
-	// flight, so retry briefly. Only a genuinely missing file retries.
-	var readErr error
-	for attempt := 0; attempt < keyringPasswordMaxAttempts; attempt++ {
-		password, readErr = readExistingKeyringPassword(path)
-		if readErr == nil {
-			return password, true, nil
-		}
-		if !errors.Is(readErr, fs.ErrNotExist) {
-			return "", false, readErr
-		}
-		time.Sleep(keyringPasswordRetryDelay)
+	// Another process won the O_EXCL race. Read the winner's password instead
+	// of generating a second one; the winner may still be mid-write.
+	password, waitErr := waitForKeyringPassword(path)
+	if waitErr == nil {
+		return password, true, nil
 	}
-	return "", false, fmt.Errorf("keyring password file disappeared during provisioning: %w", readErr)
+	return "", false, waitErr
 }
 
 func readExistingKeyringPassword(path string) (string, error) {
@@ -450,10 +462,37 @@ func readExistingKeyringPassword(path string) (string, error) {
 
 	password := strings.TrimSpace(string(raw))
 	if password == "" {
-		return "", fmt.Errorf("%w: %s is empty; delete it and rerun so gog can provision a new passphrase", errKeyringPasswordFile, path)
+		return "", fmt.Errorf("%w: %s exists but is empty (winner still writing or crashed mid-write)", errKeyringPasswordFileInFlight, path)
 	}
 
 	return password, nil
+}
+
+// waitForKeyringPassword retries a transient (missing or in-flight) password
+// file with backoff until the winner's write is visible or the provision
+// deadline elapses. Real permission/IO errors fail fast.
+func waitForKeyringPassword(path string) (string, error) {
+	deadline := time.Now().Add(keyringPasswordRetryDeadline)
+	var lastErr error
+	for {
+		password, readErr := readExistingKeyringPassword(path)
+		if readErr == nil {
+			return password, nil
+		}
+		if !errors.Is(readErr, fs.ErrNotExist) && !errors.Is(readErr, errKeyringPasswordFileInFlight) {
+			return "", readErr
+		}
+		lastErr = readErr
+		if !time.Now().Before(deadline) {
+			break
+		}
+		time.Sleep(keyringPasswordRetryDelay)
+	}
+
+	if errors.Is(lastErr, errKeyringPasswordFileInFlight) {
+		return "", fmt.Errorf("%w: %s stayed empty; a previous gog run likely crashed mid-write — delete the file and rerun", errKeyringPasswordFile, path)
+	}
+	return "", fmt.Errorf("keyring password file disappeared during provisioning: %w", lastErr)
 }
 
 type keyringResult struct {

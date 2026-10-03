@@ -263,16 +263,51 @@ func TestEnsureFileKeyringPassword_PermissionErrorFailsFast(t *testing.T) {
 	}
 }
 
-func TestEnsureFileKeyringPassword_EmptyFileFailsFast(t *testing.T) {
+func TestEnsureFileKeyringPassword_InFlightWinnerBecomesReadable(t *testing.T) {
 	layout := config.Layout{ConfigDir: t.TempDir()}
 	path := layout.KeyringPasswordPath()
 	if err := os.WriteFile(path, []byte("\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
+	restore := withKeyringPasswordFakes(
+		func(p string) ([]byte, error) {
+			// Winner's write becomes visible on the first retry.
+			if err := os.WriteFile(p, []byte("winner\n"), 0o600); err != nil {
+				return nil, err
+			}
+			return []byte("winner\n"), nil
+		},
+		nil,
+	)
+	t.Cleanup(restore)
+
+	password, ok, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
+	if err != nil {
+		t.Fatalf("ensureFileKeyringPassword: %v", err)
+	}
+	if !ok || password != "winner" {
+		t.Fatalf("password = %q, ok = %v, want winner", password, ok)
+	}
+}
+
+func TestEnsureFileKeyringPassword_EmptyFileFailsWithAction(t *testing.T) {
+	layout := config.Layout{ConfigDir: t.TempDir()}
+	path := layout.KeyringPasswordPath()
+	if err := os.WriteFile(path, []byte("\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	keyringPasswordRetryDelay = 0
+	keyringPasswordRetryDeadline = 10 * time.Millisecond
+	t.Cleanup(func() {
+		keyringPasswordRetryDelay = 20 * time.Millisecond
+		keyringPasswordRetryDeadline = 5 * time.Second
+	})
+
 	_, _, err := ensureFileKeyringPassword(OpenOptions{Layout: layout})
-	if err == nil {
-		t.Fatal("expected error for empty password file")
+	if err == nil || !errors.Is(err, errKeyringPasswordFile) {
+		t.Fatalf("expected actionable empty-file error, got: %v", err)
 	}
 }
 
