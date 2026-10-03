@@ -290,3 +290,22 @@ func TestBootstrapOwnerIdentityIsStableAcrossRepeatedRuns(t *testing.T) {
 		}
 	}
 }
+
+func TestMissingBootstrapScopesAcceptsCanonicalGoogleEmailGrant(t *testing.T) {
+	granted := []string{
+		"openid",
+		"https://www.googleapis.com/auth/userinfo.email",
+		"https://www.googleapis.com/auth/analytics.readonly",
+		"https://www.googleapis.com/auth/tagmanager.readonly",
+		"https://www.googleapis.com/auth/adwords",
+		"https://www.googleapis.com/auth/webmasters.readonly",
+		"https://www.googleapis.com/auth/bigquery.readonly",
+	}
+	missing, err := missingBootstrapScopes(granted)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(missing) != 0 {
+		t.Fatalf("real canonical Google grant unnecessarily requires re-consent: %v", missing)
+	}
+}

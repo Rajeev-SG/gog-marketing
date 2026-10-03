@@ -48,24 +48,43 @@ axe and keyboard tests do not prove those paths.
 
 ## Real-account gate and stale tracking
 
-`make acceptance-doctor` finds the encrypted acceptance store and Postgres, but
-reports Singulyr as `needs_reconnect`. `make acceptance-live` stops with
-`google_session_control` and the deterministic `make acceptance-bootstrap`
-remediation. No routine OAuth, Keychain dialog or interactive fallback was used.
-Do not repeat terminal authentication failures or count stale manifests as a
-current-commit pass. Follow `docs/acceptance.md` for the deliberate human bootstrap,
-then rerun live, restart/persistence, denial/isolation and repeat-read acceptance.
+The owner subsequently connected both real Google accounts through the actual
+product in Chrome. Follow-up uses **Browser Relay**, not Ego or a new headless
+browser. Private, commit-bound evidence is kept under the operator product-pilot
+readiness directory; never publish emails, asset IDs or token material.
 
-Issue #43 remains open: the retained mixed-service proof's Ads failure is
-`google_ads_unconfigured`, a configuration short-circuit before any Google Ads
-request. Successful GA4/GTM/Search Console reads are genuine historical evidence,
-but do not prove #43's required configured-service API/permission failure. Obtain
-a safe owner-approved real failure, a successful healthy-service read, and actual
-before/after grant snapshots on the current commit. Do not revoke unrelated tokens.
+The browser → product → agent/API → live Google path passed for GA4, GTM and
+Search Console with both accounts; a discovered personal BigQuery dataset also
+passed a permission-controlled metadata read. Disabled real assets and
+cross-account resources returned 403. Native browser checkbox saves were tested
+on both accounts, including filtered saves preserving hidden grants; all original
+selections were restored. No query job or billable BigQuery execution was run.
 
-Cloud cleanup remains on hold: the live replacement path and the issue's
-backup/transfer/keep safeguards are not yet satisfied. No Cloud deletions or
-billable queries were attempted.
+A real seven-scope Google grant exposed an acceptance bug: Google returned
+userinfo.email, but the scope checker separately demanded its email alias,
+unnecessarily trying to re-consent. Identity aliases are now equivalent; they
+grant no service authority. A regression reproduces the actual missing-email
+failure, and a negative test retains denied analytics access for identity-only
+grants. The existing bootstrap imported fresh owner-approved product tokens
+through its token-file inputs; temporary plaintext exports were deleted and
+automatic consent fallback was explicitly blocked. Doctor, live acceptance and
+three unattended repeat runs pass without further consent or Keychain dialogs.
+
+The real encrypted file-keyring path was also exercised in an isolated private
+operator CLI profile: both accounts made three live reads from fresh processes,
+with no plaintext refresh tokens found in its stored files and no prompts.
+
+Issue #43 **remains open**. Missing Ads configuration still short-circuits before
+a Google request. A read-only BigQuery listing of an explicit existing project
+succeeded for both accounts; it did not produce the required real configured
+service API/permission failure. Historical and new configuration-unavailable
+evidence cannot be substituted for that criterion. Do not revoke working grants,
+invent credentials/projects, or disable live APIs to manufacture a failure.
+
+#36 and #5 remain open until all their criteria are met. Ads operator
+configuration, a genuine #43 scenario, current cost-boundary/Cloud-cleanup
+acceptance and the existing backup/hold requirements are still outstanding.
+No Cloud resources were removed or reconfigured; no deployment was performed.
 
 ## Verification commands
 

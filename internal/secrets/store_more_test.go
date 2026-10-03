@@ -205,7 +205,9 @@ func TestFileKeyringPasswordFuncFrom(t *testing.T) {
 		t.Fatalf("password file: %v", statErr)
 	}
 
-	if info.Mode().Perm() != 0o600 {
+	// Windows reports writable files as 0666; access is governed by ACLs,
+	// not POSIX mode bits. Still verify provisioning and reuse on Windows.
+	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
 		t.Fatalf("password file mode = %v, want 0600", info.Mode().Perm())
 	}
 

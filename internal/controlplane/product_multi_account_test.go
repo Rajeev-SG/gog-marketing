@@ -66,6 +66,10 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
 
 	home := readProductBody(t, homeResp)
+	if !strings.Contains(home, "<title>Home · gog-marketing</title>") {
+		t.Fatal("home is missing its browser page title")
+	}
+
 	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Disconnect", "Connect Google account"} {
 		if !strings.Contains(home, want) {
 			t.Fatalf("account list missing %q: %s", want, home)

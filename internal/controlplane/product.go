@@ -533,6 +533,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "home", map[string]any{
 		"DisplayName":      h.config.DisplayName,
 		"Connections":      views,
+		"PageTitle":        "Home",
 		"Connection":       first,
 		"State":            productConnectionState(first),
 		"StateLabel":       productStateLabel(productConnectionState(first)),

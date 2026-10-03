@@ -625,6 +625,13 @@ func grantedSet(granted []string) map[string]bool {
 		}
 	}
 
+	// Google returns the canonical userinfo.email scope for the OIDC email alias.
+	// Treat these as equivalent identities, not as broader service permissions.
+	if available[scopeEmail] || available[scopeUserinfoEmail] {
+		available[scopeEmail] = true
+		available[scopeUserinfoEmail] = true
+	}
+
 	return available
 }
 

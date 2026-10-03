@@ -697,3 +697,12 @@ func TestFullScopeGrantsSatisfyReadonlyRequirements(t *testing.T) {
 		}
 	}
 }
+
+func TestEmailScopeAliasesDoNotGrantServiceAccess(t *testing.T) {
+	for _, granted := range []string{"email", "https://www.googleapis.com/auth/userinfo.email"} {
+		missing := MissingScopes([]string{"email", "https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/analytics.readonly"}, []string{granted})
+		if len(missing) != 1 || missing[0] != "https://www.googleapis.com/auth/analytics.readonly" {
+			t.Fatalf("identity alias %q altered service authority: %v", granted, missing)
+		}
+	}
+}
