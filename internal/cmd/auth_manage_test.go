@@ -122,27 +122,6 @@ func TestAuthManageCmd_NoInputFailsBeforeServer(t *testing.T) {
 	}
 }
 
-func TestAuthManageCmdKeychainPreflightUsesRuntime(t *testing.T) {
-	called := false
-	ctx := withTestRuntime(context.Background(), func(runtime *app.Runtime) {
-		runtime.KeyringOptions.Backend = "keychain"
-		runtime.Auth.EnsureKeychainAccess = func(context.Context) error {
-			called = true
-			return nil
-		}
-		runtime.Auth.StartManageServer = func(ctx context.Context, _ googleauth.ManageServerOptions) error {
-			return ensureKeychainAccessIfNeeded(ctx)
-		}
-	})
-
-	if err := runKong(t, &AuthManageCmd{}, nil, ctx, nil); err != nil {
-		t.Fatalf("execute: %v", err)
-	}
-	if !called {
-		t.Fatal("runtime keychain preflight was not called")
-	}
-}
-
 func TestAuthManageCmd_InvalidService(t *testing.T) {
 	ctx := withTestRuntime(context.Background(), func(runtime *app.Runtime) {
 		runtime.Auth.StartManageServer = func(context.Context, googleauth.ManageServerOptions) error { return nil }

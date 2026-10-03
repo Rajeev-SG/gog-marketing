@@ -78,11 +78,22 @@ inside your gog data/config directories.
 
 - Backend resolution: `auto`, `file`, and the legacy `keychain` value all
   resolve to the encrypted file backend. The macOS Keychain is never opened.
+- Legacy notice: when the config still says `keyring_backend: "keychain"`,
+  gog prints a one-time notice that existing Keychain tokens are stranded and
+  accounts must reconnect once.
 - Passphrase: `GOG_KEYRING_PASSWORD` (or `GOG_KEYRING_PASSWORD_FILE`) wins.
   When neither is set, gog provisions a `0600` `keyring-password` dotfile next
   to `config.json` on first use, so rebuilds and non-interactive agents never
   prompt.
-- Keep the password file out of repositories and backups.
+- **Threat model (accepted trade-off):** the passphrase sits next to the
+  ciphertext. Anything that can read your gog config directory — including
+  backups and file-sync services that copy it — gets both the encrypted
+  keyring and the key that opens it. For high-value deployments, supply
+  `GOG_KEYRING_PASSWORD` or `GOG_KEYRING_PASSWORD_FILE` from a source outside
+  the config directory, or use a real OS secret store for that passphrase.
+- Keep the password file out of repositories, backups, and file-sync. If you
+  back up or sync the gog config directory, exclude `keyring-password` — a
+  synced copy contains both the ciphertext and its key.
 
 Accounts connected while the old Keychain backend was active must reconnect
 once (`gog auth add <email> ...`) to store tokens in the file keyring. The

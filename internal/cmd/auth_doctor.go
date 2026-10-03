@@ -200,10 +200,8 @@ func addKeyringEnvChecks(ctx context.Context, add func(string, string, string, s
 		add("keyring.password", doctorWarn, "GOG_KEYRING_PASSWORD is set to an empty string", "empty is valid but easy to set accidentally; keep it identical in every shell/service")
 	case passwordSet:
 		add("keyring.password", doctorOK, "GOG_KEYRING_PASSWORD is set", "keep this value identical across shell, service, and agent configs")
-	case !stdinIsTerminal(ctx):
-		add("keyring.password", doctorError, "file keyring selected but GOG_KEYRING_PASSWORD is not set in a non-interactive process", "set GOG_KEYRING_PASSWORD or switch to a system keyring")
 	default:
-		add("keyring.password", doctorWarn, "file keyring selected and GOG_KEYRING_PASSWORD is not set", "interactive prompts work locally, but CI/ssh/agents need GOG_KEYRING_PASSWORD")
+		add("keyring.password", doctorOK, "file keyring selected; passphrase auto-provisioned in a 0600 keyring-password dotfile", "set GOG_KEYRING_PASSWORD to pin the passphrase, and exclude keyring-password from backups/sync")
 	}
 }
 

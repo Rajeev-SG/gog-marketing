@@ -2,7 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
-- Keyring: remove the macOS Keychain backend entirely. `auto`, `file`, and the legacy `keychain` settings all resolve to the encrypted file keyring; secrets stay in a `0600` `keyring-password` dotfile (or `GOG_KEYRING_PASSWORD`/`GOG_KEYRING_PASSWORD_FILE`) so rebuilt binaries and agents never trigger a Keychain prompt. Accounts connected via the old backend reconnect once to move tokens into the file keyring.
+- Keyring: remove the macOS Keychain backend entirely. `auto`, `file`, and the legacy `keychain` settings all resolve to the encrypted file keyring; secrets stay in a `0600` `keyring-password` dotfile (or `GOG_KEYRING_PASSWORD`/`GOG_KEYRING_PASSWORD_FILE`) so rebuilt binaries and agents never trigger a Keychain prompt. Provisioning is atomic (O_CREAT|O_EXCL, fail fast on permission/IO errors), a one-time notice explains when legacy `keychain` maps to file (existing Keychain tokens are stranded and accounts reconnect once), and docs call out the colocated key/ciphertext threat model (exclude `keyring-password` from backups/sync; use `GOG_KEYRING_PASSWORD` for high-value deployments).
 
 - Product/UI: rebuild the marketer product interface as a persistent shell with static design tokens, a service rail plus asset list, needs-attention and partial-service alerts, informational duplicate-account toast, onboarding completion route, and responsive mobile treatment; screenshots axe-checked at 1440/1280/390. (#50)
 
