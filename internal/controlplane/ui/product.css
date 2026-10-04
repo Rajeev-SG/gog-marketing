@@ -10,7 +10,7 @@
   /* Text */
   --text: #1a2333;
   --text-muted: #5a6577;
-  --text-faint: #8b95a5;
+  --text-faint: #627086;
 
   /* Border */
   --border: #dde3ec;
@@ -23,9 +23,9 @@
   --action-soft: #e9effb;
 
   /* Status */
-  --status-ok: #1a7f37;
+  --status-ok: #176f30;
   --status-ok-soft: #e6f4ea;
-  --status-warn: #9a6700;
+  --status-warn: #855900;
   --status-warn-soft: #fdf3d7;
   --status-danger: #c22731;
   --status-danger-soft: #fdebec;
@@ -312,4 +312,36 @@ button.small, .button.small { min-height: 32px; padding: 5px 10px; font-size: 13
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
+}
+
+/* Keep long identities and keyboard focus readable around the sticky save bar. */
+html { scroll-padding-block: 24px 180px; }
+main, .card-head > div, .step-body, .picker > form { min-width: 0; }
+h1, h3, .eyebrow, .shell-account, .row-label small, .row-details code { overflow-wrap: anywhere; }
+.row-details pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.row :is(input, summary, button) { scroll-margin-block: 24px 180px; }
+.skip-link { position: absolute; left: 16px; top: -80px; z-index: 10; padding: 12px; background: var(--surface-card); }
+.skip-link:focus { top: 12px; }
+.service-block { scroll-margin-top: 24px; }
+button:disabled { cursor: default; opacity: .7; }
+@media (max-width: 600px) {
+  .shell-nav { flex-wrap: wrap; gap: var(--space-3); }
+  .shell-nav a, .shell-nav button { white-space: nowrap; }
+  .shell-account { order: 4; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (pointer: coarse) {
+  button, .button, button.small, .button.small, .shell-nav a, .row-details summary { min-height: 44px; }
+  .shell-nav a, .row-details summary { display: inline-flex; align-items: center; }
+}
+
+.read-feedback { white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+.savebar { margin-bottom: env(safe-area-inset-bottom, 0px); }
+
+.savebar button { flex-shrink: 0; white-space: nowrap; }
+.shell-account { max-width: 36ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 600px) { .shell-account { max-width: none; } }
+
+@media (max-width: 600px) {
+  .rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .rail-item { min-width: 0; flex-direction: column; align-items: flex-start; justify-content: flex-start; }
 }

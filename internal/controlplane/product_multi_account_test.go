@@ -66,11 +66,16 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 	homeResp := productGet(t, client, server.URL, "/", cookies) //nolint:bodyclose // readProductBody closes this response
 
 	home := readProductBody(t, homeResp)
+	if !strings.Contains(home, "<title>Home · gog-marketing</title>") {
+		t.Fatal("home is missing its browser page title")
+	}
+
 	for _, want := range []string{"personal@example.test", "singulyr@example.test", "Manage access", "Disconnect", "Connect Google account"} {
 		if !strings.Contains(home, want) {
 			t.Fatalf("account list missing %q: %s", want, home)
 		}
 	}
+
 	if strings.Contains(home, "Reconnect Google") {
 		t.Fatalf("healthy accounts must not show reconnect actions: %s", home)
 	}
@@ -100,10 +105,22 @@ func TestProductManagesIndependentGoogleAccounts(t *testing.T) {
 
 	firstEmail := first.GoogleEmail
 	resp := postProduct(t, client, server, "/assets/"+first.ID+"/disconnect", url.Values{"csrf": {csrf}}, cookies)
+	confirmation := readProductBody(t, resp)
+
+	if resp.StatusCode != http.StatusOK || !strings.Contains(confirmation, "Disconnect this Google account?") {
+		t.Fatalf("disconnect confirmation status/body = %d %q", resp.StatusCode, confirmation)
+	}
+
+	firstPending, err := service.GetConnection(context.Background(), actor, first.ID)
+	if err != nil || firstPending.Status == ConnectionDisconnected {
+		t.Fatalf("disconnect happened before confirmation: %+v, %v", firstPending, err)
+	}
+
+	resp = postProduct(t, client, server, "/assets/"+first.ID+"/disconnect", url.Values{"csrf": {csrf}, "confirm": {"1"}}, cookies)
 	resp.Body.Close()
 
 	if resp.StatusCode != http.StatusSeeOther {
-		t.Fatalf("disconnect status = %d", resp.StatusCode)
+		t.Fatalf("confirmed disconnect status = %d", resp.StatusCode)
 	}
 
 	firstAfter, err := service.GetConnection(context.Background(), actor, first.ID)

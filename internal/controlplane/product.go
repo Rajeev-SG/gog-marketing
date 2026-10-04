@@ -276,7 +276,7 @@ func (h *ProductHandler) csrfOK(w http.ResponseWriter, r *http.Request, session 
 }
 
 func (h *ProductHandler) signin(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "signin", map[string]any{"PageTitle": "Sign in", templateErrorField: r.URL.Query().Get("error")})
+	h.render(w, "signin", map[string]any{fieldPageTitle: "Sign in", templateErrorField: r.URL.Query().Get("error")})
 }
 
 func (h *ProductHandler) authStart(w http.ResponseWriter, r *http.Request) {
@@ -458,8 +458,8 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 	connections, err := h.config.Service.ListConnections(r.Context(), actor)
 	if err != nil {
 		h.render(w, "home", map[string]any{
-			"DisplayName":      h.config.DisplayName,
-			"PageTitle":        "Home",
+			fieldDisplayName:   h.config.DisplayName,
+			fieldPageTitle:     "Home",
 			"Connection":       Connection{},
 			"Active":           "home",
 			"AccountCount":     0,
@@ -471,7 +471,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 			"State":            "disconnected",
 			"StateLabel":       "Disconnected",
 			templateErrorField: "We couldn't load your Google data.",
-			"CSRF":             session.CSRF,
+			fieldCSRF:          session.CSRF,
 		})
 
 		return
@@ -496,6 +496,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 			StateLabel:     productStateLabel(state),
 			NeedsReconnect: state == "needs_attention",
 		})
+		// Track account-wide attention state while building the account views.
 		needsReconnect = needsReconnect || state == "needs_attention"
 		if state == "connected" {
 			connectedCount++
@@ -509,6 +510,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 
 		for _, asset := range productAssets(grants) {
 			assets = append(assets, asset)
+			// Track discovered service names separately from selected resources.
 			serviceNames[asset.Service] = true
 			if asset.Enabled {
 				selectedCount++
@@ -521,15 +523,17 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		first = views[0].Connection
 	}
 
-	notice := productHomeNotice(r.URL.Query().Get("notice"), r.URL.Query().Get("error"))
+	notice := productHomeNotice(r.URL.Query().Get("notice"))
+	// Prefer structured notices over duplicate error copy.
 	homeError := homeErrorMessage(r.URL.Query().Get("error"), partialLoad)
 	if notice != "" {
 		homeError = ""
 	}
 
 	h.render(w, "home", map[string]any{
-		"DisplayName":      h.config.DisplayName,
+		fieldDisplayName:   h.config.DisplayName,
 		"Connections":      views,
+		fieldPageTitle:     "Home",
 		"Connection":       first,
 		"State":            productConnectionState(first),
 		"StateLabel":       productStateLabel(productConnectionState(first)),
@@ -543,7 +547,7 @@ func (h *ProductHandler) home(w http.ResponseWriter, r *http.Request) {
 		"ConnectedCount":   connectedCount,
 		"SelectedCount":    selectedCount,
 		templateErrorField: homeError,
-		"CSRF":             session.CSRF,
+		fieldCSRF:          session.CSRF,
 	})
 }
 
@@ -565,8 +569,8 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.render(w, "assets", map[string]any{
 			"Connection": connection, "State": productConnectionState(connection), "StateLabel": productStateLabel(productConnectionState(connection)),
-			"PageTitle": "Choose assets", "Active": "assets", "DisplayName": h.config.DisplayName,
-			templateErrorField: "We couldn't load your Google assets.", "CSRF": session.CSRF,
+			fieldPageTitle: "Choose assets", "Active": "assets", fieldDisplayName: h.config.DisplayName,
+			templateErrorField: "We couldn't load your Google assets.", fieldCSRF: session.CSRF,
 		})
 
 		return
@@ -585,9 +589,9 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 	failedServices := productFailedServices(connection)
 	h.render(w, "assets", map[string]any{
 		"Connection":       connection,
-		"PageTitle":        "Choose assets",
+		fieldPageTitle:     "Choose assets",
 		"Active":           "assets",
-		"DisplayName":      h.config.DisplayName,
+		fieldDisplayName:   h.config.DisplayName,
 		"RailGroups":       railGroups,
 		"FailedServices":   failedServices,
 		"State":            state,
@@ -600,7 +604,7 @@ func (h *ProductHandler) assets(w http.ResponseWriter, r *http.Request) {
 		"NeedsReconnect":   state == "needs_attention",
 		"CanRetry":         state == "connected",
 		templateErrorField: r.URL.Query().Get("error"),
-		"CSRF":             session.CSRF,
+		fieldCSRF:          session.CSRF,
 	})
 }
 
@@ -617,14 +621,14 @@ func (h *ProductHandler) services(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.render(w, "services", map[string]any{
-		"Connection":  connection,
-		"Groups":      productServiceGroups(connection),
-		"CSRF":        session.CSRF,
-		"Message":     r.URL.Query().Get("message"),
-		"Error":       r.URL.Query().Get("error"),
-		"PageTitle":   "Services and tools",
-		"Active":      "services",
-		"DisplayName": h.config.DisplayName,
+		"Connection":     connection,
+		"Groups":         productServiceGroups(connection),
+		fieldCSRF:        session.CSRF,
+		"Message":        r.URL.Query().Get("message"),
+		"Error":          r.URL.Query().Get("error"),
+		fieldPageTitle:   "Services and tools",
+		"Active":         "services",
+		fieldDisplayName: h.config.DisplayName,
 	})
 }
 
@@ -703,13 +707,52 @@ func (h *ProductHandler) saveAssets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service-wide actions deliberately ignore search; the buttons disclose this scope.
-	if service := r.FormValue("select_all"); service != "" {
-		h.setServiceEnabled(w, r, actor, id, grants, service, true)
-		return
-	}
+	selectAll := strings.TrimSpace(r.FormValue("select_all"))
+	selectNone := strings.TrimSpace(r.FormValue("select_none"))
 
-	if service := r.FormValue("select_none"); service != "" {
-		h.setServiceEnabled(w, r, actor, id, grants, service, false)
+	if selectAll != "" || selectNone != "" {
+		if selectAll != "" && selectNone != "" {
+			h.redirectAssetsError(w, r, id, "Choose one service-wide access action and try again.")
+			return
+		}
+
+		action, serviceName, enabled := "select_all", selectAll, true
+		title := "Allow every " + serviceName + " asset?"
+		confirmLabel := "Allow all and save"
+
+		if selectNone != "" {
+			action, serviceName, enabled = "select_none", selectNone, false
+			title = "Remove access to every " + serviceName + " asset?"
+			confirmLabel = "Remove all and save"
+		}
+
+		if r.FormValue("confirm") != "1" {
+			cancelURL := "/assets/" + url.PathEscape(id)
+			if query := strings.TrimSpace(r.FormValue("q")); query != "" {
+				cancelURL += "?q=" + url.QueryEscape(query)
+			}
+
+			h.render(w, "confirm", map[string]any{
+				fieldDisplayName: h.config.DisplayName,
+				fieldPageTitle:   "Confirm access change",
+				"Active":         "assets",
+				"Connection":     connection,
+				fieldCSRF:        session.CSRF,
+				"Title":          title,
+				"Message":        "This changes access for every " + serviceName + " asset, including assets hidden by search. Other services will not change.",
+				"Action":         "/assets/" + url.PathEscape(id) + "/save",
+				"CancelURL":      cancelURL,
+				"ConfirmLabel":   confirmLabel,
+				"ServiceAction":  action,
+				"Service":        serviceName,
+				"Query":          r.FormValue("q"),
+			})
+
+			return
+		}
+
+		h.setServiceEnabled(w, r, actor, id, grants, serviceName, enabled)
+
 		return
 	}
 
@@ -855,8 +898,27 @@ func (h *ProductHandler) disconnect(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 
-	if _, err := h.productConnectionByID(r.Context(), actor, id); err != nil {
+	connection, err := h.productConnectionByID(r.Context(), actor, id)
+	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+
+	if r.FormValue("confirm") != "1" {
+		h.render(w, "confirm", map[string]any{
+			fieldDisplayName: h.config.DisplayName,
+			fieldPageTitle:   "Confirm disconnect",
+			"Active":         "home",
+			"Connection":     connection,
+			fieldCSRF:        session.CSRF,
+			"Title":          "Disconnect this Google account?",
+			"Message":        "Agents will lose access. You can reconnect the account later.",
+			"Action":         "/assets/" + url.PathEscape(id) + "/disconnect",
+			"CancelURL":      "/",
+			"ConfirmLabel":   "Disconnect account",
+			"ServiceAction":  "",
+		})
+
 		return
 	}
 

@@ -268,7 +268,7 @@ func TestProductShellDiscoversGroupsSelectsAndPersistsAssets(t *testing.T) {
 	resp := productGet(t, client, server.URL, "/assets/"+connection.ID, cookies) //nolint:bodyclose // readProductBody closes this response
 
 	assets := readProductBody(t, resp)
-	for _, want := range []string{"Google Analytics", "BigQuery", "Select all", "Select none", "Example GA4", "Data project"} {
+	for _, want := range []string{"Google Analytics", "BigQuery", "Allow all and save", "Remove all and save", "Example GA4", "Data project"} {
 		if !strings.Contains(assets, want) {
 			t.Fatalf("asset page missing %q: %s", want, assets)
 		}
@@ -822,7 +822,7 @@ func TestProductServiceSelectionIgnoresSearchAndPreservesOtherServices(t *testin
 	}
 
 	for _, action := range []string{"select_all", "select_none"} {
-		resp := postProduct(t, client, server, "/assets/"+id+"/save", url.Values{"csrf": {csrf}, "q": {"Example GA4"}, action: {"Google Analytics"}}, cookies)
+		resp := postProduct(t, client, server, "/assets/"+id+"/save", url.Values{"csrf": {csrf}, "q": {"Example GA4"}, action: {"Google Analytics"}, "confirm": {"1"}}, cookies)
 		resp.Body.Close()
 
 		grants, err := service.ListResources(context.Background(), actor, id)
@@ -835,6 +835,131 @@ func TestProductServiceSelectionIgnoresSearchAndPreservesOtherServices(t *testin
 			if grant.Enabled != want {
 				t.Fatalf("%s: unexpected permission on %s", action, grant.ResourceID)
 			}
+		}
+	}
+}
+
+func TestProductServiceSelectionRequiresServerConfirmation(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	connectProduct(t, client, server, cookies, csrf)
+
+	connections, err := service.ListConnections(context.Background(), actor)
+	if err != nil || len(connections) != 1 {
+		t.Fatal("missing connection", err)
+	}
+	id := connections[0].ID
+
+	for _, tc := range []struct {
+		action string
+		want   bool
+	}{
+		{action: "select_all", want: true},
+		{action: "select_none", want: false},
+	} {
+		form := url.Values{"csrf": {csrf}, "q": {"Example GA4"}, tc.action: {"Google Analytics"}}
+		resp := postProduct(t, client, server, "/assets/"+id+"/save", form, cookies)
+		body := readProductBody(t, resp)
+
+		if resp.StatusCode != http.StatusOK || !strings.Contains(body, "name=\"confirm\" value=\"1\"") {
+			t.Fatalf("%s confirmation status/body = %d %q", tc.action, resp.StatusCode, body)
+		}
+
+		grants, err := service.ListResources(context.Background(), actor, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, grant := range grants {
+			if grant.Service == "analytics" && grant.Enabled != !tc.want {
+				t.Fatalf("%s changed grants before confirmation: %s enabled=%v", tc.action, grant.ResourceID, grant.Enabled)
+			}
+		}
+
+		form.Set("confirm", "1")
+		resp = postProduct(t, client, server, "/assets/"+id+"/save", form, cookies)
+		resp.Body.Close()
+
+		if resp.StatusCode != http.StatusSeeOther {
+			t.Fatalf("%s confirmed status = %d", tc.action, resp.StatusCode)
+		}
+
+		grants, err = service.ListResources(context.Background(), actor, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		for _, grant := range grants {
+			if grant.Service == "analytics" && grant.Enabled != tc.want {
+				t.Fatalf("%s confirmed grant %s enabled=%v want=%v", tc.action, grant.ResourceID, grant.Enabled, tc.want)
+			}
+		}
+	}
+}
+
+func TestProductDisconnectRequiresServerConfirmation(t *testing.T) {
+	service, store := productTestService(t)
+	actor := ownerActor(t, store)
+	server, client := newProductTestHandler(t, service, actor)
+	cookies := productSessionCookies(t, client, server)
+	csrf := productCSRF(t, server, client, cookies)
+	connectProduct(t, client, server, cookies, csrf)
+
+	connections, err := service.ListConnections(context.Background(), actor)
+	if err != nil || len(connections) != 1 {
+		t.Fatal("missing connection", err)
+	}
+	id := connections[0].ID
+
+	resp := postProduct(t, client, server, "/assets/"+id+"/disconnect", url.Values{"csrf": {csrf}}, cookies)
+	body := readProductBody(t, resp)
+
+	if resp.StatusCode != http.StatusOK || !strings.Contains(body, "Disconnect this Google account?") || !strings.Contains(body, "name=\"confirm\" value=\"1\"") {
+		t.Fatalf("disconnect confirmation status/body = %d %q", resp.StatusCode, body)
+	}
+
+	connection, err := service.GetConnection(context.Background(), actor, id)
+	if err != nil || connection.Status == ConnectionDisconnected {
+		t.Fatalf("disconnect happened before confirmation: %+v, %v", connection, err)
+	}
+
+	resp = postProduct(t, client, server, "/assets/"+id+"/disconnect", url.Values{"csrf": {csrf}, "confirm": {"1"}}, cookies)
+	resp.Body.Close()
+
+	if resp.StatusCode != http.StatusSeeOther {
+		t.Fatalf("confirmed disconnect status = %d", resp.StatusCode)
+	}
+
+	connection, err = service.GetConnection(context.Background(), actor, id)
+	if err != nil || connection.Status != ConnectionDisconnected {
+		t.Fatalf("confirmed disconnect did not complete: %+v, %v", connection, err)
+	}
+}
+
+func TestProductScriptGuardsDirtyAnchorNavigation(t *testing.T) {
+	for _, want := range []string{
+		`document.addEventListener("click"`,
+		`closest("a[href]")`,
+		`href.charAt(0)==="#"`,
+		`Leave without saving your checkbox changes?`,
+	} {
+		if !strings.Contains(productTemplates, want) {
+			t.Fatalf("product script missing anchor guard %q", want)
+		}
+	}
+}
+
+func TestProductHomeNoticeDoesNotMapExplicitErrors(t *testing.T) {
+	if got := productHomeNotice("duplicate_google_account"); got != "This Google account is already connected." {
+		t.Fatalf("duplicate notice = %q", got)
+	}
+
+	for _, notice := range []string{"", "duplicate_google_account?error=access_denied", "access_denied"} {
+		if got := productHomeNotice(notice); got != "" {
+			t.Fatalf("notice %q mapped to %q", notice, got)
 		}
 	}
 }

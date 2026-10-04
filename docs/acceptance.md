@@ -4,7 +4,9 @@ Routine development, CI, local acceptance, and live read-only acceptance must be
 
 ## Stable developer profile
 
-Acceptance state lives outside the repository:
+Acceptance state lives outside the repository. The default uses the platform
+configuration directory: `~/Library/Application Support/gog-marketing/acceptance/`
+on macOS, and the path below on Linux.
 
 ```text
 ~/.config/gog-marketing/acceptance/

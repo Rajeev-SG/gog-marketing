@@ -85,9 +85,10 @@ request may proceed
 resources, unknown tools, wildcard grants, disabled grants, and
 cross-organisation connection IDs are denied by default.
 
-Discovery is atomic across configured services. Google Ads is skipped only when
-its developer token is absent; once configured, an API or permission failure
-fails the discovery operation rather than silently returning partial results.
+Discovery records results per service. A failing service preserves its existing
+grants; healthy services remain usable and their selections are preserved. Missing
+Google Ads operator configuration is shown as unavailable without making an Ads
+request; that short-circuit is not proof of a real Google API/permission failure.
 
 ## Product resource reads
 
@@ -150,8 +151,8 @@ OAuth success/denial/invalid-state/reconnect behavior, secret-store scoping and
 encryption, discovery normalisation, resource policy, authenticated web routes,
 and token-free responses.
 
-Live acceptance still requires the two real Google identities and a deployed
-OAuth client. Use the UI to confirm `gmail` and `singulyr`, run discovery, make
+Live acceptance requires both real Google identities and a centrally configured
+OAuth client, but not a deployed product. Use the UI to confirm `gmail` and `singulyr`, run discovery, make
 one read request through the existing engine for each connection, and capture a
 redacted acceptance manifest. Do not commit tokens, auth codes, or screenshots
 containing them.

@@ -8,6 +8,7 @@
 {{if .CSRF}}<meta name="csrf" content="{{.CSRF}}">{{end}}
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
 {{end}}
 
 {{define "shell"}}
@@ -17,18 +18,18 @@
 {{if .CSRF}}
 <a href="/"{{if eq .Active "home"}} aria-current="page"{{end}}>Home</a>
 {{if .Connection.ID}}<a href="/assets/{{.Connection.ID}}/services"{{if eq .Active "services"}} aria-current="page"{{end}}>Services and tools</a>{{end}}
-<span class="shell-account">{{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}{{.DisplayName}}{{end}}</span>
+<span class="shell-account" title="{{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}{{.DisplayName}}{{end}}">{{if .Connection.GoogleEmail}}{{.Connection.GoogleEmail}}{{else}}{{.DisplayName}}{{end}}</span>
 <form class="inline" method="post" action="/logout"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="small">Sign out</button></form>
 {{end}}
 </nav>
 </header>
-<main>
+<main id="main-content" tabindex="-1">
 {{end}}
 
 {{define "shell-end"}}</main>{{end}}
 
 {{define "toast"}}
-<div class="toast{{if .Kind}} {{.Kind}}{{end}}" role="status" aria-live="polite">{{icon "check"}}<span>{{.Text}}</span></div>
+<div class="toast{{if .Kind}} {{.Kind}}{{end}}" role="status" aria-live="polite">{{if eq .Kind "info"}}{{icon "info"}}{{else}}{{icon "check"}}{{end}}<span>{{.Text}}</span></div>
 {{end}}
 
 {{define "status"}}<span class="status{{if .Class}} {{.Class}}{{end}}">{{.Label}}</span>{{end}}
@@ -36,12 +37,12 @@
 {{define "signin"}}
 {{template "head" .}}
 <header class="shell-top"><a class="shell-brand" href="/">{{icon "shield"}} gog-marketing</a></header>
-<main>
+<main id="main-content" tabindex="-1">
 <div class="card intro" style="max-width:520px;margin:48px auto">
 <p class="eyebrow">Get started</p>
 <h1>Connect your Google account</h1>
 <p>Connect a Google account and choose exactly what your agents can use. You stay in control of every connection and asset.</p>
-{{if .Error}}<div class="alert error"><h3>{{.Error}}</h3></div>{{end}}
+{{if .Error}}<div class="alert error" role="alert"><h2>{{.Error}}</h2></div>{{end}}
 <div class="stack">
 <a class="button primary" href="/auth/google/start">{{icon "globe"}} Continue with Google</a>
 </div>
@@ -109,7 +110,7 @@
 <p>Every agent read uses exactly one connected account and one asset you selected. Accounts never share credentials or grants, so access stays independent and auditable.</p>
 </div>
 {{template "shell-end"}}
-<script>document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(){var button=form.querySelector("button");if(button){button.setAttribute("aria-busy","true")}})});</script>
+{{template "product-script" .}}
 </body>
 </html>
 {{end}}
@@ -142,16 +143,16 @@
 </div>
 {{end}}
 <form method="get" action="/assets/{{.Connection.ID}}" class="searchbar" role="search">
-	<input type="search" name="q" value="{{.Query}}" placeholder="Search assets" aria-label="Search assets">
+	<input type="search" name="q" value="{{.Query}}" placeholder="Search assets…" autocomplete="off" aria-label="Search assets">
 	<button type="submit">Search</button>
 </form>
 {{if .HasAssets}}
 <div class="picker">
 <nav class="rail" aria-label="Google services">
-{{range .RailGroups}}
+{{range .RailGroups}}{{if .Items}}
 <p class="rail-group-label">{{.Name}}</p>
 {{range .Items}}<a class="rail-item" href="#service-{{.Key}}"><span>{{.Name}}</span>{{if .State}}<span class="status {{.State}}">{{.StateLabel}}</span>{{end}}</a>{{end}}
-{{end}}
+{{end}}{{end}}
 </nav>
 <form method="post" action="/assets/{{.Connection.ID}}/save">
 <input type="hidden" name="csrf" value="{{.CSRF}}">
@@ -162,8 +163,8 @@
 <div class="card-head">
 <h3>{{.ServiceName}}</h3>
 <div class="card-actions">
-<button class="small" name="select_all" value="{{.ServiceName}}">Select all</button>
-<button class="small" name="select_none" value="{{.ServiceName}}">Select none</button>
+<button class="small" name="select_all" value="{{.ServiceName}}">Allow all and save</button>
+<button class="small" name="select_none" value="{{.ServiceName}}">Remove all and save</button>
 </div>
 </div>
 <p class="service-meta"><span>{{.ServiceName}}: {{.StatusLabel}}</span><span>{{.Count}} assets</span><span>{{.EnabledCount}} selected</span></p>
@@ -189,7 +190,7 @@
 {{end}}
 </div>
 <div class="savebar">
-<p>Changes apply when you save. Unselected assets stay hidden from agents.</p>
+<p>Save access applies checkbox changes. Service-wide actions ask for confirmation before saving, including assets hidden by search.</p>
 <button class="primary" type="submit">Save access</button>
 </div>
 </form>
@@ -197,16 +198,19 @@
 {{else}}
 <div class="card empty">
 {{icon "search"}}
+{{if .Query}}
+<h2>No matching assets</h2>
+<p>No assets match “{{.Query}}”. Your existing selections are unchanged.</p>
+<a class="button" href="/assets/{{.Connection.ID}}">Clear search</a>
+{{else}}
 <h2>No assets found yet</h2>
 <p>Google is connected. Try discovery again in a moment.</p>
 {{if .CanRetry}}<form method="post" action="/assets/{{.Connection.ID}}/discover"><input type="hidden" name="csrf" value="{{.CSRF}}"><button class="primary">Try again</button></form>{{end}}
+{{end}}
 </div>
 {{end}}
 {{template "shell-end"}}
-<script>
-document.querySelectorAll(".read-link").forEach(function(btn){btn.addEventListener("click",function(){var token=document.querySelector("meta[name=csrf]").content;fetch(btn.dataset.url,{headers:{"X-CSRF-Token":token}}).then(function(r){return r.json()}).then(function(d){var pre=document.createElement("pre");pre.textContent=JSON.stringify(d,null,2);btn.parentNode.appendChild(pre);btn.disabled=true;btn.textContent="Read complete"}).catch(function(){btn.textContent="Read failed"})})});
-document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(){var button=form.querySelector("button");if(button){button.setAttribute("aria-busy","true");button.setAttribute("data-busy-label",button.textContent);button.textContent="Checking Google services…"}})});
-</script>
+{{template "product-script" .}}
 </body>
 </html>
 {{end}}
@@ -246,6 +250,7 @@ document.querySelectorAll("form").forEach(function(form){form.addEventListener("
 </div>
 </form>
 {{template "shell-end"}}
+{{template "product-script" .}}
 </body>
 </html>
 {{end}}
@@ -275,7 +280,7 @@ document.querySelectorAll("form").forEach(function(form){form.addEventListener("
 </details>
 {{end}}
 {{template "shell-end"}}
-<script>document.querySelectorAll(".read-link").forEach(function(btn){btn.addEventListener("click",function(){var token=document.querySelector("meta[name=csrf]").content;fetch(btn.dataset.url,{headers:{"X-CSRF-Token":token}}).then(function(r){return r.json()}).then(function(d){var pre=document.createElement("pre");pre.textContent=JSON.stringify(d,null,2);btn.parentNode.appendChild(pre);btn.disabled=true;btn.textContent="Read complete"}).catch(function(){btn.textContent="Read failed"})})});</script>
+{{template "product-script" .}}
 </body>
 </html>
 {{end}}
@@ -302,7 +307,7 @@ document.querySelectorAll("form").forEach(function(form){form.addEventListener("
 <h3>Choose what this account can access</h3>
 <p>{{if gt .EnabledCount 0}}{{.EnabledCount}} assets selected. You can change this any time.{{else}}No assets selected yet.{{end}}</p>
 <div class="step-actions">
-<a class="button{{if eq .EnabledCount 0}} primary{{end}}" href="/assets/{{.Connection.ID}}/services">Services and tools</a>
+<a class="button" href="/assets/{{.Connection.ID}}/services">Services and tools</a>
 <a class="button{{if gt .EnabledCount 0}}{{else}} primary{{end}}" href="/assets/{{.Connection.ID}}">{{if gt .EnabledCount 0}}Manage assets{{else}}Choose assets{{end}}</a>
 </div>
 </div>
@@ -318,4 +323,74 @@ document.querySelectorAll("form").forEach(function(form){form.addEventListener("
 {{template "shell-end"}}
 </body>
 </html>
+{{end}}
+
+{{define "confirm"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Confirm change</p>
+<h1>{{.Title}}</h1>
+<p>{{.Message}}</p>
+</div>
+<div class="card" style="max-width:620px">
+<div class="card-actions">
+<a class="button" href="{{.CancelURL}}">Cancel</a>
+<form class="inline" method="post" action="{{.Action}}">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+{{if .ServiceAction}}
+<input type="hidden" name="{{.ServiceAction}}" value="{{.Service}}">
+<input type="hidden" name="q" value="{{.Query}}">
+{{end}}
+<input type="hidden" name="confirm" value="1">
+<button class="primary">{{.ConfirmLabel}}</button>
+</form>
+</div>
+</div>
+{{template "shell-end"}}
+</body>
+</html>
+{{end}}
+
+{{define "product-script"}}
+<script>
+var accessChanged = false;
+document.querySelectorAll('input[name="resource"]').forEach(function(input){input.addEventListener("change",function(){accessChanged=true})});
+window.addEventListener("beforeunload",function(event){if(accessChanged){event.preventDefault();event.returnValue=""}});
+document.addEventListener("click",function(event){
+  if(!accessChanged || event.defaultPrevented || event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey){return}
+  var target=event.target;
+  var link=target && target.closest ? target.closest("a[href]") : null;
+  if(!link || link.target==="_blank" || link.hasAttribute("download")){return}
+  var href=link.getAttribute("href") || "";
+  if(!href || href.charAt(0)==="#"){return}
+  if(!window.confirm("Leave without saving your checkbox changes?")){event.preventDefault();return}
+  accessChanged=false;
+});
+document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(event){
+  var button=event.submitter || form.querySelector('button[type="submit"]') || form.querySelector("button:not([name])");
+  if(accessChanged && !form.action.endsWith("/save") && !form.action.endsWith("/disconnect") && !window.confirm("Leave without saving your checkbox changes?")){event.preventDefault();return}
+  accessChanged=false;
+  if(button){button.setAttribute("aria-busy","true");
+    if(form.action.endsWith("/discover")){button.textContent="Checking Google services…"}
+    else if(form.method.toLowerCase()==="get"){button.textContent="Searching…"}
+    else if(form.action.endsWith("/logout")){button.textContent="Signing out…"}
+    else if(form.action.endsWith("/reconnect") || form.action.endsWith("/google")){button.textContent="Connecting Google…"}
+    else if(form.action.endsWith("/disconnect")){button.textContent=form.querySelector('input[name="confirm"]')?"Disconnecting…":"Reviewing disconnect…"}
+    else if((button.name==="select_all" || button.name==="select_none") && !form.querySelector('input[name="confirm"]')){button.textContent="Reviewing access change…"}
+    else{button.textContent="Saving access…"}
+  }
+})});
+document.querySelectorAll(".read-link").forEach(function(button){button.addEventListener("click",function(){
+  var label=button.textContent;button.disabled=true;button.setAttribute("aria-busy","true");
+  var feedback=button.parentNode.querySelector(".read-feedback");
+  if(!feedback){feedback=document.createElement("pre");feedback.className="read-feedback";feedback.setAttribute("role","status");button.parentNode.appendChild(feedback)}
+  feedback.textContent="Reading…";
+  fetch(button.dataset.url,{headers:{"X-CSRF-Token":document.querySelector("meta[name=csrf]").content}})
+    .then(function(response){if(!response.ok){throw new Error("Read failed")}return response.json()})
+    .then(function(data){feedback.textContent=JSON.stringify(data,null,2);button.textContent="Read complete"})
+    .catch(function(){feedback.textContent="This read could not be completed. Check this account’s access and try again.";button.textContent=label;button.disabled=false})
+    .finally(function(){button.removeAttribute("aria-busy")});
+})});
+</script>
 {{end}}
