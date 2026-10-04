@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+const (
+	fieldDisplayName = "DisplayName"
+	fieldPageTitle   = "PageTitle"
+	fieldCSRF        = "CSRF"
+)
+
 // The product UI ships as a single embedded stylesheet and template file so a
 // clean checkout renders the same interface without a frontend build step.
 // Icons are inline Lucide SVG paths; brand marks are intentionally absent
@@ -91,11 +97,11 @@ func (h *ProductHandler) onboarding(w http.ResponseWriter, r *http.Request) {
 		"State":            state,
 		"StateLabel":       productStateLabel(state),
 		"EnabledCount":     enabled,
-		"DisplayName":      h.config.DisplayName,
-		"PageTitle":        "Onboarding",
+		fieldDisplayName:   h.config.DisplayName,
+		fieldPageTitle:     "Onboarding",
 		"Message":          r.URL.Query().Get("message"),
 		templateErrorField: r.URL.Query().Get("error"),
-		"CSRF":             session.CSRF,
+		fieldCSRF:          session.CSRF,
 	})
 }
 

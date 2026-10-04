@@ -4,6 +4,7 @@
 
 - Authentication: recognise Google's canonical userinfo.email grant as equivalent to the email identity alias, avoiding unnecessary acceptance re-consent without widening service permissions. (#36)
 - Product/UI: supply the Home browser-tab title; keep POSIX private-file permission checks on Unix while retaining Windows keyring provisioning/reuse coverage. (#50, #56)
+- Product/UI: require server-confirmed review for whole-service saves and disconnects, and guard dirty asset-picker link navigation without relying on JavaScript-only prompts. (#36)
 
 - Product/UI: improve status contrast, mobile navigation, keyboard focus, search recovery, safe save/disconnect feedback and retryable accessible read errors; correct current-account acceptance and mixed-service evidence guidance. (#50, #36, #43)
 - Development: repair UI/keyring lint and stale keyring documentation checks, and isolate disposable backup test pushes from machine-wide hooks.

@@ -198,18 +198,18 @@ func (h *ProductHandler) readAnalyticsPropertyPage(w http.ResponseWriter, r *htt
 	property, status, code := h.analyticsPropertyRequest(r, false)
 	w.WriteHeader(status)
 	session, sessionOK := h.config.Sessions.FromProductRequest(r)
-
+	// The read-link fetch needs CSRF only when a product session exists.
 	var csrf string
 	if sessionOK {
 		csrf = session.CSRF
 	}
 
 	h.render(w, "property", map[string]any{
-		"Property":     property,
-		"Error":        code,
-		"ConnectionID": r.PathValue("id"),
-		"CSRF":         csrf,
-		"PageTitle":    "Google Analytics property",
-		"DisplayName":  h.config.DisplayName,
+		"Property":       property,
+		"Error":          code,
+		"ConnectionID":   r.PathValue("id"),
+		fieldCSRF:        csrf,
+		fieldPageTitle:   "Google Analytics property",
+		fieldDisplayName: h.config.DisplayName,
 	})
 }

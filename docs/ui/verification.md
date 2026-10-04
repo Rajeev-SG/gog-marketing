@@ -18,7 +18,12 @@ Local, ignored evidence belongs in `output/playwright/2026-10-03-readiness/`:
 The final 32 page/viewport checks had zero axe violations, no page-level
 horizontal overflow and no JavaScript errors. Keyboard checks exercised skip
 navigation and 30 tab stops; real browser cancellation tests covered bulk-save
-and unsaved-search confirmations. Development read tests confirmed HTTP 403
+and unsaved-search confirmations. A focused follow-up in
+`output/playwright/2026-10-04-readiness-review/` proved dirty link navigation
+warns before leaving and cancellation preserves both the page and checkbox
+edit. With JavaScript disabled, whole-service saves and disconnects rendered
+server-side confirmation pages without changing state; only the explicit
+confirmed POST applied the change. Development read tests confirmed HTTP 403
 is not reported as a successful read, and error feedback allows retry.
 Do not commit private account screenshots, IDs, tokens or credential files.
 
@@ -33,9 +38,11 @@ Fixed defects include insufficient secondary/status text contrast; cramped
 mobile account navigation; misleading search-empty recovery; inaccurate submit
 feedback; non-success reads being reported as completed; inaccessible read-error
 feedback; missing skip navigation; hidden keyboard focus around sticky UI;
-and unclear immediate service-wide save/disconnect behaviour. Service actions
-now explicitly say they save immediately, include hidden search results, and
-warn before discarding unsaved checkbox changes. They do not change grant scope.
+unsaved edits being lost through link navigation; and JavaScript-only
+whole-service save/disconnect confirmation. Service actions now disclose that
+they include hidden search results, use a server-confirmed review before
+changing access, and warn before link navigation discards unsaved checkbox
+changes. They do not change grant scope.
 
 The reference review is **not pixel-parity approval**. The approved render map
 permits the simpler shell and resource-based service lists. Brand decoration is

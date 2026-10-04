@@ -190,7 +190,7 @@
 {{end}}
 </div>
 <div class="savebar">
-<p>Save access applies checkbox changes. Service-wide actions save immediately, including assets hidden by search.</p>
+<p>Save access applies checkbox changes. Service-wide actions ask for confirmation before saving, including assets hidden by search.</p>
 <button class="primary" type="submit">Save access</button>
 </div>
 </form>
@@ -325,15 +325,50 @@
 </html>
 {{end}}
 
+{{define "confirm"}}
+{{template "head" .}}
+{{template "shell" .}}
+<div class="intro">
+<p class="eyebrow">Confirm change</p>
+<h1>{{.Title}}</h1>
+<p>{{.Message}}</p>
+</div>
+<div class="card" style="max-width:620px">
+<div class="card-actions">
+<a class="button" href="{{.CancelURL}}">Cancel</a>
+<form class="inline" method="post" action="{{.Action}}">
+<input type="hidden" name="csrf" value="{{.CSRF}}">
+{{if .ServiceAction}}
+<input type="hidden" name="{{.ServiceAction}}" value="{{.Service}}">
+<input type="hidden" name="q" value="{{.Query}}">
+{{end}}
+<input type="hidden" name="confirm" value="1">
+<button class="primary">{{.ConfirmLabel}}</button>
+</form>
+</div>
+</div>
+{{template "shell-end"}}
+</body>
+</html>
+{{end}}
+
 {{define "product-script"}}
 <script>
 var accessChanged = false;
 document.querySelectorAll('input[name="resource"]').forEach(function(input){input.addEventListener("change",function(){accessChanged=true})});
 window.addEventListener("beforeunload",function(event){if(accessChanged){event.preventDefault();event.returnValue=""}});
+document.addEventListener("click",function(event){
+  if(!accessChanged || event.defaultPrevented || event.button!==0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey){return}
+  var target=event.target;
+  var link=target && target.closest ? target.closest("a[href]") : null;
+  if(!link || link.target==="_blank" || link.hasAttribute("download")){return}
+  var href=link.getAttribute("href") || "";
+  if(!href || href.charAt(0)==="#"){return}
+  if(!window.confirm("Leave without saving your checkbox changes?")){event.preventDefault();return}
+  accessChanged=false;
+});
 document.querySelectorAll("form").forEach(function(form){form.addEventListener("submit",function(event){
   var button=event.submitter || form.querySelector('button[type="submit"]') || form.querySelector("button:not([name])");
-  if(form.action.endsWith("/disconnect") && !window.confirm("Disconnect this Google account? Agents will lose access. You can reconnect it later." + (accessChanged ? " Unsaved checkbox changes will be discarded." : ""))){event.preventDefault();return}
-  if(button && (button.name==="select_all" || button.name==="select_none") && !window.confirm("This saves access for every asset in this service, including assets hidden by search." + (accessChanged ? " Unsaved checkbox changes will be discarded." : "") + " Continue?")){event.preventDefault();return}
   if(accessChanged && !form.action.endsWith("/save") && !form.action.endsWith("/disconnect") && !window.confirm("Leave without saving your checkbox changes?")){event.preventDefault();return}
   accessChanged=false;
   if(button){button.setAttribute("aria-busy","true");
@@ -341,7 +376,8 @@ document.querySelectorAll("form").forEach(function(form){form.addEventListener("
     else if(form.method.toLowerCase()==="get"){button.textContent="Searching…"}
     else if(form.action.endsWith("/logout")){button.textContent="Signing out…"}
     else if(form.action.endsWith("/reconnect") || form.action.endsWith("/google")){button.textContent="Connecting Google…"}
-    else if(form.action.endsWith("/disconnect")){button.textContent="Disconnecting…"}
+    else if(form.action.endsWith("/disconnect")){button.textContent=form.querySelector('input[name="confirm"]')?"Disconnecting…":"Reviewing disconnect…"}
+    else if((button.name==="select_all" || button.name==="select_none") && !form.querySelector('input[name="confirm"]')){button.textContent="Reviewing access change…"}
     else{button.textContent="Saving access…"}
   }
 })});
