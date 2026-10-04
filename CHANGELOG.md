@@ -2,6 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: centralize provider resource and binding names for Cloudflare, Clerk, and Google Cloud, document clean-checkout provisioning, and add a read-only provider preflight that verifies Wrangler/Clerk/gcloud access and reports missing resources without exposing secret values. (#59)
 - Authentication: recognise Google's canonical userinfo.email grant as equivalent to the email identity alias, avoiding unnecessary acceptance re-consent without widening service permissions. (#36)
 - Product/UI: supply the Home browser-tab title; keep POSIX private-file permission checks on Unix while retaining Windows keyring provisioning/reuse coverage. (#50, #56)
 - Product/UI: require server-confirmed review for whole-service saves and disconnects, and guard dirty asset-picker link navigation without relying on JavaScript-only prompts. (#36)

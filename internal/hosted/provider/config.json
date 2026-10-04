@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "cloudflare": {
+    "worker": "gog-marketing",
+    "d1_database": "gog-marketing",
+    "kv_namespace": "gog-marketing"
+  },
+  "clerk": {
+    "application": "gog-marketing"
+  },
+  "gcp": {
+    "project": "gog-marketing-prod",
+    "artifact_registry": {
+      "repository": "gog-marketing",
+      "location": "europe-west2"
+    },
+    "cloud_run": {
+      "service": "gog-marketing-runner",
+      "region": "europe-west2",
+      "runner_identity": "gog-marketing-runner@gog-marketing-prod.iam.gserviceaccount.com"
+    }
+  },
+  "environment": [
+    {
+      "name": "CLERK_PUBLISHABLE_KEY",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Public Clerk publishable key identifier"
+    },
+    {
+      "name": "CLERK_ISSUER",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Clerk authorization server issuer URL"
+    },
+    {
+      "name": "GOG_GOOGLE_OAUTH_CLIENT_ID",
+      "surface": "cloudflare-worker;cloud-run-runner",
+      "secret": false,
+      "purpose": "Public Google OAuth client identifier"
+    },
+    {
+      "name": "GOG_CLOUD_RUN_SERVICE_URL",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Private Cloud Run runner endpoint"
+    }
+  ],
+  "secrets": [
+    {
+      "name": "CLERK_SECRET_KEY",
+      "surface": "cloudflare-worker",
+      "secret": true,
+      "purpose": "Clerk server authentication"
+    },
+    {
+      "name": "GOG_GOOGLE_OAUTH_CLIENT_SECRET",
+      "surface": "cloudflare-worker;cloud-run-runner",
+      "secret": true,
+      "purpose": "Google OAuth token exchange"
+    },
+    {
+      "name": "GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY",
+      "surface": "cloudflare-worker",
+      "secret": true,
+      "purpose": "Root encryption material for delegated Google credentials"
+    },
+    {
+      "name": "GOG_RUNNER_INVOCATION_TOKEN",
+      "surface": "cloudflare-worker;cloud-run-runner",
+      "secret": true,
+      "purpose": "Shared authentication for the private runner endpoint"
+    }
+  ]
+}
