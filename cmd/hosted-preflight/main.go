@@ -15,9 +15,11 @@ import (
 )
 
 var (
-	errLoadConfig   = errors.New("hosted-preflight: could not load provider inventory")
-	errRunPreflight = errors.New("hosted-preflight: provider preflight failed")
-	errEncodeReport = errors.New("hosted-preflight: could not encode report")
+	errLoadConfig     = errors.New("hosted-preflight: could not load provider inventory")
+	errRunPreflight   = errors.New("hosted-preflight: provider preflight failed")
+	errEncodeReport   = errors.New("hosted-preflight: could not encode report")
+	errInvalidTimeout = errors.New("hosted-preflight: invalid timeout")
+	errTimeoutRange   = errors.New("--timeout and --command-timeout must be positive durations")
 )
 
 func main() {
@@ -26,17 +28,23 @@ func main() {
 
 func run() int {
 	reportOnly := flag.Bool("report-only", false, "always exit 0 after printing the report")
+	totalTimeout := flag.Duration("timeout", 2*time.Minute, "total preflight deadline (for example 30s, 2m)")
+	commandTimeout := flag.Duration("command-timeout", 30*time.Second, "deadline for each provider CLI command (for example 10s, 1m)")
 	flag.Parse()
+
+	if *totalTimeout <= 0 || *commandTimeout <= 0 {
+		return fail(errInvalidTimeout, errTimeoutRange)
+	}
 
 	config, err := provider.Load()
 	if err != nil {
 		return fail(errLoadConfig, err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), *totalTimeout)
 	defer cancel()
 
-	report, err := provider.Preflight(ctx, config, provider.Options{Runner: provider.ExecRunner{}})
+	report, err := provider.Preflight(ctx, config, provider.Options{Runner: provider.ExecRunner{}, CommandTimeout: *commandTimeout})
 	if err != nil {
 		return fail(errRunPreflight, err)
 	}

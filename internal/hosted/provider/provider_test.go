@@ -194,14 +194,16 @@ func TestPreflightReportsMissingProviderStateWithoutSecretValues(t *testing.T) {
 		statuses[check.Provider+"."+check.Resource] = check.Status
 	}
 
-	expectedMissing := []string{
+	// Unstructured whoami failures are not positive proof of verified
+	// absence; they must fail closed as unavailable.
+	expectedUnavailableOnFailure := []string{
 		"wrangler.authentication",
 		"clerk.authentication",
 		"gcloud.authentication",
 	}
-	for _, name := range expectedMissing {
-		if got := statuses[name]; got != provider.Missing {
-			t.Errorf("%s status = %q, want %q", name, got, provider.Missing)
+	for _, name := range expectedUnavailableOnFailure {
+		if got := statuses[name]; got != provider.Unavailable {
+			t.Errorf("%s status = %q, want %q", name, got, provider.Unavailable)
 		}
 	}
 
@@ -343,16 +345,17 @@ func TestPreflightReportsMissingResourcesWhenAuthenticated(t *testing.T) {
 	for _, check := range report.Checks {
 		statuses[check.Provider+"."+check.Resource] = check.Status
 	}
-	expectedMissing := map[string]provider.Status{
-		"cloudflare.d1_database":  provider.Missing,
-		"cloudflare.kv_namespace": provider.Missing,
-		"cloudflare.worker":       provider.Missing,
-		"clerk.application":       provider.Missing,
-		"gcp.artifact_repository": provider.Missing,
-		"gcp.cloud_run_service":   provider.Missing,
-		"gcp.cloud_run_identity":  provider.Unavailable,
-	}
+	// "resource not found" text from the fake command errors is unstructured
+	// evidence, so these failures must fail closed as unavailable. Verified
+	// absence is covered by positively parsed responses elsewhere.
 	expectedUnavailable := []string{
+		"cloudflare.d1_database",
+		"cloudflare.kv_namespace",
+		"cloudflare.worker",
+		"clerk.application",
+		"gcp.artifact_repository",
+		"gcp.cloud_run_service",
+		"gcp.cloud_run_identity",
 		"cloudflare.env:CLERK_PUBLISHABLE_KEY",
 		"cloudflare.secret:CLERK_SECRET_KEY",
 		"gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID",
@@ -366,12 +369,6 @@ func TestPreflightReportsMissingResourcesWhenAuthenticated(t *testing.T) {
 	for _, name := range expectedUnavailable {
 		if got := statuses[name]; got != provider.Unavailable {
 			t.Errorf("%s status = %q, want %q", name, got, provider.Unavailable)
-		}
-	}
-
-	for name, want := range expectedMissing {
-		if got := statuses[name]; got != want {
-			t.Errorf("%s status = %q, want %q", name, got, want)
 		}
 	}
 }
@@ -469,8 +466,8 @@ func TestPreflightReportsAccessFailuresAsUnavailable(t *testing.T) {
 		}
 	}
 
-	if got := statuses["gcp.artifact_repository"]; got != provider.Missing {
-		t.Errorf("gcp.artifact_repository status = %q, want %q for verified absence", got, provider.Missing)
+	if got := statuses["gcp.artifact_repository"]; got != provider.Unavailable {
+		t.Errorf("gcp.artifact_repository status = %q, want %q: unstructured not-found text must fail closed", got, provider.Unavailable)
 	}
 }
 

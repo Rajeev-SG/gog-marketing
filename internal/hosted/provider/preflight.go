@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // CommandResult carries provider output only through the package boundary;
@@ -23,6 +24,9 @@ type Runner interface {
 // Options contains the preflight dependencies.
 type Options struct {
 	Runner Runner
+	// CommandTimeout bounds each individual provider CLI invocation. Zero
+	// disables the per-command bound; the caller's context still applies.
+	CommandTimeout time.Duration
 }
 
 // Status is a coarse, safe provider state.
@@ -39,6 +43,10 @@ const (
 	Unavailable Status = "unavailable"
 	// Mismatch means the resource exists but differs from the documented name.
 	Mismatch Status = "mismatch"
+	// TimedOut means a context deadline (total or per-command) expired before
+	// the provider CLI could complete. It is distinct from generic
+	// unavailability so operators can separate latency from access failures.
+	TimedOut Status = "timed-out"
 )
 
 // Check is one safe provider preflight result.
@@ -49,10 +57,38 @@ type Check struct {
 	Detail   string `json:"detail,omitempty"`
 }
 
+// Action is a safe remediation category derived from a check status. It
+// carries no provider identifiers or secret values.
+type Action string
+
+const (
+	// ActionNone means no action is suggested by this check.
+	ActionNone Action = "none"
+	// ActionProvisionMissing marks verified-absent resources for the owning
+	// provisioning ticket.
+	ActionProvisionMissing Action = "provision_missing"
+	// ActionInvestigate marks checks that could not be verified (access, CLI,
+	// output, or dependency failures).
+	ActionInvestigate Action = "investigate_unavailable"
+	// ActionFixConfig marks resources that exist with the wrong configuration.
+	ActionFixConfig Action = "fix_config_mismatch"
+	// ActionRetryTimedOut marks checks whose provider command hit a deadline.
+	ActionRetryTimedOut Action = "retry_timed_out"
+)
+
+// ReportSummary counts the checks by status and safe action category. It
+// contains counts only: no resource names, accounts, or provider output.
+type ReportSummary struct {
+	Total    int            `json:"total"`
+	Statuses map[Status]int `json:"statuses"`
+	Actions  map[Action]int `json:"actions"`
+}
+
 // Report is the aggregate provider readiness result.
 type Report struct {
-	Ready  bool    `json:"ready"`
-	Checks []Check `json:"checks"`
+	Ready   bool          `json:"ready"`
+	Summary ReportSummary `json:"summary"`
+	Checks  []Check       `json:"checks"`
 }
 
 var (
@@ -64,7 +100,8 @@ var (
 // Preflight performs read-only checks against the provider CLIs. It returns a
 // report containing only provider names, parsed resource names, and safe state
 // descriptions. Raw provider output, raw stderr, and secret values are
-// intentionally discarded.
+// intentionally discarded. Each command runs under its own CommandTimeout
+// deadline in addition to the caller's context.
 func Preflight(ctx context.Context, config Config, options Options) (Report, error) {
 	if options.Runner == nil {
 		return Report{}, errRunnerRequired
@@ -72,24 +109,49 @@ func Preflight(ctx context.Context, config Config, options Options) (Report, err
 
 	var report Report
 
-	wranglerAuth := checkAuth(ctx, &report, options.Runner, "wrangler", "authentication", "wrangler", []string{"whoami", "--json"}, verifyWranglerAuth)
-	checkNamedJSONArray(ctx, &report, options.Runner, "cloudflare", "d1_database", config.Cloudflare.D1Database, "name", "wrangler", []string{"d1", "list", "--json"}, wranglerAuth == OK)
-	worker, workerSecrets := checkWorker(ctx, &report, options.Runner, config, wranglerAuth == OK)
+	runner := options.Runner
+	if options.CommandTimeout > 0 {
+		runner = commandTimeoutRunner{inner: runner, timeout: options.CommandTimeout}
+	}
+
+	wranglerAuth := checkAuth(ctx, &report, runner, "wrangler", "authentication", "wrangler", []string{"whoami", "--json"}, verifyWranglerAuth)
+	checkNamedJSONArray(ctx, &report, runner, "cloudflare", "d1_database", config.Cloudflare.D1Database, "name", "wrangler", []string{"d1", "list", "--json"}, wranglerAuth == OK)
+	worker, workerSecrets := checkWorker(ctx, &report, runner, config, wranglerAuth == OK)
 	checkWorkerSecretNames(&report, config, worker, workerSecrets)
-	checkWorkerVariables(ctx, &report, options.Runner, config, wranglerAuth == OK, worker)
-	checkKVNamespace(ctx, &report, options.Runner, config, wranglerAuth == OK)
+	checkWorkerVariables(ctx, &report, runner, config, wranglerAuth == OK, worker)
+	checkKVNamespace(ctx, &report, runner, config, wranglerAuth == OK)
 
-	clerkAuth := checkAuth(ctx, &report, options.Runner, "clerk", "authentication", "clerk", []string{"whoami", "--json"}, verifyClerkAuth)
-	checkNamedJSONArray(ctx, &report, options.Runner, "clerk", "application", config.Clerk.Application, "name", "clerk", []string{"apps", "list", "--json"}, clerkAuth == OK)
+	clerkAuth := checkAuth(ctx, &report, runner, "clerk", "authentication", "clerk", []string{"whoami", "--json"}, verifyClerkAuth)
+	checkNamedJSONArray(ctx, &report, runner, "clerk", "application", config.Clerk.Application, "name", "clerk", []string{"apps", "list", "--json"}, clerkAuth == OK)
 
-	gcloudAuth := checkAuth(ctx, &report, options.Runner, "gcloud", "authentication", "gcloud", []string{"auth", "list", "--format=json"}, verifyGcloudAuth)
-	project := checkProject(ctx, &report, options.Runner, config, gcloudAuth == OK)
-	checkArtifact(ctx, &report, options.Runner, config, project == OK)
-	checkCloudRunAndIdentity(ctx, &report, options.Runner, config, project == OK)
+	gcloudAuth := checkAuth(ctx, &report, runner, "gcloud", "authentication", "gcloud", []string{"auth", "list", "--format=json"}, verifyGcloudAuth)
+	project := checkProject(ctx, &report, runner, config, gcloudAuth == OK)
+	checkArtifact(ctx, &report, runner, config, project == OK)
+	checkCloudRunAndIdentity(ctx, &report, runner, config, project == OK)
 
 	report.Ready = allOK(report.Checks)
+	report.Summary = summarize(report.Checks)
 
 	return report, nil
+}
+
+// commandTimeoutRunner applies a fresh deadline to every provider command so
+// one slow CLI cannot consume the budget of the next commands.
+type commandTimeoutRunner struct {
+	inner   Runner
+	timeout time.Duration
+}
+
+func (r commandTimeoutRunner) Run(ctx context.Context, command string, args ...string) (CommandResult, error) {
+	commandCtx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+
+	result, err := r.inner.Run(commandCtx, command, args...)
+	if err != nil {
+		return result, fmt.Errorf("run provider command: %w", err)
+	}
+
+	return result, nil
 }
 
 func addCheck(report *Report, providerName, resource string, status Status, detail string) {
@@ -111,21 +173,36 @@ func allOK(checks []Check) bool {
 	return len(checks) > 0
 }
 
-var (
-	unauthenticatedMarkers = []string{"not authenticated", "not logged in", "session expired"}
-	unauthorizedMarkers    = []string{"unauthorized", "permission denied", "access denied", "not authorized", "forbidden", "authentication error"}
-	notFoundMarkers        = []string{"not found", "no such", "could not find"}
-)
+// statusAction maps a check status to its safe remediation category.
+func statusAction(status Status) Action {
+	switch status {
+	case OK:
+		return ActionNone
+	case Missing:
+		return ActionProvisionMissing
+	case Mismatch:
+		return ActionFixConfig
+	case TimedOut:
+		return ActionRetryTimedOut
+	default:
+		return ActionInvestigate
+	}
+}
 
-func containsAnyMarker(text string, markers []string) bool {
-	lowered := strings.ToLower(text)
-	for _, marker := range markers {
-		if strings.Contains(lowered, marker) {
-			return true
-		}
+// summarize builds the identifier-free report summary.
+func summarize(checks []Check) ReportSummary {
+	summary := ReportSummary{
+		Total:    len(checks),
+		Statuses: make(map[Status]int, 5),
+		Actions:  make(map[Action]int, 5),
 	}
 
-	return false
+	for _, check := range checks {
+		summary.Statuses[check.Status]++
+		summary.Actions[statusAction(check.Status)]++
+	}
+
+	return summary
 }
 
 // surfaceIncludes reports whether a semicolon-separated binding surface string
@@ -141,21 +218,16 @@ func surfaceIncludes(surface, target string) bool {
 	return false
 }
 
-// failure classifies a command failure safely without emitting provider stderr.
-// Unauthenticated results are verified absence (missing); access and
-// unclassified failures fail closed as unavailable; only explicit not-found
-// evidence marks a resource missing.
-func failure(err error, stderr []byte) (Status, string) {
-	errText := err.Error()
-	stderrText := string(stderr)
-
+// failure classifies a command failure safely without emitting provider
+// stderr. Context deadline failures get the distinct timed-out status; every
+// other failure — including unstructured "not found" text in stderr or error
+// strings — fails closed as unavailable. Verified absence (missing) is
+// reserved for positively parsed provider responses such as an empty or
+// name-absent structured list, or a parsed unauthenticated whoami payload.
+func failure(err error) (Status, string) {
 	switch {
-	case containsAnyMarker(errText, unauthenticatedMarkers) || containsAnyMarker(stderrText, unauthenticatedMarkers):
-		return Missing, "provider authentication is not present"
-	case containsAnyMarker(errText, unauthorizedMarkers) || containsAnyMarker(stderrText, unauthorizedMarkers):
-		return Unavailable, "provider access is not authorized"
-	case containsAnyMarker(errText, notFoundMarkers) || containsAnyMarker(stderrText, notFoundMarkers):
-		return Missing, "verified provider resource is absent"
+	case errors.Is(err, context.DeadlineExceeded):
+		return TimedOut, "provider command timed out before completion"
 	case errors.Is(err, errUnexpectedOutput):
 		return Unavailable, "provider output could not be interpreted"
 	case errors.Is(err, errCommandNotInstalled):
@@ -171,7 +243,7 @@ func failure(err error, stderr []byte) (Status, string) {
 func checkAuth(ctx context.Context, report *Report, runner Runner, providerName, resource, command string, args []string, verify func(any) (Status, string)) Status {
 	result, err := runner.Run(ctx, command, args...)
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, providerName, resource, status, detail)
 
 		return status
@@ -259,7 +331,7 @@ func checkNamedJSONArray(ctx context.Context, report *Report, runner Runner, pro
 
 	result, err := runner.Run(ctx, command, args...)
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, providerName, resource, status, detail)
 
 		return
@@ -337,7 +409,7 @@ func checkKVNamespace(ctx context.Context, report *Report, runner Runner, config
 
 	result, err := runner.Run(ctx, "wrangler", "kv", "namespace", "list")
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, "cloudflare", resource, status, detail)
 
 		return
@@ -390,7 +462,7 @@ func checkProject(ctx context.Context, report *Report, runner Runner, config Con
 
 	result, err := runner.Run(ctx, "gcloud", "projects", "describe", config.GCP.Project, "--format=json")
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, "gcp", "project", status, detail)
 
 		return status
@@ -428,7 +500,7 @@ func checkArtifact(ctx context.Context, report *Report, runner Runner, config Co
 		"--format=json",
 	)
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, "gcp", resource, status, detail)
 
 		return
@@ -502,7 +574,7 @@ func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner
 		"--format=json",
 	)
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, "gcp", serviceResource, status, detail)
 		addCheck(report, "gcp", identityResource, Unavailable, "not checked because the Cloud Run service is missing")
 		addCloudRunRunnerChecks(report, config, Unavailable, nil, nil)
@@ -598,7 +670,7 @@ func checkWorker(ctx context.Context, report *Report, runner Runner, config Conf
 		"--format=json",
 	)
 	if err != nil {
-		status, detail := failure(err, result.Stderr)
+		status, detail := failure(err)
 		addCheck(report, "cloudflare", "worker", status, detail)
 
 		return status, nil

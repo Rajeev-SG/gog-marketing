@@ -13,19 +13,18 @@ output, or screenshot.
 
 ## Reuse, do not recreate
 
-The shared provider resources below already exist and are being reused. Do not
-create duplicates of any of them. Resource names in this inventory are the only
+The shared provider resources below are reused when present. Do not create
+duplicates of any of them. Resource names in this inventory are the only
 authoritative names.
 
-- Cloudflare D1 and KV are the existing shared Cloudflare resources.
-- The Clerk `gog-marketing` application already exists.
-- The Google Cloud project, Artifact Registry, and runner identity already
-  exist.
+- Cloudflare D1 and KV are the shared Cloudflare resources.
+- The Clerk `gog-marketing` application is verified by preflight.
+- The Google Cloud project and Artifact Registry are verified by preflight.
 
-The only resources that do not exist yet are staged for their owning tickets:
-the Cloudflare Worker (and its Worker-level bindings) belongs to #64, and the
-Cloud Run runner service belongs to #63. Those staged deployments are expected
-upcoming work, not blockers for #59.
+The Cloudflare Worker (and its Worker-level bindings) belongs to #64, and the
+Cloud Run runner service belongs to #63. Those deployments are planned
+upcoming work, not blockers for #59; their parent preflight checks are
+currently unavailable.
 
 ## Run the safe preflight
 
@@ -45,6 +44,18 @@ is present and correct. The `--report-only` variant always exits `0` after
 printing the safe JSON report, so it is suitable for collecting evidence when
 the hosted build is intentionally incomplete.
 
+Two deadlines bound each run and can be configured through
+`PREFLIGHT_FLAGS`:
+
+```sh
+make provider-preflight PREFLIGHT_FLAGS="--timeout=5m --command-timeout=45s"
+```
+
+`--timeout` (default `2m`) bounds the whole preflight run.
+`--command-timeout` (default `30s`) bounds each individual provider CLI
+command: one slow command does not consume the deadline budget of the next
+commands. Both flags require positive durations.
+
 Preflight verifies, by **name only**:
 
 - provider authentication: `wrangler whoami --json`, `clerk whoami --json`,
@@ -61,6 +72,44 @@ Preflight verifies, by **name only**:
 It never prints or logs provider output values, raw stderr, or secret values.
 A report is `ready` only when every name check verified; an inaccessible check
 is reported `unavailable` and keeps the report not-ready.
+
+Every report starts with an identifier-free `summary` block that groups the
+checks for triage. It contains counts only (no resource names, accounts, or
+provider output):
+
+```json
+{
+  "summary": {
+    "total": 22,
+    "statuses": {"ok": 8, "unavailable": 14},
+    "actions": {"none": 8, "investigate_unavailable": 14}
+  }
+}
+```
+
+The action categories map directly to remediation paths:
+`provision_missing` (create verified-absent resources with the owning
+ticket), `investigate_unavailable` (fix provider access, CLI, or output
+problems), `fix_config_mismatch` (correct a resource that exists with the
+wrong configuration), and `retry_timed_out` (re-run after resolving the
+deadline that expired).
+
+Statuses are:
+
+- `ok`: the documented state was positively verified from parsed provider
+  output.
+- `missing`: verified absence, proven only by positively parsed provider
+  responses (for example an empty or name-absent structured list, or a parsed
+  unauthenticated whoami payload).
+- `unavailable`: the check could not be verified. This is the fail-closed
+  default for all command failures, including unstructured `not found` text in
+  stderr or error strings — raw provider text never proves that a resource is
+  absent.
+- `mismatch`: the resource exists but has the wrong documented name or
+  identity.
+- `timed-out`: the total or per-command context deadline expired before the
+  provider CLI completed. This is reported separately from `unavailable` so
+  operators can distinguish latency from access failures.
 
 Worker variable names come from the active deployment, not from
 `wrangler versions list`. Preflight reads
@@ -88,14 +137,15 @@ which version is live.
 | Google Cloud | Cloud Run service | `gog-marketing-runner` in `europe-west2` | Private Go execution service (#63) |
 | Google Cloud | Cloud Run identity | `gog-marketing-runner@gog-marketing-prod.iam.gserviceaccount.com` | Cloud Run service identity |
 
-The control-plane Worker is the staged #64 resource. D1 remains authoritative
+The control-plane Worker is the planned #64 resource. D1 remains authoritative
 for hosted state; KV is never the source of truth for connections, grants, or
 audit history.
 
 ## Current observed provider state
 
-On 2026-10-04, the read-only `--report-only` preflight verified the current
-provider authentication and the existing shared resources:
+On 2026-10-04, the read-only `--report-only` preflight produced 22 checks:
+8 `ok` and 14 `unavailable`, so the report was not ready. It verified the
+current provider authentication and the following shared resources:
 
 ```json
 {
@@ -110,15 +160,15 @@ provider authentication and the existing shared resources:
 }
 ```
 
-The staged resources are correctly not yet present, and their dependent checks
-cannot run yet:
+The Worker and Cloud Run service checks could not be verified, and the checks
+that depend on those parents were not checked:
 
 ```json
 {
-  "cloudflare.worker": "missing",
+  "cloudflare.worker": "unavailable",
   "cloudflare.env:*": "unavailable",
   "cloudflare.secret:*": "unavailable",
-  "gcp.cloud_run_service": "missing",
+  "gcp.cloud_run_service": "unavailable",
   "gcp.cloud_run_identity": "unavailable",
   "gcp.cloud_run_env:*": "unavailable",
   "gcp.cloud_run_secret:*": "unavailable"
@@ -127,14 +177,15 @@ cannot run yet:
 
 The `*` entries are the per-name Worker variable, Worker secret, Cloud Run
 variable, and Cloud Run secret-reference checks from the inventory. They are
-`unavailable` (not `missing`) because the Worker and Cloud Run services they
-depend on do not exist yet; preflight does not infer names from a missing
-service. A failure of a provider command is classified as `unavailable` unless
-it positively proves verified absence (for example an explicit not-found
-response); access and unclassified failures never mark a resource `missing`.
+`unavailable` because their Worker or Cloud Run parent could not be verified;
+preflight does not infer names from an unverified parent. Verified absence is
+reported `missing` only from positively parsed provider responses; command
+failures — including unstructured not-found text in stderr — are classified
+`unavailable`, and deadline expiry is classified `timed-out`. Access, CLI, and
+unclassified failures never mark a resource `missing`.
 
-The staged deployments themselves belong to #64 (Cloudflare Worker) and #63
-(Cloud Run runner). They are upcoming work on those tickets, not #59 blockers.
+The planned deployments belong to #64 (Cloudflare Worker) and #63 (Cloud Run
+runner). They are upcoming work on those tickets, not #59 blockers.
 
 ## Environment and secret names
 
@@ -223,8 +274,9 @@ IDs may be printed by Clerk; API secret keys must not be.
 
 ### Google Cloud project, registry, and runner identity
 
-The project, Artifact Registry, and runner identity already exist; the commands
-below are historical only.
+The project and Artifact Registry already exist; those commands are historical
+only. The current runner-identity preflight check is unavailable because the
+Cloud Run parent is unavailable.
 
 ```sh
 # Historical: the project already exists. Do not re-run.
@@ -234,7 +286,7 @@ gcloud artifacts repositories create gog-marketing \
   --repository-format=docker \
   --location=europe-west2 \
   --project=gog-marketing-prod
-# Historical: the runner identity already exists. Do not re-run.
+# Historical: the runner-identity create command was used previously. Do not re-run.
 gcloud iam service-accounts create gog-marketing-runner \
   --project=gog-marketing-prod \
   --description="gog-marketing hosted Cloud Run runner identity"

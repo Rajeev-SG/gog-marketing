@@ -45,6 +45,13 @@ func (r ExecRunner) Run(ctx context.Context, command string, args ...string) (Co
 		return CommandResult{Output: output.Bytes(), Stderr: stderr.Bytes()}, nil
 	}
 
+	// CommandContext kills the process on context cancellation. Map that
+	// explicitly so preflight can report timed-out instead of a generic
+	// failed-command exit status.
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return CommandResult{Stderr: stderr.Bytes()}, fmt.Errorf("%s: %w", command, ctxErr)
+	}
+
 	if errors.Is(err, exec.ErrNotFound) {
 		return CommandResult{Stderr: stderr.Bytes()}, fmt.Errorf("%s: %w", command, errCommandNotInstalled)
 	}
