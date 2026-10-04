@@ -116,9 +116,9 @@ func Preflight(ctx context.Context, config Config, options Options) (Report, err
 
 	wranglerAuth := checkAuth(ctx, &report, runner, "wrangler", "authentication", "wrangler", []string{"whoami", "--json"}, verifyWranglerAuth)
 	checkNamedJSONArray(ctx, &report, runner, "cloudflare", "d1_database", config.Cloudflare.D1Database, "name", "wrangler", []string{"d1", "list", "--json"}, wranglerAuth == OK)
-	worker, workerSecrets := checkWorker(ctx, &report, runner, config, wranglerAuth == OK)
-	checkWorkerSecretNames(&report, config, worker, workerSecrets)
-	checkWorkerVariables(ctx, &report, runner, config, wranglerAuth == OK, worker)
+	worker := checkWorker(ctx, &report, runner, config, wranglerAuth == OK)
+	checkWorkerSecretNames(&report, config, worker.status, worker.secretStatus, worker.secretNames)
+	checkWorkerVariables(ctx, &report, runner, config, worker)
 	checkKVNamespace(ctx, &report, runner, config, wranglerAuth == OK)
 
 	clerkAuth := checkAuth(ctx, &report, runner, "clerk", "authentication", "clerk", []string{"whoami", "--json"}, verifyClerkAuth)
@@ -126,8 +126,8 @@ func Preflight(ctx context.Context, config Config, options Options) (Report, err
 
 	gcloudAuth := checkAuth(ctx, &report, runner, "gcloud", "authentication", "gcloud", []string{"auth", "list", "--format=json"}, verifyGcloudAuth)
 	project := checkProject(ctx, &report, runner, config, gcloudAuth == OK)
-	checkArtifact(ctx, &report, runner, config, project == OK)
-	checkCloudRunAndIdentity(ctx, &report, runner, config, project == OK)
+	checkArtifact(ctx, &report, runner, config, project)
+	checkCloudRunAndIdentity(ctx, &report, runner, config, project)
 
 	report.Ready = allOK(report.Checks)
 	report.Summary = summarize(report.Checks)
@@ -227,7 +227,7 @@ func surfaceIncludes(surface, target string) bool {
 func failure(err error) (Status, string) {
 	switch {
 	case errors.Is(err, context.DeadlineExceeded):
-		return TimedOut, "provider command timed out before completion"
+		return TimedOut, "provider command timed out before completion; retry with a larger --command-timeout (cold environments such as first credential refresh may need several minutes)"
 	case errors.Is(err, errUnexpectedOutput):
 		return Unavailable, "provider output could not be interpreted"
 	case errors.Is(err, errCommandNotInstalled):
@@ -429,6 +429,97 @@ func checkKVNamespace(ctx context.Context, report *Report, runner Runner, config
 	addCheck(report, "cloudflare", resource, OK, "documented resource found")
 }
 
+// listStringField reports whether a parsed JSON list contains an entry whose
+// string field exactly equals the expected value. It distinguishes positively
+// parsed absence from an uninterpretable payload: an empty list, or a list
+// whose every entry carries the field without a match, proves verified
+// absence. Any entry that is not a plain object or that lacks the field is an
+// anomaly and must fail closed as unavailable instead of guessing absence.
+func listStringField(output []byte, field, expected string) (bool, error) {
+	var payload any
+	if err := json.Unmarshal(output, &payload); err != nil {
+		return false, errUnexpectedOutput
+	}
+
+	rows, ok := payload.([]any)
+	if !ok {
+		return false, errUnexpectedOutput
+	}
+
+	for _, row := range rows {
+		object, ok := row.(map[string]any)
+		if !ok {
+			return false, errUnexpectedOutput
+		}
+
+		value, ok := object[field].(string)
+		if !ok {
+			return false, errUnexpectedOutput
+		}
+
+		if value == expected {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// serviceListContains reports whether a parsed Cloud Run service list names
+// the documented service. Cloud Run names are fully qualified resource paths
+// such as projects/P/locations/R/services/S; exact equality or the exact
+// "/services/<name>" suffix counts, and any entry without a metadata.name
+// string fails closed as an anomaly instead of guessing absence.
+func serviceListContains(output []byte, service string) (bool, error) {
+	var payload any
+	if err := json.Unmarshal(output, &payload); err != nil {
+		return false, errUnexpectedOutput
+	}
+
+	rows, ok := payload.([]any)
+	if !ok {
+		return false, errUnexpectedOutput
+	}
+
+	for _, row := range rows {
+		object, ok := row.(map[string]any)
+		if !ok {
+			return false, errUnexpectedOutput
+		}
+
+		metadata, ok := object["metadata"].(map[string]any)
+		if !ok {
+			return false, errUnexpectedOutput
+		}
+
+		name, ok := metadata["name"].(string)
+		if !ok {
+			return false, errUnexpectedOutput
+		}
+
+		if name == service || strings.HasSuffix(name, "/services/"+service) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// parentDependentDetail explains why a dependent check was not performed
+// using the parent check's actual classification. It must claim the parent is
+// missing only when the parent was genuinely verified-absent; timed-out and
+// unverified parents must produce their own truthful reasons.
+func parentDependentDetail(parentStatus Status, parentName string) string {
+	switch parentStatus {
+	case Missing:
+		return fmt.Sprintf("not checked because the %s is missing", parentName)
+	case TimedOut:
+		return fmt.Sprintf("not checked because the %s command timed out", parentName)
+	default:
+		return fmt.Sprintf("not checked because the %s could not be verified", parentName)
+	}
+}
+
 func containsExactTitle(output []byte, expectedTitle string) (bool, error) {
 	var payload any
 	if err := json.Unmarshal(output, &payload); err != nil {
@@ -460,7 +551,10 @@ func checkProject(ctx context.Context, report *Report, runner Runner, config Con
 		return Unavailable
 	}
 
-	result, err := runner.Run(ctx, "gcloud", "projects", "describe", config.GCP.Project, "--format=json")
+	// Existence is verified from a read-only list-style scoped query so
+	// absence is positively parsed: an empty or name-absent list proves the
+	// project is absent, while any command or parse failure fails closed.
+	result, err := runner.Run(ctx, "gcloud", "projects", "list", "--filter=projectId="+config.GCP.Project, "--format=json")
 	if err != nil {
 		status, detail := failure(err)
 		addCheck(report, "gcp", "project", status, detail)
@@ -468,12 +562,15 @@ func checkProject(ctx context.Context, report *Report, runner Runner, config Con
 		return status
 	}
 
-	var project struct {
-		ProjectID string `json:"projectId"` //nolint:tagliatelle // gcloud native wire format uses camelCase ("projectId").
-	}
-	if err := json.Unmarshal(result.Output, &project); err != nil || project.ProjectID != config.GCP.Project {
+	found, err := listStringField(result.Output, "projectId", config.GCP.Project)
+	if err != nil {
 		addCheck(report, "gcp", "project", Unavailable, "provider output could not be interpreted")
 		return Unavailable
+	}
+
+	if !found {
+		addCheck(report, "gcp", "project", Missing, fmt.Sprintf("documented resource %q not found", config.GCP.Project))
+		return Missing
 	}
 
 	addCheck(report, "gcp", "project", OK, "documented resource found")
@@ -481,20 +578,24 @@ func checkProject(ctx context.Context, report *Report, runner Runner, config Con
 	return OK
 }
 
-func checkArtifact(ctx context.Context, report *Report, runner Runner, config Config, enabled bool) {
+func checkArtifact(ctx context.Context, report *Report, runner Runner, config Config, projectStatus Status) {
 	resource := "artifact_repository"
+
+	enabled := projectStatus == OK
 	if !enabled {
-		addCheck(report, "gcp", resource, Unavailable, "not checked because gcloud project access is missing")
+		addCheck(report, "gcp", resource, Unavailable, parentDependentDetail(projectStatus, "GCP project"))
 		return
 	}
 
+	// Existence is verified from a read-only list-style scoped query with an
+	// exact fully qualified resource-name match, so absence is positively
+	// parsed instead of inferred from command failure text.
 	result, err := runner.Run(
 		ctx,
 		"gcloud",
 		"artifacts",
 		"repositories",
-		"describe",
-		config.GCP.ArtifactRegistry.Repository,
+		"list",
 		"--location="+config.GCP.ArtifactRegistry.Location,
 		"--project="+config.GCP.Project,
 		"--format=json",
@@ -506,11 +607,21 @@ func checkArtifact(ctx context.Context, report *Report, runner Runner, config Co
 		return
 	}
 
-	var repository struct {
-		Name string `json:"name"`
-	}
-	if err := json.Unmarshal(result.Output, &repository); err != nil || !strings.HasSuffix(repository.Name, "/repositories/"+config.GCP.ArtifactRegistry.Repository) {
+	expectedName := fmt.Sprintf(
+		"projects/%s/locations/%s/repositories/%s",
+		config.GCP.Project,
+		config.GCP.ArtifactRegistry.Location,
+		config.GCP.ArtifactRegistry.Repository,
+	)
+
+	found, err := listStringField(result.Output, "name", expectedName)
+	if err != nil {
 		addCheck(report, "gcp", resource, Unavailable, "provider output could not be interpreted")
+		return
+	}
+
+	if !found {
+		addCheck(report, "gcp", resource, Missing, fmt.Sprintf("documented resource %q not found", config.GCP.ArtifactRegistry.Repository))
 		return
 	}
 
@@ -550,19 +661,62 @@ type cloudRunEnvHolder struct {
 // checkCloudRunAndIdentity verifies the documented Cloud Run service and, from
 // the same safe describe output, its runner identity and cloud-run-runner
 // environment/secret names. One read-only call avoids duplicate describes.
-func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner, config Config, enabled bool) {
+func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner, config Config, projectStatus Status) {
 	serviceResource := "cloud_run_service"
 	identityResource := "cloud_run_identity"
+	serviceName := "Cloud Run service"
 
-	if !enabled {
-		addCheck(report, "gcp", serviceResource, Unavailable, "not checked because gcloud project access is missing")
-		addCheck(report, "gcp", identityResource, Unavailable, "not checked because gcloud project access is missing")
-		addCloudRunRunnerChecks(report, config, Unavailable, nil, nil)
+	if projectStatus != OK {
+		projectDetail := parentDependentDetail(projectStatus, "GCP project")
+		addCheck(report, "gcp", serviceResource, Unavailable, projectDetail)
+		addCheck(report, "gcp", identityResource, Unavailable, projectDetail)
+		addCloudRunRunnerChecks(report, config, Unavailable, projectDetail, nil, nil)
 
 		return
 	}
 
+	// Existence is verified first from a read-only list-style scoped query so
+	// absence is positively parsed from the structured list instead of being
+	// inferred from describe command failure text.
 	result, err := runner.Run(
+		ctx,
+		"gcloud",
+		"run",
+		"services",
+		"list",
+		"--region="+config.GCP.CloudRun.Region,
+		"--project="+config.GCP.Project,
+		"--format=json",
+	)
+	if err != nil {
+		status, detail := failure(err)
+		addCheck(report, "gcp", serviceResource, status, detail)
+		addCheck(report, "gcp", identityResource, Unavailable, parentDependentDetail(status, serviceName))
+		addCloudRunRunnerChecks(report, config, Unavailable, parentDependentDetail(status, serviceName), nil, nil)
+
+		return
+	}
+
+	found, err := serviceListContains(result.Output, config.GCP.CloudRun.Service)
+	if err != nil {
+		addCheck(report, "gcp", serviceResource, Unavailable, "provider output could not be interpreted")
+		addCheck(report, "gcp", identityResource, Unavailable, "not checked because the Cloud Run service output could not be interpreted")
+		addCloudRunRunnerChecks(report, config, Unavailable, "not checked because the Cloud Run service output could not be interpreted", nil, nil)
+
+		return
+	}
+
+	if !found {
+		addCheck(report, "gcp", serviceResource, Missing, fmt.Sprintf("documented resource %q not found", config.GCP.CloudRun.Service))
+		addCheck(report, "gcp", identityResource, Unavailable, parentDependentDetail(Missing, serviceName))
+		addCloudRunRunnerChecks(report, config, Unavailable, parentDependentDetail(Missing, serviceName), nil, nil)
+
+		return
+	}
+
+	addCheck(report, "gcp", serviceResource, OK, "documented resource found")
+
+	result, err = runner.Run(
 		ctx,
 		"gcloud",
 		"run",
@@ -574,10 +728,12 @@ func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner
 		"--format=json",
 	)
 	if err != nil {
-		status, detail := failure(err)
-		addCheck(report, "gcp", serviceResource, status, detail)
-		addCheck(report, "gcp", identityResource, Unavailable, "not checked because the Cloud Run service is missing")
-		addCloudRunRunnerChecks(report, config, Unavailable, nil, nil)
+		// The service existence is already positively verified from the list
+		// query; a describe failure only prevents reading the spec-dependent
+		// identity and environment names. The detail reflects the actual
+		// limitation instead of claiming the service is missing.
+		addCheck(report, "gcp", identityResource, Unavailable, "not checked because the Cloud Run service spec could not be verified")
+		addCloudRunRunnerChecks(report, config, Unavailable, "not checked because the Cloud Run service spec could not be verified", nil, nil)
 
 		return
 	}
@@ -586,12 +742,10 @@ func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner
 	if err := json.Unmarshal(result.Output, &service); err != nil {
 		addCheck(report, "gcp", serviceResource, Unavailable, "provider output could not be interpreted")
 		addCheck(report, "gcp", identityResource, Unavailable, "not checked because the Cloud Run service output could not be interpreted")
-		addCloudRunRunnerChecks(report, config, Unavailable, nil, nil)
+		addCloudRunRunnerChecks(report, config, Unavailable, "not checked because the Cloud Run service output could not be interpreted", nil, nil)
 
 		return
 	}
-
-	addCheck(report, "gcp", serviceResource, OK, "documented resource found")
 
 	variables := map[string]bool{}
 	secrets := map[string]bool{}
@@ -612,19 +766,19 @@ func checkCloudRunAndIdentity(ctx context.Context, report *Report, runner Runner
 		addCheck(report, "gcp", identityResource, OK, "documented runner identity found")
 	}
 
-	addCloudRunRunnerChecks(report, config, OK, variables, secrets)
+	addCloudRunRunnerChecks(report, config, OK, "", variables, secrets)
 }
 
 // addCloudRunRunnerChecks verifies, by name only, that the Cloud Run service
 // exposes the documented non-secret runner variables and secret references.
-func addCloudRunRunnerChecks(report *Report, config Config, serviceStatus Status, variables, secrets map[string]bool) {
+func addCloudRunRunnerChecks(report *Report, config Config, serviceStatus Status, serviceDetail string, variables, secrets map[string]bool) {
 	for _, binding := range config.Environment {
 		if !surfaceIncludes(binding.Surface, "cloud-run-runner") {
 			continue
 		}
 
 		if serviceStatus != OK {
-			addCheck(report, "gcp", "cloud_run_env:"+binding.Name, Unavailable, "not checked because the Cloud Run service is unavailable")
+			addCheck(report, "gcp", "cloud_run_env:"+binding.Name, Unavailable, serviceDetail)
 			continue
 		}
 
@@ -642,7 +796,7 @@ func addCloudRunRunnerChecks(report *Report, config Config, serviceStatus Status
 		}
 
 		if serviceStatus != OK {
-			addCheck(report, "gcp", "cloud_run_secret:"+binding.Name, Unavailable, "not checked because the Cloud Run service is unavailable")
+			addCheck(report, "gcp", "cloud_run_secret:"+binding.Name, Unavailable, serviceDetail)
 			continue
 		}
 
@@ -655,13 +809,80 @@ func addCloudRunRunnerChecks(report *Report, config Config, serviceStatus Status
 	}
 }
 
-func checkWorker(ctx context.Context, report *Report, runner Runner, config Config, enabled bool) (Status, []string) {
+// workerState carries the parsed Worker probe results through the dependent
+// checks: existence status, secret-name status, parsed secret names, and the
+// active published version ID when exactly one version holds 100% of traffic.
+type workerState struct {
+	status        Status
+	secretStatus  Status
+	secretNames   []string
+	activeVersion string
+}
+
+// checkWorker verifies Worker existence from a positively parsed read-only
+// deployments status probe, then reads the documented secret names from
+// wrangler secret list. The deployments status probe is run exactly once; its
+// response is parsed once and reused for both existence and active-version
+// selection.
+func checkWorker(ctx context.Context, report *Report, runner Runner, config Config, enabled bool) workerState {
 	if !enabled {
 		addCheck(report, "cloudflare", "worker", Unavailable, "not checked because wrangler authentication is missing")
-		return Unavailable, nil
+		return workerState{status: Unavailable, secretStatus: Unavailable}
 	}
 
+	// Worker absence is verified only from the documented structured
+	// Cloudflare error code 10007 with the exact sentence "This Worker does
+	// not exist on your account", emitted by the read-only deployments status
+	// probe (verified against wrangler 4.147.0). A raw generic "not found"
+	// marker — for example the `Worker "name" not found.` text emitted by
+	// wrangler secret list — can never prove verified absence, so the secret
+	// list is never used as the existence probe.
 	result, err := runner.Run(
+		ctx,
+		"wrangler",
+		"deployments",
+		"status",
+		"--name", config.Cloudflare.Worker,
+		"--json",
+	)
+	if err != nil {
+		if wranglerWorkerMissing(result.Stderr) {
+			addCheck(report, "cloudflare", "worker", Missing, fmt.Sprintf("documented resource %q not found (Cloudflare error code 10007)", config.Cloudflare.Worker))
+
+			return workerState{status: Missing, secretStatus: Missing}
+		}
+
+		status, detail := failure(err)
+		addCheck(report, "cloudflare", "worker", status, detail)
+
+		return workerState{status: status, secretStatus: status}
+	}
+
+	// Positively parse the probe response: a non-empty deployment id proves
+	// the Worker exists. Exactly one version at 100% traffic selects the
+	// active published version for the dependent variable checks; any other
+	// shape leaves the variable checks fail-closed without re-fetching.
+	var deployment struct {
+		ID       string `json:"id"`
+		Versions []struct {
+			VersionID  string  `json:"version_id"`
+			Percentage float64 `json:"percentage"`
+		} `json:"versions"`
+	}
+	if unmarshalErr := json.Unmarshal(result.Output, &deployment); unmarshalErr != nil || deployment.ID == "" {
+		addCheck(report, "cloudflare", "worker", Unavailable, "provider output could not be interpreted")
+
+		return workerState{status: Unavailable, secretStatus: Unavailable}
+	}
+
+	addCheck(report, "cloudflare", "worker", OK, "documented resource found")
+
+	state := workerState{status: OK, secretStatus: OK}
+	if len(deployment.Versions) == 1 && deployment.Versions[0].VersionID != "" && deployment.Versions[0].Percentage == 100 {
+		state.activeVersion = deployment.Versions[0].VersionID
+	}
+
+	secretResult, err := runner.Run(
 		ctx,
 		"wrangler",
 		"secret",
@@ -670,16 +891,17 @@ func checkWorker(ctx context.Context, report *Report, runner Runner, config Conf
 		"--format=json",
 	)
 	if err != nil {
-		status, detail := failure(err)
-		addCheck(report, "cloudflare", "worker", status, detail)
+		status, _ := failure(err)
+		state.secretStatus = status
 
-		return status, nil
+		return state
 	}
 
 	var secrets []map[string]any
-	if err := json.Unmarshal(result.Output, &secrets); err != nil {
-		addCheck(report, "cloudflare", "worker", Unavailable, "provider output could not be interpreted")
-		return Unavailable, nil
+	if err := json.Unmarshal(secretResult.Output, &secrets); err != nil {
+		state.secretStatus = Unavailable
+
+		return state
 	}
 
 	names := make([]string, 0, len(secrets))
@@ -689,15 +911,29 @@ func checkWorker(ctx context.Context, report *Report, runner Runner, config Conf
 		}
 	}
 
-	addCheck(report, "cloudflare", "worker", OK, "documented resource found")
+	state.secretNames = names
 
-	return OK, names
+	return state
 }
 
-func checkWorkerSecretNames(report *Report, config Config, workerStatus Status, actualNames []string) {
+// wranglerWorkerMissing reports whether a failed wrangler command carries the
+// tightly documented structured absence form: Cloudflare API error code 10007
+// together with the exact sentence "This Worker does not exist on your
+// account". Raw generic "not found" markers never match this classifier.
+func wranglerWorkerMissing(stderr []byte) bool {
+	return strings.Contains(string(stderr), "This Worker does not exist on your account") &&
+		strings.Contains(string(stderr), "[code: 10007]")
+}
+
+func checkWorkerSecretNames(report *Report, config Config, workerStatus, secretStatus Status, actualNames []string) {
 	actual := make(map[string]bool, len(actualNames))
 	for _, name := range actualNames {
 		actual[name] = true
+	}
+
+	uncheckedDetail := parentDependentDetail(workerStatus, "Worker")
+	if workerStatus == OK && secretStatus != OK {
+		uncheckedDetail = "not checked because Worker secret names could not be verified"
 	}
 
 	for _, binding := range config.Secrets {
@@ -706,7 +942,12 @@ func checkWorkerSecretNames(report *Report, config Config, workerStatus Status, 
 		}
 
 		if workerStatus != OK {
-			addCheck(report, "cloudflare", "secret:"+binding.Name, Unavailable, "not checked because the Worker is missing")
+			addCheck(report, "cloudflare", "secret:"+binding.Name, workerStatus, uncheckedDetail)
+			continue
+		}
+
+		if secretStatus != OK {
+			addCheck(report, "cloudflare", "secret:"+binding.Name, secretStatus, uncheckedDetail)
 			continue
 		}
 
@@ -723,7 +964,7 @@ func checkWorkerSecretNames(report *Report, config Config, workerStatus Status, 
 // names from the published (active) Worker deployment metadata. Worker
 // metadata is fetched once per preflight and names are derived once; secret
 // values are never requested or emitted.
-func checkWorkerVariables(ctx context.Context, report *Report, runner Runner, config Config, enabled bool, workerStatus Status) {
+func checkWorkerVariables(ctx context.Context, report *Report, runner Runner, config Config, worker workerState) {
 	var bindings []Binding
 
 	for _, binding := range config.Environment {
@@ -743,19 +984,24 @@ func checkWorkerVariables(ctx context.Context, report *Report, runner Runner, co
 	}
 
 	for _, binding := range bindings {
-		switch {
-		case !enabled:
-			addCheck(report, "cloudflare", "env:"+binding.Name, Unavailable, "not checked because wrangler authentication is missing")
-		case workerStatus != OK:
-			addCheck(report, "cloudflare", "env:"+binding.Name, Unavailable, "not checked because the Worker is missing")
+		if worker.status != OK {
+			addCheck(report, "cloudflare", "env:"+binding.Name, worker.status, parentDependentDetail(worker.status, "Worker"))
 		}
 	}
 
-	if !enabled || workerStatus != OK {
+	if worker.status != OK {
 		return
 	}
 
-	names, err := activeWorkerPlainBindingNames(ctx, runner, config.Cloudflare.Worker)
+	// The active version was already parsed from the single deployments
+	// status probe; a traffic-split or unverifiable deployment keeps these
+	// checks fail-closed without any additional probe.
+	if worker.activeVersion == "" {
+		addUnavailable()
+		return
+	}
+
+	names, err := activeWorkerPlainBindingNames(ctx, runner, config.Cloudflare.Worker, worker.activeVersion)
 	if err != nil {
 		addUnavailable()
 		return
@@ -776,35 +1022,13 @@ func checkWorkerVariables(ctx context.Context, report *Report, runner Runner, co
 	}
 }
 
-// activeWorkerPlainBindingNames reads the published (active) Worker
-// deployment's version metadata once and returns its plain-text binding names.
-// wrangler versions list is intentionally not used: it returns deployable
-// versions, including uploads that were never published, so its latest entry
-// does not prove live deployed readiness. The active deployment must expose
-// exactly one version at 100% traffic; anything else fails closed.
-func activeWorkerPlainBindingNames(ctx context.Context, runner Runner, worker string) ([]string, error) {
-	deploymentResult, err := runner.Run(ctx, "wrangler", "deployments", "status", "--name", worker, "--json")
-	if err != nil {
-		return nil, fmt.Errorf("run wrangler deployments status: %w", err)
-	}
-
-	var deployment struct {
-		Versions []struct {
-			VersionID  string  `json:"version_id"`
-			Percentage float64 `json:"percentage"`
-		} `json:"versions"`
-	}
-	var parseErr error
-
-	if parseErr = json.Unmarshal(deploymentResult.Output, &deployment); parseErr != nil ||
-		len(deployment.Versions) != 1 ||
-		deployment.Versions[0].VersionID == "" ||
-		deployment.Versions[0].Percentage != 100 {
-		return nil, errUnexpectedOutput
-	}
-
-	versionID := deployment.Versions[0].VersionID
-
+// activeWorkerPlainBindingNames reads the published (active) Worker version
+// metadata and returns its plain-text binding names. The active version was
+// already selected by the single deployments status probe (exactly one version
+// at 100% traffic); wrangler versions list is intentionally not used because
+// it returns deployable versions, including uploads that were never published,
+// so its latest entry does not prove live deployed readiness.
+func activeWorkerPlainBindingNames(ctx context.Context, runner Runner, worker, versionID string) ([]string, error) {
 	versionResult, err := runner.Run(ctx, "wrangler", "versions", "view", versionID, "--name", worker, "--json")
 	if err != nil {
 		return nil, fmt.Errorf("run wrangler versions view: %w", err)

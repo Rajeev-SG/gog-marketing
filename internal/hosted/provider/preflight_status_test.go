@@ -200,16 +200,16 @@ func TestPreflightDowngradesUnstructuredNotFoundEvidence(t *testing.T) {
 // TestPreflightReportsTimedOutStatus verifies that context deadline failures
 // get a distinct timed-out status instead of a generic unavailable status.
 func TestPreflightReportsTimedOutStatus(t *testing.T) {
-	deadlineError := fmt.Errorf("gcloud: %w", context.DeadlineExceeded)
-	runner := &overrideRunner{
-		inner: presentStateRunner(),
-		key:   "gcloud projects describe gog-marketing-prod --format=json",
-		err:   deadlineError,
-	}
-
 	config, err := provider.Load()
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
+	}
+
+	deadlineError := fmt.Errorf("gcloud: %w", context.DeadlineExceeded)
+	runner := &overrideRunner{
+		inner: presentStateRunner(),
+		key:   projectListKey(config),
+		err:   deadlineError,
 	}
 
 	report, err := provider.Preflight(context.Background(), config, provider.Options{Runner: runner})
@@ -221,6 +221,22 @@ func TestPreflightReportsTimedOutStatus(t *testing.T) {
 
 	if got := statuses["gcp.project"]; got != provider.TimedOut {
 		t.Fatalf("gcp.project status = %q, want %q", got, provider.TimedOut)
+	}
+
+	var projectDetail string
+
+	for _, check := range report.Checks {
+		if check.Provider == "gcp" && check.Resource == "project" {
+			projectDetail = check.Detail
+		}
+	}
+
+	if !strings.Contains(projectDetail, "--command-timeout") {
+		t.Errorf("gcp.project detail = %q, want retry advice mentioning a larger --command-timeout", projectDetail)
+	}
+
+	if strings.Contains(strings.ToLower(projectDetail), "missing") {
+		t.Errorf("gcp.project detail = %q, must not claim verified absence for a timeout", projectDetail)
 	}
 
 	if got := statuses["gcp.artifact_repository"]; got != provider.Unavailable {
@@ -304,19 +320,19 @@ func TestPreflightPerCommandDeadlineReportsTimeout(t *testing.T) {
 // TestReportSummaryGroupsStatusesAndActionCategories verifies the mixed-status
 // summary: counts by status plus safe action categories, with no identifiers.
 func TestReportSummaryGroupsStatusesAndActionCategories(t *testing.T) {
-	runner := &overrideRunner{
-		inner: &stderrRunner{
-			inner: presentStateRunnerWithKV("other-namespace"),
-			key:   "clerk apps list --json",
-			err:   errUnauthorized,
-		},
-		key: "gcloud projects describe gog-marketing-prod --format=json",
-		err: fmt.Errorf("gcloud: %w", context.DeadlineExceeded),
-	}
-
 	config, err := provider.Load()
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
+	}
+
+	runner := &overrideRunner{
+		inner: &stderrRunner{
+			inner: presentStateRunnerWithKV("other-namespace"),
+			key:   clerkAppsListKey(),
+			err:   errUnauthorized,
+		},
+		key: projectListKey(config),
+		err: fmt.Errorf("gcloud: %w", context.DeadlineExceeded),
 	}
 
 	report, err := provider.Preflight(context.Background(), config, provider.Options{Runner: runner})

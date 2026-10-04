@@ -48,13 +48,18 @@ Two deadlines bound each run and can be configured through
 `PREFLIGHT_FLAGS`:
 
 ```sh
-make provider-preflight PREFLIGHT_FLAGS="--timeout=5m --command-timeout=45s"
+make provider-preflight PREFLIGHT_FLAGS="--timeout=10m --command-timeout=5m"
 ```
 
-`--timeout` (default `2m`) bounds the whole preflight run.
-`--command-timeout` (default `30s`) bounds each individual provider CLI
+`--timeout` (default `5m`) bounds the whole preflight run.
+`--command-timeout` (default `90s`) bounds each individual provider CLI
 command: one slow command does not consume the deadline budget of the next
-commands. Both flags require positive durations.
+commands. Both flags require positive durations. Cold environments — first
+credential refresh, wrangler first-run prompts, or slow networks — commonly
+exceed shorter defaults, so for first runs on a clean checkout use a larger
+`--command-timeout` (for example `5m`). A check that still hits its deadline
+is reported `timed-out` with retry advice naming a larger
+`--command-timeout`; it is never reported as an access failure.
 
 Preflight verifies, by **name only**:
 
@@ -62,7 +67,14 @@ Preflight verifies, by **name only**:
   and `gcloud auth list --format=json` (an ACTIVE account is required);
 - each documented resource name (D1, KV namespace by exact structured title,
   Clerk application, GCP project, Artifact Registry, Cloud Run service, and
-  Cloud Run identity);
+  Cloud Run identity). GCP project, Artifact Registry, and Cloud Run service
+  existence are verified from read-only **list-style** scoped queries
+  (`gcloud projects list --filter=projectId=<id>`,
+  `gcloud artifacts repositories list`,
+  `gcloud run services list`) whose output is positively parsed: an empty or
+  name-absent structured list proves verified absence, any list entry without
+  the expected exact field shape fails closed as `unavailable`, and command
+  failures never prove absence;
 - each documented non-secret variable name on the Worker (from the latest
   published Worker deployment metadata) and on the Cloud Run runner (from the
   same Cloud Run describe output);
@@ -71,7 +83,13 @@ Preflight verifies, by **name only**:
 
 It never prints or logs provider output values, raw stderr, or secret values.
 A report is `ready` only when every name check verified; an inaccessible check
-is reported `unavailable` and keeps the report not-ready.
+is reported `unavailable` and keeps the report not-ready. Dependent checks
+describe why they were skipped using the parent check's actual state: a parent
+reported `missing`, `unavailable`, or `timed-out` produces a matching detail
+("not checked because the Cloud Run service is missing/unavailable/timed
+out"), and a timed-out parent's details carry retry advice naming a larger
+`--command-timeout`. Dependent details never claim a parent is missing unless
+the parent was positively verified absent.
 
 Every report starts with an identifier-free `summary` block that groups the
 checks for triage. It contains counts only (no resource names, accounts, or
@@ -81,8 +99,8 @@ provider output):
 {
   "summary": {
     "total": 22,
-    "statuses": {"ok": 8, "unavailable": 14},
-    "actions": {"none": 8, "investigate_unavailable": 14}
+    "statuses": {"missing": 10, "ok": 8, "unavailable": 4},
+    "actions": {"investigate_unavailable": 4, "none": 8, "provision_missing": 10}
   }
 }
 ```
@@ -99,8 +117,15 @@ Statuses are:
 - `ok`: the documented state was positively verified from parsed provider
   output.
 - `missing`: verified absence, proven only by positively parsed provider
-  responses (for example an empty or name-absent structured list, or a parsed
-  unauthenticated whoami payload).
+  responses (an empty or name-absent structured list, a parsed unauthenticated
+  whoami payload, or — for the Worker only — the documented Cloudflare error
+  code 10007 with the exact sentence `This Worker does not exist on your
+  account` emitted by the read-only
+  `wrangler deployments status --name <worker> --json` probe, verified with
+  wrangler 4.147.0). Raw generic `not found` markers — for example the
+  `Worker "name" not found.` text emitted by `wrangler secret list` — never
+  prove absence, and there is no Worker list CLI, so any other Worker probe
+  failure stays `unavailable`.
 - `unavailable`: the check could not be verified. This is the fail-closed
   default for all command failures, including unstructured `not found` text in
   stderr or error strings — raw provider text never proves that a resource is
@@ -111,13 +136,16 @@ Statuses are:
   provider CLI completed. This is reported separately from `unavailable` so
   operators can distinguish latency from access failures.
 
-Worker variable names come from the active deployment, not from
-`wrangler versions list`. Preflight reads
-`wrangler deployments status --name <worker> --json` once, requires exactly one
-version at 100% traffic, and then reads
+Worker existence is verified by the same read-only probe that selects the
+active deployment: preflight runs
+`wrangler deployments status --name <worker> --json` exactly once, positively
+parses the deployment id, requires exactly one version at 100% traffic for the
+variable checks, and then reads
 `wrangler versions view <version-id> --name <worker> --json` once; only the
 binding `name` and `type` fields are interpreted, and binding values are never
-emitted. `wrangler versions list` is not used because it reports deployable
+emitted. `wrangler secret list --name <worker> --json` is used only for the
+documented secret names once the Worker is verified present; it is never an
+existence probe. `wrangler versions list` is not used because it reports deployable
 versions, including uploads that were never published, so its newest entry
 would not prove live deployed readiness. Progressive or traffic-split active
 deployments (more than one version, or not exactly one version at 100%) fail
@@ -143,49 +171,48 @@ audit history.
 
 ## Current observed provider state
 
-On 2026-10-04, the read-only `--report-only` preflight produced 22 checks:
-8 `ok` and 14 `unavailable`, so the report was not ready. It verified the
-current provider authentication and the following shared resources:
+On 2026-10-04, the coordinator ran the repaired read-only preflight against
+the existing providers. It returned `ready: false` with 22 checks: 10 `missing`, 8 `ok`, 4 `unavailable`.
+These are measured results, not inferred deployment readiness.
 
 ```json
 {
   "wrangler.authentication": "ok",
   "cloudflare.d1_database": "ok",
+  "cloudflare.worker": "missing",
+  "cloudflare.secret:CLERK_SECRET_KEY": "missing",
+  "cloudflare.secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET": "missing",
+  "cloudflare.secret:GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY": "missing",
+  "cloudflare.secret:GOG_RUNNER_INVOCATION_TOKEN": "missing",
+  "cloudflare.env:CLERK_PUBLISHABLE_KEY": "missing",
+  "cloudflare.env:CLERK_ISSUER": "missing",
+  "cloudflare.env:GOG_GOOGLE_OAUTH_CLIENT_ID": "missing",
+  "cloudflare.env:GOG_CLOUD_RUN_SERVICE_URL": "missing",
   "cloudflare.kv_namespace": "ok",
   "clerk.authentication": "ok",
   "clerk.application": "ok",
   "gcloud.authentication": "ok",
   "gcp.project": "ok",
-  "gcp.artifact_repository": "ok"
-}
-```
-
-The Worker and Cloud Run service checks could not be verified, and the checks
-that depend on those parents were not checked:
-
-```json
-{
-  "cloudflare.worker": "unavailable",
-  "cloudflare.env:*": "unavailable",
-  "cloudflare.secret:*": "unavailable",
-  "gcp.cloud_run_service": "unavailable",
+  "gcp.artifact_repository": "ok",
+  "gcp.cloud_run_service": "missing",
   "gcp.cloud_run_identity": "unavailable",
-  "gcp.cloud_run_env:*": "unavailable",
-  "gcp.cloud_run_secret:*": "unavailable"
+  "gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID": "unavailable",
+  "gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET": "unavailable",
+  "gcp.cloud_run_secret:GOG_RUNNER_INVOCATION_TOKEN": "unavailable"
 }
 ```
 
-The `*` entries are the per-name Worker variable, Worker secret, Cloud Run
-variable, and Cloud Run secret-reference checks from the inventory. They are
-`unavailable` because their Worker or Cloud Run parent could not be verified;
-preflight does not infer names from an unverified parent. Verified absence is
-reported `missing` only from positively parsed provider responses; command
-failures — including unstructured not-found text in stderr — are classified
-`unavailable`, and deadline expiry is classified `timed-out`. Access, CLI, and
-unclassified failures never mark a resource `missing`.
+Worker absence was identified by the scoped deployments probe using the
+verified Cloudflare 10007 response. Cloud Run service absence was identified
+from a successfully parsed, scoped service list. The Worker binding checks
+inherit its verified absence; no secret value or binding value was retrieved.
+Cloud Run identity and binding checks remain unavailable because the service
+is missing. Provider access or malformed responses are not treated as absence.
 
 The planned deployments belong to #64 (Cloudflare Worker) and #63 (Cloud Run
-runner). They are upcoming work on those tickets, not #59 blockers.
+runner). Their missing state is expected before those tickets and is not a
+blocker for shipping the #59 inventory/preflight implementation. No full hosted
+browser, Google, or Codex MCP acceptance is claimed by this report.
 
 ## Environment and secret names
 
