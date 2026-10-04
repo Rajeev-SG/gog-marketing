@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -374,21 +375,39 @@ func TestReportSummaryGroupsStatusesAndActionCategories(t *testing.T) {
 // TestExecRunnerHonorsContextDeadline proves the real executor maps a context
 // deadline to a deadline error: this is what drives the timed-out status.
 func TestExecRunnerHonorsContextDeadline(t *testing.T) {
-	dir := t.TempDir()
-	stub := filepath.Join(dir, "wrangler")
+	// Re-execute the test binary as the wrangler stub instead of a POSIX shell
+	// script: Windows PATH lookup requires an executable image (for example
+	// wrangler.exe), so the shell fixture never started there and the real
+	// subprocess kill/deadline path was never exercised.
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatalf("resolve test binary: %v", err)
+	}
 
-	script := "#!/bin/sh\nsleep 5\n"
-	if err := os.WriteFile(stub, []byte(script), 0o755); err != nil {
+	binary, err := os.ReadFile(self)
+	if err != nil {
+		t.Fatalf("read test binary: %v", err)
+	}
+
+	dir := t.TempDir()
+
+	stub := "wrangler"
+	if runtime.GOOS == "windows" {
+		stub += ".exe"
+	}
+
+	if err := os.WriteFile(filepath.Join(dir, stub), binary, 0o755); err != nil {
 		t.Fatalf("write stub: %v", err)
 	}
 
+	t.Setenv("GOG_PROVIDER_TEST_SLEEP_CHILD", "1")
 	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	_, err := (provider.ExecRunner{}).Run(ctx, "wrangler", "whoami")
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("Run error = %v, want a context.DeadlineExceeded error", err)
+	_, runErr := (provider.ExecRunner{}).Run(ctx, "wrangler", "whoami")
+	if !errors.Is(runErr, context.DeadlineExceeded) {
+		t.Fatalf("Run error = %v, want a context.DeadlineExceeded error", runErr)
 	}
 }
