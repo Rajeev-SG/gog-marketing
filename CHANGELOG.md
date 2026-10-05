@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: add the authoritative D1 schema, deterministic migration path, and typed state repository for hosted tenants, Google connections, encrypted credentials, resource grants, audit events, and quota counters. Enforces tenant ownership via compound foreign keys, represents credentials as ciphertext/nonce/key_version only, and provides safe audit metadata without codes, tokens, or secrets. (#60)
+
 - Hosted: centralize provider resource and binding names for Cloudflare, Clerk, and Google Cloud, document clean-checkout provisioning, and add a read-only provider preflight that verifies Wrangler/Clerk/gcloud access and reports missing resources without exposing secret values. (#59)
 - Authentication: recognise Google's canonical userinfo.email grant as equivalent to the email identity alias, avoiding unnecessary acceptance re-consent without widening service permissions. (#36)
 - Product/UI: supply the Home browser-tab title; keep POSIX private-file permission checks on Unix while retaining Windows keyring provisioning/reuse coverage. (#50, #56)

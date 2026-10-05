@@ -1,0 +1,19 @@
+# Migration-only Wrangler config for the gog-marketing hosted D1 database.
+# This file is used ONLY for `wrangler d1 migrations apply` commands.
+# The future Worker config (Wrangler config for #64) will define its own
+# bindings and should NOT replace this file.
+#
+# The database_name must match internal/hosted/provider/config.json.
+# The database_id is the existing gog-marketing resource, verified by the
+# coordinator through read-only provider inventory. Apply remote migrations
+# only after review; never create a duplicate database.
+
+name = "gog-marketing-migrations"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gog-marketing"
+database_id = "328418b4-9649-480f-b26f-5bfb1cd3ffbf"
+migrations_dir = "migrations"
