@@ -34,6 +34,12 @@
       "purpose": "Clerk authorization server issuer URL"
     },
     {
+      "name": "CLERK_AUTHORIZED_PARTIES",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Comma-separated list of origins allowed to present Clerk session cookies; protects against subdomain cookie leaking"
+    },
+    {
       "name": "GOG_GOOGLE_OAUTH_CLIENT_ID",
       "surface": "cloudflare-worker;cloud-run-runner",
       "secret": false,
