@@ -1,0 +1,16 @@
+# Cloudflare Worker for the hosted v1 Clerk-protected UI shell.
+# Deploys as the existing `gog-marketing` Worker; reuses the existing
+# `gog-marketing` D1 database. Do not create duplicate resources.
+# Non-secret vars (CLERK_PUBLISHABLE_KEY, CLERK_ISSUER, CLERK_AUTHORIZED_PARTIES)
+# are set by the coordinator from the central inventory at deploy time via
+# `wrangler deploy --var NAME:VALUE` (verified on wrangler 4.147.0) or a [vars]
+# block in this file; the secret CLERK_SECRET_KEY is set via `wrangler secret put`.
+
+name = "gog-marketing"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gog-marketing"
+database_id = "328418b4-9649-480f-b26f-5bfb1cd3ffbf"

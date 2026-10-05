@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: add a Clerk-protected UI shell to the existing `gog-marketing` Worker. Uses the real `@clerk/backend` SDK for server-side session verification (signature, audience, authorized parties, and an explicit issuer check against the configured Clerk issuer), resolves the verified Clerk identity to a stable internal tenant idempotently via D1, and protects the home route and a product API endpoint that exposes user-safe status/identity only. Real Clerk sign-in/sign-out UI is served on both routes; suspended and deleted tenants are denied before any content is served; tampered foreign tenant hints (body/query/header) are rejected; expired, wrong-issuer, wrong-azp, tampered, and unauthenticated requests fail safely without echoing secrets, tokens, or the internal tenant UUID. (#61)
+
 - Hosted: add the authoritative D1 schema, deterministic migration path, and typed state repository for hosted tenants, Google connections, encrypted credentials, resource grants, audit events, and quota counters. Enforces tenant ownership via compound foreign keys, represents credentials as ciphertext/nonce/key_version only, and provides safe audit metadata without codes, tokens, or secrets. (#60)
 
 - Hosted: centralize provider resource and binding names for Cloudflare, Clerk, and Google Cloud, document clean-checkout provisioning, and add a read-only provider preflight that verifies Wrangler/Clerk/gcloud access and reports missing resources without exposing secret values. (#59)

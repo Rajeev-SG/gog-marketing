@@ -127,6 +127,29 @@ jobs:
       - name: Test
         run: pnpm -C internal/hosted/state test
 
+  hosted-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "26"
+      - name: Enable Corepack (pnpm)
+        run: |
+          npm install --global corepack@0.36.0
+          corepack enable
+          corepack prepare pnpm@11.27.1 --activate
+      - name: Install dependencies
+        run: pnpm -C internal/hosted/app install --frozen-lockfile
+      - name: Lint
+        run: pnpm -C internal/hosted/app lint
+      - name: Typecheck
+        run: pnpm -C internal/hosted/app typecheck
+      - name: Build
+        run: pnpm -C internal/hosted/app build
+      - name: Test
+        run: pnpm -C internal/hosted/app test
+
   windows:
     runs-on: windows-latest
     steps:
