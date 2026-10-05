@@ -35,7 +35,10 @@ jobs:
       - name: Format check
         run: make fmt-check
       - name: Test
-        run: make test
+        # The reused Oracle host has two CPUs; the 3,565-test cmd package
+        # exceeds Go's default 10m package budget during concurrent CI builds.
+        # Keep every test and a finite deadline rather than skipping slow tests.
+        run: make test TEST_FLAGS=-timeout=20m
       - name: Lint
         run: make lint
       - name: Release CI gate tests
@@ -59,7 +62,7 @@ jobs:
           go-version: "1.26.8"
           cache: true
       - name: Test minimum supported Go series
-        run: go test ./...
+        run: go test -timeout=20m ./...
       - name: Build
         run: go build ./cmd/gog
 
