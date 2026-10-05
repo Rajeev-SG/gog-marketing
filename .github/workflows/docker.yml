@@ -26,7 +26,10 @@ permissions:
 
 jobs:
   image:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
       - name: Validate manual tag
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.tag != '' }}

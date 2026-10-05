@@ -16,7 +16,10 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -26,7 +29,7 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tools
-          key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-tools-${{ hashFiles('Makefile') }}
       - name: Install tools
         run: make tools
       - name: Format check
@@ -35,13 +38,18 @@ jobs:
         run: make test
       - name: Lint
         run: make lint
+      - name: Release CI gate tests
+        run: python3 -m unittest discover -s scripts -p check_release_ci_test.py
       - name: Deadcode
         run: make deadcode
       - name: Docs, skills, and Docker version checks
         run: make docs-check agent-skills-check docker-version-check
 
   minimum-go:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     env:
       GOTOOLCHAIN: local
     steps:
@@ -56,7 +64,10 @@ jobs:
         run: go build ./cmd/gog
 
   postgres:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     services:
       postgres:
         image: postgres:17-alpine
@@ -64,7 +75,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: gog_control_plane
         ports:
-          - 5432:5432
+          - "127.0.0.1::5432"
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -78,11 +89,14 @@ jobs:
           cache: true
       - name: Test Postgres control-plane store
         env:
-          CONTROL_PLANE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/gog_control_plane?sslmode=disable
+          CONTROL_PLANE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/gog_control_plane?sslmode=disable
         run: go test ./internal/controlplane -run '^TestPostgres' -count=1
 
   worker:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -105,7 +119,10 @@ jobs:
         run: pnpm -C internal/tracking/worker test
 
   hosted-state:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -128,7 +145,10 @@ jobs:
         run: pnpm -C internal/hosted/state test
 
   hosted-app:
-    runs-on: ubuntu-latest
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -149,49 +169,3 @@ jobs:
         run: pnpm -C internal/hosted/app build
       - name: Test
         run: pnpm -C internal/hosted/app test
-
-  windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: .tools
-          key: ${{ runner.os }}-tools-${{ hashFiles('Makefile') }}
-      - name: Install tools
-        run: make tools
-        shell: bash
-      - name: Format check
-        run: make fmt-check
-        shell: bash
-      - name: Test
-        # Skip tests that depend on macOS Keychain / Linux keyring or Unix path semantics.
-        # These are covered by ubuntu-latest and macos-15 jobs.
-        # See https://github.com/openclaw/gogcli/issues/395
-        run: make test
-        shell: bash
-        env:
-          TEST_FLAGS: >-
-            -skip 'TestAuth|TestListClientCredentials|TestReadClientCredentials|TestConfigExists|TestExpandPath|TestResolveKeyringBackendInfo|TestLoadSecrets_LegacyFallback'
-      - name: Lint
-        run: make lint
-        shell: bash
-      - name: Build
-        run: go build ./cmd/gog
-
-  darwin-cgo-build:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - name: Test
-        run: make test
-      - name: Build (Keychain / cgo)
-        run: CGO_ENABLED=1 go build ./cmd/gog
