@@ -46,6 +46,12 @@
       "purpose": "Public Google OAuth client identifier"
     },
     {
+      "name": "GOG_GOOGLE_OAUTH_REDIRECT_URI",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Canonical registered hosted Google OAuth callback URI"
+    },
+    {
       "name": "GOG_CLOUD_RUN_SERVICE_URL",
       "surface": "cloudflare-worker",
       "secret": false,

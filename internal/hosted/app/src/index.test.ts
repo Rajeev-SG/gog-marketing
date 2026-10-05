@@ -37,6 +37,165 @@ beforeEach(async () => {
   keys = await generateTestKey();
 });
 
+describe("terminal Clerk failure browser callback outcomes (#62)", () => {
+  const CODE = "cb-secret-code";
+  const STATE = "cb-secret-state";
+  const CALLBACK_URL = `${ORIGIN}/oauth/google/callback?code=${encodeURIComponent(CODE)}&state=${encodeURIComponent(STATE)}`;
+
+  function browserCallback(url: string, headers?: Record<string, string>): Request {
+    return new Request(url, {
+      headers: { "Sec-Fetch-Dest": "document", Accept: "text/html", ...headers },
+    });
+  }
+
+  function apiCallback(url: string, headers?: Record<string, string>): Request {
+    return new Request(url, {
+      headers: { Accept: "application/json", ...headers },
+    });
+  }
+
+  async function expectNoDbSideEffects(env: Env): Promise<void> {
+    const connections = await (env.DB as unknown as Database)
+      .prepare("SELECT COUNT(*) AS n FROM hosted_google_connections")
+      .first<{ n: number }>();
+    expect(connections?.n).toBe(0);
+    const tenants = await (env.DB as unknown as Database)
+      .prepare("SELECT COUNT(*) AS n FROM hosted_tenants")
+      .first<{ n: number }>();
+    expect(tenants?.n).toBe(0);
+  }
+
+  /** Shared browser-notice contract: safe static HTML, cleaned query, no echo. */
+  async function expectBrowserNotice(
+    res: Response,
+    expectedStatus: number,
+    message: string,
+  ): Promise<string> {
+    expect(res.status).toBe(expectedStatus);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
+    expect(res.headers.get("content-security-policy")).toBeTruthy();
+    const html = await res.text();
+    expect(html).toContain("gog-marketing");
+    expect(html).toContain(message);
+    expect(html).toContain('href="/"');
+    // Client-side query cleanup instead of a redirect: no loop possible.
+    expect(html).toContain("replaceState");
+    // Never echo the secret-bearing OAuth parameters or raw auth errors.
+    expect(html).not.toContain(CODE);
+    expect(html).not.toContain(STATE);
+    expect(html).not.toContain(CLERK_PUBLISHABLE_KEY);
+    return html;
+  }
+
+  it("missing Clerk configuration: browser callback gets pure branded 503 HTML with no SDK load; API keeps safe JSON", async () => {
+    const env = await createNativeEnv({
+      CLERK_SECRET_KEY: "",
+      CLERK_PUBLISHABLE_KEY: "",
+    });
+    const res = await worker.fetch(browserCallback(CALLBACK_URL), env);
+    const html = await expectBrowserNotice(res, 503, "Sign-in is not available right now.");
+    // Pure fallback shell: no Clerk SDK is loaded when configuration is invalid.
+    expect(html).not.toContain("@clerk/clerk-js@6");
+    expect(html).not.toContain("Authentication is not configured");
+    await expectNoDbSideEffects(env);
+    const api = await worker.fetch(apiCallback(CALLBACK_URL), env);
+    expect(api.status).toBe(503);
+    expect(api.headers.get("content-type")).toContain("application/json");
+    const body = await api.text();
+    expect(body).toBe('{"error":"Authentication is not configured."}');
+    expect(body).not.toContain(CODE);
+    expect(body).not.toContain(STATE);
+  });
+
+  it("provider authentication-service failure: browser callback gets branded 502 HTML; API keeps safe JSON", async () => {
+    const env = await createNativeEnv();
+    const headers = { Cookie: "__client_uat=1; __clerk_db_jwt=test_dev_browser" };
+    // A corrupted handshake token makes the real Clerk SDK fail closed (502).
+    const url = `${CALLBACK_URL}&__clerk_handshake=corrupted-handshake-token`;
+    const res = await worker.fetch(browserCallback(url, headers), env);
+    await expectBrowserNotice(res, 502, "We could not verify your sign-in session.");
+    await expectNoDbSideEffects(env);
+    const api = await worker.fetch(apiCallback(url, headers), env);
+    expect(api.status).toBe(502);
+    const body = await api.text();
+    expect(body).toBe('{"error":"Authentication service is unavailable."}');
+    expect(body).not.toContain(CODE);
+    expect(body).not.toContain(STATE);
+  });
+
+  it("rejected session: browser callback gets branded 401 HTML; API keeps safe JSON", async () => {
+    const env = await createNativeEnv();
+    const token = await signTestToken(
+      { sub: "user_rejected", azp: ORIGIN, iss: CLERK_ISSUER },
+      keys.privateJwk,
+    );
+    // Tampered signature: the real SDK rejects the session fail-closed.
+    const headers = {
+      Cookie: `__session=${token}x; __client_uat=1; __clerk_db_jwt=test_dev_browser`,
+    };
+    const res = await worker.fetch(browserCallback(CALLBACK_URL, headers), env);
+    const html = await expectBrowserNotice(res, 401, "Your session has ended.");
+    expect(html).not.toContain(token);
+    await expectNoDbSideEffects(env);
+    const api = await worker.fetch(apiCallback(CALLBACK_URL, headers), env);
+    expect(api.status).toBe(401);
+    const body = await api.text();
+    expect(body).toBe('{"error":"Authentication required."}');
+    expect(body).not.toContain(token);
+    expect(body).not.toContain(CODE);
+    expect(body).not.toContain(STATE);
+  });
+
+  it("inactive tenant: browser callback gets branded 403 HTML; API keeps safe JSON", async () => {
+    const env = await createNativeEnv();
+    const token = await signTestToken(
+      { sub: "user_inactive", azp: ORIGIN, iss: CLERK_ISSUER },
+      keys.privateJwk,
+    );
+    const headers = {
+      Cookie: `__session=${token}; __client_uat=1; __clerk_db_jwt=test_dev_browser`,
+    };
+    // Bootstrap the tenant through the real auth path, then suspend it in
+    // native D1 so the callback hits the inactive branch.
+    const boot = await worker.fetch(new Request(`${ORIGIN}/api/tenant`, { headers }), env);
+    expect(boot.status).toBe(200);
+    await (env.DB as unknown as Database)
+      .prepare("UPDATE hosted_tenants SET status = 'suspended' WHERE clerk_user_id = ?1")
+      .bind("user_inactive")
+      .run();
+    const res = await worker.fetch(browserCallback(CALLBACK_URL, headers), env);
+    await expectBrowserNotice(res, 403, "This workspace is not available.");
+    const api = await worker.fetch(apiCallback(CALLBACK_URL, headers), env);
+    expect(api.status).toBe(403);
+    const body = await api.text();
+    expect(body).toBe('{"error":"Tenant access is not available."}');
+    expect(body).not.toContain(CODE);
+    expect(body).not.toContain(STATE);
+  });
+
+  it("unexpected failure: browser callback gets branded 500 HTML; API keeps safe JSON", async () => {
+    const env = await createNativeEnv();
+    // Simulate an unexpected failure escaping route handling without mocking
+    // the real SDK: the terminal notice branch is what is under test.
+    const throwingEnv = new Proxy(env, {
+      get(target, prop, receiver) {
+        if (prop === "CLERK_SECRET_KEY") throw new Error("simulated unexpected failure");
+        return Reflect.get(target, prop, receiver);
+      },
+    });
+    const res = await worker.fetch(browserCallback(CALLBACK_URL), throwingEnv as Env);
+    await expectBrowserNotice(res, 500, "Something went wrong.");
+    const api = await worker.fetch(apiCallback(CALLBACK_URL), throwingEnv as Env);
+    expect(api.status).toBe(500);
+    const body = await api.text();
+    expect(body).toBe('{"error":"Internal error."}');
+    expect(body).not.toContain(CODE);
+    expect(body).not.toContain(STATE);
+  });
+});
+
 afterEach(async () => {
   await mf?.dispose();
   mf = undefined;
@@ -59,12 +218,14 @@ async function createNativeEnv(overrides?: Partial<Env>): Promise<Env> {
   const db = (await mf.getD1Database("DB")) as unknown as D1Database;
 
   // Apply migrations to the native D1.
-  const statements = splitMigrationStatements(loadMigrationSql("0001_initial_schema.sql"));
-  for (const statement of statements) {
-    const result = await db.batch([db.prepare(statement)]);
-    if (!result[0]?.success) throw new Error(`migration statement failed: ${statement}`);
+  const migrationFiles = ["0001_initial_schema.sql", "0002_oauth_states_discovery.sql"];
+  for (const file of migrationFiles) {
+    const statements = splitMigrationStatements(loadMigrationSql(file));
+    for (const statement of statements) {
+      const result = await db.batch([db.prepare(statement)]);
+      if (!result[0]?.success) throw new Error(`migration statement failed: ${statement}`);
+    }
   }
-
   const baseEnv: Env = {
     DB: db,
     CLERK_SECRET_KEY: "sk_test_dummy_for_tests",
@@ -589,5 +750,395 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const req = buildUnauthenticatedRequest(`${ORIGIN}/nonexistent`);
     const res = await worker.fetch(req, env);
     expect(res.status).toBe(404);
+  });
+});
+
+describe("hosted Google connection routes (#62)", () => {
+  const CREDENTIAL_KEY = Buffer.alloc(32, 5).toString("base64");
+
+  function googleFetchStub(options?: {
+    token?: Record<string, unknown> | Error;
+    userinfo?: Record<string, unknown> | Error;
+  }) {
+    const tokenCalls: string[] = [];
+    const userinfoCalls: string[] = [];
+    const impl = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "https://oauth2.googleapis.com/token") {
+        if (options?.token instanceof Error) throw options.token;
+        tokenCalls.push(url);
+        return new Response(
+          JSON.stringify(
+            options?.token ?? {
+              access_token: "ya29.route-access",
+              refresh_token: "1//route-refresh-secret",
+              token_type: "Bearer",
+              expires_in: 3600,
+              scope: "openid email https://www.googleapis.com/auth/analytics.readonly",
+            },
+          ),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      if (url === "https://openidconnect.googleapis.com/v1/userinfo") {
+        if (options?.userinfo instanceof Error) throw options.userinfo;
+        userinfoCalls.push(url);
+        return new Response(
+          JSON.stringify(
+            options?.userinfo ?? {
+              sub: "google-sub-1",
+              email: "owner@example.com",
+              email_verified: true,
+              name: "Owner",
+            },
+          ),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+    return { fetch: impl, tokenCalls, userinfoCalls };
+  }
+
+  async function createGoogleEnv(
+    overrides?: Partial<Env>,
+    stub?: ReturnType<typeof googleFetchStub>,
+  ): Promise<Env> {
+    return createNativeEnv({
+      GOG_GOOGLE_OAUTH_CLIENT_ID:
+        "629716276051-cq3jnl899hj4ie3f3vhokke8aebc4ff8.apps.googleusercontent.com",
+      GOG_GOOGLE_OAUTH_CLIENT_SECRET: "test-secret",
+      GOG_GOOGLE_OAUTH_REDIRECT_URI:
+        "https://gog-marketing.rajeev-sgill.workers.dev/oauth/google/callback",
+      GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_KEY,
+      __testFetch: stub?.fetch,
+      ...overrides,
+    });
+  }
+
+  async function googleRequest(
+    url: string,
+    sub: string,
+    opts?: { method?: string; body?: string },
+  ): Promise<Request> {
+    const token = await signTestToken({ sub, azp: ORIGIN, iss: CLERK_ISSUER }, keys.privateJwk);
+    const request = buildAuthenticatedRequest(url, token, opts);
+    request.headers.set("Content-Type", "application/json");
+    return request;
+  }
+
+  it("requires Clerk authentication for Google routes", async () => {
+    const env = await createGoogleEnv();
+    const list = await worker.fetch(
+      buildUnauthenticatedRequest(`${ORIGIN}/api/google/connections`),
+      env,
+    );
+    expect(list.status).toBe(401);
+    expect(await list.json()).toEqual({ error: "Authentication required." });
+    const callback = await worker.fetch(
+      buildUnauthenticatedRequest(`${ORIGIN}/oauth/google/callback?code=c&state=s`),
+      env,
+    );
+    expect(callback.status).toBe(401);
+    const invalidBearerRequest = buildAuthenticatedRequest(
+      `${ORIGIN}/api/google/connect`,
+      "unused",
+      { method: "POST", body: "{}" },
+    );
+    invalidBearerRequest.headers.set("Content-Type", "application/json");
+    const connect = await worker.fetch(invalidBearerRequest, env);
+    expect(connect.status).toBe(401);
+  });
+
+  it("fails closed with a distinct operator-configuration outcome", async () => {
+    const env = await createGoogleEnv({
+      GOG_GOOGLE_OAUTH_CLIENT_ID: undefined,
+      GOG_GOOGLE_OAUTH_CLIENT_SECRET: undefined,
+      GOG_GOOGLE_OAUTH_REDIRECT_URI: undefined,
+      GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY: undefined,
+    });
+    const res = await worker.fetch(
+      await googleRequest(`${ORIGIN}/api/google/connect`, "user_config", {
+        method: "POST",
+        body: "{}",
+      }),
+      env,
+    );
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { code: string; error: string };
+    expect(body.code).toBe("operator_config_missing");
+    expect(body.error).toBe("Google connection is not configured by the operator yet.");
+  });
+
+  it("runs the full route flow: start, verified callback, safe list, secret-free output", async () => {
+    const stub = googleFetchStub();
+    const env = await createGoogleEnv({}, stub);
+
+    const start = await worker.fetch(
+      await googleRequest(`${ORIGIN}/api/google/connect`, "user_google", {
+        method: "POST",
+        body: JSON.stringify({ services: ["analytics"] }),
+      }),
+      env,
+    );
+    expect(start.status).toBe(200);
+    const startBody = (await start.json()) as { authorizationUrl: string; connectionId: string };
+    expect(startBody.authorizationUrl).toContain("accounts.google.com");
+    expect(startBody.authorizationUrl).toContain("code_challenge_method=S256");
+    expect(startBody.authorizationUrl).toContain("prompt=consent");
+
+    const callbackUrl = new URL(startBody.authorizationUrl);
+    const callback = await worker.fetch(
+      await googleRequest(
+        `${ORIGIN}/oauth/google/callback?code=route-code&state=${encodeURIComponent(callbackUrl.searchParams.get("state")!)}`,
+        "user_google",
+      ),
+      env,
+    );
+    expect(callback.status).toBe(200);
+    const callbackBody = (await callback.json()) as {
+      connection: { id: string; email: string; status: string };
+      discovery: { status: string; detail: string };
+    };
+    expect(callbackBody.connection.status).toBe("active");
+    expect(callbackBody.connection.email).toBe("owner@example.com");
+    expect(callbackBody.discovery.status).toBe("unavailable");
+    expect(callbackBody.discovery.detail).toBe("runner_not_configured");
+    expect(stub.userinfoCalls.length).toBe(1);
+
+    // Credential is ciphertext-only at rest; plaintext never reaches D1.
+    const stored = await (env.DB as unknown as Database)
+      .prepare(
+        "SELECT ciphertext, nonce, key_version FROM hosted_connection_credentials WHERE connection_id = ?1",
+      )
+      .bind(callbackBody.connection.id)
+      .first<{ ciphertext: Uint8Array; nonce: Uint8Array; key_version: number }>();
+    expect(stored).not.toBeNull();
+    const storedText = Buffer.from(stored!.ciphertext).toString("utf8");
+    expect(storedText).not.toContain("1//route-refresh-secret");
+    expect(stored!.key_version).toBe(1);
+
+    // Listing is tenant-scoped and secret-free.
+    const list = await worker.fetch(
+      await googleRequest(`${ORIGIN}/api/google/connections`, "user_google"),
+      env,
+    );
+    expect(list.status).toBe(200);
+    const listBody = (await list.json()) as { connections: Array<Record<string, unknown>> };
+    expect(listBody.connections).toHaveLength(1);
+    const serialized = JSON.stringify(listBody);
+    expect(serialized).not.toContain("1//route-refresh-secret");
+    expect(serialized).not.toContain("ya29.route-access");
+    // The internal tenant UUID is never exposed; the per-connection id is
+    // the stable client-side handle used by disconnect/refresh actions.
+    expect(listBody.connections[0]!.id).toBe(callbackBody.connection.id);
+    const tenantId = await tenantIdForClerkUser(env, "user_google");
+    expect(serialized).not.toContain(tenantId!);
+    expect(listBody.connections[0]!.id).toBe(callbackBody.connection.id);
+
+    // Replay of the same state is rejected distinctly.
+    const replay = await worker.fetch(
+      await googleRequest(
+        `${ORIGIN}/oauth/google/callback?code=route-code&state=${encodeURIComponent(callbackUrl.searchParams.get("state")!)}`,
+        "user_google",
+      ),
+      env,
+    );
+    expect(replay.status).toBe(409);
+    expect(((await replay.json()) as { code: string }).code).toBe("state_replayed");
+
+    // Home surfaces the Google accounts panel.
+    const home = await worker.fetch(await googleRequest(`${ORIGIN}/`, "user_google"), env);
+    expect(await home.text()).toContain("Connect Google account");
+  });
+
+  it("surfaces Google consent denial as a distinct outcome", async () => {
+    const env = await createGoogleEnv({});
+    const start = await worker.fetch(
+      await googleRequest(`${ORIGIN}/api/google/connect`, "user_denied", {
+        method: "POST",
+        body: "{}",
+      }),
+      env,
+    );
+    expect(start.status).toBe(200);
+    const startBody = (await start.json()) as { authorizationUrl: string };
+    const state = new URL(startBody.authorizationUrl).searchParams.get("state")!;
+    const denied = await worker.fetch(
+      await googleRequest(
+        `${ORIGIN}/oauth/google/callback?error=access_denied&state=${encodeURIComponent(state)}`,
+        "user_denied",
+      ),
+      env,
+    );
+    expect(denied.status).toBe(403);
+    const body = (await denied.json()) as { code: string; error: string };
+    expect(body.code).toBe("consent_denied");
+    expect(body.error).toBe("Google consent was denied, so the account was not connected.");
+    // The pending stub was discarded.
+    const tenantId = await tenantIdForClerkUser(env, "user_denied");
+    const rows = await (env.DB as unknown as Database)
+      .prepare("SELECT COUNT(*) AS n FROM hosted_google_connections WHERE tenant_id = ?1")
+      .bind(tenantId!)
+      .first<{ n: number }>();
+    expect(rows?.n).toBe(0);
+  });
+  it("rejects cookie CSRF and invalid connect JSON before database or provider side effects", async () => {
+    const stub = googleFetchStub();
+    const env = await createGoogleEnv({}, stub);
+    const token = await signTestToken(
+      { sub: "user_csrf", azp: ORIGIN, iss: CLERK_ISSUER },
+      keys.privateJwk,
+    );
+    const repo = new HostedRepository(env.DB);
+    const tenant = await repo.bootstrapTenant("user_csrf");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "sub-existing",
+      "existing@example.com",
+      "Existing",
+      "[]",
+    );
+    const before = await repo.listConnections(tenant.id);
+    const cookie = buildCookieRequest(ORIGIN, token).headers.get("cookie")!;
+    for (const path of [
+      "/api/google/connect",
+      `/api/google/connections/${connection.id}/refresh`,
+      `/api/google/connections/${connection.id}/disconnect`,
+    ]) {
+      for (const origin of [undefined, "https://evil.test.example.com"]) {
+        const response = await worker.fetch(
+          new Request(ORIGIN + path, {
+            method: "POST",
+            headers: {
+              Cookie: cookie,
+              "Content-Type": "application/json",
+              ...(origin ? { Origin: origin } : {}),
+            },
+            body: "{}",
+          }),
+          env,
+        );
+        expect(response.status).toBe(403);
+        expect(await repo.listConnections(tenant.id)).toEqual(before);
+        expect(stub.tokenCalls).toHaveLength(0);
+        expect(stub.userinfoCalls).toHaveLength(0);
+      }
+    }
+    for (const [body, contentType] of [
+      ["not-json", "application/json"],
+      ["[]", "application/json"],
+      ["services=analytics", "application/x-www-form-urlencoded"],
+    ]) {
+      const response = await worker.fetch(
+        new Request(ORIGIN + "/api/google/connect", {
+          method: "POST",
+          headers: { Cookie: cookie, Origin: ORIGIN, "Content-Type": contentType },
+          body,
+        }),
+        env,
+      );
+      expect(response.status).toBe(400);
+      expect(await repo.listConnections(tenant.id)).toEqual(before);
+    }
+    const legitimate = await worker.fetch(
+      new Request(ORIGIN + "/api/google/connect", {
+        method: "POST",
+        headers: { Cookie: cookie, Origin: ORIGIN, "Content-Type": "application/json" },
+        body: "{}",
+      }),
+      env,
+    );
+    expect(legitimate.status).toBe(200);
+    const bearerHeaders = (
+      await googleRequest(ORIGIN + "/api/google/connect", "user_csrf", {
+        method: "POST",
+        body: "{}",
+      })
+    ).headers;
+    bearerHeaders.delete("origin");
+    const bearer = await worker.fetch(
+      new Request(ORIGIN + "/api/google/connect", {
+        method: "POST",
+        headers: bearerHeaders,
+        body: "{}",
+      }),
+      env,
+    );
+    expect(bearer.status).toBe(200);
+  });
+
+  it("redirects browser callback success/errors home with only a fixed safe code; API remains JSON", async () => {
+    const env = await createGoogleEnv({}, googleFetchStub());
+    const start = await worker.fetch(
+      await googleRequest(ORIGIN + "/api/google/connect", "user_browser", {
+        method: "POST",
+        body: "{}",
+      }),
+      env,
+    );
+    const data = (await start.json()) as { authorizationUrl: string };
+    const state = new URL(data.authorizationUrl).searchParams.get("state")!;
+    const callbackUrl =
+      ORIGIN + "/oauth/google/callback?code=private-code&state=" + encodeURIComponent(state);
+    const apiRequest = await googleRequest(callbackUrl, "user_browser");
+    const headers = new Headers(apiRequest.headers);
+    headers.set("Accept", "text/html");
+    const browser = await worker.fetch(new Request(callbackUrl, { headers }), env);
+    expect(browser.status).toBe(303);
+    expect(browser.headers.get("location")).toBe("/?google=connected");
+    expect(await browser.text()).toBe("");
+    const replay = await worker.fetch(new Request(callbackUrl, { headers }), env);
+    expect(replay.headers.get("location")).toBe("/?google=state_replayed");
+    expect(await replay.text()).toBe("");
+    const api = await worker.fetch(apiRequest, env);
+    expect(api.status).toBe(409);
+    expect(((await api.json()) as { code: string }).code).toBe("state_replayed");
+    const home = await worker.fetch(
+      await googleRequest(ORIGIN + "/?google=state_replayed", "user_browser"),
+      env,
+    );
+    const html = await home.text();
+    expect(html).toContain("Reconnect");
+    expect(html).toContain("connectionId: connection.id");
+    expect(html).toContain("Google account connected.");
+    expect(html).not.toContain(state);
+    expect(html).not.toContain("private-code");
+  });
+
+  it("uses only canonical runner bindings for an authenticated typed discovery request", async () => {
+    const { buildConnectDeps } = await import("./connect.js");
+    const captured: Array<{ url: string; init?: RequestInit }> = [];
+    const env = await createGoogleEnv({
+      GOG_CLOUD_RUN_SERVICE_URL: "https://runner.example.com/discovery",
+      GOG_RUNNER_INVOCATION_TOKEN: "test-invocation",
+      __testFetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+        captured.push({ url: String(input), init });
+        return Response.json({
+          resources: [],
+          statuses: { analytics: { state: "ok", resource_count: 0 } },
+        });
+      }) as typeof fetch,
+    });
+    const outcome = buildConnectDeps(env, new HostedRepository(env.DB));
+    expect(outcome.ok).toBe(true);
+    if (!outcome.ok) return;
+    const result = await outcome.deps.discovery.discover({
+      tenantId: "trusted-tenant",
+      connectionId: "trusted-connection",
+      services: ["analytics"],
+      accessToken: "not-browser-output",
+    });
+    expect(result.status).toBe("empty");
+    expect(captured).toHaveLength(1);
+    expect(captured[0].url).toBe("https://runner.example.com/discovery");
+    expect(new Headers(captured[0].init?.headers).get("authorization")).toBe(
+      "Bearer test-invocation",
+    );
+    expect(JSON.parse(String(captured[0].init?.body))).toEqual({
+      tenant_id: "trusted-tenant",
+      connection_id: "trusted-connection",
+      services: ["analytics"],
+    });
   });
 });

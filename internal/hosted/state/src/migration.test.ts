@@ -68,6 +68,40 @@ describe("D1 migrations", () => {
     expect(names).toContain("hosted_resource_grants_tenant_conn_idx");
     expect(names).toContain("hosted_audit_events_tenant_created_idx");
   });
+
+  it("applies the OAuth state / discovery migration and keeps #61 schema intact", async () => {
+    applyMigrationSql(db, loadMigrationSql("0001_initial_schema.sql"));
+    applyMigrationSql(db, loadMigrationSql("0002_oauth_states_discovery.sql"));
+
+    const tables =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(tables.map((r) => r.name)).toContain("hosted_oauth_states");
+
+    const columns =
+      (await db.prepare("PRAGMA table_info(hosted_google_connections)").all<{ name: string }>())
+        .results ?? [];
+    const names = columns.map((r) => r.name);
+    expect(names).toContain("discovery_state");
+    expect(names).toContain("discovery_detail");
+    expect(names).toContain("discovery_checked_at");
+
+    const stateColumns =
+      (await db.prepare("PRAGMA table_info(hosted_oauth_states)").all<{ name: string }>())
+        .results ?? [];
+    expect(stateColumns.map((r) => r.name)).toContain("clerk_session_id");
+
+    const indexes =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(indexes.map((r) => r.name)).toContain("hosted_oauth_states_tenant_created_idx");
+  });
 });
 
 async function getSchema(db: SQLiteD1Adapter): Promise<string[]> {

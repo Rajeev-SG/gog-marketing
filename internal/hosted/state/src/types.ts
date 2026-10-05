@@ -20,6 +20,15 @@ export interface Tenant {
 
 export type ConnectionStatus = "active" | "needs_reconnect" | "revoked";
 
+/**
+ * Persisted per-connection resource-discovery outcome. An empty string means
+ * no discovery run has been recorded for the current grant state. These are
+ * distinct outcomes: `empty` is a successful run with zero resources;
+ * `unavailable` means the Go discovery runner could not be reached (#63);
+ * `error` means the runner ran but Google/API discovery failed.
+ */
+export type DiscoveryState = "ok" | "empty" | "unavailable" | "error" | "";
+
 export interface GoogleConnection {
   id: string;
   tenantId: string;
@@ -30,9 +39,59 @@ export interface GoogleConnection {
   status: ConnectionStatus;
   lastError: string;
   lastValidatedAt: string | null;
+  discoveryState: DiscoveryState;
+  discoveryDetail: string;
+  discoveryCheckedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+export type OAuthIntent = "connect" | "reconnect";
+
+/**
+ * One-use OAuth state/PKCE binding created at connection start. The state
+ * token itself is never stored raw: callers persist only `stateHash`
+ * (SHA-256 hex of the token) and look callbacks up by the same hash.
+ */
+export interface OAuthStateInput {
+  stateHash: string;
+  tenantId: string;
+  connectionId: string;
+  clerkUserId: string;
+  clerkSessionId: string;
+  intent: OAuthIntent;
+  codeVerifier: string;
+  nonce: string;
+  redirectUri: string;
+  scopes: string[];
+  services: string[];
+  expiresAt: string;
+}
+
+export interface OAuthStateRecord {
+  stateHash: string;
+  tenantId: string;
+  connectionId: string;
+  clerkUserId: string;
+  clerkSessionId: string;
+  intent: OAuthIntent;
+  codeVerifier: string;
+  nonce: string;
+  redirectUri: string;
+  scopes: string[];
+  services: string[];
+  createdAt: string;
+  expiresAt: string;
+  consumedAt: string | null;
+}
+
+export type OAuthStateTake =
+  | { kind: "taken"; state: OAuthStateRecord }
+  | { kind: "unknown" }
+  | { kind: "replayed" }
+  | { kind: "expired" }
+  | { kind: "wrong_tenant" }
+  | { kind: "wrong_session" };
 
 export interface ConnectionCredentialInput {
   tenantId: string;
