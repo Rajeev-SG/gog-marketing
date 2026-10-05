@@ -7,6 +7,9 @@ import type {
   ConnectionStatus,
   Database,
   GoogleConnection,
+  OAuthStateInput,
+  OAuthStateRecord,
+  OAuthStateTake,
   QuotaCounter,
   ResourceGrant,
   Tenant,
@@ -108,6 +111,9 @@ export class HostedRepository {
       status: "active",
       lastError: "",
       lastValidatedAt: null,
+      discoveryState: "",
+      discoveryDetail: "",
+      discoveryCheckedAt: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -127,6 +133,88 @@ export class HostedRepository {
       .bind(connectionId, tenantId)
       .first<Record<string, unknown>>();
     return row ? mapConnection(row) : null;
+  }
+
+  /**
+   * Find another connection in the same tenant whose verified Google identity
+   * (subject or case-insensitive email) matches the given identity. Used to
+   * reject completing a connection with an account that is already connected,
+   * without ever replacing the other connection.
+   */
+  async findIdentityConflict(
+    tenantId: string,
+    connectionId: string,
+    googleSubject: string,
+    email: string,
+  ): Promise<GoogleConnection | null> {
+    const subject = googleSubject.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!subject && !normalizedEmail) return null;
+    const row = await this.db
+      .prepare(
+        `SELECT * FROM hosted_google_connections
+         WHERE tenant_id = ?1 AND id != ?2
+           AND (google_subject = ?3 OR LOWER(TRIM(email)) = ?4)
+         ORDER BY created_at LIMIT 1`,
+      )
+      .bind(tenantId, connectionId, subject, normalizedEmail)
+      .first<Record<string, unknown>>();
+    return row ? mapConnection(row) : null;
+  }
+
+  /**
+   * Store the verified Google identity and merged scopes on a connection.
+   * Callers must verify the identity (via Google userinfo) before invoking
+   * this; it is the only path that replaces the pending-subject placeholder
+   * created at connect start.
+   */
+  async updateConnectionIdentity(
+    tenantId: string,
+    connectionId: string,
+    identity: {
+      googleSubject: string;
+      email: string;
+      displayName: string;
+      grantedScopesJson: string;
+    },
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db
+      .prepare(
+        `UPDATE hosted_google_connections
+         SET google_subject = ?3, email = ?4, display_name = ?5, granted_scopes_json = ?6,
+             last_validated_at = ?7, updated_at = ?7
+         WHERE id = ?1 AND tenant_id = ?2`,
+      )
+      .bind(
+        connectionId,
+        tenantId,
+        identity.googleSubject,
+        identity.email,
+        identity.displayName,
+        identity.grantedScopesJson,
+        now,
+      )
+      .run();
+  }
+
+  /** Persist a distinct discovery outcome for a connection. */
+  async updateConnectionDiscovery(
+    tenantId: string,
+    connectionId: string,
+    discoveryState: string,
+    discoveryDetail: string,
+    checkedAt: string | null,
+  ): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db
+      .prepare(
+        `UPDATE hosted_google_connections
+         SET discovery_state = ?3, discovery_detail = ?4, discovery_checked_at = ?5, updated_at = ?6
+         WHERE id = ?1 AND tenant_id = ?2`,
+      )
+      .bind(connectionId, tenantId, discoveryState, discoveryDetail, checkedAt, now)
+      .run();
   }
 
   async updateConnectionStatus(
@@ -149,6 +237,79 @@ export class HostedRepository {
       .prepare("DELETE FROM hosted_google_connections WHERE id = ?1 AND tenant_id = ?2")
       .bind(connectionId, tenantId)
       .run();
+  }
+
+  // ─── OAuth state (one-use, tenant + connection bound) ───────────────────
+
+  async createOAuthState(input: OAuthStateInput): Promise<void> {
+    const now = new Date().toISOString();
+    await this.db
+      .prepare(
+        `INSERT INTO hosted_oauth_states
+           (state_hash, tenant_id, connection_id, clerk_user_id, clerk_session_id, intent,
+            code_verifier, nonce, redirect_uri, scopes_json, services_json,
+            created_at, expires_at, consumed_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, NULL)`,
+      )
+      .bind(
+        input.stateHash,
+        input.tenantId,
+        input.connectionId,
+        input.clerkUserId,
+        input.clerkSessionId,
+        input.intent,
+        input.codeVerifier,
+        input.nonce,
+        input.redirectUri,
+        JSON.stringify(input.scopes),
+        JSON.stringify(input.services),
+        now,
+        input.expiresAt,
+      )
+      .run();
+  }
+
+  /**
+   * Atomically consume a one-use OAuth state. The guard `consumed_at IS NULL`
+   * combined with UPDATE ... RETURNING makes a second callback for the same
+   * state return as a replay without ever re-arming the binding. Tenant
+   * Tenant and Clerk-session mismatches are reported without consuming the
+   * state: only the owning tenant AND the exact verified Clerk session that
+   * started the flow may complete it (a sibling session of the same user is
+   * rejected rather than stealing the one-use binding).
+   */
+  async takeOAuthState(
+    tenantId: string,
+    stateHash: string,
+    clerkSessionId: string,
+  ): Promise<OAuthStateTake> {
+    const now = new Date().toISOString();
+    const row = await this.db
+      .prepare("SELECT * FROM hosted_oauth_states WHERE state_hash = ?1")
+      .bind(stateHash)
+      .first<Record<string, unknown>>();
+    if (!row) return { kind: "unknown" };
+
+    const state = mapOAuthState(row);
+    if (state.tenantId !== tenantId) return { kind: "wrong_tenant" };
+    if (state.clerkSessionId !== clerkSessionId) return { kind: "wrong_session" };
+    if (state.consumedAt) return { kind: "replayed" };
+    if (state.expiresAt <= now) return { kind: "expired" };
+
+    const consumed = await this.db
+      .prepare(
+        `UPDATE hosted_oauth_states SET consumed_at = ?1
+         WHERE state_hash = ?2 AND consumed_at IS NULL
+         RETURNING *`,
+      )
+      .bind(now, stateHash)
+      .first<Record<string, unknown>>();
+    if (!consumed) {
+      // A concurrent callback consumed the state between the read and the
+      // guarded update; from this caller's perspective it is a replay.
+      return { kind: "replayed" };
+    }
+    return { kind: "taken", state: mapOAuthState(consumed) };
   }
 
   // ─── Connection credentials (ciphertext/nonce/key_version only) ─────────
@@ -452,9 +613,42 @@ function mapConnection(row: Record<string, unknown>): GoogleConnection {
     status: String(row.status) as GoogleConnection["status"],
     lastError: String(row.last_error),
     lastValidatedAt: row.last_validated_at ? String(row.last_validated_at) : null,
+    discoveryState: String(row.discovery_state ?? "") as GoogleConnection["discoveryState"],
+    discoveryDetail: String(row.discovery_detail ?? ""),
+    discoveryCheckedAt: row.discovery_checked_at ? String(row.discovery_checked_at) : null,
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
   };
+}
+
+function mapOAuthState(row: Record<string, unknown>): OAuthStateRecord {
+  return {
+    stateHash: String(row.state_hash),
+    tenantId: String(row.tenant_id),
+    connectionId: String(row.connection_id),
+    clerkUserId: String(row.clerk_user_id),
+    clerkSessionId: String(row.clerk_session_id),
+    intent: String(row.intent) as OAuthStateRecord["intent"],
+    codeVerifier: String(row.code_verifier),
+    nonce: String(row.nonce),
+    redirectUri: String(row.redirect_uri),
+    scopes: parseJsonArray(row.scopes_json),
+    services: parseJsonArray(row.services_json),
+    createdAt: String(row.created_at),
+    expiresAt: String(row.expires_at),
+    consumedAt: row.consumed_at ? String(row.consumed_at) : null,
+  };
+}
+
+function parseJsonArray(raw: unknown): string[] {
+  if (typeof raw !== "string") return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((value) => String(value));
+  } catch {
+    return [];
+  }
 }
 
 function mapGrant(row: Record<string, unknown>): ResourceGrant {

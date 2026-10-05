@@ -48,17 +48,19 @@ function escapeHtmlAttr(value: string): string {
  * protect-host port wildcard is required only for connect-src; no broad
  * all-origin or http(s)-scheme sources are allowed.
  */
-export function securityHeaders(clerkDomain: string): Record<string, string> {
+export function securityHeaders(clerkDomain = ""): Record<string, string> {
+  const clerkSources = clerkDomain ? [`https://${clerkDomain}`, `wss://${clerkDomain}`] : [];
+  const clerkScriptSources = clerkDomain ? [`https://${clerkDomain}`] : [];
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' https://${clerkDomain} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `script-src 'self' 'unsafe-inline' ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: https://${clerkDomain} https://img.clerk.com`,
-    `font-src 'self' https://${clerkDomain}`,
-    `connect-src 'self' https://${clerkDomain} wss://${clerkDomain} https://*.protect.clerk.com:*`,
-    `frame-src https://${clerkDomain} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `img-src 'self' data: ${clerkScriptSources.join(" ")} https://img.clerk.com`,
+    `font-src 'self' ${clerkScriptSources.join(" ")}`,
+    `connect-src 'self' ${clerkSources.join(" ")} https://*.protect.clerk.com:*`,
+    `frame-src ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
     "worker-src 'self' blob:",
-    `form-action 'self' https://${clerkDomain}`,
+    `form-action 'self' ${clerkScriptSources.join(" ")}`,
     "object-src 'none'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
@@ -116,6 +118,22 @@ body {
 }
 #sign-out:hover { border-color: #58a6ff; }
 #user-button { min-height: 2.25rem; }
+.account-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.5rem 0; border-bottom: 1px solid #30363d; }
+.account-row:last-child { border-bottom: none; }
+.account-name { font-size: 0.9rem; }
+.account-status { color: #8b949e; font-size: 0.75rem; }
+.account-actions { display: flex; gap: 0.4rem; }
+.account-actions button {
+  background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px;
+  padding: 0.3rem 0.6rem; font-size: 0.75rem; cursor: pointer;
+}
+.account-actions button:hover { border-color: #58a6ff; }
+#connect-google {
+  background: #1f6feb; color: #ffffff; border: none; border-radius: 6px;
+  padding: 0.5rem 0.9rem; font-size: 0.85rem; cursor: pointer; margin-top: 0.75rem;
+}
+#connect-google:hover { background: #388bfd; }
+#google-message { color: #8b949e; font-size: 0.8rem; margin-top: 0.5rem; min-height: 1rem; }
 `;
 
 function clerkScriptTags(htmlConfig: HtmlConfig): string {
@@ -164,6 +182,44 @@ export function renderSignIn(htmlConfig: HtmlConfig): string {
 }
 
 /**
+ * Render a static branded notice for terminal Clerk failures on the Google
+ * callback route. The shell intentionally has NO Clerk SDK scripts: the SDK
+ * must never load when authentication configuration is invalid, and a
+ * terminal-failure page gains nothing from it. The renderer never receives
+ * request-derived values — only fixed operator-defined titles and messages —
+ * so OAuth code/state/nonce can never be echoed into the page. The inline
+ * script strips the secret-bearing query parameters from the address bar
+ * without navigating anywhere, which cannot create a redirect loop.
+ */
+export function renderCallbackNotice(title: string, message: string): string {
+  const content = `
+  <div class="brand">gog-marketing</div>
+  <div class="sub">Google connection could not be completed.</div>
+  <div class="card">
+    <span class="tag">${escapeHtmlAttr(title)}</span>
+    <p class="home-info">${escapeHtmlAttr(message)}</p>
+    <div class="home-actions">
+      <a href="/">Return to the workspace</a>
+    </div>
+  </div>
+  <script>
+    window.history.replaceState(null, '', '/oauth/google/callback');
+  </script>`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtmlAttr(title)} — gog-marketing</title>
+  <style>${CSS}</style>
+</head>
+<body>
+  <div class="shell">${content}</div>
+</body>
+</html>`;
+}
+
+/**
  * Render the protected product home for an authenticated user.
  * Loads the real Clerk SDK and exposes account management through the
  * documented Clerk `UserButton`, plus an explicit sign-out action that calls
@@ -183,7 +239,90 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       <div id="user-button"></div>
     </div>
   </div>
+  <div class="card" style="margin-top: 1rem;">
+    <span class="tag">Google accounts</span>
+    <div id="google-accounts"></div>
+    <button id="connect-google" type="button">Connect Google account</button>
+    <div id="google-message"></div>
+  </div>
   <script>
+    function googleMessage(text) {
+      var el = document.getElementById('google-message');
+      if (el) el.textContent = text;
+    }
+    async function loadGoogleAccounts() {
+      var target = document.getElementById('google-accounts');
+      if (!target) return;
+      try {
+        var res = await fetch('/api/google/connections');
+        if (!res.ok) { target.textContent = ''; return; }
+        var data = await res.json();
+        target.textContent = '';
+        (data.connections || []).forEach(function (connection) {
+          var row = document.createElement('div');
+          row.className = 'account-row';
+          var info = document.createElement('div');
+          var name = document.createElement('div');
+          name.className = 'account-name';
+          name.textContent = connection.email || connection.displayName || 'Google account';
+          var status = document.createElement('div');
+          status.className = 'account-status';
+          var discovery = connection.discovery || {};
+          var discoveryText = discovery.status === 'ok' ? '' :
+            discovery.status === 'empty' ? ' · no resources found' :
+            discovery.status === 'unavailable' ? ' · discovery unavailable' :
+            discovery.status === 'error' ? ' · discovery failed' : '';
+          status.textContent = 'status: ' + connection.status + discoveryText;
+          info.appendChild(name);
+          info.appendChild(status);
+          var actions = document.createElement('div');
+          actions.className = 'account-actions';
+          var refreshButton = document.createElement('button');
+          refreshButton.type = 'button';
+          refreshButton.textContent = 'Refresh';
+          refreshButton.addEventListener('click', async function () {
+            googleMessage('');
+            var r = await fetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            if (!r.ok) {
+              var err = await r.json().catch(function () { return {}; });
+              googleMessage(err.error || 'Refresh failed.');
+              return;
+            }
+            await loadGoogleAccounts();
+          });
+          var disconnectButton = document.createElement('button');
+          disconnectButton.type = 'button';
+          disconnectButton.textContent = 'Disconnect';
+          disconnectButton.addEventListener('click', async function () {
+            googleMessage('');
+            var r = await fetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+            if (!r.ok) {
+              var err = await r.json().catch(function () { return {}; });
+              googleMessage(err.error || 'Disconnect failed.');
+              return;
+            }
+            await loadGoogleAccounts();
+          });
+          var reconnectButton = document.createElement('button');
+          reconnectButton.type = 'button';
+          reconnectButton.textContent = 'Reconnect';
+          reconnectButton.addEventListener('click', async function () {
+            var response = await fetch('/api/google/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ connectionId: connection.id }) });
+            var data = await response.json().catch(function () { return {}; });
+            if (response.ok && data.authorizationUrl) window.location.assign(data.authorizationUrl);
+            else googleMessage(data.error || 'Could not reconnect Google account.');
+          });
+          actions.appendChild(reconnectButton);
+          actions.appendChild(refreshButton);
+          actions.appendChild(disconnectButton);
+          row.appendChild(info);
+          row.appendChild(actions);
+          target.appendChild(row);
+        });
+      } catch {
+        target.textContent = '';
+      }
+    }
     window.addEventListener('load', async function () {
       await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
       var userButton = document.getElementById('user-button');
@@ -194,6 +333,37 @@ export function renderHome(htmlConfig: HtmlConfig): string {
           await Clerk.signOut({ redirectUrl: '/' });
         });
       }
+      var connectButton = document.getElementById('connect-google');
+      if (connectButton) {
+        connectButton.addEventListener('click', async function () {
+          googleMessage('');
+          var res = await fetch('/api/google/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+          var data = await res.json().catch(function () { return {}; });
+          if (res.ok && data.authorizationUrl) {
+            window.location.assign(data.authorizationUrl);
+            return;
+          }
+          googleMessage(data.error || 'Could not start Google connection.');
+        });
+      }
+      var outcome = new URL(window.location.href).searchParams.get('google');
+      var messages = {
+        connected: 'Google account connected.',
+        consent_denied: 'Google consent was denied. Your previous access was not changed.',
+        operator_config_missing: 'Google connection is not configured by the operator yet.',
+        google_unavailable: 'Google is temporarily unreachable. Please try again.',
+        google_api_error: 'Google could not complete the connection. Please try again.',
+        identity_conflict: 'Choose the original Google account when reconnecting.',
+        state_expired: 'The connection attempt expired. Please start again.',
+        state_replayed: 'This connection attempt was already completed.',
+        authorization_expired: 'The Google authorization attempt expired. Please start again.',
+        needs_reconnect: 'This Google account needs to be reconnected.'
+      };
+      if (outcome) {
+        googleMessage(messages[outcome] || 'The Google connection attempt could not be completed. Please start again.');
+        window.history.replaceState(null, '', '/');
+      }
+      await loadGoogleAccounts();
     });
   </script>`;
   return renderShell("Home — gog-marketing", content, htmlConfig);

@@ -14,7 +14,7 @@
 - `make fmt` / `make lint` / `make test` / `make ci`: format, lint, test, full local gate.
 - Run from source: `make gog -- …` builds and runs in one step.
 - Tracking worker: `pnpm -C internal/tracking/worker install --frozen-lockfile`, then `make worker-ci`.
-- Remote checks: after `crabbox warmup --keep --timing-json`, hydrate this repository with `crabbox actions hydrate --id <id> --github-runner`; its workflow uses Actions cache semantics that the local adapter does not support. Run `crabbox run --id <id> --timing-json --shell -- "make ci"`, reuse the lease across checks, and stop it when finished with `crabbox stop <id>`.
+- Remote CI: use the repository-specific Oracle Linux ARM64 runner via `gh workflow run ci.yml --ref <branch>`; see `docs/hosted/ci.md`. The old AWS Crabbox GitHub-runner hydration workflow is retired. Optional Crabbox CLI leases remain independent of Actions.
 - Hooks: `lefthook install` enables pre-commit/pre-push checks.
 
 ## Coding Style & Naming Conventions

@@ -21,10 +21,35 @@ authoritative names.
 - The Clerk `gog-marketing` application is verified by preflight.
 - The Google Cloud project and Artifact Registry are verified by preflight.
 
-The Cloudflare Worker (and its Worker-level bindings) belongs to #64, and the
-Cloud Run runner service belongs to #63. Those deployments are planned
-upcoming work, not blockers for #59; their parent preflight checks are
-currently unavailable.
+The first thin Cloudflare Worker slice was delivered by #61; #62 and #64
+extend that same `gog-marketing` deployment and its existing D1 binding.
+The Cloud Run runner service belongs to #63. Missing future bindings or the
+runner are reported as incomplete readiness, not reasons to duplicate resources.
+
+### Central hosted Google OAuth application
+
+Hosted Google authorization uses the existing `gog-marketing-prod` project,
+not the separate project used by the local developer acceptance profile.
+The central application is named `gog-marketing`, with one web client named
+`gog-marketing hosted web`. Its registered owner-acceptance redirect URI is:
+
+```text
+https://gog-marketing.rajeev-sgill.workers.dev/oauth/google/callback
+```
+
+The client secret and the 32-byte credential-encryption root are provisioned
+additively on the same Worker under the documented secret names. The root is
+standard base64 in `GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY`, initially key version
+`1`; retain the root securely outside the repository for recovery and rotation.
+Never import developer refresh tokens as a substitute for hosted browser consent.
+
+The application currently has an **External / Testing** audience and the two
+intended owner-acceptance accounts as test users. This is not public-beta
+readiness: Google's pre-verification
+100-user cap, testing refresh-token lifetime, production branding/domain
+requirements, requested scopes, and verification must be addressed by #69.
+The public client ID is supplied as `GOG_GOOGLE_OAUTH_CLIENT_ID` at deployment;
+secret values never belong in this inventory or acceptance evidence.
 
 ## Run the safe preflight
 

@@ -7,9 +7,9 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm format:check && oxlint --deny-warnings .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc6 -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.json --noEmit"
+    "build": "tsc6 -p tsconfig.json --noEmit"
   },
   "devDependencies": {
     "@clerk/backend": "3.22.0",

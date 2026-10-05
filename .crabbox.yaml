@@ -12,16 +12,6 @@ capacity:
     - eu-central-1
     - us-east-1
     - us-west-2
-actions:
-  workflow: .github/workflows/crabbox-hydrate.yml
-  job: hydrate
-  ref: main
-  runnerLabels:
-    - crabbox
-    - openclaw
-    - gogcli
-  runnerVersion: latest
-  ephemeral: true
 aws:
   region: eu-west-1
   rootGB: 400

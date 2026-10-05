@@ -37,6 +37,8 @@ export interface AuthConfig {
 
 export interface AuthSession {
   userId: string;
+  /** Verified Clerk session ID (`sid` claim) used to bind OAuth flows. */
+  sessionId: string;
   tenant: Tenant;
 }
 
@@ -141,8 +143,11 @@ export async function authenticate(
     const requestState = await clerk.authenticateRequest(request, options as never);
 
     if (requestState.isAuthenticated) {
-      const auth = requestState.toAuth() as { userId?: string };
-      const claims = (auth as { sessionClaims?: { iss?: unknown } }).sessionClaims;
+      const auth = requestState.toAuth() as {
+        userId?: string;
+        sessionClaims?: { iss?: unknown; sid?: unknown };
+      };
+      const claims = auth.sessionClaims;
       const tokenIssuer = typeof claims?.iss === "string" ? claims.iss : "";
       // @clerk/backend 3.22 `verifyJwt` does not enforce `iss`; enforce it
       // explicitly against the validated configured issuer, fail closed.
@@ -152,9 +157,19 @@ export async function authenticate(
       if (typeof auth.userId !== "string") {
         return { kind: "unauthenticated" };
       }
+      // OAuth lifecycle binding requires the verified Clerk session ID. Real
+      // Clerk sessions always carry `sid`; a missing value fails closed.
+      const sessionId = typeof claims?.sid === "string" ? claims.sid : "";
+      if (!sessionId) {
+        return { kind: "unauthenticated" };
+      }
       const userId = auth.userId;
       const tenant = await resolveTenant(repo, userId);
-      return { kind: "authenticated", session: { userId, tenant }, headers: requestState.headers };
+      return {
+        kind: "authenticated",
+        session: { userId, sessionId, tenant },
+        headers: requestState.headers,
+      };
     }
 
     if (requestState.status === "handshake" || requestState.headers.has("location")) {

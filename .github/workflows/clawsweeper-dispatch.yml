@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   dispatch:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     if: ${{ !(endsWith(github.actor, '[bot]') && (github.event.action == 'labeled' || github.event.action == 'unlabeled')) }}
     env:
       HAS_CLAWSWEEPER_APP_PRIVATE_KEY: ${{ secrets.CLAWSWEEPER_APP_PRIVATE_KEY != '' }}
