@@ -54,3 +54,9 @@ For `gog-marketing` acceptance work, use `make acceptance-local`, `make acceptan
 
 - Never commit OAuth client credential JSON files or tokens.
 - Prefer OS keychain backends; use `GOG_KEYRING_BACKEND=file` + `GOG_KEYRING_PASSWORD` only for headless environments.
+
+## Hosted v1 review policy (owner override, 2026-10-05)
+
+Follow `docs/bounded-review-policy.md`. Use one bounded parallel GPT-6.1-Sol/high
+Standards + Spec review round, one consolidated repair and focused recheck.
+OpenReview is disabled; CI and real acceptance are not. Preserve native blockers.
