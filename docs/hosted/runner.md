@@ -29,10 +29,10 @@ they are development evidence only, never final cloud acceptance.
   `GOG_RUNNER_MAX_RESPONSE_BYTES` (default `262144`).
 - Deployment (coordinator-owned): Cloud Run with `min instances 0`
   (scale-to-zero) and a bounded `max instances` (recommended `2` for the v1
-  worker), invocation authentication enabled. Never deploy with
-  `--no-allow-unauthenticated`; anonymous traffic must be rejected by the
-  native IAM admission gate before the process is reached. The capability
-  JWT below is the application-level second gate.
+  worker), with `--no-allow-unauthenticated`. Never deploy with
+  `--allow-unauthenticated` or `--no-invoker-iam-check`; anonymous traffic
+  must be rejected by the native IAM admission gate before the process is
+  reached. The capability JWT below is the application-level second gate.
 - The Worker may send the native Google ID token on
   `X-Serverless-Authorization` for the IAM gate while continuing to send the
   capability JWT on `Authorization`. The runner only reads

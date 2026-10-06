@@ -498,6 +498,56 @@ func TestExecuteTimesOutWithStructuredError(t *testing.T) {
 	}
 }
 
+func TestExecuteTimesOutWithRealEngineNilError(t *testing.T) {
+	var discoveryCalls atomic.Int64
+	counter := newCountingCounter()
+	var logBuffer bytes.Buffer
+
+	engine := &Engine{
+		Secret: testSecret,
+		Discoverer: controlplane.EngineDiscoverer{
+			GoogleAdsDeveloperToken: "test-developer-token",
+			GoogleAdsDiscover: func(ctx context.Context, _ controlplane.Connection, token controlplane.OAuthToken) ([]controlplane.ResourceGrant, error) {
+				discoveryCalls.Add(1)
+
+				if token.AccessToken != "ya29.synthetic-access-token" || !googleapi.ReadOnly(ctx) || !googleapi.NoInputFromContext(ctx) {
+					t.Error("guarded stored-token read-only/no-input context not propagated")
+				}
+
+				select {
+				case <-ctx.Done():
+					return nil, fmt.Errorf("google discovery context ended: %w", ctx.Err())
+				case <-time.After(time.Second):
+					return nil, nil
+				}
+			},
+		},
+		Counter:          counter,
+		Timeout:          80 * time.Millisecond,
+		MaxRequestBytes:  64 * 1024,
+		MaxResponseBytes: 256 * 1024,
+		Logger:           slog.New(slog.NewJSONHandler(&logBuffer, nil)),
+	}
+
+	server := httptest.NewServer((&Server{Engine: engine}).Handler())
+	t.Cleanup(server.Close)
+
+	body := discoverBody(t, func(req *Request) { req.Services = []string{"googleads"} })
+	response := postExecute(t, server, signInvocation(t, body, nil), body)
+
+	if response.Status != 504 || response.Error.Code != "timeout" {
+		t.Fatalf("real engine nil-error timeout response failed: %d %s", response.Status, response.Body)
+	}
+
+	if strings.Contains(strings.ToLower(response.Body), "context deadline exceeded") {
+		t.Fatalf("raw provider exception leaked: %s", response.Body)
+	}
+
+	if discoveryCalls.Load() != 1 || counter.count(OperationDiscover, "timeout") != 1 {
+		t.Fatalf("timeout not counted through real reporting engine: calls=%d counter=%+v", discoveryCalls.Load(), counter)
+	}
+}
+
 func TestExecuteEnforcesOutputLimit(t *testing.T) {
 	harness := newHarness(t, func(engine *Engine, discoverer *recordedDiscoverer) {
 		engine.MaxResponseBytes = 1024
@@ -548,6 +598,94 @@ func TestExecuteAuditAndLogsStaySecretFree(t *testing.T) {
 	for _, required := range []string{"request_id", "operation", "outcome", "duration_ms", "executions", "tenant_hash", "connection_hash"} {
 		if !strings.Contains(logs, required) {
 			t.Fatalf("audit log missing %q: %s", required, logs)
+		}
+	}
+}
+
+func TestFinishHashesVerifiedConnectionID(t *testing.T) {
+	var logBuffer bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logBuffer, nil))
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.Logger = logger
+	})
+
+	requestBody := func(t *testing.T, connectionID, requestID string) []byte {
+		t.Helper()
+
+		body := discoverBody(t, func(req *Request) {
+			req.ConnectionID = connectionID
+			req.RequestID = requestID
+		})
+
+		return body
+	}
+
+	firstConnection := requestBody(t, "connection-a", "request-1")
+
+	firstToken := signInvocation(t, firstConnection, nil)
+
+	if response := postExecute(t, harness.server, firstToken, firstConnection); response.Status != 200 {
+		t.Fatalf("first execution failed: %d %s", response.Status, response.Body)
+	}
+
+	secondConnection := requestBody(t, "connection-a", "request-2")
+
+	secondToken := signInvocation(t, secondConnection, nil)
+
+	if response := postExecute(t, harness.server, secondToken, secondConnection); response.Status != 200 {
+		t.Fatalf("second execution failed: %d %s", response.Status, response.Body)
+	}
+
+	otherConnection := requestBody(t, "connection-b", "request-3")
+
+	otherToken := signInvocation(t, otherConnection, func(claims map[string]any) { claims["connection_id"] = "connection-b" })
+
+	if response := postExecute(t, harness.server, otherToken, otherConnection); response.Status != 200 {
+		t.Fatalf("other execution failed: %d %s", response.Status, response.Body)
+	}
+
+	if anonymous := postExecute(t, harness.server, "", firstConnection); anonymous.Status != 401 {
+		t.Fatalf("anonymous rejection expected: %d %s", anonymous.Status, anonymous.Body)
+	}
+
+	type auditEntry struct {
+		RequestID      string `json:"request_id"`
+		ConnectionHash string `json:"connection_hash"`
+	}
+
+	lines := strings.Split(strings.TrimSpace(logBuffer.String()), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("unexpected audit line count: %d %s", len(lines), logBuffer.String())
+	}
+
+	entries := make([]auditEntry, 0, len(lines))
+	for index, line := range lines {
+		var entry auditEntry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			t.Fatalf("parse audit line %d: %v", index, err)
+		}
+		entries = append(entries, entry)
+	}
+
+	firstHash := hashContext("connection-a")
+	otherHash := hashContext("connection-b")
+
+	if entries[0].ConnectionHash != firstHash || entries[1].ConnectionHash != firstHash {
+		t.Fatalf("same connection hashes differ: first=%s second=%s expected=%s", entries[0].ConnectionHash, entries[1].ConnectionHash, firstHash)
+	}
+
+	if entries[2].ConnectionHash == firstHash || entries[2].ConnectionHash != otherHash {
+		t.Fatalf("different connection hashes wrong: got=%s expected=%s", entries[2].ConnectionHash, otherHash)
+	}
+
+	if entries[3].RequestID != "unknown" || entries[3].ConnectionHash != "unknown" {
+		t.Fatalf("unauthenticated context not unknown: %+v", entries[3])
+	}
+
+	logs := logBuffer.String()
+	for _, leak := range []string{"ya29.synthetic-access-token", "connection-a", "connection-b"} {
+		if strings.Contains(logs, leak) {
+			t.Fatalf("audit log leaked %q: %s", leak, logs)
 		}
 	}
 }

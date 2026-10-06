@@ -127,11 +127,11 @@ func (s *Server) executeDiscovery(ctx context.Context, req *Request) outcome {
 	}
 
 	report, err := s.Engine.Discoverer.DiscoverReport(ctx, connection, token)
-	if err != nil {
-		if ctx.Err() != nil || errors.Is(err, context.DeadlineExceeded) {
-			return timeoutOutcome()
-		}
+	if ctx.Err() != nil || errors.Is(err, context.DeadlineExceeded) {
+		return timeoutOutcome()
+	}
 
+	if err != nil {
 		return engineOutcome("discovery engine failed")
 	}
 

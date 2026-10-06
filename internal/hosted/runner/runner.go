@@ -93,7 +93,7 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 
 	body, bodyErr := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBytes))
 	if bodyErr != nil {
-		s.finish(w, start, "", "", "", outcome{
+		s.finish(w, start, "", "", "", "", outcome{
 			status: 400,
 			err:    &apiError{Code: "invalid_request", Message: "request body exceeds limit or could not be read"},
 		})
@@ -103,7 +103,7 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 
 	token := bearerToken(r)
 	if token == "" {
-		s.finish(w, start, "", "", "", capabilityOutcome("anonymous", http.StatusUnauthorized))
+		s.finish(w, start, "", "", "", "", capabilityOutcome("anonymous", http.StatusUnauthorized))
 		return
 	}
 
@@ -116,29 +116,29 @@ func (s *Server) handleExecute(w http.ResponseWriter, r *http.Request) {
 			code, status = reject.Code, reject.HTTPStatus
 		}
 
-		s.finish(w, start, "", "", "", capabilityOutcome(code, status))
+		s.finish(w, start, "", "", "", "", capabilityOutcome(code, status))
 
 		return
 	}
 
 	req, decodeErr := decodeRequest(body)
 	if decodeErr != nil {
-		s.finish(w, start, "", claims.TenantID, claims.Operation, invalidOutcome("malformed request"))
+		s.finish(w, start, "", "", "", claims.Operation, invalidOutcome("malformed request"))
 		return
 	}
 
 	if claims.TenantID != req.TenantID || claims.ConnectionID != req.ConnectionID || claims.Operation != req.Operation {
-		s.finish(w, start, req.RequestID, claims.TenantID, claims.Operation, capabilityOutcome("context_mismatch", http.StatusForbidden))
+		s.finish(w, start, req.RequestID, claims.TenantID, "", claims.Operation, capabilityOutcome("context_mismatch", http.StatusForbidden))
 		return
 	}
 
 	if validationErr := (validator{}).validateRequest(req); validationErr != nil {
-		s.finish(w, start, req.RequestID, req.TenantID, req.Operation, invalidOutcome("request validation failed"))
+		s.finish(w, start, req.RequestID, req.TenantID, req.ConnectionID, req.Operation, invalidOutcome("request validation failed"))
 		return
 	}
 
 	result := s.execute(ctx, req)
-	s.finish(w, start, req.RequestID, req.TenantID, req.Operation, result)
+	s.finish(w, start, req.RequestID, req.TenantID, req.ConnectionID, req.Operation, result)
 }
 
 func bearerToken(r *http.Request) string {
@@ -164,7 +164,7 @@ func capabilityOutcome(code string, status int) outcome {
 // line. Tenant and connection identifiers are hashed; credentials, emails,
 // authorization headers, request bodies, and provider exception text are
 // never written to responses or logs.
-func (s *Server) finish(w http.ResponseWriter, start time.Time, requestID, tenantID, operation string, result outcome) {
+func (s *Server) finish(w http.ResponseWriter, start time.Time, requestID, tenantID, connectionID, operation string, result outcome) {
 	durationMS := time.Since(start).Milliseconds()
 
 	outcomeCode := "ok"
@@ -202,8 +202,8 @@ func (s *Server) finish(w http.ResponseWriter, start time.Time, requestID, tenan
 	}
 
 	connectionHash := "unknown"
-	if requestID != "" {
-		connectionHash = hashContext(requestID)
+	if connectionID != "" {
+		connectionHash = hashContext(connectionID)
 	}
 
 	if requestID == "" {
