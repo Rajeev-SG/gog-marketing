@@ -1,0 +1,38 @@
+# syntax=docker/dockerfile:1.27.0
+
+ARG GO_VERSION=1.27.1
+ARG ALPINE_VERSION=3.24
+
+FROM golang:${GO_VERSION}-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS build
+
+RUN apk add --no-cache ca-certificates git tzdata
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath \
+    -o /out/hosted-runner ./cmd/hosted-runner
+
+FROM alpine:${ALPINE_VERSION}
+
+LABEL org.opencontainers.image.source="https://github.com/openclaw/gogcli"
+LABEL org.opencontainers.image.description="Private hosted v1 execution runner (gog-marketing #63)"
+LABEL org.opencontainers.image.licenses="MIT"
+
+RUN apk add --no-cache ca-certificates tzdata \
+    && adduser -D -u 10001 -h /home/gog gog
+
+ENV HOME=/home/gog
+ENV PORT=8080
+WORKDIR /home/gog
+
+COPY --from=build /out/hosted-runner /usr/local/bin/hosted-runner
+
+USER gog
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
+  CMD wget -qO- "http://127.0.0.1:${PORT}/healthz" >/dev/null 2>&1 || exit 1
+ENTRYPOINT ["/usr/local/bin/hosted-runner"]

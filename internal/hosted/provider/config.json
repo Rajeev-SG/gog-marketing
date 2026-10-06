@@ -56,6 +56,30 @@
       "surface": "cloudflare-worker",
       "secret": false,
       "purpose": "Private Cloud Run runner endpoint"
+    },
+    {
+      "name": "GOG_RUNNER_WIF_PROVIDER",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Dedicated Google workload identity provider resource name"
+    },
+    {
+      "name": "GOG_RUNNER_WIF_ISSUER",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Fixed trusted hosted Worker issuer origin"
+    },
+    {
+      "name": "GOG_RUNNER_WIF_KEY_ID",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Public identifier of the pinned workload signing key"
+    },
+    {
+      "name": "GOG_RUNNER_SERVICE_ACCOUNT",
+      "surface": "cloudflare-worker",
+      "secret": false,
+      "purpose": "Existing Google service identity for private Cloud Run invocation"
     }
   ],
   "secrets": [
@@ -67,9 +91,9 @@
     },
     {
       "name": "GOG_GOOGLE_OAUTH_CLIENT_SECRET",
-      "surface": "cloudflare-worker;cloud-run-runner",
+      "surface": "cloudflare-worker",
       "secret": true,
-      "purpose": "Google OAuth token exchange"
+      "purpose": "Central Google OAuth token exchange and refresh in the Worker; the stateless Go runner receives only ephemeral access tokens"
     },
     {
       "name": "GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY",
@@ -82,6 +106,12 @@
       "surface": "cloudflare-worker;cloud-run-runner",
       "secret": true,
       "purpose": "Shared authentication for the private runner endpoint"
+    },
+    {
+      "name": "GOG_RUNNER_WIF_SIGNING_KEY",
+      "surface": "cloudflare-worker",
+      "secret": true,
+      "purpose": "Dedicated Worker RSA PKCS8 signing material for pinned-key workload federation; no Google service-account private key"
     }
   ]
 }

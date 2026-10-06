@@ -40,6 +40,7 @@ import {
   UnknownServiceError,
   scopesForServices,
 } from "./scopes.js";
+import { WorkloadIdentityClient, validateRunnerIdentityConfig } from "./runner-auth.js";
 
 export interface ConnectEnv {
   GOG_GOOGLE_OAUTH_CLIENT_ID?: string;
@@ -56,6 +57,11 @@ export interface ConnectEnv {
   GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEYS?: string;
   /** #63 Go discovery runner (not configured until #63 lands). */
   GOG_CLOUD_RUN_SERVICE_URL?: string;
+  GOG_RUNNER_WIF_PROVIDER?: string;
+  GOG_RUNNER_WIF_ISSUER?: string;
+  GOG_RUNNER_WIF_KEY_ID?: string;
+  GOG_RUNNER_WIF_SIGNING_KEY?: string;
+  GOG_RUNNER_SERVICE_ACCOUNT?: string;
   GOG_RUNNER_INVOCATION_TOKEN?: string;
   GOG_HOSTED_OAUTH_STATE_TTL_SECONDS?: string;
   /** Test-only fetch injection; never set in production. */
@@ -266,16 +272,48 @@ export function buildConnectDeps(env: ConnectEnv, repo: HostedRepository): DepsO
     };
   }
 
-  const runnerUrl = (env.GOG_CLOUD_RUN_SERVICE_URL ?? "").trim();
+  const runnerUrlRaw = (env.GOG_CLOUD_RUN_SERVICE_URL ?? "").trim();
   const runnerToken = (env.GOG_RUNNER_INVOCATION_TOKEN ?? "").trim();
-  const discovery: DiscoveryRunner =
-    runnerUrl && runnerToken
-      ? new RemoteDiscoveryRunner({
-          url: runnerUrl,
-          token: runnerToken,
-          fetchImpl: env.__testFetch ?? fetch.bind(globalThis),
-        })
-      : new UnavailableDiscoveryRunner();
+  const runnerConfigured = Boolean(
+    runnerUrlRaw ||
+    runnerToken ||
+    env.GOG_RUNNER_WIF_PROVIDER ||
+    env.GOG_RUNNER_WIF_ISSUER ||
+    env.GOG_RUNNER_WIF_KEY_ID ||
+    env.GOG_RUNNER_WIF_SIGNING_KEY ||
+    env.GOG_RUNNER_SERVICE_ACCOUNT,
+  );
+  let discovery: DiscoveryRunner = new UnavailableDiscoveryRunner();
+  if (runnerConfigured) {
+    try {
+      const runnerUrl = new URL(runnerUrlRaw);
+      if (runnerUrl.protocol !== "https:" || runnerUrl.pathname !== "/v1/execute") {
+        throw new Error("runner URL is not configured");
+      }
+      if (new TextEncoder().encode(runnerToken).length < 32) {
+        throw new Error("invocation secret is not configured");
+      }
+      const identityConfig = {
+        provider: (env.GOG_RUNNER_WIF_PROVIDER ?? "").trim(),
+        issuer: (env.GOG_RUNNER_WIF_ISSUER ?? "").trim(),
+        keyId: (env.GOG_RUNNER_WIF_KEY_ID ?? "").trim(),
+        signingKey: (env.GOG_RUNNER_WIF_SIGNING_KEY ?? "").trim(),
+        serviceAccount: (env.GOG_RUNNER_SERVICE_ACCOUNT ?? "").trim(),
+      };
+      validateRunnerIdentityConfig(identityConfig);
+      const fetchImpl = env.__testFetch ?? fetch.bind(globalThis);
+      discovery = new RemoteDiscoveryRunner({
+        url: runnerUrl,
+        invocationToken: runnerToken,
+        identity: new WorkloadIdentityClient({ config: identityConfig, fetchImpl }),
+        fetchImpl,
+      });
+    } catch {
+      // A partially or incorrectly configured runner stays unavailable; it
+      // must never fall back to static bearer authentication.
+      discovery = new UnavailableDiscoveryRunner();
+    }
+  }
 
   const oauth = new GoogleOAuthClient({
     clientId,
@@ -681,17 +719,19 @@ async function runDiscovery(
   services: string[],
   accessToken: string,
 ): Promise<DiscoveryView> {
-  let outcome: DiscoveryOutcome;
-  try {
-    outcome = await deps.discovery.discover({
-      tenantId: session.tenantId,
-      connectionId,
-      services,
-      accessToken,
-    });
-  } catch {
-    outcome = { status: "error", detail: "runner_unreachable", resources: [], statuses: {} };
-  }
+  const persisted = await deps.repo.getConnection(session.tenantId, connectionId);
+  const outcome: DiscoveryOutcome =
+    persisted?.email && persisted.googleSubject
+      ? await discoverWithPersistedIdentity(deps, session, connectionId, services, accessToken, {
+          email: persisted.email,
+          subject: persisted.googleSubject,
+        })
+      : {
+          status: "unavailable",
+          detail: "connection_identity_missing",
+          resources: [],
+          statuses: {},
+        };
 
   const checkedAt = new Date(deps.now?.() ?? new Date()).toISOString();
   if (outcome.status === "ok" || outcome.status === "empty") {
@@ -742,6 +782,28 @@ async function runDiscovery(
     resourceCount: outcome.resources.length,
     checkedAt,
   };
+}
+
+async function discoverWithPersistedIdentity(
+  deps: ConnectDeps,
+  session: ConnectSession,
+  connectionId: string,
+  services: string[],
+  accessToken: string,
+  identity: { email: string; subject: string },
+): Promise<DiscoveryOutcome> {
+  try {
+    return await deps.discovery.discover({
+      tenantId: session.tenantId,
+      connectionId,
+      services,
+      accessToken,
+      googleEmail: identity.email,
+      googleSubject: identity.subject,
+    });
+  } catch {
+    return { status: "error", detail: "runner_unreachable", resources: [], statuses: {} };
+  }
 }
 
 // ─── Disconnect / refresh / list ────────────────────────────────────────────
