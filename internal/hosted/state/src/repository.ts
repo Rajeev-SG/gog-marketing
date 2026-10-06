@@ -476,6 +476,115 @@ export class HostedRepository {
       .run();
   }
 
+  /**
+   * Atomically save a batch of resource-grant choices. Every update is
+   * tenant/connection scoped; an update that matches no owned row is treated
+   * as a failure rather than a silent no-op. D1 executes the whole batch as
+   * one transaction, so a later failed statement cannot leave an earlier
+   * toggle saved.
+   */
+  async setResourceGrantsEnabled(
+    tenantId: string,
+    connectionId: string,
+    updates: ReadonlyArray<{ service: string; resourceId: string; enabled: boolean }>,
+  ): Promise<void> {
+    const statements = validateGrantUpdates(tenantId, connectionId, updates).map(
+      ({ service, resourceId, enabled }) =>
+        this.db
+          .prepare(
+            `UPDATE hosted_resource_grants SET enabled = ?5, updated_at = ?6
+             WHERE tenant_id = ?1 AND connection_id = ?2 AND service = ?3 AND resource_id = ?4
+             RETURNING service, resource_id`,
+          )
+          .bind(
+            tenantId,
+            connectionId,
+            service,
+            resourceId,
+            enabled ? 1 : 0,
+            new Date().toISOString(),
+          ),
+    );
+
+    if (statements.length === 0) return;
+    const results = await this.db.batch<{ service: string; resource_id: string }>(statements);
+    if (results.length !== statements.length) {
+      throw new Error("setResourceGrantsEnabled: batch result count mismatch");
+    }
+    results.forEach((result, index) => {
+      const input = updates[index]!;
+      const returned = result.results?.[0];
+      if (
+        !result.success ||
+        !returned ||
+        returned.service !== input.service ||
+        returned.resource_id !== input.resourceId
+      ) {
+        throw new Error("setResourceGrantsEnabled: owned grant was not updated");
+      }
+    });
+  }
+
+  /**
+   * Atomically upsert a discovery batch. Rows are bound to the compound
+   * connection ownership before execution, and D1's transactional batch means
+   * an invalid/disowned row never partially changes inventory.
+   */
+  async upsertResourceGrants(
+    tenantId: string,
+    connectionId: string,
+    resources: ReadonlyArray<{
+      service: string;
+      resourceId: string;
+      resourceType: string;
+      displayName: string;
+      enabled: boolean;
+      metadataJson: string;
+    }>,
+  ): Promise<void> {
+    if (resources.length === 0) return;
+    if (resources.length > 250) {
+      throw new Error("upsertResourceGrants: batch size exceeds the supported limit");
+    }
+    const now = new Date().toISOString();
+    const statements = resources.map((resource, index) => {
+      validateNonEmptyText("service", resource.service);
+      validateNonEmptyText("resourceId", resource.resourceId);
+      validateJsonText("metadataJson", resource.metadataJson);
+      if (!Number.isInteger(index)) throw new Error("upsertResourceGrants: invalid index");
+      return this.db
+        .prepare(
+          `INSERT INTO hosted_resource_grants
+             (id, tenant_id, connection_id, service, resource_id, resource_type,
+              display_name, enabled, metadata_json, discovered_at, created_at, updated_at)
+           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+           ON CONFLICT (tenant_id, connection_id, service, resource_id)
+           DO UPDATE SET
+             resource_type = ?6, display_name = ?7, enabled = ?8,
+             metadata_json = ?9, discovered_at = ?10, updated_at = ?12`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          tenantId,
+          connectionId,
+          resource.service,
+          resource.resourceId,
+          resource.resourceType.slice(0, 512),
+          resource.displayName.slice(0, 512),
+          resource.enabled ? 1 : 0,
+          resource.metadataJson,
+          now,
+          now,
+          now,
+        );
+    });
+
+    const results = await this.db.batch(statements);
+    if (results.length !== statements.length || results.some((result) => !result.success)) {
+      throw new Error("upsertResourceGrants: batch save failed");
+    }
+  }
+
   // ─── Audit (safe metadata only) ─────────────────────────────────────────
 
   async appendAudit(input: AuditEventInput): Promise<void> {
@@ -588,6 +697,53 @@ export class HostedRepository {
     if (!row) return null;
     return mapQuota(row);
   }
+}
+
+function validateNonEmptyText(name: string, value: unknown): void {
+  if (typeof value !== "string" || value.trim().length === 0 || value.length > 512) {
+    throw new Error(`${name}: expected non-empty text of at most 512 characters`);
+  }
+}
+
+function validateJsonText(name: string, value: unknown): void {
+  if (typeof value !== "string" || value.length > 16_384) {
+    throw new Error(`${name}: expected JSON text of at most 16384 characters`);
+  }
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("metadata must be an object");
+    }
+  } catch {
+    throw new Error(`${name}: expected valid JSON metadata`);
+  }
+}
+
+function validateGrantUpdates(
+  tenantId: string,
+  connectionId: string,
+  updates: ReadonlyArray<{ service: string; resourceId: string; enabled: boolean }>,
+): Array<{ service: string; resourceId: string; enabled: boolean }> {
+  validateNonEmptyText("tenantId", tenantId);
+  validateNonEmptyText("connectionId", connectionId);
+  if (updates.length === 0) return [];
+  if (updates.length > 250) {
+    throw new Error("setResourceGrantsEnabled: batch size exceeds the supported limit");
+  }
+  const seen = new Set<string>();
+  return updates.map((update) => {
+    validateNonEmptyText("service", update.service);
+    validateNonEmptyText("resourceId", update.resourceId);
+    if (typeof update.enabled !== "boolean") {
+      throw new Error("setResourceGrantsEnabled: enabled must be boolean");
+    }
+    const key = `${update.service}\0${update.resourceId}`;
+    if (seen.has(key)) {
+      throw new Error("setResourceGrantsEnabled: duplicate resource update");
+    }
+    seen.add(key);
+    return { service: update.service, resourceId: update.resourceId, enabled: update.enabled };
+  });
 }
 
 // ─── Row mappers ────────────────────────────────────────────────────────────
