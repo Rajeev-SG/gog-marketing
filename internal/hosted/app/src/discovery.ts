@@ -9,6 +9,8 @@
  * inventory and never erase or expand existing grants.
  */
 
+import { signRunnerCapabilityJwt, type NativeIdentityProvider } from "./runner-auth.js";
+
 export type RunnerServiceState = "ok" | "unavailable" | "unsupported" | "error";
 
 export interface RunnerServiceStatus {
@@ -42,6 +44,10 @@ export interface DiscoveryRequest {
   connectionId: string;
   services: string[];
   accessToken: string;
+  /** Trusted verified account email loaded server-side from persisted state. */
+  googleEmail: string;
+  /** Trusted verified account subject loaded server-side from persisted state. */
+  googleSubject: string;
 }
 
 export interface DiscoveryRunner {
@@ -65,33 +71,128 @@ interface WireReport {
   statuses?: unknown;
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function isGoDiscoveryResource(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.service === "string" &&
+    value.service !== "" &&
+    typeof value.resource_type === "string" &&
+    typeof value.resource_id === "string" &&
+    value.resource_id !== "" &&
+    typeof value.enabled === "boolean"
+  );
+}
+
+function isGoServiceStatus(value: Record<string, unknown>): boolean {
+  return (
+    typeof value.state === "string" &&
+    ["ok", "unavailable", "unsupported", "error"].includes(value.state) &&
+    typeof value.resource_count === "number" &&
+    Number.isInteger(value.resource_count) &&
+    value.resource_count >= 0 &&
+    typeof value.checked_at === "string" &&
+    value.checked_at !== ""
+  );
+}
+
+function isGoDiscoveryEnvelope(
+  wire: unknown,
+): wire is { operation: string; result: { resources: unknown[]; statuses: unknown } } {
+  return (
+    isPlainObject(wire) &&
+    wire.ok === true &&
+    wire.operation === "discover" &&
+    isPlainObject(wire.result) &&
+    Array.isArray(wire.result.resources) &&
+    isPlainObject(wire.result.statuses) &&
+    wire.result.resources.every(isGoDiscoveryResource) &&
+    Object.values(wire.result.statuses as Record<string, unknown>).every(
+      (status) => isPlainObject(status) && isGoServiceStatus(status),
+    )
+  );
+}
+
 /** Calls the private #63 Go execution service's typed discovery endpoint. */
 export class RemoteDiscoveryRunner implements DiscoveryRunner {
-  private readonly url: string;
-  private readonly token: string;
+  private readonly url: URL;
+  private readonly invocationToken: string;
+  private readonly identity: NativeIdentityProvider;
   private readonly fetchImpl: typeof fetch;
 
-  constructor(options: { url: string; token: string; fetchImpl?: typeof fetch }) {
+  constructor(options: {
+    url: URL;
+    invocationToken: string;
+    identity: NativeIdentityProvider;
+    fetchImpl?: typeof fetch;
+  }) {
     this.url = options.url;
-    this.token = options.token;
+    this.invocationToken = options.invocationToken;
+    this.identity = options.identity;
     this.fetchImpl = options.fetchImpl ?? fetch.bind(globalThis);
   }
 
   async discover(request: DiscoveryRequest): Promise<DiscoveryOutcome> {
+    // Go explicitly rejects zero-service discovery. A basic identity-only
+    // connection legitimately requests none, so keep that as an explicit
+    // Worker no-op instead of asking the runner for unsupported work.
+    if (request.services.length === 0) {
+      return {
+        status: "empty",
+        detail: "no_discovery_services",
+        resources: [],
+        statuses: {},
+      };
+    }
+
+    const deadlineSignal = AbortSignal.timeout(20_000);
+    if (deadlineSignal.aborted) throw new Error("discovery deadline exceeded");
+
+    let nativeIdToken: string;
+    try {
+      nativeIdToken = await this.identity.nativeIdToken(this.url.origin, deadlineSignal);
+    } catch {
+      return {
+        status: "unavailable",
+        detail: "operator_identity_unavailable",
+        resources: [],
+        statuses: {},
+      };
+    }
+
+    const body: Record<string, unknown> = {
+      tenant_id: request.tenantId,
+      connection_id: request.connectionId,
+      operation: "discover",
+      google_email: request.googleEmail,
+      google_subject: request.googleSubject,
+      access_token: request.accessToken,
+      services: request.services,
+    };
+    const exactBodyBytes = new TextEncoder().encode(JSON.stringify(body));
+    const capability = await signRunnerCapabilityJwt(
+      this.invocationToken,
+      {
+        tenantId: request.tenantId,
+        connectionId: request.connectionId,
+        operation: "discover",
+      },
+      exactBodyBytes,
+    );
+
     let response: Response;
     try {
       response = await this.fetchImpl(this.url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${capability}`,
+          "X-Serverless-Authorization": `Bearer ${nativeIdToken}`,
         },
-        body: JSON.stringify({
-          tenant_id: request.tenantId,
-          connection_id: request.connectionId,
-          services: request.services,
-        }),
-        signal: AbortSignal.timeout(20_000),
+        body: exactBodyBytes,
+        signal: deadlineSignal,
       });
     } catch {
       return { status: "error", detail: "runner_unreachable", resources: [], statuses: {} };
@@ -99,13 +200,16 @@ export class RemoteDiscoveryRunner implements DiscoveryRunner {
     if (response.status < 200 || response.status >= 300) {
       return { status: "error", detail: "runner_unreachable", resources: [], statuses: {} };
     }
-    let wire: WireReport;
+    let wire: unknown;
     try {
       wire = (await response.json()) as WireReport;
     } catch {
       return { status: "error", detail: "runner_invalid_response", resources: [], statuses: {} };
     }
-    return mapWireReport(wire);
+    if (!isGoDiscoveryEnvelope(wire)) {
+      return { status: "error", detail: "runner_invalid_response", resources: [], statuses: {} };
+    }
+    return mapWireReport(wire.result);
   }
 }
 

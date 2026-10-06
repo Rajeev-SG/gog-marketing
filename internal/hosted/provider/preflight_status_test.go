@@ -350,6 +350,16 @@ func TestReportSummaryGroupsStatusesAndActionCategories(t *testing.T) {
 		t.Fatalf("summary total = %d, want %d", summary.Total, len(report.Checks))
 	}
 
+	// The unavailable group is exactly the unauthorized Clerk application, the
+	// fail-closed Cloud Run dependency chain, and the current configured
+	// Cloud Run runner-surface bindings.
+	unavailableNames := append([]string{
+		"clerk.application",
+		"gcp.artifact_repository",
+		"gcp.cloud_run_service",
+		"gcp.cloud_run_identity",
+	}, surfaceCheckNames(config, "cloud-run-runner")...)
+
 	if summary.Statuses[provider.Missing] != 1 {
 		t.Errorf("summary missing count = %d, want 1", summary.Statuses[provider.Missing])
 	}
@@ -358,8 +368,8 @@ func TestReportSummaryGroupsStatusesAndActionCategories(t *testing.T) {
 		t.Errorf("summary timed-out count = %d, want 1", summary.Statuses[provider.TimedOut])
 	}
 
-	if summary.Statuses[provider.Unavailable] != 7 {
-		t.Errorf("summary unavailable count = %d, want 7", summary.Statuses[provider.Unavailable])
+	if summary.Statuses[provider.Unavailable] != len(unavailableNames) {
+		t.Errorf("summary unavailable count = %d, want %d", summary.Statuses[provider.Unavailable], len(unavailableNames))
 	}
 
 	if summary.Statuses[provider.Mismatch] != 0 {
@@ -369,7 +379,7 @@ func TestReportSummaryGroupsStatusesAndActionCategories(t *testing.T) {
 	expectedActions := map[provider.Action]int{
 		provider.ActionProvisionMissing: 1,
 		provider.ActionRetryTimedOut:    1,
-		provider.ActionInvestigate:      7,
+		provider.ActionInvestigate:      len(unavailableNames),
 		provider.ActionFixConfig:        0,
 	}
 	for action, want := range expectedActions {

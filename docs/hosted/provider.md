@@ -251,7 +251,7 @@ arguments, terminal output, screenshots, logs, or pull requests.
 | `GOG_GOOGLE_OAUTH_CLIENT_ID` | non-secret environment | Cloudflare Worker, Cloud Run runner | Public Google OAuth client identifier |
 | `GOG_CLOUD_RUN_SERVICE_URL` | non-secret environment | Cloudflare Worker | Private Cloud Run runner endpoint |
 | `CLERK_SECRET_KEY` | secret | Cloudflare Worker | Clerk server authentication |
-| `GOG_GOOGLE_OAUTH_CLIENT_SECRET` | secret | Cloudflare Worker, Cloud Run runner | Google OAuth token exchange |
+| `GOG_GOOGLE_OAUTH_CLIENT_SECRET` | secret | Cloudflare Worker only | Central Google OAuth exchange/refresh; never copied to the stateless runner |
 | `GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY` | secret | Cloudflare Worker | Root encryption material for delegated Google credentials |
 | `GOG_RUNNER_INVOCATION_TOKEN` | secret | Cloudflare Worker, Cloud Run runner | Shared authentication for the private runner endpoint |
 
@@ -354,3 +354,42 @@ gcloud run deploy gog-marketing-runner \
   --service-account=gog-marketing-runner@gog-marketing-prod.iam.gserviceaccount.com \
   --no-allow-unauthenticated
 ```
+
+## Private runner identity and credential boundaries (#63)
+
+The stateless Go runner receives only a short-lived Google access token inside an
+authenticated private request. Refresh credentials, the central OAuth client
+secret and the credential-encryption root remain on the Worker; they are not
+provisioned to Cloud Run. `GOG_RUNNER_INVOCATION_TOKEN` is separate random signing
+material, not a credential-encryption key. Cloud Run references version 1 of the
+existing-project Secret Manager secret `gog-marketing-runner-invocation-token`;
+only the existing runner service account has secretAccessor on that secret.
+
+Native Cloud Run IAM remains enabled. The Worker uses the `gog-marketing-hosted`
+workload identity pool and `cloudflare-worker` OIDC provider in project
+`gog-marketing-prod`. Its issuer is the fixed hosted Worker origin, its subject
+is exactly `gog-marketing-worker`, and the provider pins an uploaded public JWKS.
+The dedicated private RSA PKCS8 key stays in Worker secret
+`GOG_RUNNER_WIF_SIGNING_KEY`. No Google service-account private key is created.
+The federated subject has only `roles/iam.serviceAccountOpenIdTokenCreator` on
+`gog-marketing-runner@gog-marketing-prod.iam.gserviceaccount.com`, granting
+`iam.serviceAccounts.getOpenIdToken`, not OAuth access-token impersonation.
+The service account gets run.invoker only on the private runner service.
+
+Public Worker configuration uses `GOG_RUNNER_WIF_PROVIDER`,
+`GOG_RUNNER_WIF_ISSUER`, `GOG_RUNNER_WIF_KEY_ID`, and
+`GOG_RUNNER_SERVICE_ACCOUNT`; the endpoint continues to use the canonical
+`GOG_CLOUD_RUN_SERVICE_URL`. Native identity travels in
+`X-Serverless-Authorization`; a separate 60-second maximum application
+capability in `Authorization` binds tenant, connection, operation and exact
+request-body digest. Neither header nor the credential-bearing body is logged
+or returned to the browser. See [runner identity](runner-identity.md).
+
+Current authoritative references, checked 2026-10-06:
+- https://cloud.google.com/iam/docs/workload-identity-federation-with-other-providers
+- https://cloud.google.com/iam/docs/reference/sts/rest/v1/TopLevel/token
+- https://cloud.google.com/iam/docs/reference/credentials/rest/v1/projects.serviceAccounts/generateIdToken
+
+Google documents uploaded JWKS for issuers without a public OIDC metadata URL.
+Rotate the dedicated signing key by updating the pinned public JWKS and key ID;
+retain the previous private key securely until the rotation is verified.

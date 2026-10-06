@@ -59,6 +59,49 @@ func includesSurface(surface, target string) bool {
 	return false
 }
 
+// surfaceCheckNames derives public preflight check names for inventory
+// bindings on the given canonical surface. Deriving expectations from the
+// loaded inventory keeps fixture coverage aligned with provider config.
+func surfaceCheckNames(config provider.Config, surface string) []string {
+	var prefix string
+
+	switch surface {
+	case "cloudflare-worker":
+		prefix = "cloudflare."
+	case "cloud-run-runner":
+		prefix = "gcp.cloud_run_"
+	default:
+		prefix = ""
+	}
+
+	names := []string{}
+
+	for _, binding := range config.Environment {
+		if includesSurface(binding.Surface, surface) {
+			names = append(names, prefix+"env:"+binding.Name)
+		}
+	}
+
+	for _, binding := range config.Secrets {
+		if includesSurface(binding.Surface, surface) {
+			names = append(names, prefix+"secret:"+binding.Name)
+		}
+	}
+
+	return names
+}
+
+// dependentDetailMap builds the expected truthful detail for every derived
+// dependent check name without repeating inventory literals.
+func dependentDetailMap(names []string, detail string) map[string]string {
+	details := make(map[string]string, len(names))
+	for _, name := range names {
+		details[name] = detail
+	}
+
+	return details
+}
+
 func d1ListKey() string          { return "wrangler d1 list --json" }
 func kvNamespaceListKey() string { return "wrangler kv namespace list" }
 func clerkAppsListKey() string   { return "clerk apps list --json" }
@@ -331,20 +374,20 @@ func TestPreflightReportsMissingProviderStateWithoutSecretValues(t *testing.T) {
 		}
 	}
 
-	expectedUnchecked := []string{
+	expectedUnchecked := append([]string{
 		"cloudflare.d1_database",
 		"cloudflare.kv_namespace",
 		"cloudflare.worker",
-		"cloudflare.env:CLERK_PUBLISHABLE_KEY",
-		"cloudflare.secret:CLERK_SECRET_KEY",
 		"clerk.application",
 		"gcp.project",
 		"gcp.artifact_repository",
 		"gcp.cloud_run_service",
 		"gcp.cloud_run_identity",
-		"gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID",
-		"gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET",
-	}
+	},
+		surfaceCheckNames(config, "cloudflare-worker")...,
+	)
+	expectedUnchecked = append(expectedUnchecked, surfaceCheckNames(config, "cloud-run-runner")...)
+
 	for _, name := range expectedUnchecked {
 		if got := statuses[name]; got != provider.Unavailable {
 			t.Errorf("%s status = %q, want %q because authentication is unavailable", name, got, provider.Unavailable)
@@ -471,7 +514,7 @@ func TestPreflightReportsMissingResourcesWhenAuthenticated(t *testing.T) {
 	// "resource not found" text from the fake command errors is unstructured
 	// evidence, so these failures must fail closed as unavailable. Verified
 	// absence is covered by positively parsed responses elsewhere.
-	expectedUnavailable := []string{
+	expectedUnavailable := append([]string{
 		"cloudflare.d1_database",
 		"cloudflare.kv_namespace",
 		"cloudflare.worker",
@@ -479,11 +522,10 @@ func TestPreflightReportsMissingResourcesWhenAuthenticated(t *testing.T) {
 		"gcp.artifact_repository",
 		"gcp.cloud_run_service",
 		"gcp.cloud_run_identity",
-		"cloudflare.env:CLERK_PUBLISHABLE_KEY",
-		"cloudflare.secret:CLERK_SECRET_KEY",
-		"gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID",
-		"gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET",
-	}
+	},
+		surfaceCheckNames(config, "cloudflare-worker")...,
+	)
+	expectedUnavailable = append(expectedUnavailable, surfaceCheckNames(config, "cloud-run-runner")...)
 
 	if got := statuses["cloudflare.secret:CLERK_SECRET_KEY"]; got != provider.Unavailable {
 		t.Errorf("cloudflare.secret:CLERK_SECRET_KEY status = %q, want %q because the Worker is missing", got, provider.Unavailable)
@@ -772,8 +814,8 @@ func TestPreflightSurfaceMatchesExactTokensOnly(t *testing.T) {
 	}
 
 	for i, binding := range config.Secrets {
-		if binding.Name == "GOG_GOOGLE_OAUTH_CLIENT_SECRET" {
-			config.Secrets[i].Surface = "cloudflare-worker;not-cloud-run-runner"
+		if binding.Name == "GOG_RUNNER_INVOCATION_TOKEN" {
+			config.Secrets[i].Surface = "cloud-run-runner;not-cloudflare-worker"
 		}
 	}
 
@@ -795,8 +837,14 @@ func TestPreflightSurfaceMatchesExactTokensOnly(t *testing.T) {
 		t.Errorf("surface not-cloud-run-runner must not match; got %s check with status %q", "gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET", got)
 	}
 
-	if got := statuses["cloudflare.secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET"]; got != provider.OK {
-		t.Errorf("surface token membership should keep the Worker surface; got status %q", got)
+	runnerTokenName := "gcp.cloud_run_secret:GOG_RUNNER_INVOCATION_TOKEN"
+	if got := statuses[runnerTokenName]; got != provider.OK {
+		t.Errorf("%s status = %q, want %q; exact runner token membership should still match", runnerTokenName, got, provider.OK)
+	}
+
+	workerTokenName := "cloudflare.secret:GOG_RUNNER_INVOCATION_TOKEN"
+	if got, present := statuses[workerTokenName]; present {
+		t.Errorf("surface not-cloudflare-worker must not create %s; got status %q", workerTokenName, got)
 	}
 }
 
@@ -1000,6 +1048,48 @@ func TestProviderInventoryDoesNotContainSecretValues(t *testing.T) {
 	}
 }
 
+// TestProviderInventorySecretSurfaceBoundary pins the canonical secret
+// placement: Go gets ephemeral access tokens, so refresh/client secret and
+// root encryption material remain Worker-only. The runner's invocation
+// signing token is intentionally shared, while Worker workload-identity
+// signing material stays Worker-only.
+func TestProviderInventorySecretSurfaceBoundary(t *testing.T) {
+	config, err := provider.Load()
+	if err != nil {
+		t.Fatalf("Load failed: %v", err)
+	}
+
+	surfaces := map[string]string{}
+	for _, binding := range config.Secrets {
+		surfaces[binding.Name] = binding.Surface
+	}
+
+	workerOnlySecrets := []string{
+		"GOG_GOOGLE_OAUTH_CLIENT_SECRET",
+		"GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY",
+		"GOG_RUNNER_WIF_SIGNING_KEY",
+	}
+	for _, name := range workerOnlySecrets {
+		surface, found := surfaces[name]
+		if !found {
+			t.Fatalf("required secret %s is absent from inventory", name)
+		}
+
+		if !includesSurface(surface, "cloudflare-worker") || includesSurface(surface, "cloud-run-runner") {
+			t.Errorf("%s surface = %q, want cloudflare-worker only", name, surface)
+		}
+	}
+
+	runnerTokenSurface, found := surfaces["GOG_RUNNER_INVOCATION_TOKEN"]
+	if !found {
+		t.Fatal("canonical runner secret GOG_RUNNER_INVOCATION_TOKEN is absent from inventory")
+	}
+
+	if !includesSurface(runnerTokenSurface, "cloudflare-worker") || !includesSurface(runnerTokenSurface, "cloud-run-runner") {
+		t.Errorf("GOG_RUNNER_INVOCATION_TOKEN surface = %q, want both cloudflare-worker and cloud-run-runner", runnerTokenSurface)
+	}
+}
+
 // TestPreflightVerifiesListStyleAbsencePositively proves each GCP list-style
 // scoped query proves verified absence independently: with all upstream
 // prerequisites positively present, an empty structured list reports the
@@ -1011,6 +1101,8 @@ func TestPreflightVerifiesListStyleAbsencePositively(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load failed: %v", err)
 	}
+
+	runnerSurfaceNames := surfaceCheckNames(config, "cloud-run-runner")
 
 	scenarios := []struct {
 		name            string
@@ -1024,13 +1116,11 @@ func TestPreflightVerifiesListStyleAbsencePositively(t *testing.T) {
 			name:         "absent GCP project gates its dependents unavailable",
 			emptyListKey: projectListKey(config),
 			wantMissing:  "gcp.project",
-			gatedNames: []string{
+			gatedNames: append([]string{
 				"gcp.artifact_repository",
 				"gcp.cloud_run_service",
 				"gcp.cloud_run_identity",
-				"gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID",
-				"gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET",
-			},
+			}, runnerSurfaceNames...),
 			gatedDetail: "not checked because the GCP project is missing",
 		},
 		{
@@ -1039,14 +1129,10 @@ func TestPreflightVerifiesListStyleAbsencePositively(t *testing.T) {
 			wantMissing:  "gcp.artifact_repository",
 		},
 		{
-			name:         "absent Cloud Run service is positively parsed",
-			emptyListKey: runServicesListKey(config),
-			wantMissing:  "gcp.cloud_run_service",
-			dependentDetail: map[string]string{
-				"gcp.cloud_run_identity":                              "not checked because the Cloud Run service is missing",
-				"gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID":        "not checked because the Cloud Run service is missing",
-				"gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET": "not checked because the Cloud Run service is missing",
-			},
+			name:            "absent Cloud Run service is positively parsed",
+			emptyListKey:    runServicesListKey(config),
+			wantMissing:     "gcp.cloud_run_service",
+			dependentDetail: dependentDetailMap(runnerSurfaceNames, "not checked because the Cloud Run service is missing"),
 		},
 	}
 
@@ -1294,7 +1380,11 @@ func TestPreflightDependentDetailsReflectParentStatus(t *testing.T) {
 			switch scenario.key {
 			case runServicesListKey(config):
 				parentName = "gcp.cloud_run_service"
-				dependentNames = []string{"gcp.cloud_run_identity", "gcp.cloud_run_env:GOG_GOOGLE_OAUTH_CLIENT_ID", "gcp.cloud_run_secret:GOG_GOOGLE_OAUTH_CLIENT_SECRET"}
+
+				dependentNames = append(
+					[]string{"gcp.cloud_run_identity"},
+					surfaceCheckNames(config, "cloud-run-runner")...,
+				)
 			default:
 				parentName = "cloudflare.worker"
 				dependentNames = []string{"cloudflare.secret:CLERK_SECRET_KEY", "cloudflare.env:CLERK_PUBLISHABLE_KEY"}

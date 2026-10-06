@@ -1109,14 +1109,48 @@ describe("hosted Google connection routes (#62)", () => {
   it("uses only canonical runner bindings for an authenticated typed discovery request", async () => {
     const { buildConnectDeps } = await import("./connect.js");
     const captured: Array<{ url: string; init?: RequestInit }> = [];
+    const keyPair = (await crypto.subtle.generateKey(
+      {
+        name: "RSASSA-PKCS1-v1_5",
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: "SHA-256",
+      },
+      true,
+      ["sign", "verify"],
+    )) as CryptoKeyPair;
+    const pkcs8 = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+    const exp = Math.floor((Date.now() + 300_000) / 1000);
+    const nativeIdPayload = Buffer.from(JSON.stringify({ exp })).toString("base64url");
     const env = await createGoogleEnv({
-      GOG_CLOUD_RUN_SERVICE_URL: "https://runner.example.com/discovery",
-      GOG_RUNNER_INVOCATION_TOKEN: "test-invocation",
+      GOG_CLOUD_RUN_SERVICE_URL: "https://runner.example.com/v1/execute",
+      GOG_RUNNER_WIF_PROVIDER:
+        "projects/629716276051/locations/global/workloadIdentityPools/test-pool/providers/test-provider",
+      GOG_RUNNER_WIF_ISSUER: "https://gog-marketing.rajeev-sgill.workers.dev",
+      GOG_RUNNER_WIF_KEY_ID: "public-test-kid",
+      GOG_RUNNER_WIF_SIGNING_KEY: Buffer.from(pkcs8).toString("base64"),
+      GOG_RUNNER_SERVICE_ACCOUNT: "gog-marketing-runner@gog-marketing-prod.iam.gserviceaccount.com",
+      GOG_RUNNER_INVOCATION_TOKEN: "invocation-secret-at-least-32-bytes",
       __testFetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
-        captured.push({ url: String(input), init });
+        const url = String(input);
+        captured.push({ url, init });
+        if (url === "https://sts.googleapis.com/v1/token") {
+          return Response.json({ access_token: "federated-access" });
+        }
+        if (url.includes(":generateIdToken")) {
+          return Response.json({ token: `native-header.${nativeIdPayload}.native-signature` });
+        }
         return Response.json({
-          resources: [],
-          statuses: { analytics: { state: "ok", resource_count: 0 } },
+          request_id: "req-test-runner",
+          operation: "discover",
+          ok: true,
+          result: {
+            resources: [],
+            statuses: {
+              analytics: { state: "ok", resource_count: 0, checked_at: "2026-10-06T00:00:00Z" },
+            },
+          },
+          duration_ms: 12,
         });
       }) as typeof fetch,
     });
@@ -1128,16 +1162,28 @@ describe("hosted Google connection routes (#62)", () => {
       connectionId: "trusted-connection",
       services: ["analytics"],
       accessToken: "not-browser-output",
+      googleEmail: "verified@example.com",
+      googleSubject: "google-subject",
     });
     expect(result.status).toBe("empty");
-    expect(captured).toHaveLength(1);
-    expect(captured[0].url).toBe("https://runner.example.com/discovery");
-    expect(new Headers(captured[0].init?.headers).get("authorization")).toBe(
-      "Bearer test-invocation",
+    expect(result.detail).toBe("no_resources");
+    expect(captured).toHaveLength(3);
+    expect(captured[2]!.url).toBe("https://runner.example.com/v1/execute");
+    const headers = new Headers(captured[2]!.init?.headers);
+    expect(headers.get("content-type")).toBe("application/json");
+    expect(headers.get("authorization")).toMatch(
+      /^Bearer [A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/,
     );
-    expect(JSON.parse(String(captured[0].init?.body))).toEqual({
+    expect(headers.get("x-serverless-authorization")).toMatch(
+      /^Bearer native-header\.[A-Za-z0-9_-]+\.native-signature$/,
+    );
+    expect(JSON.parse(new TextDecoder().decode(captured[2]!.init?.body as Uint8Array))).toEqual({
       tenant_id: "trusted-tenant",
       connection_id: "trusted-connection",
+      operation: "discover",
+      google_email: "verified@example.com",
+      google_subject: "google-subject",
+      access_token: "not-browser-output",
       services: ["analytics"],
     });
   });
