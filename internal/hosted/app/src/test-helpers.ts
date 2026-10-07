@@ -36,6 +36,7 @@ export async function generateTestKey(): Promise<TestKeyPair> {
 export interface TestTokenPayload {
   sub: string;
   azp: string;
+  typ?: string;
   exp?: number;
   iat?: number;
   nbf?: number;
@@ -66,7 +67,10 @@ export async function signTestToken(
     aud,
   };
 
-  const token = await signJwt(fullPayload, privateJwk, { algorithm: "RS256" });
+  const token = await signJwt(fullPayload, privateJwk, {
+    algorithm: "RS256",
+    header: { typ: payload.typ ?? "JWT" },
+  });
   if (!token || typeof token !== "string") {
     throw new Error("Failed to sign test JWT");
   }

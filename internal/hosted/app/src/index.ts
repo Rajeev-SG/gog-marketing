@@ -17,9 +17,13 @@
  *   connection, its credentials, and its grants.
  * - `POST /api/google/connections/:id/refresh` — validates/refreshes the
  *   stored credential; expired/revoked grants surface a distinct outcome.
+ * - `POST /mcp` — OAuth-protected MCP Streamable HTTP for initialize, ping,
+ *   policy-filtered tools/list, and non-executing tools/call routing (#65).
+ * - `GET /.well-known/oauth-protected-resource` and
+ *   `GET /.well-known/oauth-authorization-server` — OAuth discovery metadata.
+ * - `POST /oauth/register` — Clerk DCR proxy or a structured unavailable error.
  *
- * No generic HTTP proxy, exec tool, Google Connect, runner, control-plane,
- * or MCP endpoints are exposed.
+ * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
 import { HostedRepository } from "../../state/src/repository.js";
 import { authenticate, type ClerkEnv } from "./auth.js";
@@ -45,6 +49,7 @@ import {
   securityHeaders,
   type HtmlConfig,
 } from "./html.js";
+import { handleMcp, handleMcpMetadata } from "./mcp.js";
 
 export interface Env extends ClerkEnv, ConnectEnv {
   CLERK_SECRET_KEY?: string;
@@ -111,6 +116,11 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   const url = new URL(request.url);
   const path = url.pathname;
   const connectionAction = GOOGLE_CONNECTION_ACTION.exec(path);
+
+  const metadataResponse = await handleMcpMetadata(request, env, path);
+  if (metadataResponse) return metadataResponse;
+  const mcpResponse = await handleMcp(request, env, repo, path);
+  if (mcpResponse) return mcpResponse;
 
   // Only the known routes are served. Everything else is 404.
   const knownPaths = ["/", "/api/tenant", ...GOOGLE_API_PATHS];

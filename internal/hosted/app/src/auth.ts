@@ -19,6 +19,8 @@
  * Clerk identity.
  */
 import { createClerkClient, type ClerkClient } from "@clerk/backend";
+import { verifyMachineAuthToken } from "@clerk/backend/internal";
+import { decodeJwt } from "@clerk/backend/jwt";
 import { HostedRepository } from "../../state/src/repository.js";
 import { deriveClerkDomain } from "./html.js";
 import type { Tenant } from "../../state/src/types.js";
@@ -48,6 +50,13 @@ export type AuthOutcome =
   | { kind: "unauthenticated" }
   | { kind: "error"; status: number; message: string };
 
+export type BearerAuthOutcome =
+  | { kind: "authenticated"; session: AuthSession }
+  | { kind: "unauthenticated"; reason?: BearerAuthFailureReason }
+  | { kind: "error"; status: number; message: string };
+
+export type BearerAuthFailureReason = "invalid_token" | "opaque_token_unsupported";
+
 export interface ClerkEnv {
   CLERK_SECRET_KEY?: string;
   CLERK_PUBLISHABLE_KEY?: string;
@@ -73,6 +82,90 @@ export function buildOptions(config: AuthConfig): Record<string, unknown> {
   };
   if (config.audience) opts.audience = config.audience;
   return opts;
+}
+
+/** Strictly extract one RFC 6750 bearer token without accepting query tokens. */
+export function bearerToken(request: Request): string | null {
+  const value = request.headers.get("authorization");
+  if (!value) return null;
+  const match = /^Bearer[ \t]+([A-Za-z0-9._~+/-]+=*)$/.exec(value.trim());
+  return match?.[1] ?? null;
+}
+
+/**
+ * Verify a Clerk OAuth JWT bearer token with Clerk's OAuth token verifier and
+ * resolve its verified `sub` to the authoritative D1 tenant. Unlike browser
+ * session authentication, OAuth `azp` is a client identifier rather than an
+ * origin, so the browser authorized-party allowlist is deliberately not
+ * applied here.
+ */
+export async function authenticateBearer(
+  request: Request,
+  env: ClerkEnv,
+  repo: HostedRepository,
+  audience: string,
+): Promise<BearerAuthOutcome> {
+  const token = bearerToken(request);
+  if (!token) return { kind: "unauthenticated" };
+
+  const secretKey = env.CLERK_SECRET_KEY ?? "";
+  const publishableKey = env.CLERK_PUBLISHABLE_KEY ?? "";
+  const issuer = validateIssuer(env.CLERK_ISSUER ?? "", publishableKey);
+  if (!secretKey || !publishableKey || !issuer || !audience) {
+    return {
+      kind: "error",
+      status: 503,
+      message: "Authentication is not configured.",
+    };
+  }
+
+  if (token.startsWith("oat_")) {
+    return { kind: "unauthenticated", reason: "opaque_token_unsupported" };
+  }
+
+  let subject: string;
+  let issuerClaim: unknown;
+  let audienceClaim: unknown;
+  try {
+    const result = await verifyMachineAuthToken(token, {
+      secretKey,
+      jwtKey: env.CLERK_JWT_KEY,
+      audience,
+    });
+    if (result.errors || result.tokenType !== "oauth_token") {
+      return { kind: "unauthenticated" };
+    }
+    const decoded = decodeJwt(token);
+    subject = result.data.subject;
+    issuerClaim = decoded.payload.iss;
+    audienceClaim = "aud" in result.data ? result.data.aud : undefined;
+  } catch {
+    return { kind: "unauthenticated" };
+  }
+  if (!subject || issuerClaim !== issuer || !audienceMatches(audienceClaim, audience)) {
+    return { kind: "unauthenticated" };
+  }
+  try {
+    const tenant = await resolveTenant(repo, subject);
+    return {
+      kind: "authenticated",
+      session: {
+        userId: subject,
+        sessionId: `oauth:${subject}`,
+        tenant,
+      },
+    };
+  } catch {
+    return {
+      kind: "error",
+      status: 502,
+      message: "Authentication service is unavailable.",
+    };
+  }
+}
+
+function audienceMatches(value: unknown, expected: string): boolean {
+  return Array.isArray(value) ? value.includes(expected) : value === expected;
 }
 
 /**
