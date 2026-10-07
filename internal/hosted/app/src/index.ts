@@ -25,11 +25,14 @@ import { HostedRepository } from "../../state/src/repository.js";
 import { authenticate, type ClerkEnv } from "./auth.js";
 import {
   buildConnectDeps,
+  discoverConnection,
   completeCallback,
   ConnectError,
   disconnect,
   listConnections,
+  listResources,
   refreshConnection,
+  saveResourceGrants,
   startConnect,
   type ConnectEnv,
   type ConnectSession,
@@ -49,6 +52,8 @@ export interface Env extends ClerkEnv, ConnectEnv {
   CLERK_AUTHORIZED_PARTIES?: string;
   CLERK_ISSUER?: string;
   CLERK_JWT_KEY?: string;
+  /** Operator-configured canonical public origin; /mcp is appended by the UI. */
+  GOG_HOSTED_CANONICAL_ORIGIN?: string;
   DB: D1Database;
 }
 
@@ -95,9 +100,12 @@ function browserCallbackNotice(status: number, title: string, message: string): 
 const GOOGLE_API_PATHS = [
   "/api/google/connections",
   "/api/google/connect",
+  "/api/google/resources",
+  "/api/google/grants",
   "/oauth/google/callback",
 ];
-const GOOGLE_CONNECTION_ACTION = /^\/api\/google\/connections\/([^/]+)\/(disconnect|refresh)$/;
+const GOOGLE_CONNECTION_ACTION =
+  /^\/api\/google\/connections\/([^/]+)\/(disconnect|refresh|discover)$/;
 
 async function handleRoute(request: Request, env: Env, repo: HostedRepository): Promise<Response> {
   const url = new URL(request.url);
@@ -169,6 +177,46 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
           { status: session.tenant.status, userId: session.userId },
           { headers: outcome.headers },
         );
+      }
+      if (path === "/api/google/resources") {
+        const result = await listResources(repo, {
+          userId: session.userId,
+          sessionId: session.sessionId,
+          tenantId: session.tenant.id,
+        });
+        return Response.json(result, { headers: securityHeaders() });
+      }
+      if (path === "/api/google/grants" && request.method === "POST") {
+        let body: Record<string, unknown> = {};
+        try {
+          const raw = await request.text();
+          const parsed = raw ? (JSON.parse(raw) as unknown) : null;
+          if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+            throw new Error("invalid shape");
+          }
+          body = parsed as Record<string, unknown>;
+        } catch {
+          return safeError(400, "The Google access request was invalid.");
+        }
+        const connectionId = String(body.connectionId ?? "").trim();
+        if (!connectionId) {
+          return safeError(404, "That Google connection no longer exists.");
+        }
+        let result: unknown;
+        try {
+          result = await saveResourceGrants(
+            repo,
+            { userId: session.userId, sessionId: session.sessionId, tenantId: session.tenant.id },
+            connectionId,
+            body,
+          );
+        } catch (error) {
+          if (error instanceof ConnectError) {
+            return connectErrorResponse(error.status, error.code, error.message);
+          }
+          throw error;
+        }
+        return Response.json(result, { headers: securityHeaders() });
       }
       const isGoogleRoute = Boolean(connectionAction) || GOOGLE_API_PATHS.includes(path);
       if (isGoogleRoute) {
@@ -319,6 +367,10 @@ async function handleGoogleRoute(
         const connection = await refreshConnection(deps, session, connectionId);
         return Response.json({ connection }, { headers: securityHeaders() });
       }
+      if (request.method === "POST" && match[2] === "discover") {
+        const result = await discoverConnection(deps, session, connectionId);
+        return Response.json(result, { headers: securityHeaders() });
+      }
     }
     return connectErrorResponse(405, "invalid_request", "Unsupported request for this route.");
   } catch (error) {
@@ -356,9 +408,21 @@ export default {
 
 function buildHtmlConfig(env: Env): HtmlConfig {
   const publishableKey = env.CLERK_PUBLISHABLE_KEY ?? "";
+  let mcpOrigin = "";
+  try {
+    const configured = new URL((env.GOG_HOSTED_CANONICAL_ORIGIN ?? "").trim());
+    // The operator configuration is the only authority for the public MCP
+    // address. Host/forwarded-client headers are never used.
+    if (configured.protocol === "https:" && configured.pathname === "/") {
+      mcpOrigin = configured.origin;
+    }
+  } catch {
+    mcpOrigin = "";
+  }
   return {
     publishableKey,
     authorizedParties: [],
     clerkDomain: deriveClerkDomain(publishableKey),
+    mcpOrigin,
   };
 }

@@ -14,7 +14,7 @@
  * metadata and are never part of any response, log, or audit row.
  */
 import { HostedRepository } from "../../state/src/repository.js";
-import type { GoogleConnection } from "../../state/src/types.js";
+import type { GoogleConnection, ResourceGrant } from "../../state/src/types.js";
 import {
   CredentialCipher,
   CredentialKeyError,
@@ -37,6 +37,7 @@ import {
   HOSTED_SERVICES,
   mergeScopes,
   normalizeServices,
+  isHostedService,
   UnknownServiceError,
   scopesForServices,
 } from "./scopes.js";
@@ -171,6 +172,17 @@ export interface DiscoveryView {
   checkedAt: string | null;
 }
 
+export interface ResourceView {
+  connectionId: string;
+  service: string;
+  serviceLabel: string;
+  resourceId: string;
+  resourceType: string;
+  displayName: string;
+  parent: string;
+  enabled: boolean;
+}
+
 /** User-safe connection projection: no tenant ID, no credential material. */
 export interface ConnectionView {
   id: string;
@@ -181,6 +193,8 @@ export interface ConnectionView {
   lastError: string;
   lastValidatedAt: string | null;
   discovery: DiscoveryView;
+  /** Read-only canonical service labels already explicitly consented. */
+  services: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -362,6 +376,7 @@ function viewFor(connection: GoogleConnection): ConnectionView {
     status: connection.status,
     lastError: connection.lastError,
     lastValidatedAt: connection.lastValidatedAt,
+    services: servicesForScopes(grantedScopes).map((service) => HOSTED_SERVICES[service]!.label),
     discovery: {
       status: (connection.discoveryState || "unavailable") as DiscoveryView["status"],
       detail: connection.discoveryDetail,
@@ -371,6 +386,21 @@ function viewFor(connection: GoogleConnection): ConnectionView {
     createdAt: connection.createdAt,
     updatedAt: connection.updatedAt,
   };
+}
+
+function servicesForScopes(scopes: string[]): string[] {
+  const services: string[] = [];
+  for (const [service, info] of Object.entries(HOSTED_SERVICES)) {
+    if (info.resourceModel && info.scopes.every((scope) => scopes.includes(scope))) {
+      services.push(service);
+    }
+  }
+  return services;
+}
+
+/** Stable tuple identity: a delimiter cannot join two distinct resources. */
+function resourceTuple(service: string, resourceId: string): string {
+  return JSON.stringify([service, resourceId]);
 }
 
 async function audit(
@@ -738,18 +768,21 @@ async function runDiscovery(
     // Preserve user enable/disable choices for known resources; new
     // resources default to disabled (least privilege, no auto-expansion).
     const existing = await deps.repo.listResourceGrants(session.tenantId, connectionId);
-    const preserved = new Map(existing.map((g) => [`${g.service}:${g.resourceId}`, g.enabled]));
-    for (const resource of outcome.resources) {
-      const enabled = preserved.get(`${resource.service}:${resource.resourceId}`) ?? false;
-      await deps.repo.upsertResourceGrant(
+    const preserved = new Map(
+      existing.map((grant) => [resourceTuple(grant.service, grant.resourceId), grant.enabled]),
+    );
+    if (outcome.resources.length > 0) {
+      await deps.repo.upsertResourceGrants(
         session.tenantId,
         connectionId,
-        resource.service,
-        resource.resourceId,
-        resource.resourceType,
-        resource.displayName,
-        enabled,
-        JSON.stringify(resource.metadata),
+        outcome.resources.map((resource) => ({
+          service: resource.service,
+          resourceId: resource.resourceId,
+          resourceType: resource.resourceType,
+          displayName: resource.displayName,
+          enabled: preserved.get(resourceTuple(resource.service, resource.resourceId)) ?? false,
+          metadataJson: JSON.stringify(resource.metadata),
+        })),
       );
     }
   }
@@ -781,6 +814,182 @@ async function runDiscovery(
     detail: outcome.detail,
     resourceCount: outcome.resources.length,
     checkedAt,
+  };
+}
+
+export async function discoverConnection(
+  deps: ConnectDeps,
+  session: ConnectSession,
+  connectionId: string,
+): Promise<{ connection: ConnectionView; discovery: DiscoveryView }> {
+  // Ownership and identity are checked before any mutation or Google/runner
+  // call. A foreign connection handle is indistinguishable from not found.
+  const connection = await deps.repo.getConnection(session.tenantId, connectionId);
+  if (!connection) throw new ConnectError("connection_not_found", 404);
+  if (!connection.googleSubject || !connection.email) {
+    throw new ConnectError("needs_reconnect", 409);
+  }
+
+  const accessToken = await accessTokenForDiscovery(deps, session, connection);
+  const grantedScopes = (() => {
+    try {
+      const parsed = JSON.parse(connection.grantedScopesJson);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  })();
+  const services = servicesForScopes(grantedScopes);
+  const discovery = await runDiscovery(deps, session, connection.id, services, accessToken);
+  const updated = await deps.repo.getConnection(session.tenantId, connection.id);
+  return {
+    connection: viewFor(updated ?? connection),
+    discovery: {
+      ...discovery,
+      resourceCount: discovery.resourceCount,
+    },
+  };
+}
+
+async function accessTokenForDiscovery(
+  deps: ConnectDeps,
+  session: ConnectSession,
+  connection: GoogleConnection,
+): Promise<string> {
+  const stored = await deps.repo.getCredential(session.tenantId, connection.id);
+  if (!stored) {
+    await deps.repo.updateConnectionStatus(
+      session.tenantId,
+      connection.id,
+      "needs_reconnect",
+      CONNECT_ERROR_MESSAGES.needs_reconnect,
+    );
+    throw new ConnectError("needs_reconnect", 409);
+  }
+  const payload = await deps.cipher.decrypt(session.tenantId, connection.id, stored);
+  const expiresAt = Date.parse(payload.expiry);
+  if (Number.isFinite(expiresAt) && expiresAt > Date.now() + 60_000 && payload.access_token) {
+    return payload.access_token;
+  }
+  await refreshConnection(deps, session, connection.id);
+  const refreshed = await deps.repo.getCredential(session.tenantId, connection.id);
+  if (!refreshed) throw new ConnectError("needs_reconnect", 409);
+  const refreshedPayload = await deps.cipher.decrypt(session.tenantId, connection.id, refreshed);
+  if (!refreshedPayload.access_token) throw new ConnectError("needs_reconnect", 409);
+  return refreshedPayload.access_token;
+}
+
+export async function saveResourceGrants(
+  repo: HostedRepository,
+  session: ConnectSession,
+  connectionId: string,
+  body: { grants?: unknown },
+): Promise<ConnectionView & { resources: ResourceView[] }> {
+  const connection = await repo.getConnection(session.tenantId, connectionId);
+  if (!connection) throw new ConnectError("connection_not_found", 404);
+
+  // Parse and validate the complete requested batch before touching state.
+  // Unknown or foreign resource handles fail the whole request; they are not
+  // silently ignored and no valid item is saved alongside them.
+  if (body.grants === undefined) {
+    throw new ConnectError("invalid_request", 400);
+  }
+  if (!Array.isArray(body.grants) || body.grants.length > 250) {
+    throw new ConnectError("invalid_request", 400);
+  }
+  const requested = body.grants.map((raw) => {
+    if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+      throw new ConnectError("invalid_request", 400);
+    }
+    const value = raw as Record<string, unknown>;
+    const service = String(value.service ?? "").trim();
+    const resourceId = String(value.resourceId ?? "").trim();
+    const enabled = value.enabled;
+    if (!service || !resourceId || typeof enabled !== "boolean") {
+      throw new ConnectError("invalid_request", 400);
+    }
+    if (!isHostedService(service)) {
+      throw new ConnectError("invalid_request", 400);
+    }
+    return { service, resourceId, enabled };
+  });
+  const existing = await repo.listResourceGrants(session.tenantId, connection.id);
+  const owned = new Map(
+    existing.map((grant) => [resourceTuple(grant.service, grant.resourceId), grant]),
+  );
+  const seen = new Set<string>();
+  const updates = requested.map((update) => {
+    const key = resourceTuple(update.service, update.resourceId);
+    if (seen.has(key) || !owned.has(key)) {
+      throw new ConnectError("invalid_request", 400);
+    }
+    seen.add(key);
+    return update;
+  });
+
+  await repo.setResourceGrantsEnabled(session.tenantId, connection.id, updates);
+  try {
+    await repo.appendAudit({
+      id: crypto.randomUUID(),
+      tenantId: session.tenantId,
+      connectionId: connection.id,
+      actorClerkUserId: session.userId,
+      action: "google.grants.save",
+      result: "allow",
+      detailJson: JSON.stringify({ operation: "save", count: updates.length, error: "none" }),
+      latencyMs: null,
+    });
+  } catch {
+    // User-visible persistence must not be made ambiguous by audit failure;
+    // the durable grant change and later reload are authoritative.
+  }
+  const latest = await listResources(repo, session);
+  const saved = latest.connections.find((connection) => connection.id === connectionId);
+  if (!saved) throw new ConnectError("connection_not_found", 404);
+  return saved;
+}
+
+export async function listResources(
+  repo: HostedRepository,
+  session: ConnectSession,
+): Promise<{ connections: Array<ConnectionView & { resources: ResourceView[] }> }> {
+  const connections = (await repo.listConnections(session.tenantId)).filter(
+    (connection) =>
+      Boolean(connection.email && connection.googleSubject) &&
+      !connection.googleSubject.startsWith("pending-"),
+  );
+  const views = await Promise.all(
+    connections.map(async (connection) => ({
+      ...viewFor(connection),
+      resources: (await repo.listResourceGrants(session.tenantId, connection.id)).map((grant) =>
+        resourceView(connection.id, grant),
+      ),
+    })),
+  );
+  return { connections: views };
+}
+
+function resourceView(connectionId: string, grant: ResourceGrant): ResourceView {
+  let metadata: Record<string, string> = {};
+  try {
+    const parsed = JSON.parse(grant.metadataJson);
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      metadata = Object.fromEntries(
+        Object.entries(parsed).map(([key, value]) => [key, String(value ?? "")]),
+      );
+    }
+  } catch {
+    metadata = {};
+  }
+  return {
+    connectionId,
+    service: grant.service,
+    serviceLabel: HOSTED_SERVICES[grant.service]?.label ?? grant.service,
+    resourceId: grant.resourceId,
+    resourceType: grant.resourceType,
+    displayName: grant.displayName,
+    parent: metadata.parent ?? "",
+    enabled: grant.enabled,
   };
 }
 
