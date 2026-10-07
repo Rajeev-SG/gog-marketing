@@ -9,6 +9,16 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { loadMigrationSql, splitMigrationStatements } from "../../state/src/dev-migrations.js";
 import { HostedRepository } from "../../state/src/repository.js";
 import type { Database, ResourceGrant } from "../../state/src/types.js";
+import { CredentialCipher, parseCredentialKeys } from "./credential-crypto.js";
+import {
+  discoverConnection,
+  saveResourceGrants,
+  type ConnectDeps,
+  type ConnectSession,
+} from "./connect.js";
+import { GoogleOAuthClient } from "./google-oauth.js";
+import type { DiscoveryRunner, DiscoveryOutcome } from "./discovery.js";
+import { renderHome } from "./html.js";
 import worker from "./index.js";
 import type { Env } from "./index.js";
 import {
@@ -529,6 +539,386 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(payload).not.toContain("1//private-refresh");
     expect(payload).not.toContain(tenant);
     expect(runnerCalls.every((call) => call.operation === "discover")).toBe(true);
+  });
+
+  it("keeps hosted reconnect, failed reload, and destructive disconnect contracts", async () => {
+    const html = renderHome({
+      publishableKey: CLERK_PUBLISHABLE_KEY,
+      authorizedParties: [ORIGIN],
+      clerkDomain: "oriented-wombat-2813.clerk.accounts.dev",
+      mcpOrigin: CANONICAL_ORIGIN,
+    });
+    const scriptStart = html.lastIndexOf("<script>") + "<script>".length;
+    const scriptEnd = html.indexOf("</script>", scriptStart);
+    const script = html.slice(scriptStart, scriptEnd);
+    const extraction = (name: string): string => {
+      const start = script.indexOf(`function ${name}(`);
+      if (start < 0) throw new Error(`missing UI function: ${name}`);
+      const marker = "\n    }";
+      const end = script.indexOf(marker, start);
+      if (end < 0) throw new Error(`missing UI function end: ${name}`);
+      return script.slice(start, end + marker.length);
+    };
+
+    const reconnect = new Function(
+      "startConnection",
+      "selectedServices",
+      "connection",
+      `${extraction("reconnect")}; return reconnect(connection);`,
+    );
+    const reconnectRequest: Record<string, unknown> = {};
+    const connection = { id: "owned-connection", email: "owner@example.com" };
+    (reconnect as (start: unknown, selected: () => string[], context: unknown) => void)(
+      (request: Record<string, unknown>) => Object.assign(reconnectRequest, request),
+      () => ["analytics", "tagmanager"],
+      connection,
+    );
+    expect(reconnectRequest.connectionId).toBe("owned-connection");
+    expect(reconnectRequest.services).toEqual(["analytics", "tagmanager"]);
+
+    const guarded = new Function(
+      "message",
+      "request",
+      "loadResources",
+      "connection",
+      `${extraction("guardedAction").replace("function guardedAction(", "async function guardedAction(")}; return guardedAction('Refresh', connection, request);`,
+    );
+    const messages: Array<string | undefined> = [];
+    await (
+      guarded as (
+        message: (text?: string) => void,
+        request: () => Promise<{ ok: true }>,
+        load: () => Promise<boolean>,
+      ) => Promise<void>
+    )(
+      (text = "") => messages.push(text),
+      () => Promise.resolve({ ok: true }),
+      () => Promise.resolve(false),
+    );
+    expect(messages).toEqual([""]);
+
+    const disconnect = new Function(
+      "guardedAction",
+      "window",
+      "jsonFetch",
+      "connection",
+      `${extraction("disconnect")}; return disconnect(connection);`,
+    );
+    const mutations: Array<{ label: string; request: () => Promise<unknown> }> = [];
+    const guardedAction = (label: string, target: unknown, request: () => Promise<unknown>) =>
+      mutations.push({ label, request });
+    (disconnect as unknown as (...args: unknown[]) => void)(
+      guardedAction,
+      { confirm: () => false },
+      () => Promise.resolve(new Response()),
+      connection,
+    );
+    expect(mutations).toHaveLength(0);
+    (disconnect as unknown as (...args: unknown[]) => void)(
+      guardedAction,
+      { confirm: () => true },
+      () => Promise.resolve(new Response()),
+      connection,
+    );
+    expect(mutations).toHaveLength(1);
+    expect(mutations[0]!.label).toBe("Disconnect");
+    expect(String(html)).toContain(
+      "connections/' + encodeURIComponent(connection.id) + '/disconnect",
+    );
+  });
+
+  it("preserves a concurrent disable when discovery resumes from its stale snapshot", async () => {
+    const env = await createEnv();
+    const repository = await readRepo(env);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const oauth = new GoogleOAuthClient({
+      clientId: "test-client-id",
+      clientSecret: "test-client-secret",
+    });
+    const session: ConnectSession = { userId: "race-user", sessionId: "session", tenantId: "" };
+    const tenant = await tenantId(env, session.userId);
+    session.tenantId = tenant;
+    const connection = await repository.createConnection(
+      tenant,
+      "race-google-subject",
+      "race@example.com",
+      "",
+      JSON.stringify(["https://www.googleapis.com/auth/analytics.readonly"]),
+    );
+    const encrypted = await cipher.encrypt(tenant, connection.id, {
+      access_token: "ya29.race-access",
+      refresh_token: "1//race-refresh",
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 300_000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+    });
+    await repository.upsertCredential({
+      tenantId: tenant,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    await repository.upsertResourceGrant(
+      tenant,
+      connection.id,
+      "analytics",
+      "properties/race",
+      "property",
+      "Race",
+      true,
+      "{}",
+    );
+
+    let paused = false;
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const discovery: DiscoveryRunner = {
+      async discover(): Promise<DiscoveryOutcome> {
+        return {
+          status: "ok",
+          detail: "",
+          resources: [
+            {
+              service: "analytics",
+              resourceId: "properties/race",
+              resourceType: "property",
+              displayName: "Race",
+              parent: "",
+              metadata: {},
+            },
+          ],
+          statuses: {},
+        };
+      },
+    };
+    const snapshotRepo = new Proxy(repository, {
+      get(source, property) {
+        if (property === "listResourceGrants") {
+          return async (...args: unknown[]) => {
+            const result = await source.listResourceGrants(args[0] as string, args[1] as string);
+            paused = true;
+            await gate;
+            return result;
+          };
+        }
+        const value = Reflect.get(source, property, source);
+        return typeof value === "function" ? value.bind(source) : value;
+      },
+    });
+    const deps: ConnectDeps = {
+      repo: snapshotRepo as HostedRepository,
+      oauth,
+      cipher,
+      discovery,
+      redirectUri: `${ORIGIN}/oauth/google/callback`,
+      stateTtlSeconds: 600,
+    };
+    const discoveryPromise = discoverConnection(deps, session, connection.id);
+    for (let spins = 0; spins < 200 && !paused; spins += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    expect(paused).toBe(true);
+    await saveResourceGrants(repository, session, connection.id, {
+      grants: [{ service: "analytics", resourceId: "properties/race", enabled: false }],
+    });
+    release?.();
+    await discoveryPromise;
+    const grants = await repository.listResourceGrants(tenant, connection.id);
+    expect(grants.find((grant) => grant.resourceId === "properties/race")?.enabled).toBe(false);
+  });
+
+  it("persists 251 discovered resources without overwriting existing choices", async () => {
+    const env = await createEnv();
+    const repository = await readRepo(env);
+    const tenant = await tenantId(env, "user-251");
+    const connection = await repository.createConnection(
+      tenant,
+      "subject-251",
+      "inventory@example.com",
+      "",
+      "[]",
+    );
+    await repository.upsertResourceGrant(
+      tenant,
+      connection.id,
+      "analytics",
+      "properties/choice",
+      "property",
+      "Existing choice",
+      true,
+      "{}",
+    );
+    const resources = [
+      {
+        service: "analytics",
+        resourceId: "properties/choice",
+        resourceType: "property",
+        displayName: "Updated existing",
+        enabled: true,
+        metadataJson: "{}",
+      },
+      ...Array.from({ length: 250 }, (_, index) => ({
+        service: "analytics",
+        resourceId: `properties/inventory-${index + 1}`,
+        resourceType: "property",
+        displayName: `Inventory ${index + 1}`,
+        enabled: false,
+        metadataJson: "{}",
+      })),
+    ];
+    await repository.upsertResourceGrants(tenant, connection.id, resources);
+    const grants = await repository.listResourceGrants(tenant, connection.id);
+    expect(grants).toHaveLength(251);
+    expect(grants.find((grant) => grant.resourceId === "properties/choice")).toMatchObject({
+      enabled: true,
+      displayName: "Updated existing",
+    });
+    expect(
+      grants
+        .filter((grant) => grant.resourceId !== "properties/choice")
+        .every((grant) => !grant.enabled),
+    ).toBe(true);
+  });
+
+  it("native-D1 regression 101: invalid last metadata leaves zero rows changed and preserves the existing choice", async () => {
+    const env = await createEnv();
+    const repository = await readRepo(env);
+    const tenant = await tenantId(env, "user-101-regression");
+    const connection = await repository.createConnection(
+      tenant,
+      "subject-101-regression",
+      "regression101@example.com",
+      "",
+      "[]",
+    );
+    await repository.upsertResourceGrant(
+      tenant,
+      connection.id,
+      "analytics",
+      "properties/choice",
+      "property",
+      "Existing choice",
+      true,
+      "{}",
+    );
+    const resources = [
+      {
+        service: "analytics",
+        resourceId: "properties/choice",
+        resourceType: "property",
+        displayName: "Updated existing",
+        enabled: true,
+        metadataJson: "{}",
+      },
+      ...Array.from({ length: 99 }, (_, index) => ({
+        service: "analytics",
+        resourceId: `properties/inventory-${index + 1}`,
+        resourceType: "property",
+        displayName: `Inventory ${index + 1}`,
+        enabled: false,
+        metadataJson: "{}",
+      })),
+      {
+        service: "analytics",
+        resourceId: "properties/overflow",
+        resourceType: "property",
+        displayName: "Oversized metadata",
+        enabled: false,
+        // Valid JSON whose string exceeds the 16,384-character limit, so the
+        // rejection must come from the metadata length check, not JSON parsing.
+        metadataJson: JSON.stringify({ data: "x".repeat(16_384) }),
+      },
+    ];
+    await expect(repository.upsertResourceGrants(tenant, connection.id, resources)).rejects.toThrow(
+      "metadataJson",
+    );
+    const grants = await repository.listResourceGrants(tenant, connection.id);
+    expect(grants).toHaveLength(1);
+    expect(grants[0]).toMatchObject({
+      resourceId: "properties/choice",
+      enabled: true,
+      displayName: "Existing choice",
+      metadataJson: "{}",
+    });
+  });
+
+  it("rejects colon-tuple collisions before any grant write and audits a valid save", async () => {
+    const env = await createEnv();
+    const user = "user_grant_collision64";
+    await authenticatedRequest(`${ORIGIN}/api/tenant`, user, env);
+    const repo = await readRepo(env);
+    const tenantIdValue = await tenantId(env, user);
+    const connection = await repo.createConnection(
+      tenantIdValue,
+      "subject-collision64",
+      "collision@example.com",
+      "",
+      "[]",
+    );
+    await repo.upsertResourceGrant(
+      tenantIdValue,
+      connection.id,
+      "searchconsole",
+      "https://example.test/",
+      "site",
+      "Exact site",
+      false,
+      "{}",
+    );
+    await repo.upsertResourceGrant(
+      tenantIdValue,
+      connection.id,
+      "analytics",
+      "properties/valid",
+      "property",
+      "Valid",
+      false,
+      "{}",
+    );
+    const before = await repo.listResourceGrants(tenantIdValue, connection.id);
+
+    const collision = await authenticatedRequest(ORIGIN + "/api/google/grants", user, env, {
+      method: "POST",
+      body: JSON.stringify({
+        connectionId: connection.id,
+        grants: [
+          { service: "analytics", resourceId: "properties/valid", enabled: true },
+          { service: "searchconsole", resourceId: "https://example.test/", enabled: true },
+          { service: "searchconsole:https", resourceId: "//example.test/", enabled: false },
+        ],
+      }),
+    });
+    expect(collision.status).toBe(400);
+    expect(await repo.listResourceGrants(tenantIdValue, connection.id)).toEqual(before);
+    expect(await repo.listAudit(tenantIdValue, 10)).toHaveLength(0);
+
+    const save = await authenticatedRequest(ORIGIN + "/api/google/grants", user, env, {
+      method: "POST",
+      body: JSON.stringify({
+        connectionId: connection.id,
+        grants: [{ service: "analytics", resourceId: "properties/valid", enabled: true }],
+      }),
+    });
+    expect(save.status).toBe(200);
+    const grants = await repo.listResourceGrants(tenantIdValue, connection.id);
+    expect(grants.find((grant) => grant.resourceId === "properties/valid")?.enabled).toBe(true);
+    expect(grants.find((grant) => grant.service === "searchconsole")?.enabled).toBe(false);
+
+    const audits = await repo.listAudit(tenantIdValue, 10);
+    const savedAudit = audits.find((event) => event.action === "google.grants.save");
+    expect(savedAudit?.connectionId).toBe(connection.id);
+    expect(savedAudit?.actorClerkUserId).toBe(user);
+    expect(savedAudit?.result).toBe("allow");
+    expect(JSON.parse(savedAudit?.detailJson ?? "{}")).toEqual({
+      operation: "save",
+      count: 1,
+      error: "none",
+    });
+    const responseText = JSON.stringify(await save.json());
+    expect(responseText).not.toContain(tenantIdValue);
+    expect(responseText).not.toContain("ya29");
+    expect(JSON.stringify(audits)).not.toContain("https://example.test/");
   });
 });
 

@@ -580,7 +580,8 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         if (!data.connections || !data.connections.length) { data.connections = []; selectedId = null; }
         else if (!selectedId || !data.connections.some(function (item) { return item.id === selectedId; })) selectedId = data.connections[0].id;
         renderAccounts(); renderAssets();
-      } catch { message('Could not load your Google assets. Try again.', 'error'); }
+        return true;
+      } catch { message('Could not load your Google assets. Try again.', 'error'); return false; }
     }
     async function guardedAction(actionLabel, connection, request) {
       message('');
@@ -590,14 +591,19 @@ export function renderHome(htmlConfig: HtmlConfig): string {
           var failure = await response.json().catch(function () { return {}; });
           throw new Error(failure.error || actionLabel + ' failed.');
         }
-        await loadResources();
+        var reloaded = await loadResources();
+        if (!reloaded) return;
         message(actionLabel + ' complete.', 'info');
       } catch (error) { message(error.message || actionLabel + ' failed.', 'error'); }
     }
-    function reconnect(connection) { startConnection({ connectionId: connection.id }); }
+    function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices() }); }
     function refresh(connection) { guardedAction('Refresh', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/refresh'); }); }
     function discover(connection) { guardedAction('Discovery', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/discover'); }); }
-    function disconnect(connection) { guardedAction('Disconnect', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/disconnect'); }); }
+    function disconnect(connection) {
+      var confirmed = window.confirm('Disconnect ' + (connection.email || connection.displayName || 'this Google account') + '? Agents will lose access.');
+      if (!confirmed) return;
+      guardedAction('Disconnect', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/disconnect'); });
+    }
     async function save() {
       var connection = selectedAccount(); if (!connection) return;
       var grants = Array.from(changedChoices.entries()).map(function (entry) {

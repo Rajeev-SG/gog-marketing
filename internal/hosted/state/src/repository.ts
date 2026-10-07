@@ -1,5 +1,6 @@
 import { toByteArray } from "./bytes.js";
 import { assertSafeAuditString, sanitizeAuditDetail } from "./audit-detail.js";
+import { HOSTED_SERVICES } from "../../app/src/scopes.js";
 import type {
   AuditEvent,
   AuditEventInput,
@@ -543,45 +544,64 @@ export class HostedRepository {
     }>,
   ): Promise<void> {
     if (resources.length === 0) return;
-    if (resources.length > 250) {
-      throw new Error("upsertResourceGrants: batch size exceeds the supported limit");
-    }
-    const now = new Date().toISOString();
-    const statements = resources.map((resource, index) => {
+    // Validate the complete inventory before executing any bounded batch so
+    // an invalid later resource rejects the whole save instead of committing
+    // earlier chunks.
+    resources.forEach((resource, index) => {
       validateNonEmptyText("service", resource.service);
       validateNonEmptyText("resourceId", resource.resourceId);
+      if (!Object.hasOwn(HOSTED_SERVICES, resource.service)) {
+        throw new Error("upsertResourceGrants: unsupported service");
+      }
       validateJsonText("metadataJson", resource.metadataJson);
       if (!Number.isInteger(index)) throw new Error("upsertResourceGrants: invalid index");
-      return this.db
-        .prepare(
-          `INSERT INTO hosted_resource_grants
-             (id, tenant_id, connection_id, service, resource_id, resource_type,
-              display_name, enabled, metadata_json, discovered_at, created_at, updated_at)
-           VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
-           ON CONFLICT (tenant_id, connection_id, service, resource_id)
-           DO UPDATE SET
-             resource_type = ?6, display_name = ?7, enabled = ?8,
-             metadata_json = ?9, discovered_at = ?10, updated_at = ?12`,
-        )
-        .bind(
-          crypto.randomUUID(),
-          tenantId,
-          connectionId,
-          resource.service,
-          resource.resourceId,
-          resource.resourceType.slice(0, 512),
-          resource.displayName.slice(0, 512),
-          resource.enabled ? 1 : 0,
-          resource.metadataJson,
-          now,
-          now,
-          now,
-        );
     });
+    // Google inventories can be larger than one D1 batch. Chunked batches keep
+    // each native call bounded while preserving the conflict rules. Existing
+    // enabled choices are authoritative on conflict; the caller's enabled flag
+    // applies only to a newly discovered row.
+    for (let start = 0; start < resources.length; start += 100) {
+      const now = new Date().toISOString();
+      const chunk = resources.slice(start, start + 100);
+      const statements = chunk.map((resource, index) => {
+        validateNonEmptyText("service", resource.service);
+        validateNonEmptyText("resourceId", resource.resourceId);
+        if (!Object.hasOwn(HOSTED_SERVICES, resource.service)) {
+          throw new Error("upsertResourceGrants: unsupported service");
+        }
+        validateJsonText("metadataJson", resource.metadataJson);
+        if (!Number.isInteger(index)) throw new Error("upsertResourceGrants: invalid index");
+        return this.db
+          .prepare(
+            `INSERT INTO hosted_resource_grants
+               (id, tenant_id, connection_id, service, resource_id, resource_type,
+                display_name, enabled, metadata_json, discovered_at, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+             ON CONFLICT (tenant_id, connection_id, service, resource_id)
+             DO UPDATE SET
+               resource_type = ?6, display_name = ?7,
+               metadata_json = ?9, discovered_at = ?10, updated_at = ?12`,
+          )
+          .bind(
+            crypto.randomUUID(),
+            tenantId,
+            connectionId,
+            resource.service,
+            resource.resourceId,
+            resource.resourceType.slice(0, 512),
+            resource.displayName.slice(0, 512),
+            resource.enabled ? 1 : 0,
+            resource.metadataJson,
+            now,
+            now,
+            now,
+          );
+      });
 
-    const results = await this.db.batch(statements);
-    if (results.length !== statements.length || results.some((result) => !result.success)) {
-      throw new Error("upsertResourceGrants: batch save failed");
+      const results = await this.db.batch(statements);
+      if (results.length !== statements.length || results.some((result) => !result.success)) {
+        throw new Error("upsertResourceGrants: batch save failed");
+      }
     }
   }
 
@@ -734,6 +754,9 @@ function validateGrantUpdates(
   return updates.map((update) => {
     validateNonEmptyText("service", update.service);
     validateNonEmptyText("resourceId", update.resourceId);
+    if (!Object.hasOwn(HOSTED_SERVICES, update.service)) {
+      throw new Error("setResourceGrantsEnabled: unsupported service");
+    }
     if (typeof update.enabled !== "boolean") {
       throw new Error("setResourceGrantsEnabled: enabled must be boolean");
     }

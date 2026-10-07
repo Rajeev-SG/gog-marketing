@@ -86,9 +86,11 @@ resources and failed discovery outcomes retain their existing choices.
 `POST /api/google/connections/:connectionId/discover` verifies server-side
 connection ownership and identity before using the persisted OAuth refresh path
 and the existing private Go/WIF discovery contract. Successful discovery may
-add assets, but they start disabled; unavailable, empty, and failed runs are
-distinct and never erase or expand grants. Service consent remains canonical,
-read-only, and incremental through the existing Google connect flow.
+persist inventories in bounded native-D1 chunks. Added assets start disabled;
+conflicts preserve the current stored choice, while unavailable, empty, and
+failed runs are distinct and never erase or expand grants. Service consent
+remains canonical, read-only, and incremental through the existing Google
+connect flow.
 
 ## AI panel and canonical MCP URL
 

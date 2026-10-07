@@ -37,6 +37,7 @@ import {
   HOSTED_SERVICES,
   mergeScopes,
   normalizeServices,
+  isHostedService,
   UnknownServiceError,
   scopesForServices,
 } from "./scopes.js";
@@ -395,6 +396,11 @@ function servicesForScopes(scopes: string[]): string[] {
     }
   }
   return services;
+}
+
+/** Stable tuple identity: a delimiter cannot join two distinct resources. */
+function resourceTuple(service: string, resourceId: string): string {
+  return JSON.stringify([service, resourceId]);
 }
 
 async function audit(
@@ -762,7 +768,9 @@ async function runDiscovery(
     // Preserve user enable/disable choices for known resources; new
     // resources default to disabled (least privilege, no auto-expansion).
     const existing = await deps.repo.listResourceGrants(session.tenantId, connectionId);
-    const preserved = new Map(existing.map((g) => [`${g.service}:${g.resourceId}`, g.enabled]));
+    const preserved = new Map(
+      existing.map((grant) => [resourceTuple(grant.service, grant.resourceId), grant.enabled]),
+    );
     if (outcome.resources.length > 0) {
       await deps.repo.upsertResourceGrants(
         session.tenantId,
@@ -772,7 +780,7 @@ async function runDiscovery(
           resourceId: resource.resourceId,
           resourceType: resource.resourceType,
           displayName: resource.displayName,
-          enabled: preserved.get(`${resource.service}:${resource.resourceId}`) ?? false,
+          enabled: preserved.get(resourceTuple(resource.service, resource.resourceId)) ?? false,
           metadataJson: JSON.stringify(resource.metadata),
         })),
       );
@@ -900,13 +908,18 @@ export async function saveResourceGrants(
     if (!service || !resourceId || typeof enabled !== "boolean") {
       throw new ConnectError("invalid_request", 400);
     }
+    if (!isHostedService(service)) {
+      throw new ConnectError("invalid_request", 400);
+    }
     return { service, resourceId, enabled };
   });
   const existing = await repo.listResourceGrants(session.tenantId, connection.id);
-  const owned = new Map(existing.map((grant) => [`${grant.service}:${grant.resourceId}`, grant]));
+  const owned = new Map(
+    existing.map((grant) => [resourceTuple(grant.service, grant.resourceId), grant]),
+  );
   const seen = new Set<string>();
   const updates = requested.map((update) => {
-    const key = `${update.service}:${update.resourceId}`;
+    const key = resourceTuple(update.service, update.resourceId);
     if (seen.has(key) || !owned.has(key)) {
       throw new ConnectError("invalid_request", 400);
     }
@@ -923,7 +936,7 @@ export async function saveResourceGrants(
       actorClerkUserId: session.userId,
       action: "google.grants.save",
       result: "allow",
-      detailJson: JSON.stringify({ changed: updates.length, error: "none" }),
+      detailJson: JSON.stringify({ operation: "save", count: updates.length, error: "none" }),
       latencyMs: null,
     });
   } catch {
