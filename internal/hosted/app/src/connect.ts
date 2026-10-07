@@ -27,6 +27,7 @@ import {
   type DiscoveryRunner,
   UnavailableDiscoveryRunner,
 } from "./discovery.js";
+import { RemoteToolRunner, type ToolRunner, UnavailableToolRunner } from "./tool-runner.js";
 import {
   GoogleOAuthClient,
   GoogleOAuthError,
@@ -67,6 +68,8 @@ export interface ConnectEnv {
   GOG_HOSTED_OAUTH_STATE_TTL_SECONDS?: string;
   /** Test-only fetch injection; never set in production. */
   __testFetch?: typeof fetch;
+  /** Test-only tool runner injection; never set in production. */
+  __testToolRunner?: ToolRunner;
 }
 
 export type ConnectErrorCode =
@@ -204,6 +207,7 @@ export interface ConnectDeps {
   oauth: GoogleOAuthClient;
   cipher: CredentialCipher;
   discovery: DiscoveryRunner;
+  tools?: ToolRunner;
   redirectUri: string;
   stateTtlSeconds: number;
   now?: () => Date;
@@ -298,6 +302,7 @@ export function buildConnectDeps(env: ConnectEnv, repo: HostedRepository): DepsO
     env.GOG_RUNNER_SERVICE_ACCOUNT,
   );
   let discovery: DiscoveryRunner = new UnavailableDiscoveryRunner();
+  let tools: ToolRunner = env.__testToolRunner ?? new UnavailableToolRunner();
   if (runnerConfigured) {
     try {
       const runnerUrl = new URL(runnerUrlRaw);
@@ -316,12 +321,21 @@ export function buildConnectDeps(env: ConnectEnv, repo: HostedRepository): DepsO
       };
       validateRunnerIdentityConfig(identityConfig);
       const fetchImpl = env.__testFetch ?? fetch.bind(globalThis);
+      const identity = new WorkloadIdentityClient({ config: identityConfig, fetchImpl });
       discovery = new RemoteDiscoveryRunner({
         url: runnerUrl,
         invocationToken: runnerToken,
-        identity: new WorkloadIdentityClient({ config: identityConfig, fetchImpl }),
+        identity,
         fetchImpl,
       });
+      if (!env.__testToolRunner) {
+        tools = new RemoteToolRunner({
+          url: runnerUrl,
+          invocationToken: runnerToken,
+          identity,
+          fetchImpl,
+        });
+      }
     } catch {
       // A partially or incorrectly configured runner stays unavailable; it
       // must never fall back to static bearer authentication.
@@ -340,7 +354,15 @@ export function buildConnectDeps(env: ConnectEnv, repo: HostedRepository): DepsO
   const stateTtlSeconds = Number.isFinite(ttlRaw) && ttlRaw > 0 ? Math.floor(ttlRaw) : 600;
   return {
     ok: true,
-    deps: { repo, oauth, cipher, discovery, redirectUri: redirectUri.toString(), stateTtlSeconds },
+    deps: {
+      repo,
+      oauth,
+      cipher,
+      discovery,
+      tools,
+      redirectUri: redirectUri.toString(),
+      stateTtlSeconds,
+    },
   };
 }
 
@@ -830,7 +852,7 @@ export async function discoverConnection(
     throw new ConnectError("needs_reconnect", 409);
   }
 
-  const accessToken = await accessTokenForDiscovery(deps, session, connection);
+  const accessToken = await accessTokenForConnection(deps, session, connection);
   const grantedScopes = (() => {
     try {
       const parsed = JSON.parse(connection.grantedScopesJson);
@@ -851,7 +873,7 @@ export async function discoverConnection(
   };
 }
 
-async function accessTokenForDiscovery(
+export async function accessTokenForConnection(
   deps: ConnectDeps,
   session: ConnectSession,
   connection: GoogleConnection,

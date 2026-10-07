@@ -10,14 +10,23 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { loadMigrationSql, splitMigrationStatements } from "../../state/src/dev-migrations.js";
 import { HostedRepository } from "../../state/src/repository.js";
 import type { Database } from "../../state/src/types.js";
+import {
+  CredentialCipher,
+  parseCredentialKeys,
+  type StoredGoogleCredential,
+} from "./credential-crypto.js";
 import worker from "./index.js";
 import type { Env } from "./index.js";
 import { generateTestKey, signTestToken, type TestKeyPair } from "./test-helpers.js";
+import type { ToolExecutionRequest, ToolRunner } from "./tool-runner.js";
 
 const RESOURCE = "https://mcp.example.test/mcp";
 const ORIGIN = "https://mcp.example.test";
 const CLERK_PUBLISHABLE_KEY = "pk_test_b3JpZW50ZWQtd29tYmF0LTI4MTMuY2xlcmsuYWNjb3VudHMuZGV2JA";
 const CLERK_ISSUER = "https://oriented-wombat-2813.clerk.accounts.dev";
+const CREDENTIAL_KEY = Buffer.alloc(32, 7).toString("base64");
+const ACCESS_TOKEN = "ya29.hosted-tool-secret-access-token";
+const REFRESH_TOKEN = "1//hosted-tool-secret-refresh-token";
 
 let mf: Miniflare | undefined;
 let keys: TestKeyPair;
@@ -60,6 +69,10 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     CLERK_AUTHORIZED_PARTIES: ORIGIN,
     CLERK_JWT_KEY: keys.publicPem,
     GOG_HOSTED_CANONICAL_ORIGIN: ORIGIN,
+    GOG_GOOGLE_OAUTH_CLIENT_ID: "test-client-id",
+    GOG_GOOGLE_OAUTH_CLIENT_SECRET: "test-client-secret",
+    GOG_GOOGLE_OAUTH_REDIRECT_URI: `${ORIGIN}/oauth/google/callback`,
+    GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_KEY,
     ...overrides,
   };
 }
@@ -151,6 +164,79 @@ async function grantService(
     enabled,
     "{}",
   );
+}
+
+interface ToolFixture {
+  repo: HostedRepository;
+  tenantId: string;
+  connectionId: string;
+  resourceId: string;
+}
+
+async function createToolFixture(
+  env: Env,
+  user: string,
+  enabled = true,
+  resourceId = "properties/123",
+): Promise<ToolFixture> {
+  const repo = new HostedRepository(env.DB as unknown as Database);
+  const tenant = await repo.bootstrapTenant(user);
+  const connection = await repo.createConnection(
+    tenant.id,
+    `google-${user}`,
+    `${user}@google.example.test`,
+    "Test account",
+    "[]",
+  );
+  await repo.upsertResourceGrant(
+    tenant.id,
+    connection.id,
+    "analytics",
+    resourceId,
+    "property",
+    "Test property",
+    enabled,
+    "{}",
+  );
+  const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+  const credential: StoredGoogleCredential = {
+    access_token: ACCESS_TOKEN,
+    refresh_token: REFRESH_TOKEN,
+    token_type: "Bearer",
+    expiry: new Date(Date.now() + 3_600_000).toISOString(),
+    granted_scopes: [],
+  };
+  const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
+  await repo.upsertCredential({
+    tenantId: tenant.id,
+    connectionId: connection.id,
+    ciphertext: encrypted.ciphertext,
+    nonce: encrypted.nonce,
+    keyVersion: Number(encrypted.keyVersion),
+  });
+  return { repo, tenantId: tenant.id, connectionId: connection.id, resourceId };
+}
+
+function mockToolRunner(): {
+  runner: ToolRunner;
+  requests: ToolExecutionRequest[];
+} {
+  const requests: ToolExecutionRequest[] = [];
+  const runner: ToolRunner = {
+    async execute(request) {
+      requests.push(request);
+      return {
+        status: "ok",
+        result: {
+          name: request.resourceId,
+          displayName: "Test property",
+          timeZone: "Europe/London",
+          currencyCode: "GBP",
+        },
+      };
+    },
+  };
+  return { runner, requests };
 }
 
 describe("remote MCP discovery and dynamic registration (#65)", () => {
@@ -359,41 +445,323 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(namesB).not.toContain("analytics_report");
   });
 
-  it("policy-filters tools/call and never executes it in #65", async () => {
-    const env = await createEnv();
-    await grantService(env, "user_policy", "analytics", true);
-    const token = await tokenFor("user_policy");
-
-    const denied = await rpcJson(
-      await rpc(
-        env,
-        "tools/call",
-        { name: "tagmanager_accounts_list", arguments: { tenantId: "other" } },
-        { token },
-      ),
-    );
-    expect(denied).toMatchObject({
-      jsonrpc: "2.0",
-      id: "req-1",
-      error: { code: -32602, data: { reason: "policy_denied" } },
+  it("fails closed and audits the full tool-call denial matrix before provider calls", async () => {
+    const mock = mockToolRunner();
+    let providerCalls = 0;
+    const env = await createEnv({
+      __testToolRunner: mock.runner,
+      __testFetch: (async () => {
+        providerCalls += 1;
+        throw new Error("unexpected provider call");
+      }) as typeof fetch,
     });
+    const fixture = await createToolFixture(env, "user_denials", false);
+    const foreignTenant = await fixture.repo.bootstrapTenant("user_foreign_tenant");
+    const token = await tokenFor("user_denials");
+    const cases = [
+      {
+        detail: "unknown_tool",
+        params: {
+          name: "not_a_tool",
+          arguments: {
+            access_token: ACCESS_TOKEN,
+            refresh_token: REFRESH_TOKEN,
+            client_secret: "test-client-secret",
+          },
+        },
+      },
+      {
+        detail: "resource_mapping_unknown",
+        params: {
+          name: "analytics_properties_get",
+          arguments: { resourceId: fixture.resourceId },
+        },
+      },
+      {
+        detail: "unsupported_tool_mapping",
+        params: {
+          name: "analytics_report",
+          arguments: { property: fixture.resourceId },
+        },
+      },
+      {
+        detail: "grant_denied",
+        params: {
+          name: "analytics_properties_get",
+          arguments: { property: fixture.resourceId },
+        },
+      },
+      {
+        detail: "grant_denied",
+        params: {
+          name: "analytics_properties_get",
+          arguments: { property: "properties/999" },
+        },
+      },
+      {
+        detail: "foreign_tenant",
+        params: {
+          name: "analytics_properties_get",
+          arguments: { property: fixture.resourceId, tenantId: foreignTenant.id },
+        },
+      },
+      {
+        detail: "connection_not_found",
+        params: {
+          name: "analytics_properties_get",
+          arguments: {
+            property: fixture.resourceId,
+            connectionId: crypto.randomUUID(),
+          },
+        },
+      },
+    ];
 
-    const notImplemented = await rpcJson(
+    const bodies: unknown[] = [];
+    for (const testCase of cases) {
+      const response = await rpc(env, "tools/call", testCase.params, { token });
+      const body = await rpcJson(response);
+      bodies.push(body);
+      expect(body).toMatchObject({
+        jsonrpc: "2.0",
+        id: "req-1",
+        error: {
+          code: -32602,
+          data: { reason: "policy_denied", detail: testCase.detail },
+        },
+      });
+    }
+
+    expect(providerCalls).toBe(0);
+    expect(mock.requests).toHaveLength(0);
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 20);
+    expect(audit).toHaveLength(cases.length);
+    expect(audit.every((event) => event.action === "mcp.tools.call")).toBe(true);
+    expect(audit.every((event) => event.result === "deny")).toBe(true);
+    const serialized = JSON.stringify({ bodies, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
+    expect(serialized).not.toContain("test-client-secret");
+  });
+
+  it("denies inherited property tool names and audits each attempt", async () => {
+    const mock = mockToolRunner();
+    let providerCalls = 0;
+    const env = await createEnv({
+      __testToolRunner: mock.runner,
+      __testFetch: (async () => {
+        providerCalls += 1;
+        throw new Error("unexpected provider call");
+      }) as typeof fetch,
+    });
+    const fixture = await createToolFixture(env, "user_unknown_names", false);
+    const token = await tokenFor("user_unknown_names");
+
+    for (const name of ["__proto__", "constructor", "toString"]) {
+      const body = await rpcJson(await rpc(env, "tools/call", { name }, { token }));
+      expect(body).toMatchObject({
+        jsonrpc: "2.0",
+        id: "req-1",
+        error: {
+          code: -32602,
+          data: { reason: "policy_denied", detail: "unknown_tool" },
+        },
+      });
+    }
+
+    expect(providerCalls).toBe(0);
+    expect(mock.requests).toHaveLength(0);
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
+    expect(audit).toHaveLength(3);
+    expect(audit.every((event) => event.action === "mcp.tools.call")).toBe(true);
+    expect(audit.every((event) => event.result === "deny")).toBe(true);
+    for (const event of audit) {
+      expect(JSON.parse(event.detailJson)).toEqual({
+        operation: "unknown",
+        service: "",
+        resourceType: "",
+        resource: "unknown",
+        error: "permission_denied",
+      });
+    }
+  });
+
+  it("denies oversized resource ids with an audit record", async () => {
+    const mock = mockToolRunner();
+    const env = await createEnv({ __testToolRunner: mock.runner });
+    const fixture = await createToolFixture(env, "user_oversized_resource", true);
+    const resourceId = `properties/${"9".repeat(256)}`;
+
+    const body = await rpcJson(
       await rpc(
         env,
         "tools/call",
-        { name: "analytics_report", arguments: { property: "properties/foreign" } },
-        { token },
+        { name: "analytics_properties_get", arguments: { property: resourceId } },
+        { token: await tokenFor("user_oversized_resource") },
       ),
     );
-    expect(notImplemented).toMatchObject({
+    expect(body).toMatchObject({
       jsonrpc: "2.0",
       id: "req-1",
       error: {
-        code: -32001,
-        data: { reason: "not_yet_implemented", issue: 66 },
+        code: -32602,
+        data: { reason: "policy_denied", detail: "resource_mapping_unknown" },
       },
     });
+    expect(mock.requests).toHaveLength(0);
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ result: "deny" });
+    expect(JSON.parse(audit[0]!.detailJson)).toEqual({
+      operation: "analytics_properties_get",
+      service: "analytics",
+      resourceType: "property",
+      resource: "unknown",
+      error: "invalid_request",
+    });
+  });
+
+  it("executes the mapped read through the runner and rechecks disabled grants", async () => {
+    const mock = mockToolRunner();
+    const env = await createEnv({ __testToolRunner: mock.runner });
+    const fixture = await createToolFixture(env, "user_allow", true);
+    const token = await tokenFor("user_allow");
+
+    const first = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+        { token },
+      ),
+    );
+    expect(first).toMatchObject({
+      jsonrpc: "2.0",
+      id: "req-1",
+      result: {
+        content: [{ type: "text" }],
+        structuredContent: {
+          name: fixture.resourceId,
+          displayName: "Test property",
+          timeZone: "Europe/London",
+          currencyCode: "GBP",
+        },
+      },
+    });
+    expect(mock.requests).toEqual([
+      {
+        tenantId: fixture.tenantId,
+        connectionId: fixture.connectionId,
+        service: "analytics",
+        resourceType: "property",
+        resourceId: fixture.resourceId,
+        accessToken: ACCESS_TOKEN,
+        googleEmail: "user_allow@google.example.test",
+        googleSubject: "google-user_allow",
+      },
+    ]);
+
+    await fixture.repo.setResourceEnabled(
+      fixture.tenantId,
+      fixture.connectionId,
+      "analytics",
+      fixture.resourceId,
+      false,
+    );
+    const disabled = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+        { token },
+      ),
+    );
+    expect(disabled).toMatchObject({
+      error: {
+        code: -32602,
+        data: { reason: "policy_denied", detail: "grant_denied" },
+      },
+    });
+    expect(mock.requests).toHaveLength(1);
+
+    await fixture.repo.setResourceEnabled(
+      fixture.tenantId,
+      fixture.connectionId,
+      "analytics",
+      fixture.resourceId,
+      true,
+    );
+    const restored = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+        { token },
+      ),
+    );
+    expect(restored.result.structuredContent.name).toBe(fixture.resourceId);
+    expect(mock.requests).toHaveLength(2);
+
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 20);
+    expect(audit).toHaveLength(3);
+    expect(audit.map((event) => event.result).sort()).toEqual(["allow", "allow", "deny"]);
+    for (const event of audit) {
+      expect(event).toMatchObject({
+        tenantId: fixture.tenantId,
+        actorClerkUserId: "user_allow",
+        action: "mcp.tools.call",
+      });
+      expect(event.connectionId).toBe(event.result === "allow" ? fixture.connectionId : "");
+    }
+    const allowDetails = audit
+      .filter((event) => event.result === "allow")
+      .map((event) => JSON.parse(event.detailJson));
+    expect(allowDetails).toEqual([
+      {
+        operation: "analytics_properties_get",
+        service: "analytics",
+        resourceType: "property",
+        resource: fixture.resourceId,
+      },
+      {
+        operation: "analytics_properties_get",
+        service: "analytics",
+        resourceType: "property",
+        resource: fixture.resourceId,
+      },
+    ]);
+    const serialized = JSON.stringify({ first, disabled, restored, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
+    expect(serialized).not.toContain("test-client-secret");
+  });
+
+  it("sanitizes runner failures and records only stable audit error codes", async () => {
+    const runner: ToolRunner = {
+      async execute() {
+        throw new Error(`raw runner failure ${ACCESS_TOKEN} ${REFRESH_TOKEN}`);
+      },
+    };
+    const env = await createEnv({ __testToolRunner: runner });
+    const fixture = await createToolFixture(env, "user_runner_error", true);
+    const response = await rpc(
+      env,
+      "tools/call",
+      { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+      { token: await tokenFor("user_runner_error") },
+    );
+    const body = await rpcJson(response);
+    expect(body).toMatchObject({
+      error: { code: -32002, data: { reason: "execution_failed" } },
+    });
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ result: "error" });
+    expect(JSON.parse(audit[0]!.detailJson)).toMatchObject({ error: "internal_error" });
+    const serialized = JSON.stringify({ body, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
+    expect(serialized).not.toContain("raw runner failure");
   });
 
   it("returns JSON-RPC parse, invalid-request, and method-not-found errors", async () => {

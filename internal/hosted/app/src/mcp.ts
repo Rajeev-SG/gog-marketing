@@ -2,9 +2,10 @@
  * Remote MCP Streamable HTTP for hosted v1 (#65).
  *
  * This is deliberately a small protocol surface: initialize, ping, tools/list,
- * and policy-checked tools/call routing. Tool execution belongs to #66 and is
- * always rejected here. Tenant and resource authority comes only from the
- * verified Clerk identity and tenant-scoped D1 grants.
+ * and policy-checked tools/call routing. Tool execution is limited to the
+ * typed mappings supported by the private Go runner. Tenant and resource
+ * authority comes only from the verified Clerk identity and tenant-scoped D1
+ * grants.
  *
  * Clerk DCR is proxied only when Clerk's public OAuth metadata advertises a
  * same-origin HTTPS registration endpoint. When it does not, /oauth/register
@@ -12,9 +13,27 @@
  * public OAuth client with PKCE S256 (or enable Clerk CIMD/DCR) before clients
  * can register.
  */
-import { authenticateBearer, bearerToken, validateIssuer, type ClerkEnv } from "./auth.js";
+import {
+  authenticateBearer,
+  bearerToken,
+  validateIssuer,
+  type AuthSession,
+  type ClerkEnv,
+} from "./auth.js";
+import {
+  accessTokenForConnection,
+  buildConnectDeps,
+  ConnectError,
+  type ConnectEnv,
+  type ConnectSession,
+} from "./connect.js";
 import { HostedRepository } from "../../state/src/repository.js";
-import type { Tenant } from "../../state/src/types.js";
+import type { GoogleConnection, ResourceGrant, Tenant } from "../../state/src/types.js";
+import {
+  ANALYTICS_PROPERTY_READ,
+  type AnalyticsPropertyResult,
+  type ToolExecutionOutcome,
+} from "./tool-runner.js";
 
 export const MCP_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
 const CURRENT_MCP_PROTOCOL_VERSION = MCP_PROTOCOL_VERSIONS[0];
@@ -24,7 +43,7 @@ const JSONRPC_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 } as const;
 
-export interface McpEnv extends ClerkEnv {
+export interface McpEnv extends ClerkEnv, ConnectEnv {
   GOG_HOSTED_CANONICAL_ORIGIN?: string;
   __testFetch?: typeof fetch;
 }
@@ -199,6 +218,34 @@ const TOOL_CATALOG: Record<string, McpTool[]> = {
     ),
   ],
 };
+
+interface ToolResourceMapping {
+  service: "analytics";
+  resourceType: "property";
+  resourceArgument: "property";
+  resourcePattern: RegExp;
+  operation: typeof ANALYTICS_PROPERTY_READ;
+}
+
+const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = {
+  analytics_properties_get: {
+    service: "analytics",
+    resourceType: "property",
+    resourceArgument: "property",
+    resourcePattern: /^properties\/[0-9]+$/,
+    operation: ANALYTICS_PROPERTY_READ,
+  },
+};
+const MAX_RESOURCE_IDENTIFIER_LENGTH = 256;
+
+type ToolDenialReason =
+  | "unknown_tool"
+  | "unsupported_tool_mapping"
+  | "resource_mapping_unknown"
+  | "foreign_tenant"
+  | "connection_not_found"
+  | "connection_ambiguous"
+  | "grant_denied";
 
 function jsonRpcResult(id: JsonRpcId, result: unknown) {
   return { jsonrpc: "2.0", id, result };
@@ -432,6 +479,112 @@ export async function policyTools(repo: HostedRepository, tenant: Tenant): Promi
     .flatMap(([, tools]) => tools);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function catalogTool(name: string): McpTool | undefined {
+  return Object.values(TOOL_CATALOG)
+    .flat()
+    .find((candidate) => candidate.name === name);
+}
+
+function auditErrorFor(reason: ToolDenialReason): string {
+  return reason === "resource_mapping_unknown" ? "invalid_request" : "permission_denied";
+}
+
+function auditIdentifiers(
+  toolName: string,
+  mapping: ToolResourceMapping | undefined,
+  resourceId: string,
+): { operation: string; service: string; resourceType: string; resource: string } {
+  const resourceMatches =
+    resourceId.length <= MAX_RESOURCE_IDENTIFIER_LENGTH &&
+    (mapping?.resourcePattern.test(resourceId) ?? false);
+  return {
+    operation: catalogTool(toolName)?.name ?? "unknown",
+    service: mapping?.service ?? "",
+    resourceType: mapping?.resourceType ?? "",
+    resource: resourceMatches ? resourceId : "unknown",
+  };
+}
+
+async function writeToolAudit(
+  repo: HostedRepository,
+  session: AuthSession,
+  connectionId: string,
+  result: "allow" | "deny" | "error",
+  identifiers: ReturnType<typeof auditIdentifiers>,
+  error?: string,
+): Promise<void> {
+  try {
+    await repo.appendAudit({
+      id: crypto.randomUUID(),
+      tenantId: session.tenant.id,
+      connectionId,
+      actorClerkUserId: session.userId,
+      action: "mcp.tools.call",
+      result,
+      detailJson: JSON.stringify({
+        ...identifiers,
+        ...(error ? { error } : {}),
+      }),
+      latencyMs: null,
+    });
+  } catch {
+    // Audit storage failure never exposes its contents or converts a policy
+    // denial into an execution opportunity.
+  }
+}
+
+function toolCallDenial(id: JsonRpcId, reason: ToolDenialReason) {
+  return {
+    body: jsonRpcError(id, -32602, "Tool call is not permitted.", {
+      reason: "policy_denied",
+      detail: reason,
+    }),
+    status: 200,
+  };
+}
+
+type GrantedResource =
+  | { kind: "ok"; connection: GoogleConnection; grant: ResourceGrant }
+  | { kind: "deny"; reason: ToolDenialReason };
+
+async function resolveGrantedResource(
+  repo: HostedRepository,
+  tenantId: string,
+  mapping: ToolResourceMapping,
+  resourceId: string,
+  connectionId: string | null,
+): Promise<GrantedResource> {
+  const matches = (grant: ResourceGrant) =>
+    grant.service === mapping.service &&
+    grant.resourceType === mapping.resourceType &&
+    grant.resourceId === resourceId;
+
+  if (connectionId !== null) {
+    const connection = await repo.getConnection(tenantId, connectionId);
+    if (!connection || connection.status !== "active") {
+      return { kind: "deny", reason: "connection_not_found" };
+    }
+    const grant = (await repo.listResourceGrants(tenantId, connection.id)).find(matches);
+    if (!grant || !grant.enabled) return { kind: "deny", reason: "grant_denied" };
+    return { kind: "ok", connection, grant };
+  }
+
+  const candidates: Array<{ connection: GoogleConnection; grant: ResourceGrant }> = [];
+  for (const connection of await repo.listConnections(tenantId)) {
+    if (connection.status !== "active") continue;
+    for (const grant of await repo.listResourceGrants(tenantId, connection.id)) {
+      if (grant.enabled && matches(grant)) candidates.push({ connection, grant });
+    }
+  }
+  if (candidates.length === 1) return { kind: "ok", ...candidates[0]! };
+  if (candidates.length > 1) return { kind: "deny", reason: "connection_ambiguous" };
+  return { kind: "deny", reason: "grant_denied" };
+}
+
 function authChallenge(
   resource: string,
   error = "invalid_token",
@@ -453,10 +606,238 @@ function originRejected(request: Request, resource: string): boolean {
   return origin !== new URL(resource).origin && origin !== new URL(request.url).origin;
 }
 
+function toolCallResult(id: JsonRpcId, result: AnalyticsPropertyResult) {
+  return {
+    body: jsonRpcResult(id, {
+      content: [{ type: "text", text: JSON.stringify(result) }],
+      structuredContent: result,
+    }),
+    status: 200,
+  };
+}
+
+function toolExecutionError(id: JsonRpcId, reason: string) {
+  return {
+    body: jsonRpcError(id, -32002, "Tool execution failed.", { reason }),
+    status: 200,
+  };
+}
+
+async function handleToolCall(
+  id: JsonRpcId,
+  params: Record<string, unknown>,
+  env: McpEnv,
+  repo: HostedRepository,
+  session: AuthSession,
+): Promise<{ body: unknown; status: number }> {
+  const name = typeof params.name === "string" ? params.name : "";
+  const mapping = Object.prototype.hasOwnProperty.call(TOOL_RESOURCE_MAPPINGS, name)
+    ? TOOL_RESOURCE_MAPPINGS[name]
+    : undefined;
+  const unknownIdentifiers = auditIdentifiers(name, mapping, "");
+  if (!name || !catalogTool(name)) {
+    await writeToolAudit(repo, session, "", "deny", unknownIdentifiers, "permission_denied");
+    return toolCallDenial(id, "unknown_tool");
+  }
+  if (!mapping) {
+    await writeToolAudit(repo, session, "", "deny", unknownIdentifiers, "permission_denied");
+    return toolCallDenial(id, "unsupported_tool_mapping");
+  }
+
+  const args = params.arguments === undefined ? {} : params.arguments;
+  if (!isRecord(args)) {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      auditIdentifiers(name, mapping, ""),
+      "invalid_request",
+    );
+    return toolCallDenial(id, "resource_mapping_unknown");
+  }
+
+  const assertedTenant = params.tenantId ?? args.tenantId;
+  if (
+    assertedTenant !== undefined &&
+    (typeof assertedTenant !== "string" || assertedTenant !== session.tenant.id)
+  ) {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      auditIdentifiers(name, mapping, ""),
+      "permission_denied",
+    );
+    return toolCallDenial(id, "foreign_tenant");
+  }
+
+  const assertedConnection = params.connectionId ?? args.connectionId;
+  let connectionId: string | null = null;
+  if (assertedConnection !== undefined) {
+    if (typeof assertedConnection !== "string" || !assertedConnection.trim()) {
+      await writeToolAudit(
+        repo,
+        session,
+        "",
+        "deny",
+        auditIdentifiers(name, mapping, ""),
+        "permission_denied",
+      );
+      return toolCallDenial(id, "connection_not_found");
+    }
+    connectionId = assertedConnection.trim();
+  }
+
+  const rawResource = args[mapping.resourceArgument];
+  const resourceId = typeof rawResource === "string" ? rawResource.trim() : "";
+  if (
+    resourceId.length > MAX_RESOURCE_IDENTIFIER_LENGTH ||
+    !mapping.resourcePattern.test(resourceId)
+  ) {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      auditIdentifiers(name, mapping, resourceId),
+      "invalid_request",
+    );
+    return toolCallDenial(id, "resource_mapping_unknown");
+  }
+
+  const resolved = await resolveGrantedResource(
+    repo,
+    session.tenant.id,
+    mapping,
+    resourceId,
+    connectionId,
+  );
+  const resolvedIdentifiers = auditIdentifiers(name, mapping, resourceId);
+  if (resolved.kind === "deny") {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      resolvedIdentifiers,
+      auditErrorFor(resolved.reason),
+    );
+    return toolCallDenial(id, resolved.reason);
+  }
+
+  const policy = await policyTools(repo, session.tenant);
+  if (!policy.some((candidate) => candidate.name === name)) {
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "deny",
+      resolvedIdentifiers,
+      "permission_denied",
+    );
+    return toolCallDenial(id, "grant_denied");
+  }
+
+  const connectSession: ConnectSession = {
+    userId: session.userId,
+    sessionId: session.sessionId,
+    tenantId: session.tenant.id,
+  };
+  const depsOutcome = buildConnectDeps(env, repo);
+  if (!depsOutcome.ok) {
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "error",
+      resolvedIdentifiers,
+      "provider_unavailable",
+    );
+    return toolExecutionError(id, "execution_unavailable");
+  }
+  const toolRunner = depsOutcome.deps.tools;
+  if (!toolRunner) {
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "error",
+      resolvedIdentifiers,
+      "provider_unavailable",
+    );
+    return toolExecutionError(id, "execution_unavailable");
+  }
+
+  let accessToken: string;
+  try {
+    accessToken = await accessTokenForConnection(
+      depsOutcome.deps,
+      connectSession,
+      resolved.connection,
+    );
+  } catch (error) {
+    const reconnect = error instanceof ConnectError && error.code === "needs_reconnect";
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "error",
+      resolvedIdentifiers,
+      reconnect ? "needs_reconnect" : "provider_unavailable",
+    );
+    return toolExecutionError(id, reconnect ? "needs_reconnect" : "execution_unavailable");
+  }
+
+  let outcome: ToolExecutionOutcome;
+  try {
+    outcome = await toolRunner.execute({
+      tenantId: session.tenant.id,
+      connectionId: resolved.connection.id,
+      service: mapping.service,
+      resourceType: mapping.resourceType,
+      resourceId: resolved.grant.resourceId,
+      accessToken,
+      googleEmail: resolved.connection.email,
+      googleSubject: resolved.connection.googleSubject,
+    });
+  } catch {
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "error",
+      resolvedIdentifiers,
+      "internal_error",
+    );
+    return toolExecutionError(id, "execution_failed");
+  }
+
+  if (outcome.status !== "ok") {
+    await writeToolAudit(
+      repo,
+      session,
+      resolved.connection.id,
+      "error",
+      resolvedIdentifiers,
+      outcome.status === "unavailable" ? "provider_unavailable" : "internal_error",
+    );
+    return toolExecutionError(
+      id,
+      outcome.status === "unavailable" ? "execution_unavailable" : "execution_failed",
+    );
+  }
+
+  await writeToolAudit(repo, session, resolved.connection.id, "allow", resolvedIdentifiers);
+  return toolCallResult(id, outcome.result);
+}
+
 async function handleRpc(
   message: JsonRpcMessage,
+  env: McpEnv,
   repo: HostedRepository,
-  tenant: Tenant,
+  session: AuthSession,
 ): Promise<{ body: unknown; status: number } | { accepted: true }> {
   const hasId = Object.hasOwn(message, "id");
   const id = hasId ? (message.id as JsonRpcId) : null;
@@ -474,6 +855,7 @@ async function handleRpc(
 
   const method = message.method;
   const params = (message.params ?? {}) as Record<string, unknown>;
+  const tenant = session.tenant;
   if (method === "initialize") {
     const requested = typeof params.protocolVersion === "string" ? params.protocolVersion : "";
     const protocolVersion = (MCP_PROTOCOL_VERSIONS as readonly string[]).includes(requested)
@@ -493,23 +875,7 @@ async function handleRpc(
     return { body: jsonRpcResult(id, { tools: await policyTools(repo, tenant) }), status: 200 };
   }
   if (method === "tools/call") {
-    const name = typeof params.name === "string" ? params.name : "";
-    const tools = await policyTools(repo, tenant);
-    if (!name || !tools.some((candidate) => candidate.name === name)) {
-      return {
-        body: jsonRpcError(id, -32602, "Tool is not permitted for this tenant.", {
-          reason: "policy_denied",
-        }),
-        status: 200,
-      };
-    }
-    return {
-      body: jsonRpcError(id, -32001, "Tool execution is not yet implemented.", {
-        reason: "not_yet_implemented",
-        issue: 66,
-      }),
-      status: 200,
-    };
+    return handleToolCall(id, params, env, repo, session);
   }
   return { body: jsonRpcError(id, -32601, "Method not found."), status: 200 };
 }
@@ -575,7 +941,7 @@ export async function handleMcp(
 
   let outcome: Awaited<ReturnType<typeof handleRpc>>;
   try {
-    outcome = await handleRpc(rpcMessage, repo, auth.session.tenant);
+    outcome = await handleRpc(rpcMessage, env, repo, auth.session);
   } catch {
     return jsonResponse(jsonRpcError(id, -32603, "Internal error."), 500);
   }
