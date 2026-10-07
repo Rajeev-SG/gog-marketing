@@ -616,9 +616,12 @@ function toolCallResult(id: JsonRpcId, result: AnalyticsPropertyResult) {
   };
 }
 
-function toolExecutionError(id: JsonRpcId, reason: string) {
+function toolExecutionError(id: JsonRpcId, reason: string, diagnostics?: Record<string, unknown>) {
   return {
-    body: jsonRpcError(id, -32002, "Tool execution failed.", { reason }),
+    body: jsonRpcError(id, -32002, "Tool execution failed.", {
+      reason,
+      ...diagnostics,
+    }),
     status: 200,
   };
 }
@@ -826,6 +829,7 @@ async function handleToolCall(
     return toolExecutionError(
       id,
       outcome.status === "unavailable" ? "execution_unavailable" : "execution_failed",
+      outcome.detail === "" ? undefined : { runner_detail: String(outcome.detail) },
     );
   }
 

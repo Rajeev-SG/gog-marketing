@@ -24,6 +24,81 @@ async function close(server: Server): Promise<void> {
 }
 
 describe("RemoteToolRunner transport", () => {
+  it("returns only non-secret response diagnostics for non-2xx responses", async () => {
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async () =>
+        new Response("secret body contents", {
+          status: 401,
+          headers: { "X-Secret-Header": "secret-header-value" },
+        })) as typeof fetch,
+    });
+
+    const outcome = await runner.execute({
+      tenantId: "tenant",
+      connectionId: "connection",
+      service: "analytics",
+      resourceType: "property",
+      resourceId: "properties/123",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "user@example.test",
+      googleSubject: "google-subject",
+    });
+
+    expect(outcome).toEqual({
+      status: "error",
+      detail: { runnerStatus: 401, runnerBodyJson: false },
+    });
+    expect(JSON.stringify(outcome)).not.toContain("secret");
+    expect(JSON.stringify(outcome)).not.toContain(GOOGLE_ACCESS_TOKEN);
+    expect(JSON.stringify(outcome)).not.toContain(NATIVE_ID_TOKEN);
+    expect(JSON.stringify(outcome)).not.toContain("runner.example.test");
+  });
+
+  it("returns only non-secret response diagnostics for an unparsable body", async () => {
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async () =>
+        new Response("not-json", {
+          status: 200,
+          headers: { "X-Secret-Header": "secret-header-value" },
+        })) as typeof fetch,
+    });
+
+    const outcome = await runner.execute({
+      tenantId: "tenant",
+      connectionId: "connection",
+      service: "analytics",
+      resourceType: "property",
+      resourceId: "properties/123",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "user@example.test",
+      googleSubject: "google-subject",
+    });
+
+    expect(outcome).toEqual({
+      status: "error",
+      detail: { runnerStatus: 200, runnerBodyJson: false },
+    });
+    expect(JSON.stringify(outcome)).not.toContain("not-json");
+    expect(JSON.stringify(outcome)).not.toContain("secret");
+    expect(JSON.stringify(outcome)).not.toContain(GOOGLE_ACCESS_TOKEN);
+    expect(JSON.stringify(outcome)).not.toContain(NATIVE_ID_TOKEN);
+    expect(JSON.stringify(outcome)).not.toContain("runner.example.test");
+  });
+
   it("rejects redirect responses without forwarding credential headers or body", async () => {
     const redirectedRequests: Array<{ headers: string; body: string }> = [];
     const target = createServer((request, response) => {
@@ -70,7 +145,7 @@ describe("RemoteToolRunner transport", () => {
 
       await expect(runner.execute(request)).resolves.toEqual({
         status: "error",
-        detail: "runner_unreachable",
+        detail: "runner_redirect_blocked",
       });
       expect(redirectedRequests).toEqual([]);
     } finally {

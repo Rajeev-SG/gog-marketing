@@ -30,9 +30,14 @@ export interface ToolExecutionRequest {
   googleSubject: string;
 }
 
+export interface RunnerResponseDiagnostics {
+  runnerStatus: number;
+  runnerBodyJson: boolean;
+}
+
 export type ToolExecutionOutcome =
   | { status: "ok"; result: AnalyticsPropertyResult }
-  | { status: "unavailable" | "error"; detail: string };
+  | { status: "unavailable" | "error"; detail: string | RunnerResponseDiagnostics };
 
 export interface ToolRunner {
   execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome>;
@@ -148,21 +153,38 @@ export class RemoteToolRunner implements ToolRunner {
           "X-Serverless-Authorization": `Bearer ${nativeIdToken}`,
         },
         body: exactBodyBytes,
-        redirect: "error",
+        redirect: "manual",
         signal: deadlineSignal,
       });
-    } catch {
-      return { status: "error", detail: "runner_unreachable" };
+    } catch (error) {
+      return {
+        status: "error",
+        detail:
+          "runner_unreachable:" +
+          (error instanceof Error ? `${error.constructor.name}: ${error.message}` : String(error)),
+      };
     }
-    if (response.status < 200 || response.status >= 300) {
-      return { status: "error", detail: "runner_rejected" };
-    }
-
     let wire: unknown;
+    let runnerBodyJson = true;
     try {
       wire = await response.json();
     } catch {
-      return { status: "error", detail: "runner_invalid_response" };
+      runnerBodyJson = false;
+    }
+    if (response.status >= 300 && response.status < 400) {
+      return { status: "error", detail: "runner_redirect_blocked" };
+    }
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        status: "error",
+        detail: { runnerStatus: response.status, runnerBodyJson },
+      };
+    }
+    if (!runnerBodyJson) {
+      return {
+        status: "error",
+        detail: { runnerStatus: response.status, runnerBodyJson },
+      };
     }
     if (!isRunnerEnvelope(wire)) {
       return { status: "error", detail: "runner_invalid_response" };
