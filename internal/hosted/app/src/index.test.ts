@@ -745,8 +745,30 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     expect(await next.json()).toEqual({ status: "active", userId: "user_handshake" });
   });
 
-  it("unknown routes return 404", async () => {
-    const env = await createNativeEnv();
+  it("keeps MCP metadata routes present while unknown routes return 404", async () => {
+    const env = await createNativeEnv({
+      GOG_HOSTED_CANONICAL_ORIGIN: ORIGIN,
+      __testFetch: (async () =>
+        Response.json({
+          issuer: CLERK_ISSUER,
+          authorization_endpoint: `${CLERK_ISSUER}/oauth/authorize`,
+          token_endpoint: `${CLERK_ISSUER}/oauth/token`,
+        })) as typeof fetch,
+    });
+
+    for (const path of [
+      "/.well-known/oauth-protected-resource",
+      "/.well-known/oauth-authorization-server",
+    ]) {
+      const metadata = await worker.fetch(buildUnauthenticatedRequest(`${ORIGIN}${path}`), env);
+      expect(metadata.status).toBe(200);
+    }
+    const registration = await worker.fetch(
+      buildUnauthenticatedRequest(`${ORIGIN}/oauth/register`),
+      env,
+    );
+    expect(registration.status).toBe(405);
+
     const req = buildUnauthenticatedRequest(`${ORIGIN}/nonexistent`);
     const res = await worker.fetch(req, env);
     expect(res.status).toBe(404);
