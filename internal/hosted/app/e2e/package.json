@@ -1,0 +1,19 @@
+{
+  "name": "@gog/hosted-app-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install:browsers": "playwright install chromium",
+    "test": "playwright test --grep @deterministic",
+    "test:deterministic": "playwright test --grep @deterministic",
+    "test:owner": "playwright test --grep @owner"
+  },
+  "devDependencies": {
+    "@clerk/backend": "3.22.0",
+    "@playwright/test": "1.64.0",
+    "esbuild": "0.25.10",
+    "miniflare": "5.20260918.0-alpha"
+  },
+  "packageManager": "pnpm@11.27.1"
+}

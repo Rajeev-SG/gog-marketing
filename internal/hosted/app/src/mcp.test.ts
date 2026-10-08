@@ -390,10 +390,14 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(missing.headers.get("www-authenticate")).toContain(
       `resource_metadata="${ORIGIN}/.well-known/oauth-protected-resource"`,
     );
-    expect(await missing.json()).toMatchObject({
+    const missingBody = await missing.json();
+    expect(missingBody).toMatchObject({
       jsonrpc: "2.0",
       error: { code: -32001, data: { reason: "invalid_request" } },
     });
+    expect(
+      (missingBody as { error: { data: Record<string, unknown> } }).error.data,
+    ).not.toHaveProperty("retryAfterSeconds");
 
     for (const typ of ["at+jwt", "application/at+jwt"] as const) {
       const response = await rpc(env, "ping", undefined, {
@@ -467,7 +471,12 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       }) as typeof fetch,
     });
     const fixture = await createToolFixture(env, "user_denials", false);
-    const foreignTenant = await fixture.repo.bootstrapTenant("user_foreign_tenant");
+    const foreignFixture = await createToolFixture(
+      env,
+      "user_foreign_resource_owner",
+      true,
+      "properties/456",
+    );
     const token = await tokenFor("user_denials");
     const cases = [
       {
@@ -513,7 +522,7 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         detail: "foreign_tenant",
         params: {
           name: "analytics_properties_get",
-          arguments: { property: fixture.resourceId, tenantId: foreignTenant.id },
+          arguments: { property: fixture.resourceId, tenantId: foreignFixture.tenantId },
         },
       },
       {
@@ -524,6 +533,23 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
             property: fixture.resourceId,
             connectionId: crypto.randomUUID(),
           },
+        },
+      },
+      {
+        detail: "connection_not_found",
+        params: {
+          name: "analytics_properties_get",
+          arguments: {
+            property: fixture.resourceId,
+            connectionId: foreignFixture.connectionId,
+          },
+        },
+      },
+      {
+        detail: "grant_denied",
+        params: {
+          name: "analytics_properties_get",
+          arguments: { property: foreignFixture.resourceId },
         },
       },
     ];
@@ -870,6 +896,7 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
     const rejected = await rpc(env, "ping", undefined, { token: null, ip });
     const rejectedBody = await rpcJson(rejected);
     expect(rejected.status).toBe(429);
+    expect(rejected.headers.get("www-authenticate")).toBeNull();
     expect(rejectedBody).toMatchObject({
       error: { code: -32029, data: { reason: "rate_limited", scope: "ip" } },
     });
@@ -963,6 +990,7 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
     const exhausted = await rpc(env, "tools/call", params, { token });
     const exhaustedBody = await rpcJson(exhausted);
     expect(exhausted.status).toBe(429);
+    expect(exhausted.headers.get("www-authenticate")).toBeNull();
     expect(exhaustedBody).toMatchObject({
       jsonrpc: "2.0",
       id: "req-1",
