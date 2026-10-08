@@ -55,7 +55,12 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     }),
   );
   const db = (await mf.getD1Database("DB")) as unknown as D1Database;
-  for (const file of ["0001_initial_schema.sql", "0002_oauth_states_discovery.sql"]) {
+  for (const file of [
+    "0001_initial_schema.sql",
+    "0002_oauth_states_discovery.sql",
+    "0003_rate_limit_counters.sql",
+    "0004_mcp_signal_counters.sql",
+  ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
       if (!result[0]?.success) throw new Error(`migration failed: ${statement}`);
@@ -103,7 +108,12 @@ async function rpc(
   env: Env,
   method: string,
   params?: unknown,
-  options: { token?: string | null; id?: string | number | null; body?: string } = {},
+  options: {
+    token?: string | null;
+    id?: string | number | null;
+    body?: string;
+    ip?: string;
+  } = {},
 ): Promise<Response> {
   const id = options.id === undefined ? "req-1" : options.id;
   const body =
@@ -120,6 +130,7 @@ async function rpc(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/event-stream",
+        ...(options.ip ? { "cf-connecting-ip": options.ip } : {}),
         ...(options.token === null
           ? {}
           : { Authorization: `Bearer ${options.token ?? (await tokenFor("user_rpc"))}` }),
@@ -538,6 +549,10 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(audit).toHaveLength(cases.length);
     expect(audit.every((event) => event.action === "mcp.tools.call")).toBe(true);
     expect(audit.every((event) => event.result === "deny")).toBe(true);
+    for (const event of audit) {
+      expect(event.latencyMs).toEqual(expect.any(Number));
+      expect(Number.isInteger(event.latencyMs)).toBe(true);
+    }
     const serialized = JSON.stringify({ bodies, audit });
     expect(serialized).not.toContain(ACCESS_TOKEN);
     expect(serialized).not.toContain(REFRESH_TOKEN);
@@ -583,6 +598,8 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         resource: "unknown",
         error: "permission_denied",
       });
+      expect(event.latencyMs).toEqual(expect.any(Number));
+      expect(Number.isInteger(event.latencyMs)).toBe(true);
     }
   });
 
@@ -712,6 +729,8 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         action: "mcp.tools.call",
       });
       expect(event.connectionId).toBe(event.result === "allow" ? fixture.connectionId : "");
+      expect(event.latencyMs).toEqual(expect.any(Number));
+      expect(Number.isInteger(event.latencyMs)).toBe(true);
     }
     const allowDetails = audit
       .filter((event) => event.result === "allow")
@@ -756,7 +775,8 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     });
     const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
     expect(audit).toHaveLength(1);
-    expect(audit[0]).toMatchObject({ result: "error" });
+    expect(audit[0]).toMatchObject({ result: "error", latencyMs: expect.any(Number) });
+    expect(Number.isInteger(audit[0]!.latencyMs)).toBe(true);
     expect(JSON.parse(audit[0]!.detailJson)).toMatchObject({ error: "internal_error" });
     const serialized = JSON.stringify({ body, audit });
     expect(serialized).not.toContain(ACCESS_TOKEN);
@@ -765,7 +785,8 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
   });
 
   it("returns JSON-RPC parse, invalid-request, and method-not-found errors", async () => {
-    const env = await createEnv();
+    const now = Date.UTC(2026, 9, 8, 12, 0, 0);
+    const env = await createEnv({ __testNow: () => now });
     const token = await tokenFor("user_errors");
     const parse = await rpc(env, "", undefined, { token, body: "{" });
     expect(parse.status).toBe(400);
@@ -791,6 +812,15 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
 
     const missingMethod = await rpcJson(await rpc(env, "unknown/method", undefined, { token }));
     expect(missingMethod.error.code).toBe(-32601);
+
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    expect(await repo.getMcpSignal("mcp_parse_error", "2026-10-08")).toMatchObject({ value: 1 });
+    expect(await repo.getMcpSignal("mcp_invalid_request", "2026-10-08")).toMatchObject({
+      value: 2,
+    });
+    expect(await repo.getMcpSignal("mcp_method_not_found", "2026-10-08")).toMatchObject({
+      value: 1,
+    });
   });
 
   it("returns a sanitized JSON-RPC internal error carrying the request id", async () => {
@@ -821,5 +851,354 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       id: "failed-op",
       error: { code: -32603, message: "Internal error." },
     });
+  });
+});
+
+describe("MCP quota, abuse limits, and observability (#67)", () => {
+  it("rate-limits repeated missing-bearer requests and records tenant-independent signals", async () => {
+    const now = Date.UTC(2026, 9, 8, 12, 30, 0);
+    const ip = "203.0.113.10";
+    const env = await createEnv({
+      GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "2",
+      __testNow: () => now,
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+
+    for (const expectedStatus of [401, 401]) {
+      expect((await rpc(env, "ping", undefined, { token: null, ip })).status).toBe(expectedStatus);
+    }
+    const rejected = await rpc(env, "ping", undefined, { token: null, ip });
+    const rejectedBody = await rpcJson(rejected);
+    expect(rejected.status).toBe(429);
+    expect(rejectedBody).toMatchObject({
+      error: { code: -32029, data: { reason: "rate_limited", scope: "ip" } },
+    });
+
+    expect(await repo.getMcpSignal("auth_missing_bearer", "2026-10-08")).toMatchObject({
+      value: 2,
+    });
+    expect(await repo.getMcpSignal("mcp_request_rate_limited", "2026-10-08")).toMatchObject({
+      value: 1,
+    });
+    expect(
+      JSON.stringify({
+        body: rejectedBody,
+        signals: [
+          await repo.getMcpSignal("auth_missing_bearer", "2026-10-08"),
+          await repo.getMcpSignal("mcp_request_rate_limited", "2026-10-08"),
+        ],
+      }),
+    ).not.toContain(ip);
+  });
+
+  it("rate-limits repeated invalid-bearer requests and records tenant-independent signals", async () => {
+    const now = Date.UTC(2026, 9, 8, 12, 31, 0);
+    const ip = "203.0.113.11";
+    const invalidBearer = "invalid-bearer-test-value";
+    const env = await createEnv({
+      GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "2",
+      __testNow: () => now,
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+
+    for (const expectedStatus of [401, 401]) {
+      expect((await rpc(env, "ping", undefined, { token: invalidBearer, ip })).status).toBe(
+        expectedStatus,
+      );
+    }
+    const rejected = await rpc(env, "ping", undefined, { token: invalidBearer, ip });
+    const rejectedBody = await rpcJson(rejected);
+    expect(rejected.status).toBe(429);
+    expect(rejectedBody).toMatchObject({
+      error: { code: -32029, data: { reason: "rate_limited", scope: "ip" } },
+    });
+
+    expect(await repo.getMcpSignal("auth_invalid_bearer", "2026-10-08")).toMatchObject({
+      value: 2,
+    });
+    expect(await repo.getMcpSignal("mcp_request_rate_limited", "2026-10-08")).toMatchObject({
+      value: 1,
+    });
+    expect(
+      JSON.stringify({
+        body: rejectedBody,
+        signals: [
+          await repo.getMcpSignal("auth_invalid_bearer", "2026-10-08"),
+          await repo.getMcpSignal("mcp_request_rate_limited", "2026-10-08"),
+        ],
+      }),
+    ).not.toContain(ip);
+    expect(
+      JSON.stringify(await repo.getMcpSignal("auth_invalid_bearer", "2026-10-08")),
+    ).not.toContain(invalidBearer);
+  });
+
+  it("allows the configured daily quota, denies exhaustion, and resets in the next UTC day", async () => {
+    let now = Date.UTC(2026, 9, 8, 12, 0, 0);
+    const mock = mockToolRunner();
+    const env = await createEnv({
+      GOG_MCP_TOOL_CALL_DAILY_LIMIT: "2",
+      GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "100",
+      __testNow: () => now,
+      __testToolRunner: mock.runner,
+    });
+    const fixture = await createToolFixture(env, "user_quota", true);
+    const token = await tokenFor("user_quota");
+    const params = {
+      name: "analytics_properties_get",
+      arguments: {
+        property: fixture.resourceId,
+        access_token: ACCESS_TOKEN,
+        refresh_token: REFRESH_TOKEN,
+      },
+    };
+
+    const first = await rpc(env, "tools/call", params, { token });
+    const second = await rpc(env, "tools/call", params, { token });
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect((await rpcJson(first)).result.structuredContent.name).toBe(fixture.resourceId);
+    expect((await rpcJson(second)).result.structuredContent.name).toBe(fixture.resourceId);
+
+    const exhausted = await rpc(env, "tools/call", params, { token });
+    const exhaustedBody = await rpcJson(exhausted);
+    expect(exhausted.status).toBe(429);
+    expect(exhaustedBody).toMatchObject({
+      jsonrpc: "2.0",
+      id: "req-1",
+      error: {
+        code: -32003,
+        message: "Daily tool-call quota exceeded.",
+        data: {
+          reason: "quota_exceeded",
+          limit: 2,
+          retryAfterSeconds: expect.any(Number),
+        },
+      },
+    });
+    expect(exhaustedBody.error.data.retryAfterSeconds).toBeGreaterThan(0);
+    expect(mock.requests).toHaveLength(2);
+
+    const firstDayQuota = await fixture.repo.getQuota(
+      fixture.tenantId,
+      "2026-10-08",
+      "mcp_tool_calls",
+    );
+    expect(firstDayQuota?.value).toBe(2);
+
+    now = Date.UTC(2026, 9, 9, 0, 0, 1);
+    const reset = await rpc(env, "tools/call", params, { token });
+    expect(reset.status).toBe(200);
+    expect((await rpcJson(reset)).result.structuredContent.name).toBe(fixture.resourceId);
+    const nextDayQuota = await fixture.repo.getQuota(
+      fixture.tenantId,
+      "2026-10-09",
+      "mcp_tool_calls",
+    );
+    expect(nextDayQuota?.value).toBe(1);
+
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
+    expect(audit.map((event) => event.result).sort()).toEqual(["allow", "allow", "allow", "deny"]);
+    expect(audit.find((event) => event.result === "deny")).toMatchObject({
+      action: "mcp.tools.call",
+    });
+    expect(JSON.parse(audit.find((event) => event.result === "deny")!.detailJson)).toMatchObject({
+      error: "quota_exceeded",
+    });
+    for (const event of audit) {
+      expect(event.latencyMs).toEqual(expect.any(Number));
+      expect(Number.isInteger(event.latencyMs)).toBe(true);
+      expect(event.latencyMs!).toBeGreaterThanOrEqual(0);
+    }
+
+    const serialized = JSON.stringify({ exhaustedBody, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
+    expect(serialized).not.toContain(CREDENTIAL_KEY);
+    expect(serialized).not.toContain("test-client-secret");
+    expect(serialized).not.toContain(token);
+  });
+
+  it("rate-limits repeated tenant requests and records each 429 without secrets", async () => {
+    const now = Date.UTC(2026, 9, 8, 12, 34, 0);
+    const env = await createEnv({
+      GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "2",
+      __testNow: () => now,
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_rate_tenant");
+    const token = await tokenFor("user_rate_tenant");
+
+    expect((await rpc(env, "ping", undefined, { token })).status).toBe(200);
+    expect((await rpc(env, "ping", undefined, { token })).status).toBe(200);
+
+    const rejectedBodies: unknown[] = [];
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const response = await rpc(env, "ping", undefined, { token });
+      const body = await rpcJson(response);
+      rejectedBodies.push(body);
+      expect(response.status).toBe(429);
+      expect(response.headers.get("retry-after")).toMatch(/^\d+$/);
+      expect(body).toMatchObject({
+        jsonrpc: "2.0",
+        error: {
+          code: -32029,
+          message: "Request rate limit exceeded.",
+          data: {
+            reason: "rate_limited",
+            scope: "tenant",
+            retryAfterSeconds: expect.any(Number),
+          },
+        },
+      });
+    }
+
+    const audit = await repo.listAudit(tenant.id, 10);
+    expect(audit).toHaveLength(3);
+    expect(audit.every((event) => event.action === "mcp.request.rate_limited")).toBe(true);
+    expect(audit.every((event) => event.result === "deny")).toBe(true);
+    for (const event of audit) {
+      expect(JSON.parse(event.detailJson)).toMatchObject({
+        operation: "tenant",
+        error: "rate_limited",
+        count: expect.any(Number),
+      });
+    }
+
+    const serialized = JSON.stringify({ rejectedBodies, audit });
+    expect(serialized).not.toContain(token);
+    expect(serialized).not.toContain(CREDENTIAL_KEY);
+    expect(serialized).not.toContain("test-client-secret");
+  });
+
+  it("rate-limits a shared source IP across tenants without storing the raw IP", async () => {
+    const now = Date.UTC(2026, 9, 8, 12, 35, 0);
+    const ip = "203.0.113.42";
+    const env = await createEnv({
+      GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "2",
+      __testNow: () => now,
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tokenA = await tokenFor("user_ip_a");
+    const tokenB = await tokenFor("user_ip_b");
+
+    expect((await rpc(env, "ping", undefined, { token: tokenA, ip })).status).toBe(200);
+    expect((await rpc(env, "ping", undefined, { token: tokenB, ip })).status).toBe(200);
+
+    const rejected = await rpc(env, "ping", undefined, { token: tokenA, ip });
+    const body = await rpcJson(rejected);
+    expect(rejected.status).toBe(429);
+    expect(body).toMatchObject({
+      error: {
+        code: -32029,
+        data: { reason: "rate_limited", scope: "ip" },
+      },
+    });
+
+    const signal = await repo.getMcpSignal("mcp_request_rate_limited", "2026-10-08");
+    expect(signal).toMatchObject({ value: 1 });
+    const serialized = JSON.stringify({ body, signal });
+    expect(serialized).not.toContain(ip);
+    expect(serialized).not.toContain(tokenA);
+    expect(serialized).not.toContain(tokenB);
+  });
+
+  it("fails closed and audits when request rate counters error", async () => {
+    const env = await createEnv({ GOG_MCP_REQUESTS_PER_MINUTE_LIMIT: "60" });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_rate_failure");
+    const token = await tokenFor("user_rate_failure");
+    const db = env.DB;
+    env.DB = new Proxy(db, {
+      get(target, property, receiver) {
+        if (property === "prepare") {
+          return (sql: string) => {
+            if (sql.includes("hosted_rate_limit_counters")) {
+              throw new Error(`forced rate counter failure ${ACCESS_TOKEN}`);
+            }
+            return target.prepare(sql);
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+
+    const response = await rpc(env, "ping", undefined, { token });
+    const body = await rpcJson(response);
+    expect(response.status).toBe(503);
+    expect(body).toMatchObject({
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: "Request rate limiting is unavailable.",
+        data: { reason: "rate_limiter_unavailable" },
+      },
+    });
+
+    const audit = await repo.listAudit(tenant.id, 10);
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ action: "mcp.request", result: "error" });
+    expect(JSON.parse(audit[0]!.detailJson)).toMatchObject({ error: "internal_error" });
+    const serialized = JSON.stringify({ body, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(token);
+  });
+
+  it("fails closed and audits when the tool-call quota counter errors", async () => {
+    const mock = mockToolRunner();
+    const env = await createEnv({ __testToolRunner: mock.runner });
+    const fixture = await createToolFixture(env, "user_quota_failure", true);
+    const token = await tokenFor("user_quota_failure");
+    const db = env.DB;
+    env.DB = new Proxy(db, {
+      get(target, property, receiver) {
+        if (property === "prepare") {
+          return (sql: string) => {
+            if (sql.includes("hosted_quota_counters")) {
+              throw new Error(`forced quota counter failure ${REFRESH_TOKEN}`);
+            }
+            return target.prepare(sql);
+          };
+        }
+        const value = Reflect.get(target, property, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+
+    const response = await rpc(
+      env,
+      "tools/call",
+      {
+        name: "analytics_properties_get",
+        arguments: { property: fixture.resourceId, access_token: ACCESS_TOKEN },
+      },
+      { token },
+    );
+    const body = await rpcJson(response);
+    expect(response.status).toBe(503);
+    expect(body).toMatchObject({
+      jsonrpc: "2.0",
+      id: "req-1",
+      error: {
+        code: -32603,
+        message: "Tool-call quota is unavailable.",
+        data: { reason: "quota_unavailable" },
+      },
+    });
+    expect(mock.requests).toHaveLength(0);
+
+    const audit = await fixture.repo.listAudit(fixture.tenantId, 10);
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({
+      action: "mcp.tools.call",
+      result: "error",
+      latencyMs: expect.any(Number),
+    });
+    expect(JSON.parse(audit[0]!.detailJson)).toMatchObject({ error: "internal_error" });
+    const serialized = JSON.stringify({ body, audit });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
+    expect(serialized).not.toContain(token);
   });
 });

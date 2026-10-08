@@ -112,4 +112,43 @@ describe("quota counters (atomic increments)", () => {
     const stored = await repo.getQuota(tenant.id, "2024-12-01", "mcp_calls");
     expect(stored).toBeNull();
   });
+
+  it("admits calls atomically up to a limit and then stops consuming", async () => {
+    const tenant = await repo.bootstrapTenant("clerk_user_limit");
+
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 3)).toBe(1);
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 3)).toBe(2);
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 3)).toBe(3);
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 3)).toBeNull();
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 3)).toBeNull();
+
+    const stored = await repo.getQuota(tenant.id, "2024-12-01", "bounded");
+    expect(stored?.value).toBe(3);
+  });
+
+  it("never admits more than the limit under concurrent callers", async () => {
+    const tenant = await repo.bootstrapTenant("clerk_user_limit_race");
+
+    const values = await Promise.all(
+      Array.from({ length: 12 }, () =>
+        repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "race", 4),
+      ),
+    );
+
+    const admitted = values
+      .filter((value): value is number => value !== null)
+      .sort((a, b) => a - b);
+    expect(admitted).toEqual([1, 2, 3, 4]);
+    expect(values.filter((value) => value === null)).toHaveLength(8);
+    const stored = await repo.getQuota(tenant.id, "2024-12-01", "race");
+    expect(stored?.value).toBe(4);
+  });
+
+  it("starts a fresh bounded counter in the next period", async () => {
+    const tenant = await repo.bootstrapTenant("clerk_user_limit_reset");
+
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 1)).toBe(1);
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-01", "bounded", 1)).toBeNull();
+    expect(await repo.incrementQuotaWithinLimit(tenant.id, "2024-12-02", "bounded", 1)).toBe(1);
+  });
 });

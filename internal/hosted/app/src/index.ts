@@ -59,6 +59,12 @@ export interface Env extends ClerkEnv, ConnectEnv {
   CLERK_JWT_KEY?: string;
   /** Operator-configured canonical public origin; /mcp is appended by the UI. */
   GOG_HOSTED_CANONICAL_ORIGIN?: string;
+  /** Operator-configured UTC-day tool-call quota per tenant; defaults to 100. */
+  GOG_MCP_TOOL_CALL_DAILY_LIMIT?: string;
+  /** Operator-configured fixed-minute request limit per tenant/IP; defaults to 60. */
+  GOG_MCP_REQUESTS_PER_MINUTE_LIMIT?: string;
+  /** Test-only UTC clock injection for deterministic limit windows. */
+  __testNow?: () => number;
   DB: D1Database;
 }
 

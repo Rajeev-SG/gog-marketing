@@ -8,10 +8,13 @@ import type {
   ConnectionStatus,
   Database,
   GoogleConnection,
+  McpObservableSignal,
+  McpSignalCounter,
   OAuthStateInput,
   OAuthStateRecord,
   OAuthStateTake,
   QuotaCounter,
+  RateLimitScope,
   ResourceGrant,
   Tenant,
 } from "./types.js";
@@ -716,6 +719,152 @@ export class HostedRepository {
       .first<Record<string, unknown>>();
     if (!row) return null;
     return mapQuota(row);
+  }
+
+  /**
+   * Atomically reserve one unit only while the counter remains within limit.
+   * A null result means the limit was already exhausted and no unit was
+   * consumed. Counter/database failures still reject the caller.
+   */
+  async incrementQuotaWithinLimit(
+    tenantId: string,
+    period: string,
+    counter: string,
+    limit: number,
+    delta = 1,
+  ): Promise<number | null> {
+    const now = new Date().toISOString();
+    if (!Number.isInteger(limit) || limit < 1) {
+      throw new Error("incrementQuotaWithinLimit: limit must be a positive integer");
+    }
+    if (!Number.isInteger(delta) || delta < 1 || delta > limit) {
+      throw new Error("incrementQuotaWithinLimit: delta must be a positive integer within limit");
+    }
+
+    const row = await this.db
+      .prepare(
+        `INSERT INTO hosted_quota_counters (tenant_id, period, counter, value, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT (tenant_id, period, counter)
+         DO UPDATE SET value = value + excluded.value, updated_at = excluded.updated_at
+         WHERE value + excluded.value <= ?6
+         RETURNING value`,
+      )
+      .bind(tenantId, period, counter, delta, now, limit)
+      .first<{ value: number }>();
+    return row ? Number(row.value) : null;
+  }
+
+  // ─── Fixed-window request rate counters ────────────────────────────────
+
+  /**
+   * Increment a fixed-window request counter and return its running value.
+   * IP callers pass a SHA-256 hex digest rather than a raw address.
+   */
+  async incrementRateLimit(
+    scopeKind: RateLimitScope,
+    scopeKey: string,
+    period: string,
+    delta = 1,
+  ): Promise<number> {
+    const now = new Date().toISOString();
+    if (scopeKind !== "tenant" && scopeKind !== "ip_hash") {
+      throw new Error("incrementRateLimit: unsupported scope kind");
+    }
+    if (
+      typeof scopeKey !== "string" ||
+      scopeKey.length < 1 ||
+      scopeKey.length > 256 ||
+      (scopeKind === "ip_hash" && !/^[a-f0-9]{64}$/.test(scopeKey))
+    ) {
+      throw new Error("incrementRateLimit: invalid scope key");
+    }
+    if (typeof period !== "string" || period.length < 1 || period.length > 64) {
+      throw new Error("incrementRateLimit: invalid period");
+    }
+    if (!Number.isInteger(delta) || delta < 1) {
+      throw new Error("incrementRateLimit: delta must be a positive integer");
+    }
+
+    const row = await this.db
+      .prepare(
+        `INSERT INTO hosted_rate_limit_counters
+           (scope_kind, scope_key, period, value, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5)
+         ON CONFLICT (scope_kind, scope_key, period)
+         DO UPDATE SET value = value + excluded.value, updated_at = excluded.updated_at
+         RETURNING value`,
+      )
+      .bind(scopeKind, scopeKey, period, delta, now)
+      .first<{ value: number }>();
+    if (!row) throw new Error("incrementRateLimit: value read-back returned null");
+    return Number(row.value);
+  }
+
+  // ─── Tenant-independent MCP signal counters ─────────────────────────────
+
+  /**
+   * Increment a fixed-window aggregate for authentication or MCP protocol
+   * failures that occur before tenant resolution. Signal names are a closed
+   * allowlist; request/error content is never persisted.
+   */
+  async incrementMcpSignal(
+    signal: McpObservableSignal,
+    period: string,
+    delta = 1,
+  ): Promise<number> {
+    const now = new Date().toISOString();
+    const signals = new Set<McpObservableSignal>([
+      "auth_missing_bearer",
+      "auth_invalid_bearer",
+      "auth_error",
+      "auth_tenant_denied",
+      "mcp_parse_error",
+      "mcp_invalid_request",
+      "mcp_method_not_found",
+      "mcp_internal_error",
+      "mcp_invalid_origin",
+      "mcp_request_rate_limited",
+    ]);
+    if (!signals.has(signal)) {
+      throw new Error("incrementMcpSignal: unsupported signal");
+    }
+    if (typeof period !== "string" || period.length < 1 || period.length > 64) {
+      throw new Error("incrementMcpSignal: invalid period");
+    }
+    if (!Number.isInteger(delta) || delta < 1) {
+      throw new Error("incrementMcpSignal: delta must be a positive integer");
+    }
+
+    const row = await this.db
+      .prepare(
+        `INSERT INTO hosted_mcp_signal_counters (signal, period, value, updated_at)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT (signal, period)
+         DO UPDATE SET value = value + excluded.value, updated_at = excluded.updated_at
+         RETURNING value`,
+      )
+      .bind(signal, period, delta, now)
+      .first<{ value: number }>();
+    if (!row) throw new Error("incrementMcpSignal: value read-back returned null");
+    return Number(row.value);
+  }
+
+  async getMcpSignal(
+    signal: McpObservableSignal,
+    period: string,
+  ): Promise<McpSignalCounter | null> {
+    const row = await this.db
+      .prepare("SELECT * FROM hosted_mcp_signal_counters WHERE signal = ?1 AND period = ?2")
+      .bind(signal, period)
+      .first<Record<string, unknown>>();
+    if (!row) return null;
+    return {
+      signal: String(row.signal) as McpSignalCounter["signal"],
+      period: String(row.period),
+      value: Number(row.value),
+      updatedAt: String(row.updated_at),
+    };
   }
 }
 

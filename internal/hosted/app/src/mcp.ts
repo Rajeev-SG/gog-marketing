@@ -28,7 +28,12 @@ import {
   type ConnectSession,
 } from "./connect.js";
 import { HostedRepository } from "../../state/src/repository.js";
-import type { GoogleConnection, ResourceGrant, Tenant } from "../../state/src/types.js";
+import type {
+  GoogleConnection,
+  McpObservableSignal,
+  ResourceGrant,
+  Tenant,
+} from "../../state/src/types.js";
 import {
   ANALYTICS_PROPERTY_READ,
   type AnalyticsPropertyResult,
@@ -42,10 +47,17 @@ const JSONRPC_HEADERS = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
 } as const;
+export const DEFAULT_MCP_TOOL_CALL_DAILY_LIMIT = 100;
+export const DEFAULT_MCP_REQUESTS_PER_MINUTE_LIMIT = 60;
+const TOOL_CALL_QUOTA_COUNTER = "mcp_tool_calls";
+const REQUEST_RATE_LIMITED_CODE = -32029;
 
 export interface McpEnv extends ClerkEnv, ConnectEnv {
   GOG_HOSTED_CANONICAL_ORIGIN?: string;
+  GOG_MCP_TOOL_CALL_DAILY_LIMIT?: string;
+  GOG_MCP_REQUESTS_PER_MINUTE_LIMIT?: string;
   __testFetch?: typeof fetch;
+  __testNow?: () => number;
 }
 
 type JsonRpcId = string | number | null;
@@ -262,6 +274,76 @@ function jsonRpcError(
     id,
     error: { code, message, ...(data ? { data } : {}) },
   };
+}
+
+type McpLimits = {
+  toolCallDaily: number;
+  requestsPerMinute: number;
+};
+
+function configuredPositiveInteger(raw: string | undefined, fallback: number): number | null {
+  if (raw === undefined) return fallback;
+  if (raw.trim() === "") return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) && value >= 1 ? value : null;
+}
+
+function mcpLimits(env: McpEnv): McpLimits | null {
+  const toolCallDaily = configuredPositiveInteger(
+    env.GOG_MCP_TOOL_CALL_DAILY_LIMIT,
+    DEFAULT_MCP_TOOL_CALL_DAILY_LIMIT,
+  );
+  const requestsPerMinute = configuredPositiveInteger(
+    env.GOG_MCP_REQUESTS_PER_MINUTE_LIMIT,
+    DEFAULT_MCP_REQUESTS_PER_MINUTE_LIMIT,
+  );
+  return toolCallDaily !== null && requestsPerMinute !== null
+    ? { toolCallDaily, requestsPerMinute }
+    : null;
+}
+
+function configuredNow(env: McpEnv): number {
+  const value = env.__testNow?.() ?? Date.now();
+  return Number.isFinite(value) ? value : Date.now();
+}
+
+function utcDay(now: number): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+function utcMinute(now: number): string {
+  return new Date(now).toISOString().slice(0, 16);
+}
+
+async function recordMcpSignal(
+  repo: HostedRepository,
+  env: McpEnv,
+  signal: McpObservableSignal,
+): Promise<void> {
+  try {
+    await repo.incrementMcpSignal(signal, utcDay(configuredNow(env)));
+  } catch {
+    // Observability storage failure never changes the protocol response.
+  }
+}
+
+function secondsUntilNextUtcDay(now: number): number {
+  const next = Date.UTC(
+    new Date(now).getUTCFullYear(),
+    new Date(now).getUTCMonth(),
+    new Date(now).getUTCDate() + 1,
+  );
+  return Math.max(1, Math.ceil((next - now) / 1000));
+}
+
+function secondsUntilNextUtcMinute(now: number): number {
+  const next = (Math.floor(now / 60_000) + 1) * 60_000;
+  return Math.max(1, Math.ceil((next - now) / 1000));
+}
+
+async function hashIp(ip: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip));
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 export function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}): Response {
@@ -509,12 +591,38 @@ function auditIdentifiers(
   };
 }
 
+async function writeAudit(
+  repo: HostedRepository,
+  session: AuthSession,
+  action: string,
+  result: "allow" | "deny" | "error",
+  detailJson: string,
+  latencyMs: number,
+): Promise<void> {
+  try {
+    await repo.appendAudit({
+      id: crypto.randomUUID(),
+      tenantId: session.tenant.id,
+      connectionId: "",
+      actorClerkUserId: session.userId,
+      action,
+      result,
+      detailJson,
+      latencyMs,
+    });
+  } catch {
+    // Audit storage failure never exposes its contents or converts a policy
+    // denial into an execution opportunity.
+  }
+}
+
 async function writeToolAudit(
   repo: HostedRepository,
   session: AuthSession,
   connectionId: string,
   result: "allow" | "deny" | "error",
   identifiers: ReturnType<typeof auditIdentifiers>,
+  latencyMs: number,
   error?: string,
 ): Promise<void> {
   try {
@@ -529,12 +637,35 @@ async function writeToolAudit(
         ...identifiers,
         ...(error ? { error } : {}),
       }),
-      latencyMs: null,
+      latencyMs,
     });
   } catch {
     // Audit storage failure never exposes its contents or converts a policy
     // denial into an execution opportunity.
   }
+}
+
+async function writeRequestAudit(
+  repo: HostedRepository,
+  session: AuthSession,
+  result: "deny" | "error",
+  scope: "tenant" | "ip",
+  error: "rate_limited" | "internal_error",
+  count: number | null,
+  latencyMs: number,
+): Promise<void> {
+  await writeAudit(
+    repo,
+    session,
+    result === "deny" ? "mcp.request.rate_limited" : "mcp.request",
+    result,
+    JSON.stringify({
+      operation: scope,
+      error,
+      ...(count === null ? {} : { count }),
+    }),
+    latencyMs,
+  );
 }
 
 function toolCallDenial(id: JsonRpcId, reason: ToolDenialReason) {
@@ -626,6 +757,112 @@ function toolExecutionError(id: JsonRpcId, reason: string, diagnostics?: Record<
   };
 }
 
+function rateLimitError(scope: "tenant" | "ip", retryAfterSeconds: number) {
+  return jsonResponse(
+    jsonRpcError(null, REQUEST_RATE_LIMITED_CODE, "Request rate limit exceeded.", {
+      reason: "rate_limited",
+      scope,
+      retryAfterSeconds,
+    }),
+    429,
+    { "Retry-After": String(retryAfterSeconds) },
+  );
+}
+
+function rateLimiterUnavailable() {
+  return jsonResponse(
+    jsonRpcError(null, -32603, "Request rate limiting is unavailable.", {
+      reason: "rate_limiter_unavailable",
+    }),
+    503,
+  );
+}
+
+function quotaExceededError(id: JsonRpcId, limit: number, retryAfterSeconds: number) {
+  return {
+    body: jsonRpcError(id, -32003, "Daily tool-call quota exceeded.", {
+      reason: "quota_exceeded",
+      limit,
+      retryAfterSeconds,
+    }),
+    status: 429,
+  };
+}
+
+function quotaUnavailableError(id: JsonRpcId) {
+  return {
+    body: jsonRpcError(id, -32603, "Tool-call quota is unavailable.", {
+      reason: "quota_unavailable",
+    }),
+    status: 503,
+  };
+}
+
+async function enforceIpRequestRateLimit(
+  request: Request,
+  env: McpEnv,
+  repo: HostedRepository,
+  limit: number,
+): Promise<Response | null> {
+  const now = configuredNow(env);
+  const period = utcMinute(now);
+  try {
+    const ip = request.headers.get("cf-connecting-ip")?.trim();
+    if (ip) {
+      const ipHash = await hashIp(ip);
+      const count = await repo.incrementRateLimit("ip_hash", ipHash, period);
+      if (count > limit) {
+        await recordMcpSignal(repo, env, "mcp_request_rate_limited");
+        return rateLimitError("ip", secondsUntilNextUtcMinute(now));
+      }
+    }
+    return null;
+  } catch {
+    await recordMcpSignal(repo, env, "mcp_internal_error");
+    return rateLimiterUnavailable();
+  }
+}
+
+async function enforceTenantRequestRateLimit(
+  env: McpEnv,
+  repo: HostedRepository,
+  session: AuthSession,
+  limit: number,
+): Promise<Response | null> {
+  const startedAt = Date.now();
+  const now = configuredNow(env);
+  const period = utcMinute(now);
+  try {
+    const count = await repo.incrementRateLimit("tenant", session.tenant.id, period);
+    if (count > limit) {
+      await writeRequestAudit(
+        repo,
+        session,
+        "deny",
+        "tenant",
+        "rate_limited",
+        count,
+        Date.now() - startedAt,
+      );
+      await recordMcpSignal(repo, env, "mcp_request_rate_limited");
+      return rateLimitError("tenant", secondsUntilNextUtcMinute(now));
+    }
+    return null;
+  } catch {
+    await writeRequestAudit(
+      repo,
+      session,
+      "error",
+      "tenant",
+      "internal_error",
+      null,
+      Date.now() - startedAt,
+    );
+    await recordMcpSignal(repo, env, "mcp_internal_error");
+    return rateLimiterUnavailable();
+  }
+}
+
 async function handleToolCall(
   id: JsonRpcId,
   params: Record<string, unknown>,
@@ -633,17 +870,82 @@ async function handleToolCall(
   repo: HostedRepository,
   session: AuthSession,
 ): Promise<{ body: unknown; status: number }> {
+  const startedAt = Date.now();
+  const latencyMs = () => Math.max(0, Math.round(Date.now() - startedAt));
   const name = typeof params.name === "string" ? params.name : "";
   const mapping = Object.prototype.hasOwnProperty.call(TOOL_RESOURCE_MAPPINGS, name)
     ? TOOL_RESOURCE_MAPPINGS[name]
     : undefined;
   const unknownIdentifiers = auditIdentifiers(name, mapping, "");
+  const limits = mcpLimits(env);
+  if (!limits) {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "error",
+      unknownIdentifiers,
+      latencyMs(),
+      "internal_error",
+    );
+    return quotaUnavailableError(id);
+  }
+
+  let quotaValue: number | null;
+  try {
+    quotaValue = await repo.incrementQuotaWithinLimit(
+      session.tenant.id,
+      utcDay(configuredNow(env)),
+      TOOL_CALL_QUOTA_COUNTER,
+      limits.toolCallDaily,
+    );
+  } catch {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "error",
+      unknownIdentifiers,
+      latencyMs(),
+      "internal_error",
+    );
+    return quotaUnavailableError(id);
+  }
+  if (quotaValue === null) {
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      unknownIdentifiers,
+      latencyMs(),
+      "quota_exceeded",
+    );
+    return quotaExceededError(id, limits.toolCallDaily, secondsUntilNextUtcDay(configuredNow(env)));
+  }
+
   if (!name || !catalogTool(name)) {
-    await writeToolAudit(repo, session, "", "deny", unknownIdentifiers, "permission_denied");
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      unknownIdentifiers,
+      latencyMs(),
+      "permission_denied",
+    );
     return toolCallDenial(id, "unknown_tool");
   }
   if (!mapping) {
-    await writeToolAudit(repo, session, "", "deny", unknownIdentifiers, "permission_denied");
+    await writeToolAudit(
+      repo,
+      session,
+      "",
+      "deny",
+      unknownIdentifiers,
+      latencyMs(),
+      "permission_denied",
+    );
     return toolCallDenial(id, "unsupported_tool_mapping");
   }
 
@@ -655,6 +957,7 @@ async function handleToolCall(
       "",
       "deny",
       auditIdentifiers(name, mapping, ""),
+      latencyMs(),
       "invalid_request",
     );
     return toolCallDenial(id, "resource_mapping_unknown");
@@ -671,6 +974,7 @@ async function handleToolCall(
       "",
       "deny",
       auditIdentifiers(name, mapping, ""),
+      latencyMs(),
       "permission_denied",
     );
     return toolCallDenial(id, "foreign_tenant");
@@ -686,6 +990,7 @@ async function handleToolCall(
         "",
         "deny",
         auditIdentifiers(name, mapping, ""),
+        latencyMs(),
         "permission_denied",
       );
       return toolCallDenial(id, "connection_not_found");
@@ -705,6 +1010,7 @@ async function handleToolCall(
       "",
       "deny",
       auditIdentifiers(name, mapping, resourceId),
+      latencyMs(),
       "invalid_request",
     );
     return toolCallDenial(id, "resource_mapping_unknown");
@@ -725,6 +1031,7 @@ async function handleToolCall(
       "",
       "deny",
       resolvedIdentifiers,
+      latencyMs(),
       auditErrorFor(resolved.reason),
     );
     return toolCallDenial(id, resolved.reason);
@@ -738,6 +1045,7 @@ async function handleToolCall(
       resolved.connection.id,
       "deny",
       resolvedIdentifiers,
+      latencyMs(),
       "permission_denied",
     );
     return toolCallDenial(id, "grant_denied");
@@ -756,6 +1064,7 @@ async function handleToolCall(
       resolved.connection.id,
       "error",
       resolvedIdentifiers,
+      latencyMs(),
       "provider_unavailable",
     );
     return toolExecutionError(id, "execution_unavailable");
@@ -768,6 +1077,7 @@ async function handleToolCall(
       resolved.connection.id,
       "error",
       resolvedIdentifiers,
+      latencyMs(),
       "provider_unavailable",
     );
     return toolExecutionError(id, "execution_unavailable");
@@ -788,6 +1098,7 @@ async function handleToolCall(
       resolved.connection.id,
       "error",
       resolvedIdentifiers,
+      latencyMs(),
       reconnect ? "needs_reconnect" : "provider_unavailable",
     );
     return toolExecutionError(id, reconnect ? "needs_reconnect" : "execution_unavailable");
@@ -812,6 +1123,7 @@ async function handleToolCall(
       resolved.connection.id,
       "error",
       resolvedIdentifiers,
+      latencyMs(),
       "internal_error",
     );
     return toolExecutionError(id, "execution_failed");
@@ -824,6 +1136,7 @@ async function handleToolCall(
       resolved.connection.id,
       "error",
       resolvedIdentifiers,
+      latencyMs(),
       outcome.status === "unavailable" ? "provider_unavailable" : "internal_error",
     );
     return toolExecutionError(
@@ -833,7 +1146,14 @@ async function handleToolCall(
     );
   }
 
-  await writeToolAudit(repo, session, resolved.connection.id, "allow", resolvedIdentifiers);
+  await writeToolAudit(
+    repo,
+    session,
+    resolved.connection.id,
+    "allow",
+    resolvedIdentifiers,
+    latencyMs(),
+  );
   return toolCallResult(id, outcome.result);
 }
 
@@ -881,6 +1201,7 @@ async function handleRpc(
   if (method === "tools/call") {
     return handleToolCall(id, params, env, repo, session);
   }
+  await recordMcpSignal(repo, env, "mcp_method_not_found");
   return { body: jsonRpcError(id, -32601, "Method not found."), status: 200 };
 }
 
@@ -892,12 +1213,16 @@ export async function handleMcp(
 ): Promise<Response | null> {
   if (path !== "/mcp") return null;
   const resource = canonicalMcpUrl(env);
-  if (!resource)
+  if (!resource) {
+    await recordMcpSignal(repo, env, "mcp_internal_error");
     return jsonResponse(jsonRpcError(null, -32603, "MCP endpoint is not configured."), 503);
+  }
   if (originRejected(request, resource)) {
+    await recordMcpSignal(repo, env, "mcp_invalid_origin");
     return jsonResponse(jsonRpcError(null, -32600, "Invalid request origin."), 403);
   }
   if (request.method === "GET" || request.method === "HEAD" || request.method === "DELETE") {
+    await recordMcpSignal(repo, env, "mcp_method_not_found");
     return jsonResponse(jsonRpcError(null, -32600, "Streamable GET/SSE is not enabled."), 405, {
       Allow: "POST, OPTIONS",
     });
@@ -905,21 +1230,55 @@ export async function handleMcp(
   if (request.method === "OPTIONS")
     return new Response(null, { status: 204, headers: { Allow: "POST, OPTIONS" } });
   if (request.method !== "POST") {
+    await recordMcpSignal(repo, env, "mcp_method_not_found");
     return jsonResponse(jsonRpcError(null, -32600, "Unsupported HTTP method."), 405, {
       Allow: "POST, OPTIONS",
     });
   }
-  if (!bearerToken(request)) return authChallenge(resource, "invalid_request");
+  const limits = mcpLimits(env);
+  if (!limits) {
+    await recordMcpSignal(repo, env, "mcp_internal_error");
+    return jsonResponse(
+      jsonRpcError(null, -32603, "MCP limits are not configured correctly.", {
+        reason: "invalid_server_configuration",
+      }),
+      503,
+    );
+  }
+  const ipRateLimited = await enforceIpRequestRateLimit(
+    request,
+    env,
+    repo,
+    limits.requestsPerMinute,
+  );
+  if (ipRateLimited) return ipRateLimited;
+
+  if (!bearerToken(request)) {
+    await recordMcpSignal(repo, env, "auth_missing_bearer");
+    return authChallenge(resource, "invalid_request");
+  }
   const auth = await authenticateBearer(request, env, repo, resource);
   if (auth.kind === "unauthenticated") {
+    await recordMcpSignal(repo, env, "auth_invalid_bearer");
     return authChallenge(resource, "invalid_token", auth.reason ?? "invalid_token");
   }
-  if (auth.kind === "error")
+  if (auth.kind === "error") {
+    await recordMcpSignal(repo, env, "auth_error");
     return jsonResponse(jsonRpcError(null, -32603, auth.message), auth.status);
+  }
   if (auth.session.tenant.status !== "active") {
+    await recordMcpSignal(repo, env, "auth_tenant_denied");
     return jsonResponse(jsonRpcError(null, -32003, "Tenant access is not available."), 403);
   }
+  const rateLimited = await enforceTenantRequestRateLimit(
+    env,
+    repo,
+    auth.session,
+    limits.requestsPerMinute,
+  );
+  if (rateLimited) return rateLimited;
   if (request.headers.get("content-type")?.split(";")[0].trim() !== "application/json") {
+    await recordMcpSignal(repo, env, "mcp_invalid_request");
     return jsonResponse(jsonRpcError(null, -32600, "A JSON-RPC message is required."), 400);
   }
 
@@ -927,9 +1286,11 @@ export async function handleMcp(
   try {
     message = await request.json();
   } catch {
+    await recordMcpSignal(repo, env, "mcp_parse_error");
     return jsonResponse(jsonRpcError(null, -32700, "Parse error."), 400);
   }
   if (Array.isArray(message) || !message || typeof message !== "object") {
+    await recordMcpSignal(repo, env, "mcp_invalid_request");
     return jsonResponse(jsonRpcError(null, -32600, "Invalid JSON-RPC request."), 400);
   }
   const rpcMessage = message as JsonRpcMessage;
@@ -940,6 +1301,7 @@ export async function handleMcp(
     typeof rpcMessage.method !== "string" ||
     (hasId && typeof rpcMessage.id !== "string" && typeof rpcMessage.id !== "number")
   ) {
+    await recordMcpSignal(repo, env, "mcp_invalid_request");
     return jsonResponse(jsonRpcError(id, -32600, "Invalid JSON-RPC request."), 400);
   }
 
@@ -947,6 +1309,7 @@ export async function handleMcp(
   try {
     outcome = await handleRpc(rpcMessage, env, repo, auth.session);
   } catch {
+    await recordMcpSignal(repo, env, "mcp_internal_error");
     return jsonResponse(jsonRpcError(id, -32603, "Internal error."), 500);
   }
   if ("accepted" in outcome) return new Response(null, { status: 202 });
