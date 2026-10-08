@@ -159,6 +159,27 @@ export interface QuotaCounter {
   updatedAt: string;
 }
 
+export type RateLimitScope = "tenant" | "ip_hash";
+
+export type McpObservableSignal =
+  | "auth_missing_bearer"
+  | "auth_invalid_bearer"
+  | "auth_error"
+  | "auth_tenant_denied"
+  | "mcp_parse_error"
+  | "mcp_invalid_request"
+  | "mcp_method_not_found"
+  | "mcp_internal_error"
+  | "mcp_invalid_origin"
+  | "mcp_request_rate_limited";
+
+export interface McpSignalCounter {
+  signal: McpObservableSignal;
+  period: string;
+  value: number;
+  updatedAt: string;
+}
+
 /**
  * D1-compatible database interface. Matches the Cloudflare D1Database subset
  * the repository uses: `prepare` returns a prepared statement object and

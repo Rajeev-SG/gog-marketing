@@ -102,6 +102,50 @@ describe("D1 migrations", () => {
       ).results ?? [];
     expect(indexes.map((r) => r.name)).toContain("hosted_oauth_states_tenant_created_idx");
   });
+
+  it("applies the rate-limit counter migration idempotently with its period index", async () => {
+    const sql = loadMigrationSql("0003_rate_limit_counters.sql");
+    applyMigrationSql(db, sql);
+    applyMigrationSql(db, sql);
+
+    const tables =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(tables.map((row) => row.name)).toContain("hosted_rate_limit_counters");
+
+    const indexes =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(indexes.map((row) => row.name)).toContain("hosted_rate_limit_counters_period_idx");
+  });
+
+  it("applies the MCP signal counter migration idempotently with its period index", async () => {
+    const sql = loadMigrationSql("0004_mcp_signal_counters.sql");
+    applyMigrationSql(db, sql);
+    applyMigrationSql(db, sql);
+
+    const tables =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(tables.map((row) => row.name)).toContain("hosted_mcp_signal_counters");
+
+    const indexes =
+      (
+        await db
+          .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'hosted_%'")
+          .all<{ name: string }>()
+      ).results ?? [];
+    expect(indexes.map((row) => row.name)).toContain("hosted_mcp_signal_counters_period_idx");
+  });
 });
 
 async function getSchema(db: SQLiteD1Adapter): Promise<string[]> {
