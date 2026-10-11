@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: persist exact account-scoped tool permissions separately from OAuth and resource grants, add their guarded API/UI and explicit write/destructive controls, and route nine guarded native bindings through a Go-generated MCP catalogue. Preserve only existing GA4 reads in the additive migration; new tools stay disabled. Picker, complete eligible parity and live acceptance remain pending. (#52, #79)
+
 - Hosted: bind native SDK requests to operation deadlines and explicit resource/host/method admission before credential use; share the audit-free scope catalogue across Go and the Worker, and add a private signed native-tool operation for the initial GA4, selected-file Drive/Docs/Sheets and Calendar bindings. The Worker now routes three guarded GA4 reads; broader exposure, Picker, complete parity and live acceptance remain pending; local CLI transport defaults are unchanged. (#52, #79)
 
 - Hosted: add a non-advertised in-process bridge reusing existing local MCP schemas, typed argument builders and native Go handlers, with no shell, subprocess, keyring, ADC or root-configuration execution; keep it off hosted tool discovery pending resource-policy and deadline wiring. Native Sheets write/read transport tests cover credential propagation and persistence; no live acceptance is claimed. (#52, #79)

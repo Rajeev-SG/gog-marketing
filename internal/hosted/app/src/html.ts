@@ -154,6 +154,10 @@ button:disabled { cursor: default; opacity: .7; }
 .service-consent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin-bottom: 12px; }
 .service-choice { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
 .service-choice input { width: 18px; height: 18px; accent-color: var(--action); }
+.tool-choice { display: grid; gap: 8px; margin: 12px 0; font-size: 13.5px; }
+.tool-choice label { display: flex; align-items: flex-start; gap: 8px; }
+.tool-choice input { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--action); }
+#tool-status { display: block; margin-top: 8px; }
 .connect-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .account-card + .account-card { margin-top: 16px; }
 .status {
@@ -370,10 +374,17 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         </div>
         </div>
       </section>
+      <section id="tool-workspace" class="card" hidden aria-labelledby="tool-heading">
+        <h2 id="tool-heading">AI tool permissions</h2>
+        <p>Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes. Changes affect this account only.</p>
+        <div id="tool-choices" aria-label="Tools for the selected Google account"></div>
+        <button id="save-tools" type="button" class="primary">Save tool permissions</button>
+        <span id="tool-status" role="status" aria-live="polite"></span>
+      </section>
       <section class="card ai-panel" aria-labelledby="ai-panel-heading">
         <p class="eyebrow">Connect to your AI</p>
         <h2 id="ai-panel-heading">Codex remote MCP endpoint</h2>
-        <p>This is the canonical public HTTPS address for your workspace. The endpoint is prepared, but authentication is not enabled yet; Codex will not connect successfully today.</p>
+        <p>Use this canonical HTTPS address in Codex, sign in with Clerk, then execute only the tools and assets enabled for your Google account. Expanded service coverage is still being verified; this is not a public-beta readiness claim.</p>
         <div class="mcp-row">
           <code id="mcp-url">${canonicalMcpUrl || "Workspace address is not configured."}</code>
           <button id="copy-mcp-url" type="button"${canonicalMcpUrl ? "" : " disabled"}>Copy URL</button>
@@ -562,9 +573,61 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       return 'Run discovery to check this account.';
     }
     function selectAccount(id) {
+      if (id !== selectedId && toolChoicesDirty && !window.confirm('Discard unsaved tool permission changes for this account?')) return;
       selectedId = id;
-      renderAccounts(); renderAssets();
+      renderAccounts(); renderAssets(); renderToolPermissions();
       el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    var toolChoices = new Map();
+    var toolChoicesConnectionId = null;
+    var toolChoicesDirty = false;
+    async function renderToolPermissions() {
+      var connection = selectedAccount(); var panel = el('tool-workspace');
+      if (!connection) { panel.hidden = true; return; }
+      panel.hidden = false; toolChoices.clear(); toolChoicesConnectionId = null; el('save-tools').disabled = true; el('tool-choices').textContent = ''; el('tool-status').textContent = 'Loading tool permissions…';
+      var connectionId = connection.id;
+      try {
+        var response = await fetch('/api/google/tools?connectionId=' + encodeURIComponent(connectionId));
+        if (!response.ok) throw new Error('Could not load tool permissions.');
+        var result = await response.json();
+        if (!selectedAccount() || selectedAccount().id !== connectionId) return;
+        toolChoices.clear(); toolChoicesDirty = false; toolChoicesConnectionId = connectionId; el('save-tools').disabled = false; el('tool-status').textContent = '';
+        result.tools.forEach(function (tool) {
+          var row = document.createElement('div'); row.className = 'tool-choice';
+          var labelNode = document.createElement('label');
+          var input = document.createElement('input'); input.type = 'checkbox'; input.checked = tool.enabled;
+          var choice = { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive };
+          toolChoices.set(tool.name, choice);
+          input.addEventListener('change', function () {
+            if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for this account?')) input.checked = false;
+            choice.enabled = input.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
+            if (!input.checked) { choice.allowDestructive = false; if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; } }
+            else if (destructiveInput) destructiveInput.disabled = false;
+          });
+          labelNode.appendChild(input); labelNode.append(document.createTextNode(tool.name + (tool.write ? ' · writes' : ' · reads') + ' — ' + tool.description)); row.appendChild(labelNode);
+          var destructiveInput = null;
+          if (tool.write) {
+            var destructiveLabel = document.createElement('label'); destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = tool.allowDestructive; destructiveInput.disabled = !tool.enabled;
+            destructiveInput.addEventListener('change', function () {
+              if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) destructiveInput.checked = false;
+              choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
+            });
+            destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel);
+          }
+          el('tool-choices').appendChild(row);
+        });
+      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not load tools.'; }
+    }
+    async function saveTools() {
+      var connection = selectedAccount(); if (!connection) return;
+      var connectionId = connection.id; if (toolChoicesConnectionId !== connectionId) return;
+      var grants = Array.from(toolChoices.values()).map(function (choice) { return { toolName: choice.toolName, enabled: choice.enabled, allowDestructive: choice.allowDestructive }; });
+      el('tool-status').textContent = 'Saving…';
+      try {
+        var response = await jsonFetch('/api/google/tools', { connectionId: connectionId, grants: grants });
+        if (!response.ok) { var result = await response.json(); throw new Error(result.error || 'Could not save tool permissions.'); }
+        if (selectedAccount() && selectedAccount().id === connectionId) { await renderToolPermissions(); el('tool-status').textContent = 'Tool permissions saved for this account.'; }
+      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not save tools.'; }
     }
     function jsonFetch(url, body) {
       return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : '{}' });
@@ -576,7 +639,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         data = await response.json();
         if (!data.connections || !data.connections.length) { data.connections = []; selectedId = null; }
         else if (!selectedId || !data.connections.some(function (item) { return item.id === selectedId; })) selectedId = data.connections[0].id;
-        renderAccounts(); renderAssets();
+        renderAccounts(); renderAssets(); renderToolPermissions();
         return true;
       } catch { message('Could not load your Google assets. Try again.', 'error'); return false; }
     }
@@ -650,6 +713,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       if (signOutButton) signOutButton.addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
       el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); });
       el('save-grants').addEventListener('click', function () { return save(); });
+      el('save-tools').addEventListener('click', saveTools);
       var copyButton = el('copy-mcp-url');
       if (copyButton) copyButton.addEventListener('click', function () {
         navigator.clipboard.writeText(el('mcp-url').textContent);

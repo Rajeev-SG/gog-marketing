@@ -9,18 +9,27 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker implementation now advertises and routes three guarded GA4 reads:
-`analytics_properties_get`, `analytics_report`, and `analytics_datastreams_list`.
-The last two use the encrypted credential’s actual scope set and the signed
-native call; caller context hints cannot supply scope or write authority. These
-changes are local/PR code, **not a deployed acceptance claim**. The private
-runner also executes a signed `tool_call` operation for nine existing typed
-handlers: `analytics_properties_get`, `analytics_report`,
-`analytics_datastreams_list`, `drive_get`, `docs_get`, `docs_write`,
-`sheets_read_range`, `sheets_update_range`, and `calendar_events`.
-This is **private-engine implementation**, not hosted MCP completion. Broader Worker
-routing, persisted per-tool/write grants, Picker and remaining service adapters
-still have to be completed before advertising the additional tools.
+The Worker now consumes a generated catalogue of nine existing executable Go
+schemas: GA4 property/report/data-stream reads; selected-file Drive get, Docs
+get/write, Sheets read/update; and Calendar events. MCP discovery and execution
+require **both** a saved account-specific tool grant and an enabled matching
+resource grant. Google consent and selecting a resource do not authorize writes
+or every future tool. Scope authority comes from encrypted credentials.
+
+Migration `0005_tool_grants.sql` adds compound-FK-owned per-account tool rows.
+It preserves only the three previously offered GA4 reads for existing active
+accounts with enabled properties; no writes, wildcards, other services or future
+tools are seeded. New tools default disabled. The control-plane UI/API saves
+explicit tool enablement and separate destructive permission for the selected
+account. Unknown/wildcard/billing authority, foreign accounts and partial invalid
+batches are rejected. Disconnect cascades tool grants. UI protects account
+switches with unsaved changes and prevents stale-loading choices being saved to
+another account.
+
+These are **local/PR implementation changes**, not a deployed acceptance claim.
+Picker, complete 27-service command coverage and live verification remain
+required. Workspace bindings cannot access an arbitrary file: a real owned
+selected-file grant must exist; Picker is still the pending user-facing path.
 
 The runner validates the exact signed tenant/connection/operation/body, explicit
 tool allowlist, audit-free and method-appropriate scopes, enabled resource grant
@@ -81,19 +90,19 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `calendar` | `calendar.readonly` | `calendar` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/calendar/api/auth) |
 | `chat` | `chat.spaces.readonly chat.memberships.readonly chat.messages.reactions.readonly chat.users.readstate.readonly` | `chat.spaces chat.memberships chat.messages.create chat.messages.reactions.create` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/chat/authenticate-authorize) |
 | `classroom` | `classroom.courses.readonly classroom.rosters.readonly classroom.coursework.students.readonly classroom.coursework.me.readonly classroom.courseworkmaterials.readonly classroom.announcements.readonly classroom.topics.readonly classroom.guardianlinks.students.readonly classroom.profile.emails classroom.profile.photos` | `classroom.courses classroom.rosters classroom.coursework.students classroom.coursework.me classroom.courseworkmaterials classroom.announcements classroom.topics classroom.guardianlinks.students` | **untested** | Hosted typed execution adapter pending; account/role prerequisites unverified | [Google](https://developers.google.com/workspace/classroom/guides/auth) |
-| `drive` | `drive.file` | `drive.file` | **untested** | Private typed get/write subset implemented where listed above; Worker/per-tool grants, Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
+| `drive` | `drive.file` | `drive.file` | **untested** | Private typed get/write subset implemented where listed above; Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `drivelabels` | `drive.labels.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/drive/labels/guides/authorize) |
-| `docs` | `documents.readonly drive.file` | `documents` | **untested** | Private typed get/write subset implemented where listed above; Worker/per-tool grants, Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/docs/api/auth) |
-| `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | Private typed get/write subset implemented where listed above; Worker/per-tool grants, Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
+| `docs` | `documents.readonly drive.file` | `documents` | **untested** | Private typed get/write subset implemented where listed above; Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/docs/api/auth) |
+| `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | Private typed get/write subset implemented where listed above; Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
 | `contacts` | `contacts.readonly contacts.other.readonly directory.readonly` | `contacts` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
 | `tasks` | `tasks.readonly` | `tasks` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/tasks/auth) |
 | `people` | `profile` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
-| `sheets` | `spreadsheets.readonly drive.file` | `spreadsheets` | **untested** | Private typed get/write subset implemented where listed above; Worker/per-tool grants, Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/sheets/api/scopes) |
+| `sheets` | `spreadsheets.readonly drive.file` | `spreadsheets` | **untested** | Private typed get/write subset implemented where listed above; Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/sheets/api/scopes) |
 | `forms` | `forms.body.readonly forms.responses.readonly` | `forms.body` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/forms/api/guides/apps-script-setup) |
-| `sites` | `drive.file` | No existing service write scope requested | **untested** | Private typed get/write subset implemented where listed above; Worker/per-tool grants, Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
+| `sites` | `drive.file` | No existing service write scope requested | **untested** | Private typed get/write subset implemented where listed above; Picker and remaining command coverage pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
 | `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Hosted typed execution adapter pending; execution target scopes must be audited before run | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
-| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Guarded MCP get/report/data-stream read routing implemented and fixture-tested; broader Admin writes, per-tool grants and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
+| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Guarded MCP get/report/data-stream read routing implemented and fixture-tested; broader Admin writes and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
 | `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
 | `bigquery` | `bigquery.readonly` | `bigquery` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
@@ -129,7 +138,7 @@ The production scope/verification gate is **blocked pending console evidence**,
 not approved based on absence from a general list. Exact per-tool method/role
 requirements must be attached during typed execution implementation.
 
-Hosted-app lint, typecheck/build, all 128 app tests, runner tests, and the CLI
+Hosted-app lint, typecheck/build, all 132 app tests, runner tests, and the CLI
 and runner binary builds passed at this checkpoint. Three bridge tests exercise
 native Sheets write/read handlers over an HTTP fixture, typed-input rejection
 and preservation of local MCP. These deterministic scope/callback/refresh/runner
@@ -138,3 +147,24 @@ Picker, reconnect/partial failures, Playwright/accessibility, and the full
 Clerk → Google → selection → MCP URL → Codex → Google execution journey remain
 **untested for this revision**. No screenshots or real execution logs are claimed.
 Do not close #52, #58, #69 or #79 on this checkpoint.
+
+## Local permission UI evidence (11 October 2026)
+
+Playwright exercised rendered native checkbox/button controls using an explicit
+**Clerk/API fixture**, not a real login or Google account: enabling and saving a
+write for account A, switching to B without inheriting that grant, returning to A
+and reading persistence, separate destructive confirmation, disabled Save during
+pending account loads, keyboard Space toggling, cancellation of an unsaved-change
+account switch, associated labels and a mobile viewport without horizontal
+scrolling. Browser console reported zero errors/warnings. This is targeted UI
+and accessibility evidence, **not** complete accessibility certification or the
+required real Clerk/Google/Codex end-to-end acceptance.
+
+Screenshots and fixture execution logs are under the operator output directory
+`/Users/rajeev/output/gog-marketing-parity/`; screenshots are explicitly named
+`tool-permissions-*-fixture.png` to avoid confusing them with live acceptance.
+Native D1 API tests independently verify persistence, foreign-account rejection
+and same-origin mutation safeguards. SQLite/D1 state tests verify migration and
+cascade semantics. The generated Worker catalogue has a Go drift regression test
+against executable native schemas, so source changes cannot silently advertise
+unimplemented or changed tools.
