@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -21,6 +23,32 @@ import (
 	"github.com/openclaw/gogcli/internal/cmd"
 	"github.com/openclaw/gogcli/internal/googleapi"
 )
+
+func TestGeneratedWorkerCatalogMatchesExecutableNativeSchemas(t *testing.T) {
+	data, err := os.ReadFile("../app/src/tool-catalog.generated.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var generated any
+	if decodeErr := json.Unmarshal(data, &generated); decodeErr != nil {
+		t.Fatal(decodeErr)
+	}
+
+	encoded, err := json.Marshal(NativeToolCatalog())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var current any
+	if decodeErr := json.Unmarshal(encoded, &current); decodeErr != nil {
+		t.Fatal(decodeErr)
+	}
+
+	if !reflect.DeepEqual(generated, current) {
+		t.Fatal("Worker catalogue drifted from executable Go schemas; rebuild/run cmd/hosted-catalog")
+	}
+}
 
 var errUnexpectedNativeFactory = errors.New("unexpected native handler")
 

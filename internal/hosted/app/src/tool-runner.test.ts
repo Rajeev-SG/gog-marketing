@@ -56,6 +56,9 @@ describe("RemoteToolRunner transport", () => {
         name: "analytics_report",
         arguments: { property: "properties/123" },
         scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+        allowedTools: ["analytics_report"],
+        allowWrite: false,
+        allowDestructive: false,
       },
     });
     expect(sent).toMatchObject({

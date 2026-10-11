@@ -62,7 +62,11 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     }),
   );
   const db = (await mf.getD1Database("DB")) as unknown as D1Database;
-  for (const file of ["0001_initial_schema.sql", "0002_oauth_states_discovery.sql"]) {
+  for (const file of [
+    "0001_initial_schema.sql",
+    "0002_oauth_states_discovery.sql",
+    "0005_tool_grants.sql",
+  ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
       if (!result[0]?.success) throw new Error(`migration failed: ${statement}`);
@@ -141,6 +145,59 @@ async function readRepo(env: Env): Promise<HostedRepository> {
 }
 
 describe("control plane route and UI contracts (#64)", () => {
+  it("persists account-scoped tool permissions through authenticated native-D1 routes", async () => {
+    const env = await createEnv();
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("tool-owner");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-tool-owner",
+      "owner@example.com",
+      "",
+      "[]",
+    );
+    const payload = {
+      connectionId: connection.id,
+      grants: [{ toolName: "docs_write", enabled: true, allowDestructive: false }],
+    };
+    const saved = await authenticatedRequest(`${ORIGIN}/api/google/tools`, "tool-owner", env, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    expect(saved.status).toBe(200);
+    expect(
+      ((await saved.json()) as { tools: Array<{ name: string; enabled: boolean }> }).tools.find(
+        (tool) => tool.name === "docs_write",
+      )!.enabled,
+    ).toBe(true);
+    const reread = await authenticatedRequest(
+      `${ORIGIN}/api/google/tools?connectionId=${connection.id}`,
+      "tool-owner",
+      env,
+    );
+    expect(reread.status).toBe(200);
+    expect(
+      ((await reread.json()) as { tools: Array<{ name: string; enabled: boolean }> }).tools.find(
+        (tool) => tool.name === "docs_write",
+      )!.enabled,
+    ).toBe(true);
+    const foreign = await authenticatedRequest(
+      `${ORIGIN}/api/google/tools`,
+      "foreign-tool-owner",
+      env,
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+    expect(foreign.status).toBe(404);
+    const rejected = await cookieRequest(
+      `${ORIGIN}/api/google/tools`,
+      "tool-owner",
+      env,
+      JSON.stringify(payload),
+      "https://attacker.example",
+    );
+    expect(rejected.status).toBe(403);
+  });
+
   it("rejects protected resource and mutation routes without authentication", async () => {
     const env = await createEnv();
     for (const [path, init] of [
@@ -170,7 +227,7 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("Workspace address is not configured.");
-    expect(html).toContain("authentication is not enabled yet");
+    expect(html).toContain("not a public-beta readiness claim");
     expect(html).not.toContain(`${CANONICAL_ORIGIN}/mcp`);
     expect(html).toContain('<button id="copy-mcp-url" type="button" disabled>');
   });

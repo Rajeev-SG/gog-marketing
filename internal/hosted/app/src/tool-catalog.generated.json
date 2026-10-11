@@ -1,0 +1,380 @@
+[
+  {
+    "name": "drive_get",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get Google Drive file metadata by ID.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "description": "Optional Drive API field mask",
+            "type": "string"
+          },
+          "file_id": {
+            "description": "Drive file ID",
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_get"
+    }
+  },
+  {
+    "name": "docs_get",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a Google Doc as wrapped text, all tabs, or one tab.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_tabs": {
+            "default": false,
+            "description": "Read all tabs",
+            "type": "boolean"
+          },
+          "document_id": {
+            "description": "Google Docs document ID",
+            "type": "string"
+          },
+          "max_bytes": {
+            "default": 2000000,
+            "description": "Maximum text bytes, 0 for unlimited",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "description": "Optional tab title or ID",
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_get"
+    }
+  },
+  {
+    "name": "sheets_read_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read values from a Google Sheets range.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "description": "A1 notation or named range",
+            "type": "string"
+          },
+          "render": {
+            "description": "Value render option",
+            "enum": ["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"],
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "description": "Google Sheets spreadsheet ID",
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_read_range"
+    }
+  },
+  {
+    "name": "calendar_events",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Google Calendar events from primary or selected calendars.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "description": "Calendar ID or selector; default primary",
+            "type": "string"
+          },
+          "days": {
+            "default": 0,
+            "description": "Window length in days, measured from the from argument when given, otherwise from today",
+            "maximum": 31,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "from": {
+            "description": "Start time: RFC3339, date, or relative value",
+            "type": "string"
+          },
+          "max": {
+            "default": 10,
+            "description": "Maximum results",
+            "maximum": 250,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "description": "Free text search",
+            "type": "string"
+          },
+          "to": {
+            "description": "End time: RFC3339, date, or relative value",
+            "type": "string"
+          },
+          "today": {
+            "default": false,
+            "description": "Today only",
+            "type": "boolean"
+          },
+          "tomorrow": {
+            "default": false,
+            "description": "Tomorrow only",
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id"],
+        "type": "object"
+      },
+      "name": "calendar_events"
+    }
+  },
+  {
+    "name": "docs_write",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Write text to a Google Doc. Requires --allow-write on the MCP server.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "append": {
+            "default": true,
+            "description": "Append instead of replacing",
+            "type": "boolean"
+          },
+          "document_id": {
+            "description": "Google Docs document ID",
+            "type": "string"
+          },
+          "markdown": {
+            "default": false,
+            "description": "Convert markdown to Docs formatting",
+            "type": "boolean"
+          },
+          "replace": {
+            "default": false,
+            "description": "Replace all existing content",
+            "type": "boolean"
+          },
+          "tab": {
+            "description": "Optional tab title or ID",
+            "type": "string"
+          },
+          "text": {
+            "description": "Text or markdown to write",
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_write"
+    }
+  },
+  {
+    "name": "sheets_update_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update values in a Google Sheets range. Requires --allow-write on the MCP server.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "default": "USER_ENTERED",
+            "description": "Value input option",
+            "enum": ["RAW", "USER_ENTERED"],
+            "type": "string"
+          },
+          "range": {
+            "description": "A1 notation or named range",
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "description": "Google Sheets spreadsheet ID",
+            "type": "string"
+          },
+          "values_json": {
+            "description": "JSON 2D array of values",
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "values_json"],
+        "type": "object"
+      },
+      "name": "sheets_update_range"
+    }
+  },
+  {
+    "name": "analytics_report",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a GA4 Data API report.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "default": "date",
+            "type": "string"
+          },
+          "from": {
+            "default": "7daysAgo",
+            "type": "string"
+          },
+          "max": {
+            "default": 100,
+            "maximum": 250000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "metrics": {
+            "default": "activeUsers",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "to": {
+            "default": "today",
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_report"
+    }
+  },
+  {
+    "name": "analytics_properties_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get one GA4 property.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_properties_get"
+    }
+  },
+  {
+    "name": "analytics_datastreams_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List GA4 data streams.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "default": 50,
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_list"
+    }
+  }
+]

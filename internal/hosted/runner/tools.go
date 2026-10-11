@@ -43,6 +43,40 @@ type NativeToolBinding struct {
 	scopes           []string
 }
 
+// NativeToolDescription exposes only existing executable schemas and their
+// resource mapping. The Worker consumes a generated copy, not a second schema.
+type NativeToolDescription struct {
+	Name             string `json:"name"`
+	Service          string `json:"service"`
+	ResourceType     string `json:"resource_type"`
+	ResourceArgument string `json:"resource_argument"`
+	Write            bool   `json:"write"`
+	Tool             any    `json:"tool"`
+}
+
+func NativeToolCatalog() []NativeToolDescription {
+	tools := cmd.HostedExistingToolCatalog()
+	catalog := make([]NativeToolDescription, 0, len(nativeToolBindings))
+
+	for _, tool := range tools {
+		binding, ok := nativeBinding(tool.Tool.Name)
+		if !ok {
+			continue
+		}
+		// Hosted resource admission always requires an explicit selector,
+		// even when the local tool offers an account-dependent default.
+		if !slices.Contains(tool.Tool.InputSchema.Required, binding.ResourceArgument) {
+			tool.Tool.InputSchema.Required = append(tool.Tool.InputSchema.Required, binding.ResourceArgument)
+		}
+		catalog = append(catalog, NativeToolDescription{
+			Name: binding.Name, Service: binding.Service, ResourceType: binding.ResourceType,
+			ResourceArgument: binding.ResourceArgument, Write: binding.Write, Tool: tool.Tool,
+		})
+	}
+
+	return catalog
+}
+
 func exactPaths(prefix, suffix string) func(string) []string {
 	return func(id string) []string { return []string{prefix + id + suffix} }
 }

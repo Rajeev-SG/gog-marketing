@@ -26,6 +26,7 @@
  * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
 import { HostedRepository } from "../../state/src/repository.js";
+import { saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
 import { authenticate, type ClerkEnv } from "./auth.js";
 import {
   buildConnectDeps,
@@ -113,6 +114,7 @@ const GOOGLE_API_PATHS = [
   "/api/google/connect",
   "/api/google/resources",
   "/api/google/grants",
+  "/api/google/tools",
   "/oauth/google/callback",
 ];
 const GOOGLE_CONNECTION_ACTION =
@@ -201,6 +203,46 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
           tenantId: session.tenant.id,
         });
         return Response.json(result, { headers: securityHeaders() });
+      }
+      if (path === "/api/google/tools") {
+        const context = {
+          userId: session.userId,
+          sessionId: session.sessionId,
+          tenantId: session.tenant.id,
+        };
+        try {
+          if (request.method === "GET") {
+            return Response.json(
+              await toolPermissionView(repo, context, url.searchParams.get("connectionId") ?? ""),
+              { headers: securityHeaders() },
+            );
+          }
+          if (request.method === "POST") {
+            let body: Record<string, unknown>;
+            try {
+              body = (await request.json()) as Record<string, unknown>;
+            } catch {
+              throw new ConnectError("invalid_request", 400);
+            }
+            if (
+              !body ||
+              Array.isArray(body) ||
+              typeof body.connectionId !== "string" ||
+              Object.keys(body).some((key) => !["connectionId", "grants"].includes(key))
+            ) {
+              throw new ConnectError("invalid_request", 400);
+            }
+            return Response.json(
+              await saveToolPermissions(repo, context, body.connectionId, body.grants),
+              { headers: securityHeaders() },
+            );
+          }
+          return safeError(405, "Unsupported request for this route.");
+        } catch (error) {
+          if (error instanceof ConnectError)
+            return connectErrorResponse(error.status, error.code, error.message);
+          throw error;
+        }
       }
       if (path === "/api/google/grants" && request.method === "POST") {
         let body: Record<string, unknown> = {};

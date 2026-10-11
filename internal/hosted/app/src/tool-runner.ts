@@ -24,16 +24,19 @@ export interface AnalyticsPropertyResult {
 export interface ToolExecutionRequest {
   tenantId: string;
   connectionId: string;
-  service: "analytics";
-  resourceType: "property";
+  service: string;
+  resourceType: string;
   resourceId: string;
   accessToken: string;
   googleEmail: string;
   googleSubject: string;
   nativeTool?: {
-    name: "analytics_report" | "analytics_datastreams_list";
+    name: string;
     arguments: Record<string, unknown>;
     scopes: string[];
+    allowedTools: string[];
+    allowWrite: boolean;
+    allowDestructive: boolean;
   };
 }
 
@@ -43,7 +46,7 @@ export interface RunnerResponseDiagnostics {
 }
 
 export type ToolExecutionOutcome =
-  | { status: "ok"; result: AnalyticsPropertyResult | Record<string, unknown> }
+  | { status: "ok"; result: unknown }
   | { status: "unavailable" | "error"; detail: string | RunnerResponseDiagnostics };
 
 export interface ToolRunner {
@@ -153,11 +156,11 @@ export class RemoteToolRunner implements ToolRunner {
               arguments: request.nativeTool.arguments,
               authorization: {
                 service: request.service,
-                allowed_tools: [request.nativeTool.name],
+                allowed_tools: request.nativeTool.allowedTools,
                 scopes: request.nativeTool.scopes,
                 resource,
-                allow_write: false,
-                allow_destructive: false,
+                allow_write: request.nativeTool.allowWrite,
+                allow_destructive: request.nativeTool.allowDestructive,
               },
             },
           }
@@ -222,7 +225,7 @@ export class RemoteToolRunner implements ToolRunner {
         !isPlainObject(wire) ||
         wire.operation !== NATIVE_TOOL_CALL ||
         wire.ok !== true ||
-        !isPlainObject(wire.result)
+        !(isPlainObject(wire.result) || typeof wire.result === "string")
       ) {
         return { status: "error", detail: "runner_invalid_response" };
       }

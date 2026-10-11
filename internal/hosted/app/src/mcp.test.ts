@@ -60,6 +60,7 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     "0002_oauth_states_discovery.sql",
     "0003_rate_limit_counters.sql",
     "0004_mcp_signal_counters.sql",
+    "0005_tool_grants.sql",
   ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
@@ -170,11 +171,25 @@ async function grantService(
     connection.id,
     service,
     `resource-${service}`,
-    "resource",
+    service === "analytics" ? "property" : "resource",
     service,
     enabled,
     "{}",
   );
+  if (service === "analytics")
+    await repo.saveToolGrants(
+      tenant.id,
+      connection.id,
+      ["analytics_properties_get", "analytics_report", "analytics_datastreams_list"].map(
+        (toolName) => ({
+          service,
+          toolName,
+          enabled: true,
+          allowDestructive: false,
+          allowBillable: false,
+        }),
+      ),
+    );
 }
 
 interface ToolFixture {
@@ -208,6 +223,19 @@ async function createToolFixture(
     "Test property",
     enabled,
     "{}",
+  );
+  await repo.saveToolGrants(
+    tenant.id,
+    connection.id,
+    ["analytics_properties_get", "analytics_report", "analytics_datastreams_list"].map(
+      (toolName) => ({
+        service: "analytics",
+        toolName,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      }),
+    ),
   );
   const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
   const credential: StoredGoogleCredential = {
@@ -502,7 +530,7 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         },
       },
       {
-        detail: "unsupported_tool_mapping",
+        detail: "unknown_tool",
         params: {
           name: "analytics_accounts",
           arguments: { property: fixture.resourceId },
@@ -694,6 +722,9 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         name,
         arguments: { property: fixture.resourceId },
         scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
+        allowedTools: [name],
+        allowWrite: false,
+        allowDestructive: false,
       });
       expect(requests.at(-1)!.tenantId).toBe(fixture.tenantId);
     }
@@ -710,6 +741,84 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     );
     expect(denied.error.data.detail).toBe("grant_denied");
     expect(requests).toHaveLength(2);
+  });
+
+  it("routes an explicitly permitted selected-file write and denies after tool disable", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { written: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "docs-owner", true);
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "docs",
+      "selected-doc",
+      "file",
+      "Doc",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("docs-owner");
+    const params = {
+      name: "docs_write",
+      arguments: { document_id: "selected-doc", text: "hello" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "docs",
+        toolName: "docs_write",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const written = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(written.result.structuredContent).toEqual({ written: true });
+    expect(requests[0]!.nativeTool).toEqual({
+      name: "docs_write",
+      arguments: { document_id: "selected-doc", text: "hello" },
+      scopes: ["https://www.googleapis.com/auth/drive.file"],
+      allowedTools: ["docs_write"],
+      allowWrite: true,
+      allowDestructive: false,
+    });
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "docs",
+        toolName: "docs_write",
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const disabled = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(disabled.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
   });
 
   it("executes the mapped read through the runner and rechecks disabled grants", async () => {
