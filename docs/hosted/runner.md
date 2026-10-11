@@ -306,6 +306,19 @@ results at Google's published maximum of 30. No file input or ignore-etag bypass
 is exposed. Batch, dedupe/merge, export, directory/other reads and file-I/O adapters
 remain engineering gaps; fixture evidence does not prove live Contacts behavior.
 
+Calendar resource discovery now calls the existing typed Calendar client, follows
+all CalendarList pages and deduplicates IDs, excluding deleted entries. A later
+page failure or repeated token produces an error without a partial inventory.
+New grants remain disabled; rediscovery retains prior user choices. Discovery
+admits only the fixed CalendarList GET endpoint, and plus/hash IDs such as
+holiday calendars are accepted by resource matching.
+
+**Known blocker discovered by execution:** `calendar_events` currently asks the
+native command runtime for local alias configuration before creating a Google
+client. Hosted execution correctly denies this ambient-config access. Calendar
+discovery/selection is implemented, but event execution is not working yet;
+its explicit-ID/config-free native path and write coverage remain required.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

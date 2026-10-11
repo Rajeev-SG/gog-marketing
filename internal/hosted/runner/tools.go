@@ -121,7 +121,7 @@ var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
 	canonicalContainerID = regexp.MustCompile(`^accounts/[0-9]+/containers/[0-9]+$`)
 	numericVersionID     = regexp.MustCompile(`^[0-9]+$`)
-	calendarResourceID   = regexp.MustCompile(`^[A-Za-z0-9._@-]{1,256}$`)
+	calendarResourceID   = regexp.MustCompile(`^[A-Za-z0-9._@#+-]{1,256}$`)
 	crossFileFormula     = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
 )
 

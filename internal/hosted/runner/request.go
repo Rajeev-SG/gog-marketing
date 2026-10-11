@@ -26,6 +26,7 @@ const (
 // token) stay inside this set and surface honest unavailable statuses from
 // the engine; they are never fabricated as successes.
 var establishedDiscoveryServices = map[string]bool{
+	"calendar":      true,
 	"analytics":     true,
 	"tagmanager":    true,
 	"searchconsole": true,

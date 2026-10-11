@@ -7,7 +7,7 @@
     "writeScopes": [
       "https://www.googleapis.com/auth/calendar"
     ],
-    "resourceModel": false,
+    "resourceModel": true,
     "documentation": "https://developers.google.com/workspace/calendar/api/auth"
   },
   "chat": {

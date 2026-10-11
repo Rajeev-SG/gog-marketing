@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: discover calendars through the existing typed client with full pagination, deduplication, default-disabled grants and retained selections on rediscovery/failure. Support plus/hash calendar IDs in permission matching. Native Calendar event execution remains blocked by its local-alias config dependency; discovery is not event-functionality acceptance. (#52, #79)
+
 - Hosted: expose native Contacts list/search/get/create/update/delete with explicit account/tool grants, contact IDs, supported scalar/list fields, etag-preserving updates and destructive deletion controls. Search honors Google's 30-result cap; file imports and etag bypass are not exposed. Fixture CRUD/clearing/persistence verified; full Contacts parity and live acceptance remain pending. (#52, #79)
 
 - Tasks: serialize explicitly cleared titles/notes through the existing SDK's ForceSendFields without clearing omitted fields; remove the hosted rejection of these clears. Hosted status accepts Google's needsAction/completed values and uses undo for reset rather than pretending an empty status is valid. Native payload and fixture read-back regression tests pass; live acceptance remains unverified. (#52, #79)

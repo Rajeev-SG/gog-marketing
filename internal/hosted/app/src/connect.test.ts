@@ -9,6 +9,7 @@ import {
   disconnect,
   listConnections,
   refreshConnection,
+  discoverConnection,
   startConnect,
   accessTokenForConnection,
   type ConnectDeps,
@@ -341,6 +342,89 @@ describe("hosted Google connection lifecycle (#62)", () => {
     );
     expect(result.connection.status).toBe("active");
     expect(result.connection.id).toBe(connection.id);
+  });
+
+  it("discovers calendars after consent and preserves enabled choices across refresh/failure", async () => {
+    const session = await harness.sessionFor(TENANT_A);
+    const google = {
+      token: tokenResponse({
+        scope: "openid email https://www.googleapis.com/auth/calendar.readonly",
+      }),
+      userinfo: { sub: "calendar-sub", email: "calendar@example.test", email_verified: true },
+    };
+    let fail = false;
+    let expanded = false;
+    const runner: DiscoveryRunner = {
+      async discover(request) {
+        expect(request.services).toEqual(["calendar"]);
+        if (fail)
+          return { status: "error", detail: "synthetic page failure", resources: [], statuses: {} };
+        return mapWireReport({
+          resources: [
+            {
+              service: "calendar",
+              resource_type: "calendar",
+              resource_id: "owner+beta@example.test",
+              display_name: "Primary",
+            },
+            ...(expanded
+              ? [
+                  {
+                    service: "calendar",
+                    resource_type: "calendar",
+                    resource_id: "en.uk#holiday@group.v.calendar.google.com",
+                    display_name: "Holidays",
+                  },
+                ]
+              : []),
+          ],
+          statuses: {
+            calendar: {
+              state: "ok",
+              detail: "",
+              resource_count: expanded ? 2 : 1,
+              checked_at: "2026-10-12T00:00:00Z",
+            },
+          },
+        });
+      },
+    };
+    const deps = harness.deps({ google, runner });
+    const started = await startConnect(deps, session, { services: ["calendar"] });
+    const done = await completeCallback(
+      deps,
+      session,
+      new URLSearchParams({
+        code: "code",
+        state: new URL(started.authorizationUrl).searchParams.get("state")!,
+      }),
+    );
+    const first = await harness.repo.listResourceGrants(session.tenantId, done.connection.id);
+    expect(first).toHaveLength(1);
+    expect(first[0]!.enabled).toBe(false);
+    await harness.repo.upsertResourceGrant(
+      session.tenantId,
+      done.connection.id,
+      "calendar",
+      first[0]!.resourceId,
+      "calendar",
+      "Primary",
+      true,
+      "{}",
+    );
+    expanded = true;
+    await discoverConnection(deps, session, done.connection.id);
+    const refreshed = await harness.repo.listResourceGrants(session.tenantId, done.connection.id);
+    expect(refreshed).toHaveLength(2);
+    expect(refreshed.find((grant) => grant.resourceId === first[0]!.resourceId)!.enabled).toBe(
+      true,
+    );
+    expect(refreshed.find((grant) => grant.resourceId.startsWith("en.uk#"))!.enabled).toBe(false);
+    fail = true;
+    await discoverConnection(deps, session, done.connection.id);
+    expect(await harness.repo.listResourceGrants(session.tenantId, done.connection.id)).toEqual(
+      refreshed,
+    );
   });
 
   it("applies discovery results with least privilege and preserves grants on failure", async () => {

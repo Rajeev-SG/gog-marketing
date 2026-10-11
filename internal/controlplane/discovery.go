@@ -8,6 +8,7 @@ import (
 	"time"
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
+	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/tagmanager/v2"
 
 	"github.com/openclaw/gogcli/internal/authclient"
@@ -33,6 +34,7 @@ type EngineDiscoverer struct {
 	GoogleAdsLoginCustomer  string
 	BigQueryProjects        []string
 	GoogleAdsDiscover       func(context.Context, Connection, OAuthToken) ([]ResourceGrant, error)
+	CalendarFactory         func(context.Context, string) (*calendar.Service, error)
 }
 
 func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
@@ -91,6 +93,8 @@ func (d EngineDiscoverer) DiscoverReport(ctx context.Context, connection Connect
 
 func (d EngineDiscoverer) discoverService(ctx context.Context, serviceName string, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
 	switch serviceName {
+	case "calendar":
+		return d.calendars(ctx, connection, token)
 	case "analytics":
 		return d.analytics(ctx, connection, token)
 	case "tagmanager":
