@@ -14,6 +14,14 @@ func isAllDayEvent(e *calendar.Event) bool {
 	return e != nil && e.Start != nil && e.Start.Date != ""
 }
 
+// Hosted calls carry explicit, runner-admitted IDs and never load aliases.
+func calendarCommandConfigStore(ctx context.Context, flags *RootFlags) (*config.ConfigStore, error) {
+	if flags.hostedExecution {
+		return nil, nil //nolint:nilnil // No config store is intentional for admitted hosted IDs; aliases are disabled.
+	}
+	return commandConfigStore(ctx)
+}
+
 // prepareCalendarID resolves aliases before any API-backed calendar lookup.
 // When defaultPrimary is true, empty input becomes the primary calendar.
 func prepareCalendarID(store *config.ConfigStore, calendarID string, defaultPrimary bool) (string, error) {
@@ -23,6 +31,10 @@ func prepareCalendarID(store *config.ConfigStore, calendarID string, defaultPrim
 			return primaryCalendarID, nil
 		}
 		return "", usage("empty calendarId")
+	}
+
+	if store == nil {
+		return calendarID, nil
 	}
 
 	resolved, err := store.ResolveCalendarID(calendarID)

@@ -743,6 +743,86 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("routes Calendar event creation only for an enabled calendar and tool", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { event: { id: "created" } } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "calendar-owner", true);
+    const calendar = "owner+beta@example.test";
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "calendar",
+      calendar,
+      "calendar",
+      "Calendar",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/calendar"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("calendar-owner");
+    const params = {
+      name: "calendar_event_create",
+      arguments: {
+        calendar_id: calendar,
+        summary: "Beta test",
+        from: "2026-10-12T10:00:00Z",
+        to: "2026-10-12T11:00:00Z",
+      },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "calendar",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ event: { id: "created" } });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ resourceType: "calendar", resourceId: calendar });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      allowWrite: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { ...params, arguments: { ...params.arguments, calendar_id: "foreign@example.test" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
   it("routes account Contacts writes without fabricated contact assets", async () => {
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({

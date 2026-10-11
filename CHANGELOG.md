@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Calendar event get/create/update/delete with selected-calendar grants, write scopes and destructive deletion controls. Reuse native field clearing, recurrence planning and explicit-ID execution without ambient aliases; foreign calendars and secondary-resource integrations remain denied. Fixture CRUD/read-back verified; full Calendar parity and live acceptance remain pending. (#52, #79)
+
 - Hosted: fix Calendar event execution without local aliases or ambient configuration, reusing native listing/time-range logic with the explicitly selected calendar's timezone. Keep CLI aliases/user-timezone behavior unchanged and reject all-calendar/alternate selectors in hosted mode. Selected plus/hash IDs, date boundaries and foreign/disabled-calendar denials are fixture-tested; live acceptance and Calendar writes remain pending. (#52, #79)
 
 - Hosted: discover calendars through the existing typed client with full pagination, deduplication, default-disabled grants and retained selections on rediscovery/failure. Support plus/hash calendar IDs in permission matching. Native Calendar event execution remains blocked by its local-alias config dependency; discovery is not event-functionality acceptance. (#52, #79)

@@ -173,7 +173,7 @@ func (c *CalendarEventCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
-	store, err := commandConfigStore(ctx)
+	store, err := calendarCommandConfigStore(ctx, flags)
 	if err != nil {
 		return err
 	}

@@ -128,7 +128,7 @@ func calendarCreateInputFromCommand(c *CalendarCreateCmd) calendarCreateInput {
 func (c *CalendarCreateCmd) Run(ctx context.Context, flags *RootFlags, kctx *kong.Context) error {
 	ctx = withZoomIncludePasswords(ctx, c.IncludePasswords)
 	fields := calendarCreateFieldsFromKong(kctx)
-	store, err := commandConfigStore(ctx)
+	store, err := calendarCommandConfigStore(ctx, flags)
 	if err != nil {
 		return err
 	}
@@ -330,7 +330,7 @@ func calendarUpdateInputFromCommand(c *CalendarUpdateCmd) calendarUpdateInput {
 func (c *CalendarUpdateCmd) Run(ctx context.Context, kctx *kong.Context, flags *RootFlags) error {
 	ctx = withZoomIncludePasswords(ctx, c.IncludePasswords)
 	fields := calendarUpdateFieldsFromKong(kctx)
-	store, err := commandConfigStore(ctx)
+	store, err := calendarCommandConfigStore(ctx, flags)
 	if err != nil {
 		return err
 	}
@@ -612,7 +612,7 @@ type CalendarDeleteCmd struct {
 
 func (c *CalendarDeleteCmd) Run(ctx context.Context, flags *RootFlags) error {
 	u := ui.FromContext(ctx)
-	store, err := commandConfigStore(ctx)
+	store, err := calendarCommandConfigStore(ctx, flags)
 	if err != nil {
 		return err
 	}

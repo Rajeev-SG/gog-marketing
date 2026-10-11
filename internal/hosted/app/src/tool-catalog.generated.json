@@ -1722,5 +1722,229 @@
       },
       "name": "contacts_delete"
     }
+  },
+  {
+    "name": "calendar_event_get",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event get in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_get"
+    }
+  },
+  {
+    "name": "calendar_event_create",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event create in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_day": {
+            "type": "boolean"
+          },
+          "attendees": {
+            "type": "string"
+          },
+          "calendar_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "end_timezone": {
+            "type": "string"
+          },
+          "event_color": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          },
+          "start_timezone": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "transparency": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "with_meet": {
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_create"
+    }
+  },
+  {
+    "name": "calendar_event_update",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event update in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_day": {
+            "type": "boolean"
+          },
+          "attendees": {
+            "type": "string"
+          },
+          "calendar_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "end_timezone": {
+            "type": "string"
+          },
+          "event_color": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "original_start": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": ["single", "future", "all"],
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          },
+          "start_timezone": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "transparency": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "with_meet": {
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_update"
+    }
+  },
+  {
+    "name": "calendar_event_delete",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event delete in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "original_start": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": ["single", "future", "all"],
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_delete"
+    }
   }
 ]

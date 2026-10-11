@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of forty-six native Go
+The Worker now consumes a generated catalogue of fifty native Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar events; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; and six Contacts tools. All invoke existing typed native handlers. MCP discovery and execution
+Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; and six Contacts tools. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
@@ -91,7 +91,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 
 | Service | Read consent scopes | Additional write consent | Real verification | Reason / engineering gap | Official API source |
 | --- | --- | --- | --- | --- | --- |
-| `calendar` | `calendar.readonly` | `calendar` | **untested** | Typed paginated discovery/selection and retained grants implemented; calendar_events now runs without local aliases using the selected timezone. Special IDs/date boundaries/foreign and disabled denials fixture-tested; writes/full parity and live acceptance pending | [Google](https://developers.google.com/workspace/calendar/api/auth) |
+| `calendar` | `calendar.readonly` | `calendar` | **untested** | Typed discovery/selection, event listing and event CRUD use explicit calendar grants without local aliases; native field-clearing/recurrence plans retained. Fixture CRUD/date/scope/destructive/foreign denials pass; remaining Calendar features and live acceptance pending | [Google](https://developers.google.com/workspace/calendar/api/auth) |
 | `chat` | `chat.spaces.readonly chat.memberships.readonly chat.messages.reactions.readonly chat.users.readstate.readonly` | `chat.spaces chat.memberships chat.messages.create chat.messages.reactions.create` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/chat/authenticate-authorize) |
 | `classroom` | `classroom.courses.readonly classroom.rosters.readonly classroom.coursework.students.readonly classroom.coursework.me.readonly classroom.courseworkmaterials.readonly classroom.announcements.readonly classroom.topics.readonly classroom.guardianlinks.students.readonly classroom.profile.emails classroom.profile.photos` | `classroom.courses classroom.rosters classroom.coursework.students classroom.coursework.me classroom.courseworkmaterials classroom.announcements classroom.topics classroom.guardianlinks.students` | **untested** | Hosted typed execution adapter pending; account/role prerequisites unverified | [Google](https://developers.google.com/workspace/classroom/guides/auth) |
 | `drive` | `drive.file` | `drive.file` | **untested** | `drive_get` guarded read binding implemented; Picker configuration/live acceptance and remaining reads/writes pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
@@ -234,3 +234,5 @@ Contacts method scopes and paths checked 12 October 2026 against [current offici
 Calendar discovery scope evidence checked 12 October 2026: [CalendarList.list](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list) supports `calendar.readonly` or `calendar`. Paginated discovery and grant persistence have fixture evidence; a separate native event-execution probe currently fails closed at local alias configuration. Neither is live Google acceptance.
 
 Calendar event blocker resolved 12 October 2026: native explicit-ID listing now executes without local configuration or primary-calendar metadata in hosted mode, using the existing range/listing logic. Local CLI semantics remain unchanged. Successful transport fixture execution is not live Google acceptance.
+
+Calendar event method scopes checked 12 October 2026 in [official Calendar v3 discovery](https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest): event get/instances support `calendar.readonly` or `calendar`; insert/patch/delete support `calendar`. The hosted tools retain that approved scope matrix and do not request secondary Drive/Zoom/Places permissions. Real writes/persistence remain untested.

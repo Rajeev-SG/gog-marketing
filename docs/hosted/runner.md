@@ -320,7 +320,19 @@ all-calendar/alternate selectors, and reuses the native range algorithm with tha
 calendar's timezone. It does not read ambient config or another primary calendar.
 Ordinary CLI aliases and user-timezone behavior are unchanged. Plus/hash calendar
 IDs, local date boundaries and foreign/disabled-calendar denials have transport
-fixture evidence; Calendar writes/full parity and live acceptance remain pending.
+fixture evidence; full parity and live acceptance remain pending.
+
+Calendar event get/create/update/delete now have fixed hosted tools. All require
+an enabled calendar and exact tool grant; writes need `calendar`, reads accept
+`calendar.readonly` or `calendar`, and delete needs destructive permission. Existing
+native event plans, field-clearing semantics and recurrence scope/original-start
+handling are reused. The guard confines event and instance paths to the selected
+calendar and permits only operation-appropriate methods. Recurring operations
+may touch multiple events within that granted calendar and can have partial
+effects on provider failures. Attachments, Zoom/Places integrations, moves and
+other native Calendar features are not implied by these tools and remain to be
+wired with the required secondary-resource/cost authorization. Fixture persistence
+and scope/foreign-calendar/destructive denials do not prove real Google writes.
 
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign

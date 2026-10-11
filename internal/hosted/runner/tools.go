@@ -33,18 +33,19 @@ type ToolAuthorization struct {
 }
 
 type NativeToolBinding struct {
-	Name             string `json:"name"`
-	Service          string `json:"service"`
-	ResourceType     string `json:"resource_type"`
-	ResourceArgument string `json:"resource_argument"`
-	Write            bool   `json:"write"`
-	hosts            []string
-	paths            func(string) []string
-	scopes           []string
-	methods          []string
-	escapedPaths     bool
-	destructive      bool
-	argumentPaths    func(map[string]any) ([]string, error)
+	Name                   string `json:"name"`
+	Service                string `json:"service"`
+	ResourceType           string `json:"resource_type"`
+	ResourceArgument       string `json:"resource_argument"`
+	Write                  bool   `json:"write"`
+	hosts                  []string
+	paths                  func(string) []string
+	scopes                 []string
+	methods                []string
+	escapedPaths           bool
+	calendarEventOperation string
+	destructive            bool
+	argumentPaths          func(map[string]any) ([]string, error)
 }
 
 // NativeToolDescription exposes only existing executable schemas and their
@@ -115,7 +116,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), nativeContactsBindings()...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), nativeCalendarEventBindings()...)...)...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -309,6 +310,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if strings.Contains(path, "/../") || strings.Contains(path, "/./") || strings.Contains(path, "\\") {
 			return native.ErrDenied
+		}
+
+		if binding.calendarEventOperation != "" {
+			return admitCalendarEventRequest(invocation, request)
 		}
 
 		allowed := slices.Contains(paths, path)
