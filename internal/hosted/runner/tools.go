@@ -104,7 +104,6 @@ var nativeToolBindings = append([]NativeToolBinding{
 	}, scopes: []string{"presentations", "drive.file"}},
 	{Name: "analytics_properties_get", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsadmin.googleapis.com"}, paths: exactPaths("/v1beta/", ""), scopes: []string{"analytics.readonly", "analytics.edit"}},
 	{Name: "analytics_report", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsdata.googleapis.com"}, paths: exactPaths("/v1beta/", ":runReport"), scopes: []string{"analytics.readonly"}},
-	{Name: "analytics_datastreams_list", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsadmin.googleapis.com"}, paths: exactPaths("/v1beta/", "/dataStreams"), scopes: []string{"analytics.readonly", "analytics.edit"}},
 	{Name: "drive_get", Service: "drive", ResourceType: "file", ResourceArgument: "file_id", hosts: []string{"www.googleapis.com"}, paths: exactPaths("/drive/v3/files/", ""), scopes: []string{"drive.file"}},
 	{Name: "docs_get", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", hosts: []string{"docs.googleapis.com"}, paths: exactPaths("/v1/documents/", ""), scopes: []string{"documents.readonly", "documents", "drive.file"}},
 	{Name: "docs_write", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", Write: true, hosts: []string{"docs.googleapis.com"}, paths: func(id string) []string {
@@ -115,7 +114,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, nativeTasksItemBindings()...)
+}, append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -173,6 +172,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	if binding.destructive && !auth.AllowDestructive {
 		return invalidf("destructive grant is disabled")
+	}
+
+	if err := validateAdminReplacement(invocation); err != nil {
+		return err
 	}
 
 	if binding.argumentPaths != nil {
@@ -245,6 +248,19 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 		}
 	default:
 		return invalidf("unsupported resource model")
+	}
+
+	return nil
+}
+
+func validateAdminReplacement(invocation *ToolInvocation) error {
+	if invocation.Authorization.Service != "analytics" || !strings.HasSuffix(invocation.Name, "_update") {
+		return nil
+	}
+
+	mask, _ := invocation.Arguments["update_mask"].(string)
+	if strings.Contains(mask, "*") && !invocation.Authorization.AllowDestructive {
+		return invalidf("full replacement requires destructive permission")
 	}
 
 	return nil

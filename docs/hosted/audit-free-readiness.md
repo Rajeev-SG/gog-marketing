@@ -9,8 +9,8 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of twenty-three executable Go
-schemas: GA4 property/report/data-stream reads; selected-file Drive get, Docs
+The Worker now consumes a generated catalogue of thirty-two executable Go
+schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
 Calendar events; eleven Tasks command leaves; and GTM version publishing. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
@@ -105,7 +105,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `sites` | `drive.file` | No existing service write scope requested | **untested** | Picker can record selected Sites file grants; no callable hosted Sites tool yet; native handler wiring and live acceptance pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
 | `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Hosted typed execution adapter pending; execution target scopes must be audited before run | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
-| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Guarded MCP get/report/data-stream read routing implemented and fixture-tested; broader Admin writes and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
+| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Native property/report reads and data-stream/key-event CRUD routed with selected-property grants and method scopes; fixture persistence/scope/destructive/file-reference denials pass. Broader Admin operations and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
 | `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | `tagmanager_versions_publish` uses the existing native handler, canonical enabled-container grants, publish scope and destructive permission; compiler failures are errors. Fixture execution/denial tests pass; live publish/read-back and remaining GTM reads/CRUD pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
 | `bigquery` | `bigquery.readonly` | `bigquery` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
@@ -221,3 +221,5 @@ Slides method scope evidence checked 11 October 2026: [presentations.get](https:
 Tasks method scope evidence checked 11 October 2026: [tasklists.list](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/list) permits `tasks.readonly` or `tasks`; [tasklists.insert](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/insert) requires `tasks`. Native list creation/persisted fixture reads and account-level grant routing do not prove real Google execution.
 
 GTM publish method evidence checked 11 October 2026: [versions.publish](https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.versions/publish) requires `tagmanager.publish`. The existing typed SDK uses POST `tagmanager/v2/{path}:publish`; no Google Ads scope is needed or requested by this handler. Production Console classification and live execution remain unverified.
+
+GA4 Admin method scopes checked 11 October 2026: [dataStreams](https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/properties.dataStreams) and [keyEvents](https://developers.google.com/analytics/devguides/config/admin/v1/rest/v1beta/properties.keyEvents): list/get accept `analytics.readonly` or `analytics.edit`; create/patch/delete require `analytics.edit`. Production Console classification remains unverified.

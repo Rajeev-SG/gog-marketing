@@ -345,39 +345,6 @@
     }
   },
   {
-    "name": "analytics_datastreams_list",
-    "service": "analytics",
-    "resource_type": "property",
-    "resource_argument": "property",
-    "write": false,
-    "tool": {
-      "annotations": {
-        "readOnlyHint": true,
-        "destructiveHint": false,
-        "idempotentHint": true,
-        "openWorldHint": true
-      },
-      "description": "List GA4 data streams.",
-      "inputSchema": {
-        "additionalProperties": false,
-        "properties": {
-          "max": {
-            "default": 50,
-            "maximum": 200,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "property": {
-            "type": "string"
-          }
-        },
-        "required": ["property"],
-        "type": "object"
-      },
-      "name": "analytics_datastreams_list"
-    }
-  },
-  {
     "name": "tagmanager_versions_publish",
     "service": "tagmanager",
     "resource_type": "container",
@@ -883,6 +850,352 @@
         "type": "object"
       },
       "name": "tasks_clear"
+    }
+  },
+  {
+    "name": "analytics_datastreams_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_list"
+    }
+  },
+  {
+    "name": "analytics_datastreams_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_get"
+    }
+  },
+  {
+    "name": "analytics_datastreams_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_create"
+    }
+  },
+  {
+    "name": "analytics_datastreams_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_update"
+    }
+  },
+  {
+    "name": "analytics_datastreams_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_delete"
+    }
+  },
+  {
+    "name": "analytics_keyevents_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_list"
+    }
+  },
+  {
+    "name": "analytics_keyevents_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_get"
+    }
+  },
+  {
+    "name": "analytics_keyevents_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_create"
+    }
+  },
+  {
+    "name": "analytics_keyevents_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_update"
+    }
+  },
+  {
+    "name": "analytics_keyevents_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_delete"
     }
   }
 ]

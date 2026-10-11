@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native GA4 Admin data-stream/key-event list/get/create/update/delete tools with selected-property grants, analytics.edit for writes, destructive permission for deletes and exact method/child-path admission. Resource bodies are inline JSON only; foreign names and file references fail closed. Fixture CRUD/persistence verified; live Admin writes and remaining Analytics parity are pending. (#52, #79)
+
 - Hosted: expose existing GTM version publishing with canonical enabled-container grants, publish scope, explicit destructive permission and exact version/method admission. Reuse the local MCP argument builder and native handler; HTTP-200 compiler failures are surfaced as errors. Fixture-tested only; live publication/persistence and remaining GTM coverage are pending. (#52, #79)
 
 - Hosted: expose all eleven native Tasks command leaves, including task CRUD, completion, undo, raw reads, list pagination/filtering and bounded recurring creation. Delete/clear require destructive grants; exact selectors and method/path guards apply. Empty title/notes/status clearing remains blocked because the native patch omits those fields; no false success is returned. Fixture-tested only, with partial-write persistence evidence. (#52, #79)

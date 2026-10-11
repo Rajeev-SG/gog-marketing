@@ -261,6 +261,19 @@ the native optimistic concurrency safeguard. HTTP 200 with `compilerError: true`
 is an execution error, not a publication-success signal. No live publication or
 live-version read-back has been verified.
 
+GA4 Admin data-stream/key-event families now expose list/get/create/update/delete
+through fixed schemas and existing native handlers. All use `property` as the
+enabled resource selector; child operations additionally take `resource_id`.
+Read methods permit `analytics.readonly` or `analytics.edit`; mutations require
+`analytics.edit`, and deletes require explicit destructive permission. Wildcard
+or full-replacement update masks also require destructive permission. Guards
+admit only the family's exact selected-property/child path and method. Bodies
+must be inline JSON objects (`body_json`); `@file`, arrays, null and foreign
+resource names are rejected before native execution. Required snake_case update masks and
+list pagination/all-pages controls pass to existing handlers. This does not
+expose Google Ads links or authorize an indirect `adwords` scope. Fixture CRUD
+and read-back evidence is not real Google acceptance.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

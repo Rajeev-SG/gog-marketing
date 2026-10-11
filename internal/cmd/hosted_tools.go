@@ -35,7 +35,7 @@ type HostedTool = native.Tool
 func hostedExistingTools() []mcpToolSpec {
 	var tools []mcpToolSpec
 	for _, spec := range mcpAllTools() {
-		if spec.Service == "gmail" || spec.Service == "googleads" || spec.Name == "drive_search" {
+		if spec.Service == "gmail" || spec.Service == "googleads" || spec.Name == "drive_search" || spec.Name == "analytics_datastreams_list" {
 			continue
 		}
 		if spec.Name == "tagmanager_versions_publish" {
@@ -43,7 +43,9 @@ func hostedExistingTools() []mcpToolSpec {
 		}
 		tools = append(tools, spec)
 	}
-	return append(append(tools, hostedSlidesTools()...), hostedTasksTools()...)
+	tools = append(tools, hostedSlidesTools()...)
+	tools = append(tools, hostedTasksTools()...)
+	return append(tools, hostedAnalyticsAdminTools()...)
 }
 
 // HostedExistingToolCatalog reuses the same schemas and typed argument builders
