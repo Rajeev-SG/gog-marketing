@@ -274,6 +274,23 @@ list pagination/all-pages controls pass to existing handlers. This does not
 expose Google Ads links or authorize an indirect `adwords` scope. Fixture CRUD
 and read-back evidence is not real Google acceptance.
 
+Search Console now registers site list/get, search analytics query, sitemap
+list/get/submit/delete and URL inspection using existing typed tools/handlers.
+Site listing uses an explicit account tool grant; the other tools require an
+enabled `site` resource (`site_url`), supporting URL-prefix or `sc-domain:`
+properties. Read methods accept `webmasters.readonly` or `webmasters`; sitemap
+mutations require `webmasters`, and deletion requires destructive permission.
+Search Analytics and inspection POSTs are semantically read-only and admitted
+only for their declared exact endpoints. Site/feed URL path segments must match
+the existing SDK's escaped encoding, not an ambiguous decoded path.
+
+Inspection and sitemap URLs must belong to the enabled URL-prefix/domain scope;
+suffix lookalikes, foreign hosts and traversal are rejected before Google calls.
+Cross-site sitemap hosting requires additional resource authorization and is
+not currently exposed by this single-site snapshot. Richer native query/filter
+options remain to be wired. Fixture submit/read/delete persistence, domain-site
+support and denials do not prove real Search Console acceptance.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

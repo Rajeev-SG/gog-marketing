@@ -103,9 +103,11 @@ const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = Object.fromE
           ? /^properties\/[0-9]+$/
           : entry.resource_type === "container"
             ? /^accounts\/[0-9]+\/containers\/[0-9]+$/
-            : entry.resource_type === "calendar"
-              ? /^[A-Za-z0-9._@-]{1,256}$/
-              : /^[A-Za-z0-9_-]{1,256}$/,
+            : entry.resource_type === "site"
+              ? /^(?:sc-domain:[A-Za-z0-9.-]+|https?:\/\/[^\s?#]+)$/
+              : entry.resource_type === "calendar"
+                ? /^[A-Za-z0-9._@-]{1,256}$/
+                : /^[A-Za-z0-9_-]{1,256}$/,
       operation:
         entry.name === "analytics_properties_get" ? ANALYTICS_PROPERTY_READ : NATIVE_TOOL_CALL,
     },
@@ -452,7 +454,8 @@ function auditIdentifiers(
   resourceId: string,
 ): { operation: string; service: string; resourceType: string; resource: string } {
   const resourceMatches =
-    resourceId.length <= MAX_RESOURCE_IDENTIFIER_LENGTH &&
+    resourceId.length <=
+      (mapping?.resourceType === "site" ? 2048 : MAX_RESOURCE_IDENTIFIER_LENGTH) &&
     (mapping?.resourcePattern.test(resourceId) ?? false);
   return {
     operation: catalogTool(toolName)?.name ?? "unknown",
@@ -906,7 +909,7 @@ async function handleToolCall(
   const rawResource = args[mapping.resourceArgument];
   const resourceId = typeof rawResource === "string" ? rawResource.trim() : "";
   if (
-    resourceId.length > MAX_RESOURCE_IDENTIFIER_LENGTH ||
+    resourceId.length > (mapping.resourceType === "site" ? 2048 : MAX_RESOURCE_IDENTIFIER_LENGTH) ||
     (mapping.resourceType !== "" && !mapping.resourcePattern.test(resourceId))
   ) {
     await writeToolAudit(

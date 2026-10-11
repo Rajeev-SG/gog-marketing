@@ -743,6 +743,82 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("routes sitemap submission only for an enabled Search Console site", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { submitted: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "search-owner", true);
+    const site = "https://example.test/";
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "searchconsole",
+      site,
+      "site",
+      "Site",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/webmasters"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("search-owner");
+    const params = {
+      name: "searchconsole_sitemaps_submit",
+      arguments: { site_url: site, feed_path: "https://example.test/sitemap.xml" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "searchconsole",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const submitted = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(submitted.result.structuredContent).toEqual({ submitted: true });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ resourceType: "site", resourceId: site });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      scopes: ["https://www.googleapis.com/auth/webmasters"],
+      allowWrite: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { ...params, arguments: { ...params.arguments, site_url: "https://foreign.test/" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
   it("routes explicit GA4 Admin writes only within an enabled property", async () => {
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({

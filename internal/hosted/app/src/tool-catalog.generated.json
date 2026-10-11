@@ -379,6 +379,189 @@
     }
   },
   {
+    "name": "searchconsole_sites_list",
+    "service": "searchconsole",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Search Console sites.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "searchconsole_sites_list"
+    }
+  },
+  {
+    "name": "searchconsole_query",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a Search Console Search Analytics query.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "default": "QUERY",
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "max": {
+            "default": 1000,
+            "maximum": 25000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "site_url": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "from", "to"],
+        "type": "object"
+      },
+      "name": "searchconsole_query"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_list",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Search Console sitemaps.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_list"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_submit",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Submit a Search Console sitemap. Requires --allow-write.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_submit"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_delete",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a Search Console sitemap. Requires --allow-write and destructive confirmation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_delete"
+    }
+  },
+  {
+    "name": "searchconsole_inspect",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Inspect Search Console URL indexing.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "url"],
+        "type": "object"
+      },
+      "name": "searchconsole_inspect"
+    }
+  },
+  {
     "name": "slides_list_slides",
     "service": "slides",
     "resource_type": "file",
@@ -1196,6 +1379,63 @@
         "type": "object"
       },
       "name": "analytics_keyevents_delete"
+    }
+  },
+  {
+    "name": "searchconsole_sites_get",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get metadata for an explicitly enabled Search Console site.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url"],
+        "type": "object"
+      },
+      "name": "searchconsole_sites_get"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_get",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read one sitemap belonging to an explicitly enabled Search Console site.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_get"
     }
   }
 ]

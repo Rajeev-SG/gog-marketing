@@ -42,6 +42,7 @@ type NativeToolBinding struct {
 	paths            func(string) []string
 	scopes           []string
 	methods          []string
+	escapedPaths     bool
 	destructive      bool
 	argumentPaths    func(map[string]any) ([]string, error)
 }
@@ -114,7 +115,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), nativeSearchConsoleBindings()...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -229,7 +230,15 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 		return invalidf("resource does not match grant")
 	}
 
-	switch binding.ResourceType {
+	return validateNativeResourceArgument(binding.ResourceType, argument)
+}
+
+func validateNativeResourceArgument(resourceType, argument string) error {
+	switch resourceType {
+	case "site":
+		if !validSearchSite(argument) {
+			return invalidf("invalid site resource")
+		}
 	case "container":
 		if !canonicalContainerID.MatchString(argument) {
 			return invalidf("invalid container resource")
@@ -294,6 +303,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		path := request.URL.Path
+		if binding.escapedPaths {
+			path = request.URL.EscapedPath()
+		}
+
 		if strings.Contains(path, "/../") || strings.Contains(path, "/./") || strings.Contains(path, "\\") {
 			return native.ErrDenied
 		}
@@ -313,7 +326,7 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			return native.ErrDenied
 		}
 
-		if !binding.Write && request.Method != http.MethodGet && request.Method != http.MethodHead {
+		if !binding.Write && len(binding.methods) == 0 && request.Method != http.MethodGet && request.Method != http.MethodHead {
 			if invocation.Name != "analytics_report" || request.Method != http.MethodPost {
 				return native.ErrDenied
 			}

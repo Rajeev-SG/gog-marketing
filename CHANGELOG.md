@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Search Console site/sitemap reads, search analytics, URL inspection and sitemap submit/delete with enabled-site grants, method scopes and destructive permission for deletion. URL-prefix and domain properties are supported; exact SDK-escaped URL segments prevent path-boundary ambiguity, and foreign sitemap/inspection URLs fail closed. Fixture-tested only; cross-site sitemap delegation, richer query options and live acceptance remain pending. (#52, #79)
+
 - Hosted: expose native GA4 Admin data-stream/key-event list/get/create/update/delete tools with selected-property grants, analytics.edit for writes, destructive permission for deletes and exact method/child-path admission. Resource bodies are inline JSON only; foreign names and file references fail closed. Fixture CRUD/persistence verified; live Admin writes and remaining Analytics parity are pending. (#52, #79)
 
 - Hosted: expose existing GTM version publishing with canonical enabled-container grants, publish scope, explicit destructive permission and exact version/method admission. Reuse the local MCP argument builder and native handler; HTTP-200 compiler failures are surfaced as errors. Fixture-tested only; live publication/persistence and remaining GTM coverage are pending. (#52, #79)
