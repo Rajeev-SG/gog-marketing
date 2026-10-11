@@ -209,11 +209,19 @@ mandatory.
 
 Initial guarded bindings: GA4 property get/report/data-stream list; selected-file
 Drive get, Docs get/write, Sheets read/update; selected Calendar events. Nine
-private bindings do **not** imply nine public MCP tools: the Worker code routes
-the three GA4 reads using the existing enabled-property grant. Workspace writes
-stay unadvertised until their explicit permission and Picker UI paths are ready.
+private bindings were the initial coverage checkpoint. The Worker routes the
+generated executable catalogue only when account tool and matching resource
+grants are enabled. New Workspace writes are not seeded by migration or implied
+by OAuth consent; Picker's production prerequisites remain unverified.
 Neither code routing nor fixture execution proves deployed acceptance.
 The full eligible 27-service surface remains required by #79.
+
+Additional Slides bindings reuse `slides list-slides` and `slides update-notes`:
+`slides_list_slides` reads one selected presentation; `slides_update_notes`
+replaces speaker notes only with explicit write and destructive grants. Their
+guard permits exact presentation GET and batchUpdate paths; neither tool accepts
+local files or arbitrary API requests. Eleven bindings across six services still
+do not establish full parity or live acceptance.
 
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign

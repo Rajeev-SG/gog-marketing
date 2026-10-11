@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose Slides slide listing and speaker-note replacement through the existing native handlers, selected-presentation request admission and explicit destructive permission. These two tools are fixture-tested, not live-verified; remaining Slides parity is pending. (#52, #79)
+
 - Hosted: compose the existing typed native executor at binary entrypoints instead of importing the command layer from the private runner; missing executor wiring fails closed. Preserve the architecture contract and executable catalogue drift checks. (#52, #79)
 
 - Hosted: implement account/session-bound Google Picker onboarding with ephemeral-only no-store responses, selected-file Drive verification through the existing Go client, default-disabled atomic file grants, replay/foreign-session/rate safeguards and explicit partial failures. Production Picker API-key/project configuration and real acceptance remain unverified; no broad Drive fallback or infrastructure provisioning. (#79)

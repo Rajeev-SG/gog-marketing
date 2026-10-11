@@ -9,9 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of nine existing executable Go
+The Worker now consumes a generated catalogue of eleven executable Go
 schemas: GA4 property/report/data-stream reads; selected-file Drive get, Docs
-get/write, Sheets read/update; and Calendar events. MCP discovery and execution
+get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
+and Calendar events. All invoke existing typed native handlers. MCP discovery and execution
 require **both** a saved account-specific tool grant and an enabled matching
 resource grant. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials.
@@ -39,7 +40,7 @@ and matching canonical argument before invoking the existing handler. The same
 Google transport enforces exact resource/host/method admission before credential
 use or network I/O and merges operation cancellation with SDK request
 cancellation through response-body consumption. Ordinary CLI transports remain
-unchanged. Document replacement additionally requires destructive authorization;
+unchanged. Document and speaker-note replacement additionally require destructive authorization;
 USER_ENTERED `IMPORTRANGE` currently requires secondary-file admission and is
 blocked by the single-file snapshot rather than leaking an unselected source.
 
@@ -95,7 +96,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `drive` | `drive.file` | `drive.file` | **untested** | `drive_get` guarded read binding implemented; Picker configuration/live acceptance and remaining reads/writes pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `drivelabels` | `drive.labels.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/drive/labels/guides/authorize) |
 | `docs` | `documents.readonly drive.file` | `documents` | **untested** | `docs_get` and `docs_write` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/docs/api/auth) |
-| `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | Picker can record selected presentation grants; no callable hosted Slides tool yet; native handler wiring and live acceptance pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
+| `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | `slides_list_slides` and `slides_update_notes` guarded native bindings implemented; notes replacement requires destructive permission; remaining Slides coverage and live acceptance pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
 | `contacts` | `contacts.readonly contacts.other.readonly directory.readonly` | `contacts` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
 | `tasks` | `tasks.readonly` | `tasks` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/tasks/auth) |
 | `people` | `profile` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
@@ -214,3 +215,5 @@ cap, native D1 persistence, default-disabled/new and retained/old grants, and
 partial Drive failures. Playwright used a **synthetic Picker API fixture** to
 verify captured account binding even after switching accounts mid-selection.
 This does not prove real Google Picker, Clerk login or Codex acceptance.
+
+Slides method scope evidence checked 11 October 2026: [presentations.get](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get) permits `drive.file`, `presentations.readonly` or `presentations`; [presentations.batchUpdate](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/batchUpdate) permits `drive.file` or `presentations`, not `presentations.readonly`. The hosted notes tool invokes the existing typed handler and is only fixture-verified.

@@ -83,6 +83,10 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = []NativeToolBinding{
+	{Name: "slides_list_slides", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", hosts: []string{"slides.googleapis.com"}, paths: exactPaths("/v1/presentations/", ""), scopes: []string{"presentations.readonly", "presentations", "drive.file"}},
+	{Name: "slides_update_notes", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", Write: true, hosts: []string{"slides.googleapis.com"}, paths: func(id string) []string {
+		return []string{"/v1/presentations/" + id, "/v1/presentations/" + id + ":batchUpdate"}
+	}, scopes: []string{"presentations", "drive.file"}},
 	{Name: "analytics_properties_get", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsadmin.googleapis.com"}, paths: exactPaths("/v1beta/", ""), scopes: []string{"analytics.readonly", "analytics.edit"}},
 	{Name: "analytics_report", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsdata.googleapis.com"}, paths: exactPaths("/v1beta/", ":runReport"), scopes: []string{"analytics.readonly"}},
 	{Name: "analytics_datastreams_list", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsadmin.googleapis.com"}, paths: exactPaths("/v1beta/", "/dataStreams"), scopes: []string{"analytics.readonly", "analytics.edit"}},
@@ -148,6 +152,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	if binding.Write && !auth.AllowWrite {
 		return invalidf("write grant is disabled")
+	}
+
+	if invocation.Name == "slides_update_notes" && !auth.AllowDestructive {
+		return invalidf("destructive grant is disabled")
 	}
 
 	if invocation.Name == "docs_write" && invocation.Arguments["replace"] == true && !auth.AllowDestructive {
@@ -240,7 +248,7 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if binding.Write {
 			switch invocation.Name {
-			case "docs_write":
+			case "docs_write", "slides_update_notes":
 				if request.Method != http.MethodGet && !(request.Method == http.MethodPost && strings.HasSuffix(path, ":batchUpdate")) {
 					return native.ErrDenied
 				}

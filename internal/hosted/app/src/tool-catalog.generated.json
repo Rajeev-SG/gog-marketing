@@ -376,5 +376,65 @@
       },
       "name": "analytics_datastreams_list"
     }
+  },
+  {
+    "name": "slides_list_slides",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List slide object IDs and skipped state in a selected presentation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id"],
+        "type": "object"
+      },
+      "name": "slides_list_slides"
+    }
+  },
+  {
+    "name": "slides_update_notes",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Replace speaker notes on a slide in a selected presentation. Requires destructive permission; empty notes clear existing notes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id", "notes"],
+        "type": "object"
+      },
+      "name": "slides_update_notes"
+    }
   }
 ]

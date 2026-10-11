@@ -45,7 +45,7 @@ describe("explicit executable tool permissions", () => {
 
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(9);
+    expect(view.tools).toHaveLength(11);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);
@@ -62,6 +62,38 @@ describe("explicit executable tool permissions", () => {
       { toolName: "docs_write", enabled: false, allowDestructive: false },
     ]);
     expect(await policyTools(repo, tenant)).toEqual([]);
+  });
+
+  it("requires a selected Slides resource and an explicit account tool grant", async () => {
+    const tenant = (await repo.getTenant(session.tenantId))!;
+    await saveToolPermissions(repo, session, connectionId, [
+      { toolName: "slides_update_notes", enabled: true, allowDestructive: true },
+    ]);
+    expect(await policyTools(repo, tenant)).toEqual([]);
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connectionId,
+      "slides",
+      "selected-deck",
+      "file",
+      "Deck",
+      true,
+      "{}",
+    );
+    expect((await policyTools(repo, tenant)).map((tool) => tool.name)).toEqual([
+      "slides_update_notes",
+    ]);
+    const view = await toolPermissionView(repo, session, connectionId);
+    expect(view.tools.find((tool) => tool.name === "slides_update_notes")).toMatchObject({
+      write: true,
+      enabled: true,
+      allowDestructive: true,
+    });
+    expect(view.tools.find((tool) => tool.name === "slides_list_slides")).toMatchObject({
+      write: false,
+      enabled: false,
+      allowDestructive: false,
+    });
   });
 
   it("rejects unsupported/wildcard/billing/foreign authority and validates whole batches", async () => {

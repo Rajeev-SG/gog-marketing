@@ -40,7 +40,7 @@ func hostedExistingTools() []mcpToolSpec {
 		}
 		tools = append(tools, spec)
 	}
-	return tools
+	return append(tools, hostedSlidesTools()...)
 }
 
 // HostedExistingToolCatalog reuses the same schemas and typed argument builders
