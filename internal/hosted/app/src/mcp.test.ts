@@ -449,7 +449,11 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       ),
     );
     const namesA = listA.result.tools.map((tool: { name: string }) => tool.name);
-    expect(namesA).toEqual(["analytics_properties_get"]);
+    expect(namesA).toEqual([
+      "analytics_report",
+      "analytics_properties_get",
+      "analytics_datastreams_list",
+    ]);
     expect(namesA).not.toContain("googleads_query");
     expect(namesA).not.toContain("tagmanager_accounts_list");
     expect(JSON.stringify(listA)).not.toContain("user_a");
@@ -500,7 +504,7 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       {
         detail: "unsupported_tool_mapping",
         params: {
-          name: "analytics_report",
+          name: "analytics_accounts",
           arguments: { property: fixture.resourceId },
         },
       },
@@ -662,6 +666,50 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       resource: "unknown",
       error: "invalid_request",
     });
+  });
+
+  it("routes the added GA4 reads with encrypted scope authority and rejects disabled properties", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { verifiedFixture: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "user_native_reads", true);
+    const token = await tokenFor("user_native_reads");
+    for (const name of ["analytics_report", "analytics_datastreams_list"]) {
+      const result = await rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          { name, arguments: { property: fixture.resourceId, connectionId: fixture.connectionId } },
+          { token },
+        ),
+      );
+      expect(result.result.structuredContent).toEqual({ verifiedFixture: true });
+      expect(requests.at(-1)!.nativeTool).toEqual({
+        name,
+        arguments: { property: fixture.resourceId },
+        scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
+      });
+      expect(requests.at(-1)!.tenantId).toBe(fixture.tenantId);
+    }
+    await fixture.repo.setResourceGrantsEnabled(fixture.tenantId, fixture.connectionId, [
+      { service: "analytics", resourceId: fixture.resourceId, enabled: false },
+    ]);
+    const denied = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_report", arguments: { property: fixture.resourceId } },
+        { token },
+      ),
+    );
+    expect(denied.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(2);
   });
 
   it("executes the mapped read through the runner and rechecks disabled grants", async () => {

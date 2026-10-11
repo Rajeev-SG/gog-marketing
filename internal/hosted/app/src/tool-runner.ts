@@ -9,8 +9,10 @@
  */
 
 import { signRunnerCapabilityJwt, type NativeIdentityProvider } from "./runner-auth.js";
+import { assertHostedScopes } from "./scopes.js";
 
 export const ANALYTICS_PROPERTY_READ = "analytics_property_read" as const;
+export const NATIVE_TOOL_CALL = "tool_call" as const;
 
 export interface AnalyticsPropertyResult {
   name: string;
@@ -28,6 +30,11 @@ export interface ToolExecutionRequest {
   accessToken: string;
   googleEmail: string;
   googleSubject: string;
+  nativeTool?: {
+    name: "analytics_report" | "analytics_datastreams_list";
+    arguments: Record<string, unknown>;
+    scopes: string[];
+  };
 }
 
 export interface RunnerResponseDiagnostics {
@@ -36,7 +43,7 @@ export interface RunnerResponseDiagnostics {
 }
 
 export type ToolExecutionOutcome =
-  | { status: "ok"; result: AnalyticsPropertyResult }
+  | { status: "ok"; result: AnalyticsPropertyResult | Record<string, unknown> }
   | { status: "unavailable" | "error"; detail: string | RunnerResponseDiagnostics };
 
 export interface ToolRunner {
@@ -107,6 +114,13 @@ export class RemoteToolRunner implements ToolRunner {
   }
 
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
+    if (request.nativeTool) {
+      try {
+        assertHostedScopes(request.nativeTool.scopes);
+      } catch {
+        return { status: "error", detail: "scope_blocked" };
+      }
+    }
     const deadlineSignal = AbortSignal.timeout(20_000);
     if (deadlineSignal.aborted) return { status: "error", detail: "runner_timeout" };
 
@@ -117,20 +131,37 @@ export class RemoteToolRunner implements ToolRunner {
       return { status: "unavailable", detail: "operator_identity_unavailable" };
     }
 
+    const resource = {
+      service: request.service,
+      resource_type: request.resourceType,
+      resource_id: request.resourceId,
+      enabled: true,
+    };
+    const operation = request.nativeTool ? NATIVE_TOOL_CALL : ANALYTICS_PROPERTY_READ;
     const body = {
       request_id: crypto.randomUUID(),
       tenant_id: request.tenantId,
       connection_id: request.connectionId,
-      operation: ANALYTICS_PROPERTY_READ,
+      operation,
       google_email: request.googleEmail,
       google_subject: request.googleSubject,
       access_token: request.accessToken,
-      resource: {
-        service: request.service,
-        resource_type: request.resourceType,
-        resource_id: request.resourceId,
-        enabled: true,
-      },
+      ...(request.nativeTool
+        ? {
+            tool: {
+              name: request.nativeTool.name,
+              arguments: request.nativeTool.arguments,
+              authorization: {
+                service: request.service,
+                allowed_tools: [request.nativeTool.name],
+                scopes: request.nativeTool.scopes,
+                resource,
+                allow_write: false,
+                allow_destructive: false,
+              },
+            },
+          }
+        : { resource }),
     };
     const exactBodyBytes = new TextEncoder().encode(JSON.stringify(body));
     const capability = await signRunnerCapabilityJwt(
@@ -138,7 +169,7 @@ export class RemoteToolRunner implements ToolRunner {
       {
         tenantId: request.tenantId,
         connectionId: request.connectionId,
-        operation: ANALYTICS_PROPERTY_READ,
+        operation,
       },
       exactBodyBytes,
     );
@@ -185,6 +216,17 @@ export class RemoteToolRunner implements ToolRunner {
         status: "error",
         detail: { runnerStatus: response.status, runnerBodyJson },
       };
+    }
+    if (request.nativeTool) {
+      if (
+        !isPlainObject(wire) ||
+        wire.operation !== NATIVE_TOOL_CALL ||
+        wire.ok !== true ||
+        !isPlainObject(wire.result)
+      ) {
+        return { status: "error", detail: "runner_invalid_response" };
+      }
+      return { status: "ok", result: wire.result };
     }
     if (!isRunnerEnvelope(wire)) {
       return { status: "error", detail: "runner_invalid_response" };

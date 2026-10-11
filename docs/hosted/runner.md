@@ -3,7 +3,7 @@
 The Cloud Run runner is a small private HTTP service that packages the
 existing typed Go/gog Google engine behind one fixed endpoint. It is not a
 general command surface: there is no CLI spawn, shell, argv, arbitrary HTTP
-proxy, or `gog_exec` escape hatch. Only the two operations documented below
+proxy, or `gog_exec` escape hatch. Only the typed operations documented below
 are executable, and every request is rejected before any Google engine work
 unless it carries a valid worker capability.
 
@@ -59,7 +59,7 @@ it with `Web Crypto`). Fixed header: `{"alg":"HS256"}` only. Payload claims:
   "exp": 1780000030,
   "tenant_id": "<hosted tenant id>",
   "connection_id": "<hosted connection id>",
-  "operation": "discover | analytics_property_read",
+  "operation": "discover | analytics_property_read | tool_call",
   "request_sha256": "<lowercase hex sha256 of the exact request body bytes>"
 }
 ```
@@ -189,3 +189,37 @@ identifiers are hashed; request bodies, authorization headers, credentials,
 Google emails, and raw provider exceptions are never logged. The `Counter`
 and engine seams are injectable so tests can prove rejection counting and
 before-engine behavior without faking production responses.
+
+## Signed native tool calls (#52 / #79)
+
+`operation: "tool_call"` adds a `tool` object with `name`, `arguments` and
+`authorization`. Authorization is a trusted Worker snapshot, **not model input**:
+`service`, explicit `allowed_tools`, actual granted `scopes`, one enabled canonical
+`resource`, `allow_write`, and `allow_destructive`. Google subject is mandatory.
+Validation rejects missing/disabled tool/resource/write authority, excluded or
+unknown/transitive scopes, insufficient method scopes and mismatched resource IDs
+before native handler execution. The existing MCP SDK validates typed arguments;
+no shell, subprocess, arbitrary command or HTTP proxy is exposed.
+
+Initial guarded bindings: GA4 property get/report/data-stream list; selected-file
+Drive get, Docs get/write, Sheets read/update; selected Calendar events. Nine
+private bindings do **not** imply nine public MCP tools: the Worker code routes
+the three GA4 reads using the existing enabled-property grant. Workspace writes
+stay unadvertised until their explicit permission and Picker UI paths are ready.
+Neither code routing nor fixture execution proves deployed acceptance.
+The full eligible 27-service surface remains required by #79.
+
+The hosted request guard is opt-in in the existing Google transport. It admits
+only the binding's exact Google host, method and resource path, rejecting foreign
+files, unexpected endpoints/redirects, method overrides and token query strings.
+It carries the operation deadline even when native SDK handlers omit `Context`,
+keeps response bodies alive until consumption/close, and preserves the ordinary
+CLI transport when no hosted guard exists. Do not remove native destructive
+confirmation or use model-supplied force; document replacement needs signed
+`allow_destructive` authority. Cross-file Sheets imports are not implied by a
+single selected-file write grant.
+
+The exact consent scope allowlist is shared in
+`internal/hosted/policy/services.json`; local CLI scopes remain untouched.
+Transport/runner fixture tests are development evidence, not deployed Google
+write, Picker, Clerk/Codex, account-isolation or public-beta acceptance.

@@ -906,6 +906,15 @@ export async function accessTokenForConnection(
   session: ConnectSession,
   connection: GoogleConnection,
 ): Promise<string> {
+  return (await googleGrantForConnection(deps, session, connection)).accessToken;
+}
+
+/** The encrypted grant, not mutable connection metadata, is scope authority. */
+export async function googleGrantForConnection(
+  deps: ConnectDeps,
+  session: ConnectSession,
+  connection: GoogleConnection,
+): Promise<{ accessToken: string; scopes: string[] }> {
   const stored = await deps.repo.getCredential(session.tenantId, connection.id);
   if (!stored) {
     await deps.repo.updateConnectionStatus(
@@ -920,7 +929,7 @@ export async function accessTokenForConnection(
   requireSafeScopes(payload.granted_scopes);
   const expiresAt = Date.parse(payload.expiry);
   if (Number.isFinite(expiresAt) && expiresAt > Date.now() + 60_000 && payload.access_token) {
-    return payload.access_token;
+    return { accessToken: payload.access_token, scopes: payload.granted_scopes };
   }
   await refreshConnection(deps, session, connection.id);
   const refreshed = await deps.repo.getCredential(session.tenantId, connection.id);
@@ -928,7 +937,7 @@ export async function accessTokenForConnection(
   const refreshedPayload = await deps.cipher.decrypt(session.tenantId, connection.id, refreshed);
   requireSafeScopes(refreshedPayload.granted_scopes);
   if (!refreshedPayload.access_token) throw new ConnectError("needs_reconnect", 409);
-  return refreshedPayload.access_token;
+  return { accessToken: refreshedPayload.access_token, scopes: refreshedPayload.granted_scopes };
 }
 
 export async function saveResourceGrants(

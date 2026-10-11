@@ -57,6 +57,7 @@ type Request struct {
 	AccessToken   string              `json:"access_token"`
 	Services      []string            `json:"services,omitempty"`
 	Resource      *ResourceGrantInput `json:"resource,omitempty"`
+	Tool          *ToolInvocation     `json:"tool,omitempty"`
 }
 
 type validator struct{}
@@ -114,7 +115,7 @@ func (v validator) validateRequest(req *Request) error {
 		return err
 	}
 
-	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead {
+	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead && req.Operation != OperationToolCall {
 		return invalidf("unsupported operation")
 	}
 
@@ -149,6 +150,12 @@ func (v validator) validateRequest(req *Request) error {
 	}
 
 	switch req.Operation {
+	case OperationToolCall:
+		if req.GoogleSubject == "" {
+			return invalidf("missing google_subject")
+		}
+
+		return validateToolInvocation(req.Tool)
 	case OperationDiscover:
 		return v.validateDiscoveryServices(req.Services)
 	case OperationAnalyticsPropertyRead:

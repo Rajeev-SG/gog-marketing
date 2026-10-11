@@ -14,6 +14,7 @@ import (
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
 
+	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/controlplane"
 )
 
@@ -31,6 +32,8 @@ type Engine struct {
 
 	// AnalyticsAdminFactory defaults to googleapi.NewAnalyticsAdmin.
 	AnalyticsAdminFactory func(context.Context, string) (*analyticsadmin.Service, error)
+	// Native service-factory seams; production uses the existing Google engine.
+	NativeServices app.Services
 
 	Counter          Counter
 	Timeout          time.Duration

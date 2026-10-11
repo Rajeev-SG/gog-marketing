@@ -87,12 +87,18 @@ func (s *Server) execute(parent context.Context, req *Request) outcome {
 	defer cancel()
 
 	engineCtx = googleapi.WithAuthDependencies(engineCtx, googleapi.AuthDependencies{Mode: googleapi.AuthModeStored})
-	engineCtx = googleapi.WithReadOnly(googleapi.WithNoInput(engineCtx), true)
+
+	engineCtx = googleapi.WithNoInput(engineCtx)
+	if req.Operation != OperationToolCall {
+		engineCtx = googleapi.WithReadOnly(engineCtx, true)
+	}
 	engineCtx = authclient.WithAccessToken(engineCtx, req.AccessToken)
 
 	var result outcome
 
 	switch req.Operation {
+	case OperationToolCall:
+		result = s.executeNativeTool(engineCtx, req)
 	case OperationDiscover:
 		result = s.executeDiscovery(engineCtx, req)
 	case OperationAnalyticsPropertyRead:

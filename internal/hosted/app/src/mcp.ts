@@ -21,7 +21,7 @@ import {
   type ClerkEnv,
 } from "./auth.js";
 import {
-  accessTokenForConnection,
+  googleGrantForConnection,
   buildConnectDeps,
   ConnectError,
   type ConnectEnv,
@@ -36,7 +36,7 @@ import type {
 } from "../../state/src/types.js";
 import {
   ANALYTICS_PROPERTY_READ,
-  type AnalyticsPropertyResult,
+  NATIVE_TOOL_CALL,
   type ToolExecutionOutcome,
 } from "./tool-runner.js";
 
@@ -222,7 +222,7 @@ interface ToolResourceMapping {
   resourceType: "property";
   resourceArgument: "property";
   resourcePattern: RegExp;
-  operation: typeof ANALYTICS_PROPERTY_READ;
+  operation: typeof ANALYTICS_PROPERTY_READ | typeof NATIVE_TOOL_CALL;
 }
 
 const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = {
@@ -232,6 +232,20 @@ const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = {
     resourceArgument: "property",
     resourcePattern: /^properties\/[0-9]+$/,
     operation: ANALYTICS_PROPERTY_READ,
+  },
+  analytics_report: {
+    service: "analytics",
+    resourceType: "property",
+    resourceArgument: "property",
+    resourcePattern: /^properties\/[0-9]+$/,
+    operation: NATIVE_TOOL_CALL,
+  },
+  analytics_datastreams_list: {
+    service: "analytics",
+    resourceType: "property",
+    resourceArgument: "property",
+    resourcePattern: /^properties\/[0-9]+$/,
+    operation: NATIVE_TOOL_CALL,
   },
 };
 const MAX_RESOURCE_IDENTIFIER_LENGTH = 256;
@@ -727,7 +741,7 @@ function originRejected(request: Request, resource: string): boolean {
   return origin !== new URL(resource).origin && origin !== new URL(request.url).origin;
 }
 
-function toolCallResult(id: JsonRpcId, result: AnalyticsPropertyResult) {
+function toolCallResult(id: JsonRpcId, result: unknown) {
   return {
     body: jsonRpcResult(id, {
       content: [{ type: "text", text: JSON.stringify(result) }],
@@ -1074,12 +1088,15 @@ async function handleToolCall(
   }
 
   let accessToken: string;
+  let grantedScopes: string[] = [];
   try {
-    accessToken = await accessTokenForConnection(
+    const grant = await googleGrantForConnection(
       depsOutcome.deps,
       connectSession,
       resolved.connection,
     );
+    accessToken = grant.accessToken;
+    grantedScopes = grant.scopes;
   } catch (error) {
     if (error instanceof ConnectError && error.code === "scope_blocked") {
       await writeToolAudit(
@@ -1117,6 +1134,22 @@ async function handleToolCall(
       accessToken,
       googleEmail: resolved.connection.email,
       googleSubject: resolved.connection.googleSubject,
+      ...(mapping.operation === NATIVE_TOOL_CALL
+        ? {
+            nativeTool: {
+              name: name as "analytics_report" | "analytics_datastreams_list",
+              arguments: {
+                ...Object.fromEntries(
+                  Object.entries(args).filter(
+                    ([key]) => key !== "tenantId" && key !== "connectionId",
+                  ),
+                ),
+                [mapping.resourceArgument]: resourceId,
+              },
+              scopes: grantedScopes,
+            },
+          }
+        : {}),
     });
   } catch {
     await writeToolAudit(

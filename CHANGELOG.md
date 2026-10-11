@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: bind native SDK requests to operation deadlines and explicit resource/host/method admission before credential use; share the audit-free scope catalogue across Go and the Worker, and add a private signed native-tool operation for the initial GA4, selected-file Drive/Docs/Sheets and Calendar bindings. The Worker now routes three guarded GA4 reads; broader exposure, Picker, complete parity and live acceptance remain pending; local CLI transport defaults are unchanged. (#52, #79)
+
 - Hosted: add a non-advertised in-process bridge reusing existing local MCP schemas, typed argument builders and native Go handlers, with no shell, subprocess, keyring, ADC or root-configuration execution; keep it off hosted tool discovery pending resource-policy and deadline wiring. Native Sheets write/read transport tests cover credential propagation and persistence; no live acceptance is claimed. (#52, #79)
 
 - Hosted: introduce the #79 audit-free 27-service consent allowlist with explicit incremental write opt-in; exclude Gmail, Google Ads, Drive Activity and restricted/transitive scopes, reject unsafe historical and returned credentials before execution, and remove hosted Ads discovery/tools without changing the local CLI. Expanded executable coverage, Picker and real acceptance remain pending. (#52, #79)
