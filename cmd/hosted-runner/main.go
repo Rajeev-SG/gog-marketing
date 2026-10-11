@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/openclaw/gogcli/internal/cmd"
+
 	"github.com/openclaw/gogcli/internal/controlplane"
 	"github.com/openclaw/gogcli/internal/hosted/runner"
 )
@@ -37,6 +39,7 @@ func main() {
 	engine := runner.Engine{
 		Discoverer:       controlplane.EngineDiscoverer{},
 		Secret:           secret,
+		ExecuteNative:    cmd.ExecuteHostedExistingTool,
 		Counter:          nil,
 		Timeout:          timeoutFromEnv(logger),
 		MaxRequestBytes:  int64FromEnv("GOG_RUNNER_MAX_REQUEST_BYTES", defaultMaxRequestBytes),

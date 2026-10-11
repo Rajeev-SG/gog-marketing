@@ -307,6 +307,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
         CLERK_ISSUER,
         "https://challenges.cloudflare.com",
         "https://*.protect.clerk.com",
+        "https://apis.google.com",
       ]);
       expect(directives["connect-src"]).toEqual([
         "'self'",
@@ -325,6 +326,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
         CLERK_ISSUER,
         "https://challenges.cloudflare.com",
         "https://*.protect.clerk.com",
+        "https://docs.google.com",
       ]);
       expect(directives["default-src"]).toEqual(["'self'"]);
       expect(directives["object-src"]).toEqual(["'none'"]);

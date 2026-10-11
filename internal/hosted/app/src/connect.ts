@@ -47,6 +47,9 @@ import {
 import { WorkloadIdentityClient, validateRunnerIdentityConfig } from "./runner-auth.js";
 
 export interface ConnectEnv {
+  /** Public, website/API-restricted Picker key and its OAuth project's number. */
+  GOG_GOOGLE_PICKER_API_KEY?: string;
+  GOG_GOOGLE_PICKER_APP_ID?: string;
   GOG_GOOGLE_OAUTH_CLIENT_ID?: string;
   GOG_GOOGLE_OAUTH_CLIENT_SECRET?: string;
   GOG_GOOGLE_OAUTH_REDIRECT_URI?: string;
@@ -92,6 +95,7 @@ export type ConnectErrorCode =
   | "connection_not_found"
   | "needs_reconnect"
   | "scope_blocked"
+  | "picker_rate_limited"
   | "discovery_unavailable"
   | "discovery_error"
   | "internal_error";
@@ -116,6 +120,8 @@ export const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
   needs_reconnect: "This Google account needs to be reconnected.",
   scope_blocked:
     "This Google grant includes permissions excluded from the audit-free hosted product. Disconnect and reconnect with only supported services.",
+  picker_rate_limited:
+    "Google file selection reached this workspace's daily limit. Try again tomorrow.",
   discovery_unavailable: "The account is connected. Resource discovery is temporarily unavailable.",
   discovery_error: "The account is connected, but resource discovery failed.",
   internal_error: "Something went wrong connecting your Google account.",

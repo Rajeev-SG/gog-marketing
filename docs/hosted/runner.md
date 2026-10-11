@@ -59,7 +59,7 @@ it with `Web Crypto`). Fixed header: `{"alg":"HS256"}` only. Payload claims:
   "exp": 1780000030,
   "tenant_id": "<hosted tenant id>",
   "connection_id": "<hosted connection id>",
-  "operation": "discover | analytics_property_read | tool_call",
+  "operation": "discover | analytics_property_read | tool_call | verify_files",
   "request_sha256": "<lowercase hex sha256 of the exact request body bytes>"
 }
 ```
@@ -201,6 +201,12 @@ unknown/transitive scopes, insufficient method scopes and mismatched resource ID
 before native handler execution. The existing MCP SDK validates typed arguments;
 no shell, subprocess, arbitrary command or HTTP proxy is exposed.
 
+The executable entrypoint injects the existing typed command executor through
+`internal/hosted/native`; the runner package does not import the command layer.
+Missing executor wiring fails closed. The catalogue executable composes the same
+native schemas with runner bindings; its generated Worker drift check remains
+mandatory.
+
 Initial guarded bindings: GA4 property get/report/data-stream list; selected-file
 Drive get, Docs get/write, Sheets read/update; selected Calendar events. Nine
 private bindings do **not** imply nine public MCP tools: the Worker code routes
@@ -223,3 +229,15 @@ The exact consent scope allowlist is shared in
 `internal/hosted/policy/services.json`; local CLI scopes remain untouched.
 Transport/runner fixture tests are development evidence, not deployed Google
 write, Picker, Clerk/Codex, account-isolation or public-beta acceptance.
+
+### verify_files
+
+The signed `verify_files` operation takes `file_selection: {ids, scopes}` with
+1–20 distinct opaque IDs and the actual audit-free grant containing `drive.file`.
+Google subject is mandatory. Existing typed `googleapi.NewDrive` performs metadata
+GETs for exactly those IDs; the hosted transport denies other hosts/paths/methods.
+The result contains Google-authoritative `{id,name,mime_type}` files and rejected
+IDs, never provider exception text. Trashed files, shortcuts and returned-ID
+mismatches are rejected. Partial failures are explicit. This privileged UI
+onboarding operation is not exposed to MCP clients; its authority comes from a
+one-use account/Clerk-session-bound Picker flow in the Worker.

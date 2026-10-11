@@ -35,7 +35,7 @@ func TestGeneratedWorkerCatalogMatchesExecutableNativeSchemas(t *testing.T) {
 		t.Fatal(decodeErr)
 	}
 
-	encoded, err := json.Marshal(NativeToolCatalog())
+	encoded, err := json.Marshal(NativeToolCatalog(cmd.HostedExistingToolCatalog()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,6 +51,20 @@ func TestGeneratedWorkerCatalogMatchesExecutableNativeSchemas(t *testing.T) {
 }
 
 var errUnexpectedNativeFactory = errors.New("unexpected native handler")
+
+func TestNativeToolWithoutEntrypointWiringFailsClosed(t *testing.T) {
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.ExecuteNative = nil
+	})
+	body := nativeToolBody(t, nil)
+
+	response := postExecute(t, harness.server, signInvocation(t, body, func(claims map[string]any) {
+		claims["operation"] = OperationToolCall
+	}), body)
+	if response.Status != 502 || response.OK {
+		t.Fatalf("unwired native executor did not fail closed: %d %s", response.Status, response.Body)
+	}
+}
 
 func nativeToolBody(t *testing.T, mutate func(*Request)) []byte {
 	t.Helper()

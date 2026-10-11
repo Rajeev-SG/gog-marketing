@@ -58,6 +58,7 @@ type Request struct {
 	Services      []string            `json:"services,omitempty"`
 	Resource      *ResourceGrantInput `json:"resource,omitempty"`
 	Tool          *ToolInvocation     `json:"tool,omitempty"`
+	FileSelection *FileSelection      `json:"file_selection,omitempty"`
 }
 
 type validator struct{}
@@ -115,7 +116,7 @@ func (v validator) validateRequest(req *Request) error {
 		return err
 	}
 
-	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead && req.Operation != OperationToolCall {
+	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead && req.Operation != OperationToolCall && req.Operation != OperationVerifyFiles {
 		return invalidf("unsupported operation")
 	}
 
@@ -150,6 +151,12 @@ func (v validator) validateRequest(req *Request) error {
 	}
 
 	switch req.Operation {
+	case OperationVerifyFiles:
+		if req.GoogleSubject == "" {
+			return invalidf("missing google_subject")
+		}
+
+		return validateFileSelection(req.FileSelection)
 	case OperationToolCall:
 		if req.GoogleSubject == "" {
 			return invalidf("missing google_subject")

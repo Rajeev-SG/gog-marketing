@@ -56,12 +56,12 @@ export function securityHeaders(clerkDomain = ""): Record<string, string> {
   const clerkScriptSources = clerkDomain ? [`https://${clerkDomain}`] : [];
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `script-src 'self' 'unsafe-inline' ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com https://apis.google.com`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: ${clerkScriptSources.join(" ")} https://img.clerk.com`,
     `font-src 'self' ${clerkScriptSources.join(" ")}`,
     `connect-src 'self' ${clerkSources.join(" ")} https://*.protect.clerk.com:*`,
-    `frame-src ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `frame-src ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com https://docs.google.com`,
     "worker-src 'self' blob:",
     `form-action 'self' ${clerkScriptSources.join(" ")}`,
     "object-src 'none'",
@@ -365,6 +365,9 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         </div>
       </section>
       <section id="asset-workspace" hidden aria-label="Assets and access">
+        <p>Choose existing Drive, Docs, Sheets, Slides or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
+        <button id="pick-files" type="button">Choose Google files</button>
+        <span id="picker-status" role="status" aria-live="polite"></span>
         <div class="picker">
           <nav class="rail" id="asset-rail" aria-label="Google services"></nav>
           <div id="asset-groups"></div>
@@ -632,6 +635,46 @@ export function renderHome(htmlConfig: HtmlConfig): string {
     function jsonFetch(url, body) {
       return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : '{}' });
     }
+    var pickerLibraryPromise = null;
+    function loadPickerLibrary() {
+      if (!pickerLibraryPromise) pickerLibraryPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script'); script.src = 'https://apis.google.com/js/api.js';
+        script.onload = function () { gapi.load('picker', { callback: resolve, onerror: function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); } }); };
+        script.onerror = function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); };
+        document.head.appendChild(script);
+      });
+      return pickerLibraryPromise;
+    }
+    async function pickFiles() {
+      var connection = selectedAccount(); if (!connection) return;
+      var connectionId = connection.id; var status = el('picker-status');
+      status.textContent = 'Preparing Google Picker for ' + connection.email + '…';
+      try {
+        await loadPickerLibrary();
+        var response = await jsonFetch('/api/google/picker/start', { connectionId: connectionId });
+        var config = await response.json();
+        if (!response.ok) throw new Error(config.error || 'Picker is not configured. The operator must configure its restricted API key/project number; reconnect with selected-file consent if needed.');
+        var picker = new google.picker.PickerBuilder()
+          .setDeveloperKey(config.apiKey).setAppId(config.appId).setOAuthToken(config.accessToken)
+          .setOrigin(window.location.origin).addView(new google.picker.DocsView(google.picker.ViewId.DOCS))
+          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+          .setCallback(async function (result) {
+            if (result.action === google.picker.Action.CANCEL) { config.accessToken = ''; status.textContent = 'File selection cancelled. Existing access is unchanged.'; return; }
+            if (result.action !== google.picker.Action.PICKED) return;
+            config.accessToken = '';
+            var ids = result[google.picker.Response.DOCUMENTS].map(function (item) { return item[google.picker.Document.ID]; });
+            try {
+              var verified = await jsonFetch('/api/google/picker/complete', { connectionId: connectionId, pickerSession: config.pickerSession, fileIds: ids });
+              var saved = await verified.json();
+              if (!verified.ok) throw new Error(saved.error || 'Selected files could not be verified. Open Picker again to retry.');
+              await loadResources();
+              status.textContent = saved.selectedCount + ' files verified for ' + connection.email + '; ' + saved.rejectedCount + ' unavailable. New files remain disabled.';
+            } catch (error) { status.textContent = error.message || 'File verification failed.'; }
+          }).build();
+        picker.setVisible(true);
+        status.textContent = 'Select files for ' + config.googleEmail + '. No other account will be changed.';
+      } catch (error) { status.textContent = error.message || 'Could not open Google Picker.'; }
+    }
     async function loadResources() {
       try {
         var response = await fetch('/api/google/resources');
@@ -714,6 +757,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); });
       el('save-grants').addEventListener('click', function () { return save(); });
       el('save-tools').addEventListener('click', saveTools);
+      el('pick-files').addEventListener('click', pickFiles);
       var copyButton = el('copy-mcp-url');
       if (copyButton) copyButton.addEventListener('click', function () {
         navigator.clipboard.writeText(el('mcp-url').textContent);

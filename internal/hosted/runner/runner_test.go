@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openclaw/gogcli/internal/cmd"
+
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
 	"google.golang.org/api/option"
 
@@ -90,6 +92,7 @@ func newHarness(t *testing.T, mutate func(*Engine, *recordedDiscoverer)) *testHa
 
 	engine := &Engine{
 		Secret:           testSecret,
+		ExecuteNative:    cmd.ExecuteHostedExistingTool,
 		Discoverer:       discoverer,
 		Timeout:          5 * time.Second,
 		MaxRequestBytes:  64 * 1024,

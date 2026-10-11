@@ -51,7 +51,25 @@ export type ToolExecutionOutcome =
 
 export interface ToolRunner {
   execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome>;
+  verifyFiles?(request: SelectedFilesRequest): Promise<SelectedFilesOutcome>;
 }
+
+export interface SelectedFilesRequest {
+  tenantId: string;
+  connectionId: string;
+  googleEmail: string;
+  googleSubject: string;
+  accessToken: string;
+  scopes: string[];
+  ids: string[];
+}
+export type SelectedFilesOutcome =
+  | {
+      status: "ok";
+      files: Array<{ id: string; name: string; mime_type: string }>;
+      rejected: string[];
+    }
+  | { status: "error" | "unavailable" };
 
 export class UnavailableToolRunner implements ToolRunner {
   async execute(_request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
@@ -114,6 +132,83 @@ export class RemoteToolRunner implements ToolRunner {
     this.invocationToken = options.invocationToken;
     this.identity = options.identity;
     this.fetchImpl = options.fetchImpl ?? fetch.bind(globalThis);
+  }
+
+  async verifyFiles(request: SelectedFilesRequest): Promise<SelectedFilesOutcome> {
+    try {
+      assertHostedScopes(request.scopes);
+      if (!request.scopes.includes("https://www.googleapis.com/auth/drive.file"))
+        return { status: "error" };
+      const signal = AbortSignal.timeout(20_000);
+      const nativeToken = await this.identity.nativeIdToken(this.url.origin, signal);
+      const bytes = new TextEncoder().encode(
+        JSON.stringify({
+          request_id: crypto.randomUUID(),
+          tenant_id: request.tenantId,
+          connection_id: request.connectionId,
+          operation: "verify_files",
+          google_email: request.googleEmail,
+          google_subject: request.googleSubject,
+          access_token: request.accessToken,
+          file_selection: { ids: request.ids, scopes: request.scopes },
+        }),
+      );
+      const capability = await signRunnerCapabilityJwt(
+        this.invocationToken,
+        {
+          tenantId: request.tenantId,
+          connectionId: request.connectionId,
+          operation: "verify_files",
+        },
+        bytes,
+      );
+      const response = await this.fetchImpl(this.url, {
+        method: "POST",
+        redirect: "manual",
+        signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${capability}`,
+          "X-Serverless-Authorization": `Bearer ${nativeToken}`,
+        },
+        body: bytes,
+      });
+      if (!response.ok) return { status: "error" };
+      const wire: unknown = await response.json();
+      if (
+        !isPlainObject(wire) ||
+        wire.operation !== "verify_files" ||
+        wire.ok !== true ||
+        !isPlainObject(wire.result) ||
+        !Array.isArray(wire.result.files) ||
+        !Array.isArray(wire.result.rejected)
+      )
+        return { status: "error" };
+      const files: Array<{ id: string; name: string; mime_type: string }> = [];
+      for (const item of wire.result.files) {
+        if (
+          !isPlainObject(item) ||
+          typeof item.id !== "string" ||
+          typeof item.name !== "string" ||
+          typeof item.mime_type !== "string" ||
+          !request.ids.includes(item.id)
+        )
+          return { status: "error" };
+        files.push({ id: item.id, name: item.name, mime_type: item.mime_type });
+      }
+      if (
+        !wire.result.rejected.every(
+          (id: unknown) => typeof id === "string" && request.ids.includes(id),
+        )
+      )
+        return { status: "error" };
+      const accounted = [...files.map((file) => file.id), ...wire.result.rejected];
+      if (new Set(accounted).size !== request.ids.length || accounted.length !== request.ids.length)
+        return { status: "error" };
+      return { status: "ok", files, rejected: wire.result.rejected };
+    } catch {
+      return { status: "unavailable" };
+    }
   }
 
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {

@@ -374,6 +374,54 @@ export class HostedRepository {
 
   // ─── Resource grants (compound-FK enforced) ────────────────────────────
 
+  async createPickerSession(input: {
+    sessionHash: string;
+    tenantId: string;
+    connectionId: string;
+    clerkSessionId: string;
+    googleSubject: string;
+    expiresAt: string;
+  }): Promise<void> {
+    await this.db
+      .prepare(`INSERT INTO hosted_picker_sessions
+      (session_hash, tenant_id, connection_id, clerk_session_id, google_subject, expires_at)
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6)`)
+      .bind(
+        input.sessionHash,
+        input.tenantId,
+        input.connectionId,
+        input.clerkSessionId,
+        input.googleSubject,
+        input.expiresAt,
+      )
+      .run();
+  }
+
+  async consumePickerSession(input: {
+    sessionHash: string;
+    tenantId: string;
+    connectionId: string;
+    clerkSessionId: string;
+    googleSubject: string;
+    now: string;
+  }): Promise<boolean> {
+    const row = await this.db
+      .prepare(`UPDATE hosted_picker_sessions SET consumed_at = ?6
+      WHERE session_hash = ?1 AND tenant_id = ?2 AND connection_id = ?3
+        AND clerk_session_id = ?4 AND google_subject = ?5
+        AND consumed_at IS NULL AND expires_at > ?6 RETURNING session_hash`)
+      .bind(
+        input.sessionHash,
+        input.tenantId,
+        input.connectionId,
+        input.clerkSessionId,
+        input.googleSubject,
+        input.now,
+      )
+      .first<Record<string, unknown>>();
+    return Boolean(row);
+  }
+
   async listToolGrants(tenantId: string, connectionId: string): Promise<ToolGrant[]> {
     const result = await this.db
       .prepare(

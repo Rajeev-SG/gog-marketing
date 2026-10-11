@@ -27,6 +27,7 @@
  */
 import { HostedRepository } from "../../state/src/repository.js";
 import { saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
+import { startPicker, completePicker } from "./picker.js";
 import { authenticate, type ClerkEnv } from "./auth.js";
 import {
   buildConnectDeps,
@@ -115,6 +116,8 @@ const GOOGLE_API_PATHS = [
   "/api/google/resources",
   "/api/google/grants",
   "/api/google/tools",
+  "/api/google/picker/start",
+  "/api/google/picker/complete",
   "/oauth/google/callback",
 ];
 const GOOGLE_CONNECTION_ACTION =
@@ -373,6 +376,31 @@ async function handleGoogleRoute(
   const deps = depsOutcome.deps;
 
   try {
+    if (request.method === "POST" && path === "/api/google/picker/start") {
+      const body = (await request.json()) as Record<string, unknown>;
+      if (
+        typeof body.connectionId !== "string" ||
+        Object.keys(body).some((key) => key !== "connectionId")
+      )
+        throw new ConnectError("invalid_request", 400);
+      const result = await startPicker(deps, session, body.connectionId, {
+        apiKey: env.GOG_GOOGLE_PICKER_API_KEY ?? "",
+        appId: env.GOG_GOOGLE_PICKER_APP_ID ?? "",
+      });
+      return Response.json(result, {
+        headers: {
+          ...securityHeaders(),
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
+    if (request.method === "POST" && path === "/api/google/picker/complete") {
+      const result = await completePicker(deps, session, await request.json());
+      return Response.json(result, {
+        headers: { ...securityHeaders(), "Cache-Control": "no-store" },
+      });
+    }
     if (request.method === "GET" && path === "/api/google/connections") {
       const result = await listConnections(deps, session);
       return Response.json(result, { headers: securityHeaders() });

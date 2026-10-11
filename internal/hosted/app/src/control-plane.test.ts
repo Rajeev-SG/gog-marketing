@@ -66,6 +66,7 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     "0001_initial_schema.sql",
     "0002_oauth_states_discovery.sql",
     "0005_tool_grants.sql",
+    "0006_picker_sessions.sql",
   ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
@@ -145,6 +146,86 @@ async function readRepo(env: Env): Promise<HostedRepository> {
 }
 
 describe("control plane route and UI contracts (#64)", () => {
+  it("issues Picker-only ephemeral credentials and persists server-verified selections through native D1", async () => {
+    const env = await createEnv({
+      GOG_GOOGLE_OAUTH_CLIENT_ID: "client",
+      GOG_GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+      GOG_GOOGLE_OAUTH_REDIRECT_URI: `${ORIGIN}/oauth/google/callback`,
+      GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_KEY,
+      GOG_GOOGLE_PICKER_API_KEY: "restricted-public-key",
+      GOG_GOOGLE_PICKER_APP_ID: "123",
+      __testToolRunner: {
+        async execute() {
+          return { status: "unavailable", detail: "unused" };
+        },
+        async verifyFiles(request) {
+          return {
+            status: "ok",
+            files: request.ids.map((id) => ({
+              id,
+              name: "Server verified",
+              mime_type: "application/vnd.google-apps.document",
+            })),
+            rejected: [],
+          };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("picker-owner");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "picker-google",
+      "owner@example.com",
+      "",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, {
+      access_token: "ephemeral-picker-token",
+      refresh_token: "never-browser-refresh",
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+    });
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const started = await authenticatedRequest(
+      `${ORIGIN}/api/google/picker/start`,
+      "picker-owner",
+      env,
+      { method: "POST", body: JSON.stringify({ connectionId: connection.id }) },
+    );
+    expect(started.status).toBe(200);
+    expect(started.headers.get("cache-control")).toBe("no-store");
+    const config = (await started.json()) as { pickerSession: string; accessToken: string };
+    expect(config.accessToken).toBe("ephemeral-picker-token");
+    expect(JSON.stringify(config)).not.toContain("never-browser-refresh");
+    const done = await authenticatedRequest(
+      `${ORIGIN}/api/google/picker/complete`,
+      "picker-owner",
+      env,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          connectionId: connection.id,
+          pickerSession: config.pickerSession,
+          fileIds: ["selected-doc"],
+        }),
+      },
+    );
+    expect(done.status).toBe(200);
+    expect(await done.json()).toEqual({ selectedCount: 1, rejectedCount: 0 });
+    const grants = await repo.listResourceGrants(tenant.id, connection.id);
+    expect(grants.map((grant) => grant.service)).toEqual(["docs", "drive"]);
+    expect(grants.every((grant) => !grant.enabled)).toBe(true);
+  });
+
   it("persists account-scoped tool permissions through authenticated native-D1 routes", async () => {
     const env = await createEnv();
     const repo = new HostedRepository(env.DB as unknown as Database);

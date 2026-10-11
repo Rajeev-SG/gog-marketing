@@ -155,3 +155,21 @@ needs_reconnect. Gmail gmail.readonly and Drive drive.readonly are RESTRICTED an
 read-only is not a Google verification classification. The current central app
 is Testing with two owner test users, not a verified public beta; #69 remains
 the public-launch gate.
+
+## Google Picker selected-file onboarding (#79)
+
+The authenticated UI offers **Choose Google files** for a connected account.
+`POST /api/google/picker/start` takes only `connectionId`, returns a one-use bound
+session plus the ephemeral token required by Google's JS Picker, and sends
+no-store/no-referrer headers. This is the deliberate ephemeral-only exception to
+credential-free API views; no refresh token/client secret is exposed.
+`POST /api/google/picker/complete` accepts `connectionId`, `pickerSession` and up
+to 20 exact `fileIds`; account, names, MIME claims and arbitrary URLs are rejected.
+The trusted Go runner verifies each ID using the actual `drive.file` token.
+New Drive/Docs/Sheets/Slides/Sites grants remain disabled; saved tools are separate.
+A partial rejection count is surfaced without raw provider errors.
+
+Operator variables: `GOG_GOOGLE_PICKER_API_KEY` (public restricted key) and
+`GOG_GOOGLE_PICKER_APP_ID` (same OAuth project's number). Missing configuration
+is not a request to use full Drive scopes. Production configuration and real
+Picker acceptance remain unverified; see [readiness](audit-free-readiness.md).

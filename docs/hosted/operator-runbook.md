@@ -123,7 +123,7 @@ npx wrangler deployments status --name gog-marketing --json
 
 ## Apply D1 migrations
 
-The five migrations are additive, but they are not all safe to re-run:
+The six migrations are additive, but they are not all safe to re-run:
 `0002` includes unconditional `ALTER TABLE ADD COLUMN` statements. Apply each
 migration at most once to the existing `gog-marketing` database; do not create
 another database or execute migration files directly with
@@ -511,3 +511,23 @@ Each Google account independently enables exact tools through
 saved choices plus matching resource grants and actual Google scopes. No wildcard
 or platform-billing authorization is accepted by this permission API. UI fixture
 screenshots are not Google/Codex acceptance evidence.
+
+### Google Picker configuration (no infrastructure provisioned by this patch)
+
+Use the existing central OAuth project. Set public Worker variables
+`GOG_GOOGLE_PICKER_API_KEY` and `GOG_GOOGLE_PICKER_APP_ID` only after verifying:
+
+- Picker and Drive APIs are enabled, and the API key is restricted to the hosted
+  website origin and required API usage;
+- app ID is the project's **number**, not project name or OAuth client ID;
+- app ID and central web OAuth client belong to the same Google project;
+- canonical production origin is correct.
+
+Current official setup/sample:
+https://developers.google.com/workspace/drive/picker/guides/sample
+Do not create/change keys or infrastructure without owner approval.
+Apply reviewed migration `0006_picker_sessions.sql` before deploying these routes.
+Keep ephemeral Picker tokens out of logs, screenshots, URLs and browser storage.
+The fixed private runner operation `verify_files` admits only exact selected
+Drive metadata GETs. It is not an MCP tool or generic proxy. Local fixtures do
+not replace a real owner and non-owner Picker walkthrough.

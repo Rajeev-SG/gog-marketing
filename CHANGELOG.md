@@ -2,6 +2,10 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: compose the existing typed native executor at binary entrypoints instead of importing the command layer from the private runner; missing executor wiring fails closed. Preserve the architecture contract and executable catalogue drift checks. (#52, #79)
+
+- Hosted: implement account/session-bound Google Picker onboarding with ephemeral-only no-store responses, selected-file Drive verification through the existing Go client, default-disabled atomic file grants, replay/foreign-session/rate safeguards and explicit partial failures. Production Picker API-key/project configuration and real acceptance remain unverified; no broad Drive fallback or infrastructure provisioning. (#79)
+
 - Hosted: persist exact account-scoped tool permissions separately from OAuth and resource grants, add their guarded API/UI and explicit write/destructive controls, and route nine guarded native bindings through a Go-generated MCP catalogue. Preserve only existing GA4 reads in the additive migration; new tools stay disabled. Picker, complete eligible parity and live acceptance remain pending. (#52, #79)
 
 - Hosted: bind native SDK requests to operation deadlines and explicit resource/host/method admission before credential use; share the audit-free scope catalogue across Go and the Worker, and add a private signed native-tool operation for the initial GA4, selected-file Drive/Docs/Sheets and Calendar bindings. The Worker now routes three guarded GA4 reads; broader exposure, Picker, complete parity and live acceptance remain pending; local CLI transport defaults are unchanged. (#52, #79)

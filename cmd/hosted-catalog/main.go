@@ -6,13 +6,15 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/openclaw/gogcli/internal/cmd"
+
 	"github.com/openclaw/gogcli/internal/hosted/runner"
 )
 
 func main() {
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(runner.NativeToolCatalog()); err != nil {
+	if err := encoder.Encode(runner.NativeToolCatalog(cmd.HostedExistingToolCatalog())); err != nil {
 		os.Exit(1)
 	}
 }

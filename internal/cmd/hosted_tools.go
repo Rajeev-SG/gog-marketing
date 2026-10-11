@@ -15,25 +15,22 @@ import (
 	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/config"
 	"github.com/openclaw/gogcli/internal/googleapi"
+	"github.com/openclaw/gogcli/internal/hosted/native"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
 
 var (
-	ErrHostedToolDenied      = errors.New("hosted tool is not permitted")
-	ErrHostedToolInput       = errors.New("hosted tool input is invalid")
-	ErrHostedToolExecution   = errors.New("hosted tool execution failed")
-	ErrHostedToolOutputLimit = errors.New("hosted tool output exceeds limit")
+	ErrHostedToolDenied      = native.ErrDenied
+	ErrHostedToolInput       = native.ErrInput
+	ErrHostedToolExecution   = native.ErrExecution
+	ErrHostedToolOutputLimit = native.ErrOutputLimit
 )
 
 // HostedTool describes an existing fixed-schema tool, not a generic CLI entry.
 // Resource authorization and scope checks belong to the private runner before
 // it invokes this bridge. The bridge never exposes a shell or accepts argv.
-type HostedTool struct {
-	Service string   `json:"service"`
-	Risk    string   `json:"risk"`
-	Tool    mcp.Tool `json:"tool"`
-}
+type HostedTool = native.Tool
 
 func hostedExistingTools() []mcpToolSpec {
 	var tools []mcpToolSpec
@@ -59,19 +56,7 @@ func HostedExistingToolCatalog() []HostedTool {
 
 // HostedToolOptions is trusted, code-only execution context, never client JSON.
 // AllowWrite and Force must come from the signed server authorization snapshot.
-type HostedToolOptions struct {
-	Account        string
-	AccessToken    string
-	AllowWrite     bool
-	Force          bool
-	QuotaProject   string
-	AllowBillable  bool
-	MaxOutputBytes int
-	// Trusted runner resource admission, applied before every Google request.
-	RequestGuard googleapi.RequestGuard
-	// Existing service-factory seams support transport-backed deterministic tests.
-	Services app.Services
-}
+type HostedToolOptions = native.Options
 
 // ExecuteHostedExistingTool validates the existing MCP schema, builds only its
 // fixed command fields and invokes the native Go handler in-process. It bypasses

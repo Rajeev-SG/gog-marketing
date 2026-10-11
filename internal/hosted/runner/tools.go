@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/openclaw/gogcli/internal/cmd"
+	"github.com/openclaw/gogcli/internal/hosted/native"
 	"github.com/openclaw/gogcli/internal/hosted/policy"
 )
 
@@ -54,8 +54,7 @@ type NativeToolDescription struct {
 	Tool             any    `json:"tool"`
 }
 
-func NativeToolCatalog() []NativeToolDescription {
-	tools := cmd.HostedExistingToolCatalog()
+func NativeToolCatalog(tools []native.Tool) []NativeToolDescription {
 	catalog := make([]NativeToolDescription, 0, len(nativeToolBindings))
 
 	for _, tool := range tools {
@@ -210,16 +209,16 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 	return func(request *http.Request) error {
 		if request == nil || request.URL == nil || request.URL.Scheme != "https" || request.URL.User != nil || request.URL.Port() != "" || !slices.Contains(binding.hosts, request.URL.Hostname()) {
-			return cmd.ErrHostedToolDenied
+			return native.ErrDenied
 		}
 
 		if request.Header.Get("X-HTTP-Method-Override") != "" || request.Header.Get("X-Goog-User-Project") != "" || request.URL.RawQuery != "" && request.URL.Query().Has("access_token") {
-			return cmd.ErrHostedToolDenied
+			return native.ErrDenied
 		}
 
 		path := request.URL.Path
 		if strings.Contains(path, "/../") || strings.Contains(path, "/./") || strings.Contains(path, "\\") {
-			return cmd.ErrHostedToolDenied
+			return native.ErrDenied
 		}
 
 		allowed := slices.Contains(paths, path)
@@ -230,12 +229,12 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		if !allowed {
-			return cmd.ErrHostedToolDenied
+			return native.ErrDenied
 		}
 
 		if !binding.Write && request.Method != http.MethodGet && request.Method != http.MethodHead {
 			if invocation.Name != "analytics_report" || request.Method != http.MethodPost {
-				return cmd.ErrHostedToolDenied
+				return native.ErrDenied
 			}
 		}
 
@@ -243,11 +242,11 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			switch invocation.Name {
 			case "docs_write":
 				if request.Method != http.MethodGet && !(request.Method == http.MethodPost && strings.HasSuffix(path, ":batchUpdate")) {
-					return cmd.ErrHostedToolDenied
+					return native.ErrDenied
 				}
 			case "sheets_update_range":
 				if request.Method != http.MethodPut {
-					return cmd.ErrHostedToolDenied
+					return native.ErrDenied
 				}
 			}
 		}
@@ -257,7 +256,11 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 }
 
 func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
-	result, err := cmd.ExecuteHostedExistingTool(ctx, req.Tool.Name, req.Tool.Arguments, cmd.HostedToolOptions{
+	if s.Engine.ExecuteNative == nil {
+		return engineOutcome("native tool execution unavailable")
+	}
+
+	result, err := s.Engine.ExecuteNative(ctx, req.Tool.Name, req.Tool.Arguments, native.Options{
 		Account: req.GoogleEmail, AccessToken: req.AccessToken,
 		AllowWrite:     req.Tool.Authorization.AllowWrite,
 		Force:          req.Tool.Authorization.AllowDestructive,
@@ -268,11 +271,11 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 		switch {
 		case ctx.Err() != nil:
 			return timeoutOutcome()
-		case errors.Is(err, cmd.ErrHostedToolDenied):
+		case errors.Is(err, native.ErrDenied):
 			return outcome{status: 403, err: &apiError{Code: "permission_denied", Message: "tool request is not permitted"}}
-		case errors.Is(err, cmd.ErrHostedToolInput):
+		case errors.Is(err, native.ErrInput):
 			return invalidOutcome("invalid typed tool input")
-		case errors.Is(err, cmd.ErrHostedToolOutputLimit):
+		case errors.Is(err, native.ErrOutputLimit):
 			return outcome{status: 422, err: &apiError{Code: "output_limit", Message: "result exceeded output limit"}}
 		default:
 			return engineOutcome("typed tool execution failed")

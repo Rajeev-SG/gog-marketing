@@ -97,6 +97,8 @@ func (s *Server) execute(parent context.Context, req *Request) outcome {
 	var result outcome
 
 	switch req.Operation {
+	case OperationVerifyFiles:
+		result = s.executeFileVerification(engineCtx, req)
 	case OperationToolCall:
 		result = s.executeNativeTool(engineCtx, req)
 	case OperationDiscover:
