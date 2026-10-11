@@ -33,9 +33,14 @@ func hostedTaskCommand(name, command string, risk mcpToolRisk, positional, strin
 		options = append(options, mcp.WithString(key, mcp.Required()))
 	}
 	for _, key := range stringFields {
-		if name == "tasks_add" && key == "title" {
+		switch {
+		case name == "tasks_add" && key == "title":
 			options = append(options, mcp.WithString(key, mcp.Required()))
-		} else {
+		case name == "tasks_update" && key == "status":
+			options = append(options, mcp.WithString(key, mcp.Enum("needsAction", "completed")))
+		case name == "tasks_update" && (key == "title" || key == "notes"):
+			options = append(options, mcp.WithString(key, mcp.Description("Empty string clears this field; omit to leave unchanged")))
+		default:
 			options = append(options, mcp.WithString(key))
 		}
 	}
@@ -61,12 +66,9 @@ func hostedTaskCommand(name, command string, risk mcpToolRisk, positional, strin
 			}
 			fields := req.GetArguments()
 			if name == "tasks_update" {
-				for _, key := range []string{"title", "notes", "status"} {
-					if value, present := fields[key]; present && value == "" {
-						// The native patch omits empty text/status fields. Do not
-						// report a successful clear until native serialization is fixed.
-						return nil, ErrHostedToolInput
-					}
+				if _, present := fields["status"]; present && strings.TrimSpace(req.GetString("status", "")) == "" {
+					// Google documents needsAction/completed, not empty status.
+					return nil, ErrHostedToolInput
 				}
 			}
 			for _, key := range stringFields {

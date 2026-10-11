@@ -202,14 +202,20 @@ func TestAllHostedTaskItemCommandsReuseNativeEngine(t *testing.T) {
 		t.Fatal("invalid selector reached Google")
 	}
 
-	for _, args := range []map[string]any{
-		{"tasklist_id": "@default", "task_id": "task-1", "notes": ""},
-		{"tasklist_id": "@default", "task_id": "task-1", "title": ""},
-	} {
-		response := call("tasks_update", args, "tasks", true)
-		if response.OK || requests.Load() != before {
-			t.Fatal("unsupported empty native patch was reported as successful")
-		}
+	cleared := call("tasks_update", map[string]any{"tasklist_id": "@default", "task_id": "task-1", "title": "", "notes": ""}, "tasks", true)
+	if !cleared.OK || task.Title != "" || task.Notes != "" || task.Status != "needsAction" {
+		t.Fatalf("explicit native clear did not persist, or affected status: %s %+v", cleared.Body, task)
+	}
+
+	readCleared := call("tasks_get", map[string]any{"tasklist_id": "@default", "task_id": "task-1"}, "tasks.readonly", false)
+	if !readCleared.OK || strings.Contains(string(readCleared.Result), "updated notes") {
+		t.Fatalf("cleared notes reappeared in fixture read-back: %s", readCleared.Body)
+	}
+	before = requests.Load()
+
+	invalidStatus := call("tasks_update", map[string]any{"tasklist_id": "@default", "task_id": "task-1", "status": ""}, "tasks", true)
+	if invalidStatus.OK || requests.Load() != before {
+		t.Fatal("unsupported empty status reached Google")
 	}
 
 	for _, args := range []map[string]any{

@@ -55,10 +55,16 @@ func newTasksUpdatePlan(input tasksUpdateInput, fields tasksUpdateFields) (tasks
 	changed := false
 	if fields.Title {
 		plan.Patch.Title = strings.TrimSpace(input.Title)
+		if plan.Patch.Title == "" {
+			plan.Patch.ForceSendFields = append(plan.Patch.ForceSendFields, "Title")
+		}
 		changed = true
 	}
 	if fields.Notes {
 		plan.Patch.Notes = strings.TrimSpace(input.Notes)
+		if plan.Patch.Notes == "" {
+			plan.Patch.ForceSendFields = append(plan.Patch.ForceSendFields, "Notes")
+		}
 		changed = true
 	}
 	if fields.Due {

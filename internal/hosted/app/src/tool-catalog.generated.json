@@ -897,9 +897,11 @@
             "type": "string"
           },
           "notes": {
+            "description": "Empty string clears this field; omit to leave unchanged",
             "type": "string"
           },
           "status": {
+            "enum": ["needsAction", "completed"],
             "type": "string"
           },
           "task_id": {
@@ -909,6 +911,7 @@
             "type": "string"
           },
           "title": {
+            "description": "Empty string clears this field; omit to leave unchanged",
             "type": "string"
           }
         },

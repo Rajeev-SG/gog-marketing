@@ -1,9 +1,30 @@
 package cmd
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
+
+func TestTasksUpdateExplicitEmptyTextIsSerializedWithoutClearingOtherFields(t *testing.T) {
+	plan, err := newTasksUpdatePlan(tasksUpdateInput{TasklistID: strList, TaskID: "task"}, tasksUpdateFields{Title: true, Notes: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	encoded, err := json.Marshal(plan.Patch)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var patch map[string]any
+	if err := json.Unmarshal(encoded, &patch); err != nil {
+		t.Fatal(err)
+	}
+	if len(patch) != 2 || patch["title"] != "" || patch["notes"] != "" {
+		t.Fatalf("explicit clear omitted or unrelated fields cleared: %s", encoded)
+	}
+}
 
 func TestNewTasksUpdatePlan(t *testing.T) {
 	t.Parallel()

@@ -243,11 +243,13 @@ pagination and all-pages options. Repeated creation requires an explicit
 earlier creations may persist after a later provider failure. Use a read-back,
 not a blind retry. Local CLI repetition behavior is unchanged.
 
-**Native serialization gap:** the existing Tasks patch handler omits explicitly
-empty title/notes/status values. Hosted updates reject those clears before
-network execution rather than silently claiming success. Due-date clearing uses
-the native `NullFields` behavior. This gap must be resolved before full readiness;
-eleven callable Tasks commands are not evidence of complete live capability.
+**Resolved native serialization gap (12 October):** the existing Tasks updater
+now uses SDK `ForceSendFields` for explicitly empty title/notes values. Omitted
+fields remain untouched, and due-date clearing keeps native `NullFields` behavior.
+Hosted schemas document these clears. Status is restricted to Google's documented
+`needsAction`/`completed` values; use `tasks_undo` to reset it. Blank status is not
+advertised as a working API capability. Native payload and fixture read-back tests
+pass, but real Google clearing remains untested.
 
 `tagmanager_versions_publish` reuses the existing local MCP argument builder and
 native publishing handler. Hosted input replaces separate account/container IDs
