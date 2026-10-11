@@ -313,11 +313,14 @@ New grants remain disabled; rediscovery retains prior user choices. Discovery
 admits only the fixed CalendarList GET endpoint, and plus/hash IDs such as
 holiday calendars are accepted by resource matching.
 
-**Known blocker discovered by execution:** `calendar_events` currently asks the
-native command runtime for local alias configuration before creating a Google
-client. Hosted execution correctly denies this ambient-config access. Calendar
-discovery/selection is implemented, but event execution is not working yet;
-its explicit-ID/config-free native path and write coverage remain required.
+**Resolved execution blocker (12 October):** the trusted in-process bridge marks
+hosted execution using an unexported, non-CLI flag. Native Calendar event listing
+then bypasses local aliases only for explicit admitted calendar IDs, denies
+all-calendar/alternate selectors, and reuses the native range algorithm with that
+calendar's timezone. It does not read ambient config or another primary calendar.
+Ordinary CLI aliases and user-timezone behavior are unchanged. Plus/hash calendar
+IDs, local date boundaries and foreign/disabled-calendar denials have transport
+fixture evidence; Calendar writes/full parity and live acceptance remain pending.
 
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign

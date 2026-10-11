@@ -142,6 +142,7 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 		ReadOnly: spec.Risk == mcpRiskRead, Force: options.Force,
 		authMode:            googleapi.AuthModeStored,
 		configStoreResolver: func() (*config.ConfigStore, error) { return nil, ErrHostedToolDenied },
+		hostedExecution:     true,
 	}
 	runtime := &app.Runtime{
 		IO:       app.IO{In: strings.NewReader(""), Out: &output, Err: io.Discard},

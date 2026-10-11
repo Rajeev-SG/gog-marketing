@@ -3,6 +3,9 @@ package cmd
 import (
 	"context"
 	"strings"
+	"time"
+
+	"github.com/openclaw/gogcli/internal/config"
 
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
@@ -44,9 +47,12 @@ func (c *CalendarEventsCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
-	store, err := commandConfigStore(ctx)
-	if err != nil {
-		return err
+	var store *config.ConfigStore
+	if !flags.hostedExecution {
+		store, err = commandConfigStore(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	calendarID, err := normalizeCalendarEventsArgs(c.CalendarID)
@@ -63,6 +69,10 @@ func (c *CalendarEventsCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if calendarID != "" && len(calInputs) > 0 {
 		return usage("calendarId not allowed with --cal/--calendars")
 	}
+	if flags.hostedExecution && (c.All || len(calInputs) > 0) {
+		return ErrHostedToolDenied
+	}
+
 	displayTZ, err := displayTimezoneOverride(c.Timezone)
 	if err != nil {
 		return err
@@ -73,13 +83,19 @@ func (c *CalendarEventsCmd) Run(ctx context.Context, flags *RootFlags) error {
 		return err
 	}
 	if !c.All && len(calInputs) == 0 {
-		calendarID, err = resolveCalendarSelector(ctx, store, svc, calendarID, true)
-		if err != nil {
-			return err
+		if flags.hostedExecution {
+			if calendarID == "" {
+				return ErrHostedToolDenied
+			}
+		} else {
+			calendarID, err = resolveCalendarSelector(ctx, store, svc, calendarID, true)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	timeRange, err := ResolveTimeRange(ctx, svc, TimeRangeFlags{
+	rangeFlags := TimeRangeFlags{
 		From:      c.From,
 		To:        c.To,
 		Today:     c.Today,
@@ -87,7 +103,17 @@ func (c *CalendarEventsCmd) Run(ctx context.Context, flags *RootFlags) error {
 		Week:      c.Week,
 		Days:      c.Days,
 		WeekStart: c.WeekStart,
-	})
+	}
+	var timeRange *TimeRange
+	if flags.hostedExecution {
+		_, location, locationErr := getCalendarLocation(ctx, svc, calendarID)
+		if locationErr != nil {
+			return locationErr
+		}
+		timeRange, err = resolveTimeRangeInLocation(rangeFlags, TimeRangeDefaults{ToOffset: 7 * 24 * time.Hour, ToFromOffset: 7 * 24 * time.Hour}, location)
+	} else {
+		timeRange, err = ResolveTimeRange(ctx, svc, rangeFlags)
+	}
 	if err != nil {
 		return err
 	}

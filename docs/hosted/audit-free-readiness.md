@@ -15,9 +15,8 @@ get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
 Calendar events; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; and six Contacts tools. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
-or every future tool. Scope authority comes from encrypted credentials. A new execution probe confirms
-Calendar event routing is currently blocked by its native local-alias config
-dependency; it must not be counted as working functionality.
+or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
+hosted path and selected-calendar timezone; this has fixture evidence only.
 
 Migration `0005_tool_grants.sql` adds compound-FK-owned per-account tool rows.
 It preserves only the three previously offered GA4 reads for existing active
@@ -92,7 +91,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 
 | Service | Read consent scopes | Additional write consent | Real verification | Reason / engineering gap | Official API source |
 | --- | --- | --- | --- | --- | --- |
-| `calendar` | `calendar.readonly` | `calendar` | **blocked** | Typed paginated discovery/selection and retained grants implemented; execution probe shows calendar_events blocked before Google by native local-alias config dependency. Config-free event path, writes and live acceptance remain required | [Google](https://developers.google.com/workspace/calendar/api/auth) |
+| `calendar` | `calendar.readonly` | `calendar` | **untested** | Typed paginated discovery/selection and retained grants implemented; calendar_events now runs without local aliases using the selected timezone. Special IDs/date boundaries/foreign and disabled denials fixture-tested; writes/full parity and live acceptance pending | [Google](https://developers.google.com/workspace/calendar/api/auth) |
 | `chat` | `chat.spaces.readonly chat.memberships.readonly chat.messages.reactions.readonly chat.users.readstate.readonly` | `chat.spaces chat.memberships chat.messages.create chat.messages.reactions.create` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/chat/authenticate-authorize) |
 | `classroom` | `classroom.courses.readonly classroom.rosters.readonly classroom.coursework.students.readonly classroom.coursework.me.readonly classroom.courseworkmaterials.readonly classroom.announcements.readonly classroom.topics.readonly classroom.guardianlinks.students.readonly classroom.profile.emails classroom.profile.photos` | `classroom.courses classroom.rosters classroom.coursework.students classroom.coursework.me classroom.courseworkmaterials classroom.announcements classroom.topics classroom.guardianlinks.students` | **untested** | Hosted typed execution adapter pending; account/role prerequisites unverified | [Google](https://developers.google.com/workspace/classroom/guides/auth) |
 | `drive` | `drive.file` | `drive.file` | **untested** | `drive_get` guarded read binding implemented; Picker configuration/live acceptance and remaining reads/writes pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
@@ -233,3 +232,5 @@ Tasks clearing checked 12 October 2026: [Task resource](https://developers.googl
 Contacts method scopes and paths checked 12 October 2026 against [current official People API discovery](https://people.googleapis.com/$discovery/rest?version=v1) and [People.get](https://developers.google.com/people/api/rest/v1/people/get): connections.list/search/get accept `contacts.readonly` or `contacts`; create/update/delete require `contacts`. SearchContacts results above 30 are capped by Google. Production classification and live execution remain unverified.
 
 Calendar discovery scope evidence checked 12 October 2026: [CalendarList.list](https://developers.google.com/workspace/calendar/api/v3/reference/calendarList/list) supports `calendar.readonly` or `calendar`. Paginated discovery and grant persistence have fixture evidence; a separate native event-execution probe currently fails closed at local alias configuration. Neither is live Google acceptance.
+
+Calendar event blocker resolved 12 October 2026: native explicit-ID listing now executes without local configuration or primary-calendar metadata in hosted mode, using the existing range/listing logic. Local CLI semantics remain unchanged. Successful transport fixture execution is not live Google acceptance.
