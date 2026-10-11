@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of twenty-two executable Go
+The Worker now consumes a generated catalogue of twenty-three executable Go
 schemas: GA4 property/report/data-stream reads; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar events; and eleven Tasks command leaves. All invoke existing typed native handlers. MCP discovery and execution
+Calendar events; eleven Tasks command leaves; and GTM version publishing. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials.
@@ -107,7 +107,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Hosted typed execution adapter pending; execution target scopes must be audited before run | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
 | `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Guarded MCP get/report/data-stream read routing implemented and fixture-tested; broader Admin writes and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
-| `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
+| `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | `tagmanager_versions_publish` uses the existing native handler, canonical enabled-container grants, publish scope and destructive permission; compiler failures are errors. Fixture execution/denial tests pass; live publish/read-back and remaining GTM reads/CRUD pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
 | `bigquery` | `bigquery.readonly` | `bigquery` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
 | `adsense` | `adsense.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/adsense/management/reference/rest/v2/accounts/list) |
 | `cloudadmin` | `cloud-platform` | `cloud-platform` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/docs/authentication) |
@@ -219,3 +219,5 @@ This does not prove real Google Picker, Clerk login or Codex acceptance.
 Slides method scope evidence checked 11 October 2026: [presentations.get](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get) permits `drive.file`, `presentations.readonly` or `presentations`; [presentations.batchUpdate](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/batchUpdate) permits `drive.file` or `presentations`, not `presentations.readonly`. The hosted notes tool invokes the existing typed handler and is only fixture-verified.
 
 Tasks method scope evidence checked 11 October 2026: [tasklists.list](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/list) permits `tasks.readonly` or `tasks`; [tasklists.insert](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/insert) requires `tasks`. Native list creation/persisted fixture reads and account-level grant routing do not prove real Google execution.
+
+GTM publish method evidence checked 11 October 2026: [versions.publish](https://developers.google.com/tag-platform/tag-manager/api/reference/rest/v2/accounts.containers.versions/publish) requires `tagmanager.publish`. The existing typed SDK uses POST `tagmanager/v2/{path}:publish`; no Google Ads scope is needed or requested by this handler. Production Console classification and live execution remain unverified.

@@ -101,9 +101,11 @@ const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = Object.fromE
       resourcePattern:
         entry.resource_type === "property"
           ? /^properties\/[0-9]+$/
-          : entry.resource_type === "calendar"
-            ? /^[A-Za-z0-9._@-]{1,256}$/
-            : /^[A-Za-z0-9_-]{1,256}$/,
+          : entry.resource_type === "container"
+            ? /^accounts\/[0-9]+\/containers\/[0-9]+$/
+            : entry.resource_type === "calendar"
+              ? /^[A-Za-z0-9._@-]{1,256}$/
+              : /^[A-Za-z0-9_-]{1,256}$/,
       operation:
         entry.name === "analytics_properties_get" ? ANALYTICS_PROPERTY_READ : NATIVE_TOOL_CALL,
     },

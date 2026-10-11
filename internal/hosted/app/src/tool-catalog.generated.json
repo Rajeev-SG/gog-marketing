@@ -378,6 +378,40 @@
     }
   },
   {
+    "name": "tagmanager_versions_publish",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Publish a version of an explicitly enabled GTM container. Requires publish scope, write and destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "description": "Enabled container path: accounts/123/containers/456",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_publish"
+    }
+  },
+  {
     "name": "slides_list_slides",
     "service": "slides",
     "resource_type": "file",

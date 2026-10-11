@@ -249,6 +249,18 @@ network execution rather than silently claiming success. Due-date clearing uses
 the native `NullFields` behavior. This gap must be resolved before full readiness;
 eleven callable Tasks commands are not evidence of complete live capability.
 
+`tagmanager_versions_publish` reuses the existing local MCP argument builder and
+native publishing handler. Hosted input replaces separate account/container IDs
+with `container_path` (`accounts/123/containers/456`), matching the canonical
+container grant from existing discovery. The selected connection must enable
+that container and exact tool, have `tagmanager.publish`, and explicitly permit
+both writes and destructive operations. Admission permits only POST to the
+selected numeric version's `:publish` path on `tagmanager.googleapis.com`;
+foreign containers and alternate methods cannot pass. Fingerprint input retains
+the native optimistic concurrency safeguard. HTTP 200 with `compilerError: true`
+is an execution error, not a publication-success signal. No live publication or
+live-version read-back has been verified.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

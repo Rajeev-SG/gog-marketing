@@ -86,6 +86,16 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = append([]NativeToolBinding{
+	{Name: "tagmanager_versions_publish", Service: "tagmanager", ResourceType: "container", ResourceArgument: "container_path", Write: true, hosts: []string{"tagmanager.googleapis.com"}, scopes: []string{"tagmanager.publish"}, methods: []string{http.MethodPost}, destructive: true, paths: exactPaths("", ""), argumentPaths: func(args map[string]any) ([]string, error) {
+		container, _ := args["container_path"].(string)
+
+		version, _ := args["version"].(string)
+		if !canonicalContainerID.MatchString(container) || !numericVersionID.MatchString(version) {
+			return nil, invalidf("invalid container or version selector")
+		}
+
+		return []string{"/tagmanager/v2/" + container + "/versions/" + version + ":publish"}, nil
+	}},
 	{Name: "tasks_lists", Service: "tasks", hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks.readonly", "tasks"}},
 	{Name: "tasks_lists_create", Service: "tasks", Write: true, hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks"}},
 	{Name: "slides_list_slides", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", hosts: []string{"slides.googleapis.com"}, paths: exactPaths("/v1/presentations/", ""), scopes: []string{"presentations.readonly", "presentations", "drive.file"}},
@@ -108,9 +118,11 @@ var nativeToolBindings = append([]NativeToolBinding{
 }, nativeTasksItemBindings()...)
 
 var (
-	fileResourceID     = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
-	calendarResourceID = regexp.MustCompile(`^[A-Za-z0-9._@-]{1,256}$`)
-	crossFileFormula   = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
+	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
+	canonicalContainerID = regexp.MustCompile(`^accounts/[0-9]+/containers/[0-9]+$`)
+	numericVersionID     = regexp.MustCompile(`^[0-9]+$`)
+	calendarResourceID   = regexp.MustCompile(`^[A-Za-z0-9._@-]{1,256}$`)
+	crossFileFormula     = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
 )
 
 func nativeBinding(name string) (NativeToolBinding, bool) {
@@ -215,6 +227,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 	}
 
 	switch binding.ResourceType {
+	case "container":
+		if !canonicalContainerID.MatchString(argument) {
+			return invalidf("invalid container resource")
+		}
 	case "file":
 		if !fileResourceID.MatchString(argument) {
 			return invalidf("invalid file resource")
@@ -332,6 +348,14 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 			return outcome{status: 422, err: &apiError{Code: "output_limit", Message: "result exceeded output limit"}}
 		default:
 			return engineOutcome("typed tool execution failed")
+		}
+	}
+
+	if req.Tool.Name == "tagmanager_versions_publish" {
+		if envelope, ok := result.(map[string]any); ok {
+			if published, ok := envelope["publish"].(map[string]any); ok && published["compilerError"] == true {
+				return engineOutcome("GTM version compilation failed")
+			}
 		}
 	}
 

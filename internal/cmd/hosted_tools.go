@@ -38,6 +38,9 @@ func hostedExistingTools() []mcpToolSpec {
 		if spec.Service == "gmail" || spec.Service == "googleads" || spec.Name == "drive_search" {
 			continue
 		}
+		if spec.Name == "tagmanager_versions_publish" {
+			spec = hostedTagManagerPublishTool()
+		}
 		tools = append(tools, spec)
 	}
 	return append(append(tools, hostedSlidesTools()...), hostedTasksTools()...)
