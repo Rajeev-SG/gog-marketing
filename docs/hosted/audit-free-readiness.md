@@ -9,12 +9,12 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of eleven executable Go
+The Worker now consumes a generated catalogue of thirteen executable Go
 schemas: GA4 property/report/data-stream reads; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-and Calendar events. All invoke existing typed native handlers. MCP discovery and execution
-require **both** a saved account-specific tool grant and an enabled matching
-resource grant. Google consent and selecting a resource do not authorize writes
+Calendar events; and Tasks task-list listing/creation. All invoke existing typed native handlers. MCP discovery and execution
+require a saved account-specific tool grant plus an enabled matching resource
+grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials.
 
 Migration `0005_tool_grants.sql` adds compound-FK-owned per-account tool rows.
@@ -98,7 +98,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `docs` | `documents.readonly drive.file` | `documents` | **untested** | `docs_get` and `docs_write` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/docs/api/auth) |
 | `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | `slides_list_slides` and `slides_update_notes` guarded native bindings implemented; notes replacement requires destructive permission; remaining Slides coverage and live acceptance pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
 | `contacts` | `contacts.readonly contacts.other.readonly directory.readonly` | `contacts` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
-| `tasks` | `tasks.readonly` | `tasks` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/tasks/auth) |
+| `tasks` | `tasks.readonly` | `tasks` | **untested** | `tasks_lists` and `tasks_lists_create` invoke existing native handlers using account tool grants without synthetic resources; remaining Tasks coverage and live acceptance pending | [Google](https://developers.google.com/workspace/tasks/auth) |
 | `people` | `profile` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
 | `sheets` | `spreadsheets.readonly drive.file` | `spreadsheets` | **untested** | `sheets_read_range` and `sheets_update_range` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/sheets/api/scopes) |
 | `forms` | `forms.body.readonly forms.responses.readonly` | `forms.body` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/forms/api/guides/apps-script-setup) |
@@ -217,3 +217,5 @@ verify captured account binding even after switching accounts mid-selection.
 This does not prove real Google Picker, Clerk login or Codex acceptance.
 
 Slides method scope evidence checked 11 October 2026: [presentations.get](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/get) permits `drive.file`, `presentations.readonly` or `presentations`; [presentations.batchUpdate](https://developers.google.com/workspace/slides/api/reference/rest/v1/presentations/batchUpdate) permits `drive.file` or `presentations`, not `presentations.readonly`. The hosted notes tool invokes the existing typed handler and is only fixture-verified.
+
+Tasks method scope evidence checked 11 October 2026: [tasklists.list](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/list) permits `tasks.readonly` or `tasks`; [tasklists.insert](https://developers.google.com/workspace/tasks/reference/rest/v1/tasklists/insert) requires `tasks`. Native list creation/persisted fixture reads and account-level grant routing do not prove real Google execution.

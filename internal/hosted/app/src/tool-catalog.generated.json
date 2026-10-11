@@ -436,5 +436,55 @@
       },
       "name": "slides_update_notes"
     }
+  },
+  {
+    "name": "tasks_lists",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List task lists in the explicitly authorized Google account.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "tasks_lists"
+    }
+  },
+  {
+    "name": "tasks_lists_create",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a task list in the explicitly authorized Google account.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "tasks_lists_create"
+    }
   }
 ]

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: authorize account-level native tools without synthetic asset grants; add Tasks task-list listing/creation with exact account tool grants, method scopes and fixed Google endpoint admission. Selected-resource tools retain their existing resource checks. Fixture evidence only; live Tasks acceptance and full parity remain pending. (#52, #79)
+
 - Hosted: expose Slides slide listing and speaker-note replacement through the existing native handlers, selected-presentation request admission and explicit destructive permission. These two tools are fixture-tested, not live-verified; remaining Slides parity is pending. (#52, #79)
 
 - Hosted: compose the existing typed native executor at binary entrypoints instead of importing the command layer from the private runner; missing executor wiring fails closed. Preserve the architecture contract and executable catalogue drift checks. (#52, #79)

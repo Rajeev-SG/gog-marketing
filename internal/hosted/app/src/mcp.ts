@@ -415,12 +415,13 @@ export async function policyTools(repo: HostedRepository, tenant: Tenant): Promi
       if (
         grant.enabled &&
         definition &&
-        resources.some(
-          (resource) =>
-            resource.enabled &&
-            resource.service === definition.service &&
-            resource.resourceType === definition.resource_type,
-        )
+        (definition.resource_type === "" ||
+          resources.some(
+            (resource) =>
+              resource.enabled &&
+              resource.service === definition.service &&
+              resource.resourceType === definition.resource_type,
+          ))
       ) {
         permitted.add(grant.toolName);
       }
@@ -547,7 +548,7 @@ function toolCallDenial(id: JsonRpcId, reason: ToolDenialReason) {
 }
 
 type GrantedResource =
-  | { kind: "ok"; connection: GoogleConnection; grant: ResourceGrant; toolGrant: ToolGrant }
+  | { kind: "ok"; connection: GoogleConnection; grant: ResourceGrant | null; toolGrant: ToolGrant }
   | { kind: "deny"; reason: ToolDenialReason };
 
 async function resolveGrantedResource(
@@ -558,6 +559,27 @@ async function resolveGrantedResource(
   connectionId: string | null,
   toolName: string,
 ): Promise<GrantedResource> {
+  if (mapping.resourceType === "") {
+    const candidates: Array<{ connection: GoogleConnection; grant: null; toolGrant: ToolGrant }> =
+      [];
+    const connections =
+      connectionId === null
+        ? await repo.listConnections(tenantId)
+        : [await repo.getConnection(tenantId, connectionId)];
+    for (const connection of connections) {
+      if (!connection || connection.status !== "active") continue;
+      const toolGrant = (await repo.listToolGrants(tenantId, connection.id)).find(
+        (entry) =>
+          entry.toolName === toolName && entry.service === mapping.service && entry.enabled,
+      );
+      if (toolGrant) candidates.push({ connection, grant: null, toolGrant });
+    }
+    if (candidates.length === 1) return { kind: "ok", ...candidates[0]! };
+    return {
+      kind: "deny",
+      reason: candidates.length > 1 ? "connection_ambiguous" : "grant_denied",
+    };
+  }
   const matches = (grant: ResourceGrant) =>
     grant.service === mapping.service &&
     grant.resourceType === mapping.resourceType &&
@@ -883,7 +905,7 @@ async function handleToolCall(
   const resourceId = typeof rawResource === "string" ? rawResource.trim() : "";
   if (
     resourceId.length > MAX_RESOURCE_IDENTIFIER_LENGTH ||
-    !mapping.resourcePattern.test(resourceId)
+    (mapping.resourceType !== "" && !mapping.resourcePattern.test(resourceId))
   ) {
     await writeToolAudit(
       repo,
@@ -1008,7 +1030,7 @@ async function handleToolCall(
       connectionId: resolved.connection.id,
       service: mapping.service,
       resourceType: mapping.resourceType,
-      resourceId: resolved.grant.resourceId,
+      resourceId: resolved.grant?.resourceId ?? "",
       accessToken,
       googleEmail: resolved.connection.email,
       googleSubject: resolved.connection.googleSubject,
@@ -1022,7 +1044,7 @@ async function handleToolCall(
                     ([key]) => key !== "tenantId" && key !== "connectionId",
                   ),
                 ),
-                [mapping.resourceArgument]: resourceId,
+                ...(mapping.resourceArgument ? { [mapping.resourceArgument]: resourceId } : {}),
               },
               scopes: grantedScopes,
               allowedTools: [resolved.toolGrant.toolName],

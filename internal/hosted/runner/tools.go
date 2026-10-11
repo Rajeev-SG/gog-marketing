@@ -64,7 +64,7 @@ func NativeToolCatalog(tools []native.Tool) []NativeToolDescription {
 		}
 		// Hosted resource admission always requires an explicit selector,
 		// even when the local tool offers an account-dependent default.
-		if !slices.Contains(tool.Tool.InputSchema.Required, binding.ResourceArgument) {
+		if binding.ResourceArgument != "" && !slices.Contains(tool.Tool.InputSchema.Required, binding.ResourceArgument) {
 			tool.Tool.InputSchema.Required = append(tool.Tool.InputSchema.Required, binding.ResourceArgument)
 		}
 		catalog = append(catalog, NativeToolDescription{
@@ -83,6 +83,8 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = []NativeToolBinding{
+	{Name: "tasks_lists", Service: "tasks", hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks.readonly", "tasks"}},
+	{Name: "tasks_lists_create", Service: "tasks", Write: true, hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks"}},
 	{Name: "slides_list_slides", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", hosts: []string{"slides.googleapis.com"}, paths: exactPaths("/v1/presentations/", ""), scopes: []string{"presentations.readonly", "presentations", "drive.file"}},
 	{Name: "slides_update_notes", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", Write: true, hosts: []string{"slides.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/v1/presentations/" + id, "/v1/presentations/" + id + ":batchUpdate"}
@@ -182,6 +184,14 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 	}
 
 	grant := auth.Resource
+	if binding.ResourceType == "" {
+		if grant != nil {
+			return invalidf("account tool cannot carry a resource grant")
+		}
+
+		return nil
+	}
+
 	if grant == nil || !grant.Enabled || grant.Service != binding.Service || grant.ResourceType != binding.ResourceType {
 		return invalidf("resource grant is disabled")
 	}
@@ -213,7 +223,12 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 	binding, _ := nativeBinding(invocation.Name)
-	paths := binding.paths(invocation.Authorization.Resource.ResourceID)
+
+	resourceID := ""
+	if invocation.Authorization.Resource != nil {
+		resourceID = invocation.Authorization.Resource.ResourceID
+	}
+	paths := binding.paths(resourceID)
 
 	return func(request *http.Request) error {
 		if request == nil || request.URL == nil || request.URL.Scheme != "https" || request.URL.User != nil || request.URL.Port() != "" || !slices.Contains(binding.hosts, request.URL.Hostname()) {
@@ -248,6 +263,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if binding.Write {
 			switch invocation.Name {
+			case "tasks_lists_create":
+				if request.Method != http.MethodPost {
+					return native.ErrDenied
+				}
 			case "docs_write", "slides_update_notes":
 				if request.Method != http.MethodGet && !(request.Method == http.MethodPost && strings.HasSuffix(path, ":batchUpdate")) {
 					return native.ErrDenied

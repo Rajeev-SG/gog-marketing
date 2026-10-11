@@ -223,6 +223,15 @@ guard permits exact presentation GET and batchUpdate paths; neither tool accepts
 local files or arbitrary API requests. Eleven bindings across six services still
 do not establish full parity or live acceptance.
 
+Account-level bindings have an empty resource model and reject a supplied
+resource grant rather than manufacturing an asset. `tasks_lists` and
+`tasks_lists_create` use the existing Tasks handlers and admit only GET or POST,
+respectively, on `tasks.googleapis.com/tasks/v1/users/@me/lists`. Creation needs
+the `tasks` scope and explicit write authority; `tasks.readonly` cannot mutate.
+Their Worker authorization resolves an owned active connection and its exact
+enabled tool grant; ambiguous eligible accounts require account selection.
+All existing resource-level bindings still require enabled matching resources.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

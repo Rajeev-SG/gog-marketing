@@ -45,7 +45,7 @@ describe("explicit executable tool permissions", () => {
 
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(11);
+    expect(view.tools).toHaveLength(13);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);
@@ -60,6 +60,25 @@ describe("explicit executable tool permissions", () => {
     ).toMatchObject({ enabled: true, allowDestructive: false });
     await saveToolPermissions(repo, session, connectionId, [
       { toolName: "docs_write", enabled: false, allowDestructive: false },
+    ]);
+    expect(await policyTools(repo, tenant)).toEqual([]);
+  });
+
+  it("exposes account Tasks only with an explicit matching tool grant, without fake resources", async () => {
+    const tenant = (await repo.getTenant(session.tenantId))!;
+    await saveToolPermissions(repo, session, connectionId, [
+      { toolName: "tasks_lists_create", enabled: true, allowDestructive: false },
+    ]);
+    expect((await policyTools(repo, tenant)).map((tool) => tool.name)).toEqual([
+      "tasks_lists_create",
+    ]);
+    expect(
+      (await repo.listResourceGrants(tenant.id, connectionId)).some(
+        (grant) => grant.service === "tasks",
+      ),
+    ).toBe(false);
+    await saveToolPermissions(repo, session, connectionId, [
+      { toolName: "tasks_lists_create", enabled: false, allowDestructive: false },
     ]);
     expect(await policyTools(repo, tenant)).toEqual([]);
   });

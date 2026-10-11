@@ -229,12 +229,15 @@ export class RemoteToolRunner implements ToolRunner {
       return { status: "unavailable", detail: "operator_identity_unavailable" };
     }
 
-    const resource = {
-      service: request.service,
-      resource_type: request.resourceType,
-      resource_id: request.resourceId,
-      enabled: true,
-    };
+    const resource =
+      request.resourceType === ""
+        ? null
+        : {
+            service: request.service,
+            resource_type: request.resourceType,
+            resource_id: request.resourceId,
+            enabled: true,
+          };
     const operation = request.nativeTool ? NATIVE_TOOL_CALL : ANALYTICS_PROPERTY_READ;
     const body = {
       request_id: crypto.randomUUID(),

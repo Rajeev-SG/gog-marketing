@@ -743,6 +743,97 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("routes account Tasks without fake resources and rejects a foreign account", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { id: "new-list" } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "tasks-owner", true);
+    const foreign = await createToolFixture(env, "tasks-foreign", true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/tasks"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("tasks-owner");
+    const params = {
+      name: "tasks_lists_create",
+      arguments: { title: "New list" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ id: "new-list" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      connectionId: fixture.connectionId,
+      service: "tasks",
+      resourceType: "",
+      resourceId: "",
+    });
+    expect(requests[0]!.nativeTool!.arguments).toEqual({ title: "New list" });
+    const rejected = await rpcJson(
+      await rpc(env, "tools/call", { ...params, connectionId: foreign.connectionId }, { token }),
+    );
+    expect(rejected.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+
+    const sibling = await fixture.repo.createConnection(
+      fixture.tenantId,
+      "tasks-sibling",
+      "sibling@example.test",
+      "Sibling",
+      "[]",
+    );
+    await fixture.repo.saveToolGrants(fixture.tenantId, sibling.id, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const ambiguous = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        {
+          name: params.name,
+          arguments: params.arguments,
+        },
+        { token },
+      ),
+    );
+    expect(ambiguous.error.data.detail).toBe("connection_ambiguous");
+    expect(requests).toHaveLength(1);
+  });
+
   it("routes an explicitly permitted selected-file write and denies after tool disable", async () => {
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({
