@@ -126,6 +126,17 @@ export interface ResourceGrant {
   updatedAt: string;
 }
 
+export interface ToolGrant {
+  tenantId: string;
+  connectionId: string;
+  service: string;
+  toolName: string;
+  enabled: boolean;
+  allowDestructive: boolean;
+  allowBillable: boolean;
+  updatedAt: string;
+}
+
 export type AuditResult = "allow" | "deny" | "error" | "info";
 
 export interface AuditEvent {

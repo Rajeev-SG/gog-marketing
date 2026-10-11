@@ -17,6 +17,7 @@ import type {
   RateLimitScope,
   ResourceGrant,
   Tenant,
+  ToolGrant,
 } from "./types.js";
 
 /**
@@ -372,6 +373,73 @@ export class HostedRepository {
   }
 
   // ─── Resource grants (compound-FK enforced) ────────────────────────────
+
+  async listToolGrants(tenantId: string, connectionId: string): Promise<ToolGrant[]> {
+    const result = await this.db
+      .prepare(
+        "SELECT * FROM hosted_tool_grants WHERE tenant_id = ?1 AND connection_id = ?2 ORDER BY service, tool_name",
+      )
+      .bind(tenantId, connectionId)
+      .all<Record<string, unknown>>();
+    return (result.results ?? []).map((row) => ({
+      tenantId: String(row.tenant_id),
+      connectionId: String(row.connection_id),
+      service: String(row.service),
+      toolName: String(row.tool_name),
+      enabled: Number(row.enabled) === 1,
+      allowDestructive: Number(row.allow_destructive) === 1,
+      allowBillable: Number(row.allow_billable) === 1,
+      updatedAt: String(row.updated_at),
+    }));
+  }
+
+  async saveToolGrants(
+    tenantId: string,
+    connectionId: string,
+    grants: Array<{
+      service: string;
+      toolName: string;
+      enabled: boolean;
+      allowDestructive: boolean;
+      allowBillable: boolean;
+    }>,
+  ): Promise<void> {
+    if (!(await this.getConnection(tenantId, connectionId)))
+      throw new Error("owned connection not found");
+    const now = new Date().toISOString();
+    const statements = grants.map((grant) =>
+      this.db
+        .prepare(
+          `INSERT INTO hosted_tool_grants
+        (tenant_id, connection_id, service, tool_name, enabled, allow_destructive, allow_billable, updated_at)
+       SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8
+       FROM hosted_google_connections WHERE tenant_id = ?1 AND id = ?2
+       ON CONFLICT (tenant_id, connection_id, tool_name) DO UPDATE SET
+         service = excluded.service, enabled = excluded.enabled,
+         allow_destructive = excluded.allow_destructive, allow_billable = excluded.allow_billable,
+         updated_at = excluded.updated_at
+       RETURNING tool_name`,
+        )
+        .bind(
+          tenantId,
+          connectionId,
+          grant.service,
+          grant.toolName,
+          grant.enabled ? 1 : 0,
+          grant.allowDestructive ? 1 : 0,
+          grant.allowBillable ? 1 : 0,
+          now,
+        ),
+    );
+    if (!statements.length) return;
+    const results = await this.db.batch(statements);
+    if (
+      results.length !== statements.length ||
+      results.some((result) => !result.success || result.results?.length !== 1)
+    ) {
+      throw new Error("tool grant batch did not update owned rows");
+    }
+  }
 
   async upsertResourceGrant(
     tenantId: string,
