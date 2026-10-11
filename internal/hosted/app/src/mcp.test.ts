@@ -743,6 +743,65 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(requests).toHaveLength(2);
   });
 
+  it("routes account Contacts writes without fabricated contact assets", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { contact: { resourceName: "people/c7" } } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "contacts-owner", true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/contacts"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("contacts-owner");
+    const params = {
+      name: "contacts_create",
+      arguments: { given: "Hosted", email: "test@example.test" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "contacts",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ contact: { resourceName: "people/c7" } });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      service: "contacts",
+      resourceType: "",
+      resourceId: "",
+      connectionId: fixture.connectionId,
+    });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      arguments: params.arguments,
+      allowWrite: true,
+      scopes: ["https://www.googleapis.com/auth/contacts"],
+    });
+  });
+
   it("routes sitemap submission only for an enabled Search Console site", async () => {
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({

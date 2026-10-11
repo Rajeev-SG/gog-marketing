@@ -293,6 +293,19 @@ not currently exposed by this single-site snapshot. Richer native query/filter
 options remain to be wired. Fixture submit/read/delete persistence, domain-site
 support and denials do not prove real Search Console acceptance.
 
+Contacts list/search/get/create/update/delete now reuse the existing People API
+handlers with account-level tool grants. Reads need `contacts.readonly` or
+`contacts`; mutations need `contacts`. Explicit `people/...` IDs are required for
+get/update/delete rather than email/name resolution. Native create/update scalar
+and list fields pass through fixed schemas; update preserves native source/person
+etags and field masks. Empty list inputs use native clearing semantics. The guard
+permits only declared People endpoints and contact paths, including GET then PATCH
+for update, and deletion requires destructive permission. Search retains gog's
+five-second cache warmup inside the normal 20-second hosted deadline and caps
+results at Google's published maximum of 30. No file input or ignore-etag bypass
+is exposed. Batch, dedupe/merge, export, directory/other reads and file-I/O adapters
+remain engineering gaps; fixture evidence does not prove live Contacts behavior.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

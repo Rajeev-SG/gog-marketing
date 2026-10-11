@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of forty executable Go
+The Worker now consumes a generated catalogue of forty-six executable Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar events; eleven Tasks command leaves; GTM version publishing; and eight Search Console tools. All invoke existing typed native handlers. MCP discovery and execution
+Calendar events; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; and six Contacts tools. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials.
@@ -97,7 +97,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `drivelabels` | `drive.labels.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/drive/labels/guides/authorize) |
 | `docs` | `documents.readonly drive.file` | `documents` | **untested** | `docs_get` and `docs_write` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/docs/api/auth) |
 | `slides` | `presentations.readonly drive.file` | `presentations` | **untested** | `slides_list_slides` and `slides_update_notes` guarded native bindings implemented; notes replacement requires destructive permission; remaining Slides coverage and live acceptance pending | [Google](https://developers.google.com/workspace/slides/api/scopes) |
-| `contacts` | `contacts.readonly contacts.other.readonly directory.readonly` | `contacts` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
+| `contacts` | `contacts.readonly contacts.other.readonly directory.readonly` | `contacts` | **untested** | Native list/search/get/create/update/delete use account/tool grants, contact IDs and etag-protected updates; fixture CRUD/field-clearing/denials pass. Batch/dedupe/export/directory/other/file adapters and live acceptance pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
 | `tasks` | `tasks.readonly` | `tasks` | **untested** | All eleven native command leaves have fixed hosted tools and account grants; fixture CRUD/completion/recurrence/deletion/partial-failure tests pass. Explicit title/notes clearing is fixed in native serialization and fixture-verified; status reset uses documented needsAction/completed or undo, not an empty status; named-list resolution is not exposed, recurring creation requires count ≤1000. Live acceptance pending | [Google](https://developers.google.com/workspace/tasks/auth) |
 | `people` | `profile` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/people/v1/how-tos/authorizing) |
 | `sheets` | `spreadsheets.readonly drive.file` | `spreadsheets` | **untested** | `sheets_read_range` and `sheets_update_range` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/sheets/api/scopes) |
@@ -227,3 +227,5 @@ GA4 Admin method scopes checked 11 October 2026: [dataStreams](https://developer
 Search Console method scopes checked 11 October 2026: [sitemap submit](https://developers.google.com/webmaster-tools/v1/sitemaps/submit) and [delete](https://developers.google.com/webmaster-tools/v1/sitemaps/delete) require `webmasters`; [search analytics](https://developers.google.com/webmaster-tools/v1/searchanalytics/query), [sites.list](https://developers.google.com/webmaster-tools/v1/sites/list), [sitemaps.list](https://developers.google.com/webmaster-tools/v1/sitemaps/list) and [inspection](https://developers.google.com/webmaster-tools/v1/urlInspection.index/inspect) accept `webmasters.readonly` or `webmasters`. Actual production classifications/live functionality remain unverified.
 
 Tasks clearing checked 12 October 2026: [Task resource](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks) documents task text fields and status values `needsAction` or `completed`. Explicit empty title/notes now serialize using the existing typed SDK ForceSendFields; omitted fields are unchanged. Payload and persisted fixture read-back tests are not live Google evidence.
+
+Contacts method scopes and paths checked 12 October 2026 against [current official People API discovery](https://people.googleapis.com/$discovery/rest?version=v1) and [People.get](https://developers.google.com/people/api/rest/v1/people/get): connections.list/search/get accept `contacts.readonly` or `contacts`; create/update/delete require `contacts`. SearchContacts results above 30 are capped by Google. Production classification and live execution remain unverified.

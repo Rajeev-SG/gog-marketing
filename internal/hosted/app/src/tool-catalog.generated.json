@@ -1440,5 +1440,287 @@
       },
       "name": "searchconsole_sitemaps_get"
     }
+  },
+  {
+    "name": "contacts_list",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts list in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "contacts_list"
+    }
+  },
+  {
+    "name": "contacts_search",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts search in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 30,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": ["query"],
+        "type": "object"
+      },
+      "name": "contacts_search"
+    }
+  },
+  {
+    "name": "contacts_get",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts get in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_get"
+    }
+  },
+  {
+    "name": "contacts_create",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts create in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "custom": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "email": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "org": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "relation": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": ["given"],
+        "type": "object"
+      },
+      "name": "contacts_create"
+    }
+  },
+  {
+    "name": "contacts_update",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts update in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "birthday": {
+            "type": "string"
+          },
+          "custom": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "email": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "org": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "relation": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_update"
+    }
+  },
+  {
+    "name": "contacts_delete",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts delete in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_delete"
+    }
   }
 ]

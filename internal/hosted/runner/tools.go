@@ -115,7 +115,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), nativeSearchConsoleBindings()...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), nativeContactsBindings()...)...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -334,6 +334,11 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if binding.Write {
 			switch invocation.Name {
+			case "contacts_update":
+				updatePath := strings.HasSuffix(path, ":updateContact")
+				if (request.Method == http.MethodGet && updatePath) || (request.Method == http.MethodPatch && !updatePath) {
+					return native.ErrDenied
+				}
 			case "tasks_lists_create":
 				if request.Method != http.MethodPost {
 					return native.ErrDenied
