@@ -174,7 +174,7 @@ func authenticatedTransportWithStoredScopeCheck(
 		}
 	}
 
-	return readOnlyTransportFromContext(ctx, retryTransport), nil
+	return GuardedTransport(ctx, readOnlyTransportFromContext(ctx, retryTransport)), nil
 }
 
 func optionsForAccountScopes(ctx context.Context, serviceLabel string, email string, scopes []string) ([]option.ClientOption, error) {
@@ -224,7 +224,7 @@ func optionsForServiceAccountScopes(ctx context.Context, serviceLabel string, em
 
 func tokenSourceClientOptions(ctx context.Context, ts oauth2.TokenSource) []option.ClientOption {
 	return []option.ClientOption{option.WithHTTPClient(&http.Client{
-		Transport: readOnlyTransportFromContext(ctx, newAuthenticatedRetryTransport(ctx, ts)),
+		Transport: GuardedTransport(ctx, readOnlyTransportFromContext(ctx, newAuthenticatedRetryTransport(ctx, ts))),
 	})}
 }
 

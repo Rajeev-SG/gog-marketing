@@ -67,6 +67,8 @@ type HostedToolOptions struct {
 	QuotaProject   string
 	AllowBillable  bool
 	MaxOutputBytes int
+	// Trusted runner resource admission, applied before every Google request.
+	RequestGuard googleapi.RequestGuard
 	// Existing service-factory seams support transport-backed deterministic tests.
 	Services app.Services
 }
@@ -168,6 +170,7 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	ctx = googleapi.WithReadOnly(ctx, spec.Risk == mcpRiskRead)
 	ctx = authclient.WithAccessToken(ctx, options.AccessToken)
 	ctx = authclient.WithQuotaProject(ctx, options.QuotaProject)
+	ctx = googleapi.WithRequestGuard(ctx, options.RequestGuard)
 	ctx = outfmt.WithMode(ctx, outfmt.Mode{JSON: true})
 	u, err := ui.New(ui.Options{Stdout: &output, Stderr: io.Discard, Color: "never"})
 	if err != nil {
@@ -177,6 +180,9 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	command.BindTo(ctx, (*context.Context)(nil))
 	command.Bind(&cli.RootFlags)
 	if err := command.Run(); err != nil {
+		if errors.Is(err, ErrHostedToolDenied) {
+			return nil, ErrHostedToolDenied
+		}
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("%w: %w", ErrHostedToolExecution, ctx.Err())
 		}
