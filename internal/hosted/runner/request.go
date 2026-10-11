@@ -28,7 +28,6 @@ const (
 var establishedDiscoveryServices = map[string]bool{
 	"analytics":     true,
 	"tagmanager":    true,
-	"googleads":     true,
 	"searchconsole": true,
 	"bigquery":      true,
 }

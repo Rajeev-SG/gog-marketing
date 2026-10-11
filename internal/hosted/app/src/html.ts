@@ -1,3 +1,5 @@
+import { HOSTED_SERVICES } from "./scopes.js";
+
 /**
  * HTML shell rendering for the hosted Worker.
  *
@@ -339,7 +341,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         <p class="eyebrow">Home</p>
         <h1>Your Google accounts</h1>
         <p>Your workspace is ready.</p>
-        <p>Connect accounts with read-only consent, then choose exactly which assets your agents may use.</p>
+        <p>Connect accounts with only the permissions you select, then choose exactly which assets your agents may use.</p>
       </div>
       <div id="app-message" class="toast" role="status" aria-live="polite" hidden><span></span></div>
       <div class="tiles" aria-label="Workspace summary">
@@ -351,8 +353,8 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       </section>
       <section class="stack">
         <h2>Connect a Google account</h2>
-        <p class="connect-help">Select only what this account should use. Access is read-only and agents start with zero assets enabled.</p>
-        <div id="connect-services" class="service-consent" aria-label="Optional read-only services"></div>
+        <p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled. Scope eligibility does not guarantee account or hosted-tool availability. Keep and Workspace Admin require delegated administrator configuration; cloud operations can incur charges in your own project.</p>
+        <div id="connect-services" class="service-consent" aria-label="Optional Google service permissions"></div>
         <div class="connect-actions">
           <button id="connect-google" type="button" class="primary">Connect Google account</button>
           <span id="connect-status" class="muted" role="status" aria-live="polite"></span>
@@ -386,16 +388,11 @@ export function renderHome(htmlConfig: HtmlConfig): string {
     </main>
   </div>
   <script>
-    var SERVICE_CATEGORIES = {
-      analytics: 'Marketing', googleads: 'Marketing', tagmanager: 'Marketing',
-      searchconsole: 'Marketing', bigquery: 'Marketing',
-      gmail: 'Workspace', calendar: 'Workspace', drive: 'Workspace'
-    };
-    var SERVICE_LABELS = {
-      analytics: 'Google Analytics 4', googleads: 'Google Ads',
-      tagmanager: 'Google Tag Manager', searchconsole: 'Search Console',
-      bigquery: 'BigQuery', gmail: 'Gmail', calendar: 'Calendar', drive: 'Drive'
-    };
+    var SERVICE_INFO = ${JSON.stringify(HOSTED_SERVICES)};
+    var SERVICE_CATEGORIES = Object.fromEntries(Object.keys(SERVICE_INFO).map(function (name) {
+      return [name, ['analytics', 'tagmanager', 'searchconsole', 'bigquery', 'adsense', 'cloudadmin', 'youtube'].includes(name) ? 'Marketing' : 'Workspace'];
+    }));
+    var SERVICE_LABELS = Object.fromEntries(Object.entries(SERVICE_INFO).map(function (entry) { return [entry[0], entry[1].label]; }));
     var data = { connections: [] };
     var selectedId = null;
     var originalChoices = new Map();
@@ -596,7 +593,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         message(actionLabel + ' complete.', 'info');
       } catch (error) { message(error.message || actionLabel + ' failed.', 'error'); }
     }
-    function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices() }); }
+    function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices(), writeServices: selectedWriteServices() }); }
     function refresh(connection) { guardedAction('Refresh', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/refresh'); }); }
     function discover(connection) { guardedAction('Discovery', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/discover'); }); }
     function disconnect(connection) {
@@ -618,13 +615,23 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       var target = el('connect-services'); target.textContent = '';
       Object.keys(SERVICE_LABELS).forEach(function (service) {
         var wrapper = document.createElement('label'); wrapper.className = 'service-choice';
-        var input = document.createElement('input'); input.type = 'checkbox'; input.value = service;
-        wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read-only'));
+        var input = document.createElement('input'); input.type = 'checkbox'; input.value = service; input.dataset.permission = 'read';
+        wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read access'));
         target.appendChild(wrapper);
+        if (SERVICE_INFO[service].writeScopes.length) {
+          var writeLabel = document.createElement('label'); writeLabel.className = 'service-choice';
+          var writeInput = document.createElement('input'); writeInput.type = 'checkbox'; writeInput.value = service; writeInput.dataset.permission = 'write'; writeInput.disabled = true;
+          input.addEventListener('change', function () { writeInput.disabled = !input.checked; if (!input.checked) writeInput.checked = false; });
+          writeLabel.appendChild(writeInput); writeLabel.append(document.createTextNode('Allow ' + SERVICE_LABELS[service] + ' writes'));
+          target.appendChild(writeLabel);
+        }
       });
     }
+    function selectedWriteServices() {
+      return Array.from(el('connect-services').querySelectorAll('input[data-permission="write"]:checked')).map(function (input) { return input.value; });
+    }
     function selectedServices() {
-      return Array.from(el('connect-services').querySelectorAll('input:checked')).map(function (input) { return input.value; });
+      return Array.from(el('connect-services').querySelectorAll('input[data-permission="read"]:checked')).map(function (input) { return input.value; });
     }
     async function startConnection(body) {
       var status = el('connect-status'); status.textContent = '';
@@ -641,7 +648,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       if (userButton) Clerk.mountUserButton(userButton);
       var signOutButton = el('sign-out');
       if (signOutButton) signOutButton.addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
-      el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices() }); });
+      el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); });
       el('save-grants').addEventListener('click', function () { return save(); });
       var copyButton = el('copy-mcp-url');
       if (copyButton) copyButton.addEventListener('click', function () {

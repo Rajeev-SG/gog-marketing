@@ -215,7 +215,7 @@ async function createToolFixture(
     refresh_token: REFRESH_TOKEN,
     token_type: "Bearer",
     expiry: new Date(Date.now() + 3_600_000).toISOString(),
-    granted_scopes: [],
+    granted_scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
   };
   const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
   await repo.upsertCredential({
@@ -449,14 +449,14 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       ),
     );
     const namesA = listA.result.tools.map((tool: { name: string }) => tool.name);
-    expect(namesA).toContain("analytics_report");
+    expect(namesA).toEqual(["analytics_properties_get"]);
     expect(namesA).not.toContain("googleads_query");
     expect(namesA).not.toContain("tagmanager_accounts_list");
     expect(JSON.stringify(listA)).not.toContain("user_a");
 
     const listB = await rpcJson(await rpc(env, "tools/list", undefined, { token: tokenB }));
     const namesB = listB.result.tools.map((tool: { name: string }) => tool.name);
-    expect(namesB).toContain("tagmanager_accounts_list");
+    expect(namesB).toEqual([]);
     expect(namesB).not.toContain("analytics_report");
   });
 

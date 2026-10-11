@@ -563,18 +563,28 @@ describe("control plane route and UI contracts (#64)", () => {
     const reconnect = new Function(
       "startConnection",
       "selectedServices",
+      "selectedWriteServices",
       "connection",
       `${extraction("reconnect")}; return reconnect(connection);`,
     );
     const reconnectRequest: Record<string, unknown> = {};
     const connection = { id: "owned-connection", email: "owner@example.com" };
-    (reconnect as (start: unknown, selected: () => string[], context: unknown) => void)(
+    (
+      reconnect as (
+        start: unknown,
+        selected: () => string[],
+        writes: () => string[],
+        context: unknown,
+      ) => void
+    )(
       (request: Record<string, unknown>) => Object.assign(reconnectRequest, request),
       () => ["analytics", "tagmanager"],
+      () => ["tagmanager"],
       connection,
     );
     expect(reconnectRequest.connectionId).toBe("owned-connection");
     expect(reconnectRequest.services).toEqual(["analytics", "tagmanager"]);
+    expect(reconnectRequest.writeServices).toEqual(["tagmanager"]);
 
     const guarded = new Function(
       "message",

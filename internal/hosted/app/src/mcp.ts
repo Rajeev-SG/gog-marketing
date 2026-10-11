@@ -160,20 +160,6 @@ const TOOL_CATALOG: Record<string, McpTool[]> = {
       ["account", "container", "workspace"],
     ),
   ],
-  googleads: [
-    tool("googleads_customers_list", "List accessible Google Ads customers."),
-    tool(
-      "googleads_query",
-      "Run a bounded Google Ads GAQL search.",
-      {
-        customer_id: STRING,
-        query: STRING,
-        page_size: INTEGER(1, 10000, 100),
-        all: { type: "boolean", default: false },
-      },
-      ["customer_id", "query"],
-    ),
-  ],
   searchconsole: [
     tool("searchconsole_sites_list", "List Search Console sites."),
     tool(
@@ -556,9 +542,13 @@ async function permittedServices(repo: HostedRepository, tenantId: string): Prom
 export async function policyTools(repo: HostedRepository, tenant: Tenant): Promise<McpTool[]> {
   if (tenant.status !== "active") return [];
   const services = await permittedServices(repo, tenant.id);
-  return Object.entries(TOOL_CATALOG)
-    .filter(([service]) => services.has(service))
-    .flatMap(([, tools]) => tools);
+  return (
+    Object.entries(TOOL_CATALOG)
+      .filter(([service]) => services.has(service))
+      .flatMap(([, tools]) => tools)
+      // Never advertise a catalogue placeholder as executable hosted coverage.
+      .filter((candidate) => Object.hasOwn(TOOL_RESOURCE_MAPPINGS, candidate.name))
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -1091,6 +1081,18 @@ async function handleToolCall(
       resolved.connection,
     );
   } catch (error) {
+    if (error instanceof ConnectError && error.code === "scope_blocked") {
+      await writeToolAudit(
+        repo,
+        session,
+        resolved.connection.id,
+        "deny",
+        resolvedIdentifiers,
+        latencyMs(),
+        "permission_denied",
+      );
+      return toolExecutionError(id, "scope_blocked");
+    }
     const reconnect = error instanceof ConnectError && error.code === "needs_reconnect";
     await writeToolAudit(
       repo,

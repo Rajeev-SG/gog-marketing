@@ -89,7 +89,7 @@ responses or logs.
   "google_email": "<connection Google account email>",
   "google_subject": "optional Google subject id",
   "access_token": "<ephemeral Google access token>",
-  "services": ["analytics", "googleads"],
+  "services": ["analytics", "tagmanager"],
   "resource": null
 }
 ```
@@ -123,11 +123,9 @@ grant with a canonical `properties/<digits>` resource id.
 
 Reuses `controlplane.EngineDiscoverer.DiscoverReport` unchanged. `services`
 must be a deduplicated list of 1–10 established canonical service names:
-`analytics`, `tagmanager`, `googleads`, `searchconsole`, `bigquery`. Anything
-else is rejected before the engine. Operator-dependent services stay honest:
-for example, Google Ads without a configured developer token returns an
-`unavailable` status with detail `google_ads_unconfigured` — never fabricated
-resources. There is no BigQuery query execution surface anywhere in this
+`analytics`, `tagmanager`, `searchconsole`, `bigquery`. Anything
+else is rejected before the engine. Excluded Gmail, Google Ads and Drive Activity are rejected before execution.
+The existing local discovery engine is unchanged. There is no BigQuery query execution surface anywhere in this
 service; BigQuery discovery lists projects/datasets only, and query costs are
 out of scope by design.
 
@@ -151,7 +149,7 @@ Success response (`ok: true`):
     ],
     "statuses": {
       "analytics": {"state": "ok", "resource_count": 1, "checked_at": "…"},
-      "googleads": {"state": "unavailable", "detail": "google_ads_unconfigured", "checked_at": "…"}
+      "tagmanager": {"state": "ok", "resource_count": 0, "checked_at": "…"}
     }
   },
   "duration_ms": 12
