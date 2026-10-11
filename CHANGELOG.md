@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: add a non-advertised in-process bridge reusing existing local MCP schemas, typed argument builders and native Go handlers, with no shell, subprocess, keyring, ADC or root-configuration execution; keep it off hosted tool discovery pending resource-policy and deadline wiring. Native Sheets write/read transport tests cover credential propagation and persistence; no live acceptance is claimed. (#52, #79)
+
 - Hosted: introduce the #79 audit-free 27-service consent allowlist with explicit incremental write opt-in; exclude Gmail, Google Ads, Drive Activity and restricted/transitive scopes, reject unsafe historical and returned credentials before execution, and remove hosted Ads discovery/tools without changing the local CLI. Expanded executable coverage, Picker and real acceptance remain pending. (#52, #79)
 
 - CI: run all gog-marketing Actions on the dedicated Oracle Linux ARM64 self-hosted runner; retain six Linux/product checks, retire irrelevant Windows/macOS coverage, protect public-fork execution, and replace upstream macOS release delegation with native Linux packaging.

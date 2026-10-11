@@ -426,10 +426,12 @@ func TestExecuteDiscoveryRejectsExcludedServices(t *testing.T) {
 		t.Run(service, func(t *testing.T) {
 			harness := newHarness(t, nil)
 			body := discoverBody(t, func(req *Request) { req.Services = []string{service} })
+
 			response := postExecute(t, harness.server, signInvocation(t, body, nil), body)
 			if response.Status != 400 || response.Error.Code != "invalid_request" {
 				t.Fatalf("excluded service was not rejected: %d %s", response.Status, response.Body)
 			}
+
 			if harness.discoverer.calls.Load() != 0 {
 				t.Fatal("excluded service reached engine")
 			}
@@ -510,10 +512,13 @@ func TestExecuteTimesOutWithEngineNilError(t *testing.T) {
 		Secret: testSecret,
 		Discoverer: reportingDiscovererFunc(func(ctx context.Context, _ controlplane.Connection, token controlplane.OAuthToken) (controlplane.DiscoveryReport, error) {
 			discoveryCalls.Add(1)
+
 			if token.AccessToken != "ya29.synthetic-access-token" || !googleapi.ReadOnly(ctx) || !googleapi.NoInputFromContext(ctx) {
 				t.Error("guarded stored-token read-only/no-input context not propagated")
 			}
+
 			<-ctx.Done()
+
 			return controlplane.DiscoveryReport{}, nil
 		}),
 		Counter:          counter,
