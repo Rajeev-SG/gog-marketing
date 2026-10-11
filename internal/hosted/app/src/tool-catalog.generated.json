@@ -450,10 +450,25 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "List task lists in the explicitly authorized Google account.",
+      "description": "Run native Google Tasks lists list for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
       "inputSchema": {
         "additionalProperties": false,
-        "properties": {},
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
         "required": [],
         "type": "object"
       },
@@ -473,7 +488,7 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "description": "Create a task list in the explicitly authorized Google account.",
+      "description": "Run native Google Tasks lists create for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -485,6 +500,355 @@
         "type": "object"
       },
       "name": "tasks_lists_create"
+    }
+  },
+  {
+    "name": "tasks_list",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks list for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "completed_max": {
+            "type": "string"
+          },
+          "completed_min": {
+            "type": "string"
+          },
+          "due_max": {
+            "type": "string"
+          },
+          "due_min": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "show_assigned": {
+            "type": "boolean"
+          },
+          "show_completed": {
+            "type": "boolean"
+          },
+          "show_deleted": {
+            "type": "boolean"
+          },
+          "show_hidden": {
+            "type": "boolean"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "updated_min": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_list"
+    }
+  },
+  {
+    "name": "tasks_get",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks get for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_get"
+    }
+  },
+  {
+    "name": "tasks_raw",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks raw for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "pretty": {
+            "type": "boolean"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_raw"
+    }
+  },
+  {
+    "name": "tasks_add",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks add for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "due": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "recur": {
+            "type": "string"
+          },
+          "recur_rrule": {
+            "type": "string"
+          },
+          "repeat": {
+            "type": "string"
+          },
+          "repeat_count": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "repeat_until": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "title"],
+        "type": "object"
+      },
+      "name": "tasks_add"
+    }
+  },
+  {
+    "name": "tasks_update",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks update for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "due": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_update"
+    }
+  },
+  {
+    "name": "tasks_done",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks done for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_done"
+    }
+  },
+  {
+    "name": "tasks_undo",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks undo for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_undo"
+    }
+  },
+  {
+    "name": "tasks_delete",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks delete for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_delete"
+    }
+  },
+  {
+    "name": "tasks_clear",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks clear for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_clear"
     }
   }
 ]

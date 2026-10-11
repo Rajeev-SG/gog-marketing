@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose all eleven native Tasks command leaves, including task CRUD, completion, undo, raw reads, list pagination/filtering and bounded recurring creation. Delete/clear require destructive grants; exact selectors and method/path guards apply. Empty title/notes/status clearing remains blocked because the native patch omits those fields; no false success is returned. Fixture-tested only, with partial-write persistence evidence. (#52, #79)
+
 - Hosted: authorize account-level native tools without synthetic asset grants; add Tasks task-list listing/creation with exact account tool grants, method scopes and fixed Google endpoint admission. Selected-resource tools retain their existing resource checks. Fixture evidence only; live Tasks acceptance and full parity remain pending. (#52, #79)
 
 - Hosted: expose Slides slide listing and speaker-note replacement through the existing native handlers, selected-presentation request admission and explicit destructive permission. These two tools are fixture-tested, not live-verified; remaining Slides parity is pending. (#52, #79)

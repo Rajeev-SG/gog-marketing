@@ -232,6 +232,23 @@ Their Worker authorization resolves an owned active connection and its exact
 enabled tool grant; ambiguous eligible accounts require account selection.
 All existing resource-level bindings still require enabled matching resources.
 
+Tasks now also binds `tasks_list`, `tasks_get`, `tasks_raw`, `tasks_add`,
+`tasks_update`, `tasks_done`, `tasks_undo`, `tasks_delete` and `tasks_clear`.
+Selectors must be opaque task-list IDs (at least 16 characters) or `@default`,
+not list-name resolution; task IDs are validated before native execution. Guards
+admit only the matching list/task path and method. Delete and clearing completed
+tasks require separate destructive grants. Listing supports native filters,
+pagination and all-pages options. Repeated creation requires an explicit
+`repeat_count` of 1–1000, even with `repeat_until`; it is not transactional and
+earlier creations may persist after a later provider failure. Use a read-back,
+not a blind retry. Local CLI repetition behavior is unchanged.
+
+**Native serialization gap:** the existing Tasks patch handler omits explicitly
+empty title/notes/status values. Hosted updates reject those clears before
+network execution rather than silently claiming success. Due-date clearing uses
+the native `NullFields` behavior. This gap must be resolved before full readiness;
+eleven callable Tasks commands are not evidence of complete live capability.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

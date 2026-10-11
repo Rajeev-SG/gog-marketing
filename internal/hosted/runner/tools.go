@@ -41,6 +41,9 @@ type NativeToolBinding struct {
 	hosts            []string
 	paths            func(string) []string
 	scopes           []string
+	methods          []string
+	destructive      bool
+	argumentPaths    func(map[string]any) ([]string, error)
 }
 
 // NativeToolDescription exposes only existing executable schemas and their
@@ -82,7 +85,7 @@ func exactPaths(prefix, suffix string) func(string) []string {
 
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
-var nativeToolBindings = []NativeToolBinding{
+var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "tasks_lists", Service: "tasks", hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks.readonly", "tasks"}},
 	{Name: "tasks_lists_create", Service: "tasks", Write: true, hosts: []string{"tasks.googleapis.com"}, paths: exactPaths("/tasks/v1/users/@me/lists", ""), scopes: []string{"tasks"}},
 	{Name: "slides_list_slides", Service: "slides", ResourceType: "file", ResourceArgument: "presentation_id", hosts: []string{"slides.googleapis.com"}, paths: exactPaths("/v1/presentations/", ""), scopes: []string{"presentations.readonly", "presentations", "drive.file"}},
@@ -102,7 +105,7 @@ var nativeToolBindings = []NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}
+}, nativeTasksItemBindings()...)
 
 var (
 	fileResourceID     = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -154,6 +157,16 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	if binding.Write && !auth.AllowWrite {
 		return invalidf("write grant is disabled")
+	}
+
+	if binding.destructive && !auth.AllowDestructive {
+		return invalidf("destructive grant is disabled")
+	}
+
+	if binding.argumentPaths != nil {
+		if _, err := binding.argumentPaths(invocation.Arguments); err != nil {
+			return err
+		}
 	}
 
 	if invocation.Name == "slides_update_notes" && !auth.AllowDestructive {
@@ -228,7 +241,16 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 	if invocation.Authorization.Resource != nil {
 		resourceID = invocation.Authorization.Resource.ResourceID
 	}
+
 	paths := binding.paths(resourceID)
+	if binding.argumentPaths != nil {
+		var err error
+
+		paths, err = binding.argumentPaths(invocation.Arguments)
+		if err != nil {
+			return func(*http.Request) error { return native.ErrDenied }
+		}
+	}
 
 	return func(request *http.Request) error {
 		if request == nil || request.URL == nil || request.URL.Scheme != "https" || request.URL.User != nil || request.URL.Port() != "" || !slices.Contains(binding.hosts, request.URL.Hostname()) {
@@ -252,6 +274,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		if !allowed {
+			return native.ErrDenied
+		}
+
+		if len(binding.methods) != 0 && !slices.Contains(binding.methods, request.Method) {
 			return native.ErrDenied
 		}
 
