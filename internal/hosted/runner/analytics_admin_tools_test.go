@@ -17,7 +17,7 @@ import (
 )
 
 func TestNativeAdminCRUDUsesSelectedPropertyAndInlinePayloads(t *testing.T) {
-	for _, family := range []struct{ command, api, field, mask, value string }{{"datastreams", "dataStreams", "displayName", "display_name", "Updated stream"}, {"keyevents", "keyEvents", "countingMethod", "counting_method", "ONCE_PER_SESSION"}} {
+	for _, family := range []struct{ command, api, field, mask, value string }{{"datastreams", "dataStreams", "displayName", "display_name", "Updated stream"}, {"keyevents", "keyEvents", "countingMethod", "counting_method", "ONCE_PER_SESSION"}, {"custom-dimensions", "customDimensions", "displayName", "display_name", "Updated dimension"}, {"custom-metrics", "customMetrics", "displayName", "display_name", "Updated metric"}, {"googleads-links", "googleAdsLinks", "customerId", "customer_id", "456"}} {
 		t.Run(family.command, func(t *testing.T) {
 			var requests atomic.Int64
 			var stored map[string]any
@@ -56,7 +56,7 @@ func TestNativeAdminCRUDUsesSelectedPropertyAndInlinePayloads(t *testing.T) {
 							}
 							response = map[string]any{family.api: items}
 						case r.Method == http.MethodGet && r.URL.Path == root+"/7":
-						case r.Method == http.MethodDelete && r.URL.Path == root+"/7":
+						case (r.Method == http.MethodDelete && r.URL.Path == root+"/7") || (r.Method == http.MethodPost && r.URL.Path == root+"/7:archive"):
 							stored = nil
 							response = map[string]any{}
 						default:
@@ -76,6 +76,9 @@ func TestNativeAdminCRUDUsesSelectedPropertyAndInlinePayloads(t *testing.T) {
 			})
 
 			call := func(operation, scope string, destructive bool, args map[string]any) capturedResponse {
+				if operation == "delete" && (family.api == "customDimensions" || family.api == "customMetrics") {
+					operation = "archive"
+				}
 				name := "analytics_" + family.command + "_" + operation
 				body := nativeToolBody(t, func(req *Request) {
 					req.Tool = &ToolInvocation{Name: name, Arguments: args, Authorization: ToolAuthorization{
@@ -93,10 +96,13 @@ func TestNativeAdminCRUDUsesSelectedPropertyAndInlinePayloads(t *testing.T) {
 				}
 
 				if operation == "create" {
-					if family.command == "datastreams" {
+					switch family.command {
+					case "datastreams":
 						args["body_json"] = `{"displayName":"Test stream","type":"WEB_DATA_STREAM","webStreamData":{"defaultUri":"https://example.test"}}`
-					} else {
+					case "keyevents":
 						args["body_json"] = `{"eventName":"hosted_test","countingMethod":"ONCE_PER_EVENT"}`
+					default:
+						args["body_json"] = `{"displayName":"Fixture field","parameterName":"hosted_test","scope":"EVENT","customerId":"123"}`
 					}
 				}
 

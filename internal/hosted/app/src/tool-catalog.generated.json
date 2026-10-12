@@ -1577,6 +1577,525 @@
     }
   },
   {
+    "name": "analytics_custom-dimensions_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_list"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_get"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_create"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_update"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_archive",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions archive within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_archive"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_list"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_get"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_create"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_update"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_archive",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics archive within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_archive"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_list"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_get"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_create"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_update"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_delete"
+    }
+  },
+  {
     "name": "searchconsole_sites_get",
     "service": "searchconsole",
     "resource_type": "site",

@@ -8,12 +8,16 @@ import (
 )
 
 func hostedAnalyticsAdminTools() []mcpToolSpec {
-	result := make([]mcpToolSpec, 0, 10)
-	for _, family := range []struct{ command, api string }{{"datastreams", "dataStreams"}, {"keyevents", "keyEvents"}} {
-		for _, operation := range []string{"list", "get", "create", "update", "delete"} {
+	result := make([]mcpToolSpec, 0, 25)
+	for _, family := range []struct{ command, api string }{{"datastreams", "dataStreams"}, {"keyevents", "keyEvents"}, {"custom-dimensions", "customDimensions"}, {"custom-metrics", "customMetrics"}, {"googleads-links", "googleAdsLinks"}} {
+		operations := []string{"list", "get", "create", "update", "delete"}
+		if family.api == "customDimensions" || family.api == "customMetrics" {
+			operations[4] = "archive"
+		}
+		for _, operation := range operations {
 			risk := mcpRiskRead
 			options := []mcp.ToolOption{mcp.WithString("property", mcp.Required())}
-			item := operation == "get" || operation == "update" || operation == "delete"
+			item := operation == "get" || operation == "update" || (operation == "delete" || operation == "archive")
 			if item {
 				options = append(options, mcp.WithString("resource_id", mcp.Required(), mcp.Description("Child resource ID within the selected property")))
 			}
@@ -21,7 +25,7 @@ func hostedAnalyticsAdminTools() []mcpToolSpec {
 				risk = mcpRiskWrite
 				options = append(options, mcp.WithString("body_json", mcp.Required(), mcp.Description("Inline resource JSON object only; no files or @file references")))
 			}
-			if operation == "delete" {
+			if operation == "delete" || operation == "archive" {
 				risk = mcpRiskWrite
 			}
 			if operation == "update" {
@@ -83,6 +87,9 @@ func hostedAnalyticsAdminTools() []mcpToolSpec {
 								args = append(args, "--"+flag+"="+strconv.FormatBool(enabled))
 							}
 						}
+					}
+					if family.api == "googleAdsLinks" && operation == "get" {
+						return append(args, "--", property, target), nil
 					}
 					return append(args, "--", target), nil
 				},

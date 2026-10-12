@@ -488,3 +488,9 @@ GET admission and an enabled customer project grant. `gog-marketing-prod`, forei
 project/path arguments, SQL jobs and write methods are rejected. Hosted consent
 uses the documented combined `bigquery` scope; there is no claimed OAuth-level
 read-only distinction. Live acceptance and safe SQL execution remain pending.
+
+GA4 custom dimensions and metrics expose native list/get/create/update/archive;
+GA4 Ads links expose native list/get/create/update/delete. Exact selected-property
+paths and analytics scopes are enforced. Archive and deletion require destructive
+permission. The Ads-link get command uses its native collection-list lookup; no
+Google Ads API scope or arbitrary cross-property request is introduced.
