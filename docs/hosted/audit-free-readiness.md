@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of fifty-four native Go
+The Worker now consumes a generated catalogue of fifty-eight native Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; and Workspace Groups listing/member reads. All invoke existing typed native handlers. MCP discovery and execution
+Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; Workspace Groups listing/member reads; and Meet space create/get/update/end. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
@@ -104,7 +104,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `sheets` | `spreadsheets.readonly drive.file` | `spreadsheets` | **untested** | `sheets_read_range` and `sheets_update_range` guarded bindings implemented; Picker configuration/live acceptance and remaining command coverage pending | [Google](https://developers.google.com/workspace/sheets/api/scopes) |
 | `forms` | `forms.body.readonly forms.responses.readonly` | `forms.body` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/forms/api/guides/apps-script-setup) |
 | `sites` | `drive.file` | No existing service write scope requested | **untested** | Picker can record selected Sites file grants; no callable hosted Sites tool yet; native handler wiring and live acceptance pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
-| `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
+| `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Native space create/get/update/end use account/tool grants, canonical space paths, method scopes and destructive end permission; fixture config persistence/scope denials pass. History/participants, account prerequisites and live acceptance pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
 | `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Hosted typed execution adapter pending; execution target scopes must be audited before run | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
 | `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Native property/report reads and data-stream/key-event CRUD routed with selected-property grants and method scopes; fixture persistence/scope/destructive/file-reference denials pass. Broader Admin operations and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Eight native site/query/sitemap/inspection tools routed with URL-prefix/domain site grants and method scopes; fixture submission/read-back/deletion and foreign URL/encoding denials pass. Cross-site sitemap authorization, richer query options and live acceptance pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
@@ -242,3 +242,5 @@ Drive label schema method scopes checked 12 October 2026 against [official Drive
 Groups listing checked 12 October 2026 against [official Cloud Identity v1 discovery](https://cloudidentity.googleapis.com/$discovery/rest?version=v1): searchTransitiveGroups supports `cloud-identity.groups.readonly`. Hosted code admits its fixed GET endpoint only and preserves native connected-account query semantics. Actual Workspace privileges and live execution remain unverified.
 
 Groups membership methods checked 12 October 2026 against [official Cloud Identity v1 discovery](https://cloudidentity.googleapis.com/$discovery/rest?version=v1): groups.lookup and memberships.list support `cloud-identity.groups.readonly`. Bound lookup/membership fixture evidence does not prove actual Workspace privileges or Google execution.
+
+Meet method scopes checked 12 October 2026 against [official Meet v2 discovery](https://meet.googleapis.com/$discovery/rest?version=v2): create/endActiveConference require `meetings.space.created`; get accepts created/readonly/settings; patch accepts created/settings. In particular, settings alone cannot end a conference. Production Console classification and live behavior remain unverified.

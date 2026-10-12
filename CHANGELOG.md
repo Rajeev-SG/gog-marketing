@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Meet space create/get/update/end with approved per-method scopes, account/tool grants, canonical space names and destructive conference-end controls. Preserve native config masks; browser opening stays disabled. Fixture creation/config persistence/end and scope denials verified; history/participants and live-role acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Groups member listing with explicit group-email lookup admission, validated provider-resolved membership paths and the existing read-only/account permissions. Both existing Groups command leaves now have callable tools; no writes are invented. Fixture success/malformed-name denials verified; actual Workspace role/live acceptance remains pending. (#52, #79)
 
 - Hosted: expose native Workspace Groups listing with account/tool grants, cloud-identity.groups.readonly and fixed transitive-membership GET admission. Preserve native account query, pagination and Workspace prerequisites; no writes are registered. Fixture reads/scope denials verified; membership lookup and live-role acceptance remain pending. (#52, #79)

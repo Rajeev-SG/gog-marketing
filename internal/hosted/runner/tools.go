@@ -118,7 +118,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), nativeDriveLabelsBindings()...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), nativeMeetSpaceBindings()...)...)...)...)...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -335,6 +335,13 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if len(binding.methods) != 0 && !slices.Contains(binding.methods, request.Method) {
 			return native.ErrDenied
+		}
+
+		if invocation.Name == "meet_space_end" {
+			action := strings.HasSuffix(path, ":endActiveConference")
+			if (action && request.Method != http.MethodPost) || (!action && request.Method != http.MethodGet) {
+				return native.ErrDenied
+			}
 		}
 
 		if !binding.Write && len(binding.methods) == 0 && request.Method != http.MethodGet && request.Method != http.MethodHead {

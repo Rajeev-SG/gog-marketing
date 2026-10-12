@@ -360,6 +360,16 @@ and Workspace/provider privileges retained. Malformed provider names cannot
 escape request admission. Both Groups commands are fixture-tested, not live
 Workspace acceptance, and neither implements group mutations.
 
+Meet space create/get/update/end now reuse existing native handlers under explicit
+account/tool grants. Non-create tools require canonical `spaces/...` IDs, not
+meeting-code aliases. Creation/end require `meetings.space.created`; reads also
+accept `meetings.space.readonly` or `meetings.space.settings`; configuration
+updates accept created/settings scopes. Conference end requires destructive
+permission and admits only GET resolution plus the exact POST action. Native
+configuration masks remain intact, and browser-opening flags are not exposed.
+History/participants, account/API prerequisites and real Meet acceptance remain
+pending; fixture creation/update/end is not evidence of live Google operation.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

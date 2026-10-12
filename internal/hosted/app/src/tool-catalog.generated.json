@@ -2111,5 +2111,129 @@
       },
       "name": "groups_members"
     }
+  },
+  {
+    "name": "meet_space_create",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space create for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "access": {
+            "enum": ["open", "trusted", "restricted"],
+            "type": "string"
+          },
+          "entry_point": {
+            "enum": ["all", "creator-only"],
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "meet_space_create"
+    }
+  },
+  {
+    "name": "meet_space_get",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space get for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_get"
+    }
+  },
+  {
+    "name": "meet_space_update",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space update for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "access": {
+            "enum": ["open", "trusted", "restricted"],
+            "type": "string"
+          },
+          "entry_point": {
+            "enum": ["all", "creator-only"],
+            "type": "string"
+          },
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_update"
+    }
+  },
+  {
+    "name": "meet_space_end",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space end for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_end"
+    }
   }
 ]
