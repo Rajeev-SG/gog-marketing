@@ -191,6 +191,7 @@ state-ci:
 
 hosted-app-ci:
 	@pnpm -C internal/hosted/app install --frozen-lockfile
+	@pnpm -C internal/hosted/app design:check
 	@pnpm -C internal/hosted/app lint
 	@pnpm -C internal/hosted/app typecheck
 	@pnpm -C internal/hosted/app test

@@ -358,15 +358,18 @@ async function handleGoogleRoute(
   url: URL,
 ): Promise<Response> {
   const browserCallback = isBrowserGoogleCallback(request, path);
-  const browserResult = (code: string): Response =>
-    new Response(null, {
+  const browserResult = (code: string, connectionId = ""): Response => {
+    const query = new URLSearchParams({ google: code });
+    if (connectionId) query.set("connection", connectionId);
+    return new Response(null, {
       status: 303,
       headers: {
-        Location: "/?google=" + encodeURIComponent(code),
+        Location: "/?" + query.toString(),
         "Cache-Control": "no-store",
         "Referrer-Policy": "no-referrer",
       },
     });
+  };
   const depsOutcome = buildConnectDeps(env, repo);
   if (!depsOutcome.ok) {
     return browserCallback
@@ -432,7 +435,7 @@ async function handleGoogleRoute(
     if (request.method === "GET" && path === "/oauth/google/callback") {
       const result = await completeCallback(deps, session, url.searchParams);
       return browserCallback
-        ? browserResult("connected")
+        ? browserResult("connected", result.connection.id)
         : Response.json(result, { headers: securityHeaders() });
     }
     if (isConnectionAction) {

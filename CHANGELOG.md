@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted UI: restore the approved marketer-facing application shell and reference states in the deployed Worker, with shared Go/Worker design tokens and components, quiet healthy-account actions, real loading and preserved-selection partial-failure states, onboarding completion, duplicate-account feedback and responsive asset management. (#50, #57)
+
 - Hosted: isolate the app asset-layout CSS from Google Picker's own classes so real file selection is not squeezed by the page grid. Require destructive permission for GTM workspace version creation and surface compiler/sync failures. (#52, #79)
 
 - Hosted: expose the complete 34-command native GTM surface with selected account/container grants, exact method/scope admission, inline-only mutation bodies and destructive deletion/publish permissions. Keep fixed catalogue permission batches usable beyond 128 tools; correct live Codex setup instructions and remove v2 consent prompts. (#52, #79)
