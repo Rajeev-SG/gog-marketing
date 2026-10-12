@@ -562,6 +562,198 @@
     }
   },
   {
+    "name": "bigquery_datasets_list",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List BigQuery datasets in an explicit execution project.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project"],
+        "type": "object"
+      },
+      "name": "bigquery_datasets_list"
+    }
+  },
+  {
+    "name": "bigquery_tables_list",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List BigQuery tables.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset"],
+        "type": "object"
+      },
+      "name": "bigquery_tables_list"
+    }
+  },
+  {
+    "name": "bigquery_table_get",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get BigQuery table metadata.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_get"
+    }
+  },
+  {
+    "name": "bigquery_table_schema",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get BigQuery table schema.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_schema"
+    }
+  },
+  {
+    "name": "bigquery_table_rows",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a bounded number of BigQuery table rows.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "max": {
+            "default": 100,
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_rows"
+    }
+  },
+  {
+    "name": "bigquery_dataset_get",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get native BigQuery dataset metadata in an explicitly enabled customer project. No SQL job execution or platform billing.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset"],
+        "type": "object"
+      },
+      "name": "bigquery_dataset_get"
+    }
+  },
+  {
     "name": "slides_list_slides",
     "service": "slides",
     "resource_type": "file",

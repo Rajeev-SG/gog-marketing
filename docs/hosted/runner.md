@@ -482,3 +482,9 @@ filters are retained. No withdrawn general-library scope, broad browsing, media
 write, local download or Photos Picker operation is implied by these tools.
 Google's app-created-data restriction and account prerequisites remain in force;
 fixture reads/denials do not establish real Photos availability or acceptance.
+
+BigQuery metadata/schema/row tools reuse the existing native client through exact
+GET admission and an enabled customer project grant. `gog-marketing-prod`, foreign
+project/path arguments, SQL jobs and write methods are rejected. Hosted consent
+uses the documented combined `bigquery` scope; there is no claimed OAuth-level
+read-only distinction. Live acceptance and safe SQL execution remain pending.

@@ -101,6 +101,18 @@ func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, 
 		return nil, fmt.Errorf("bigquery auth client: %w", err)
 	}
 
+	return NewBigQueryWithHTTPClient(ctx, project, client)
+}
+
+// NewBigQueryWithHTTPClient composes the existing native adapter with a caller's
+// authenticated, guarded transport. It does not add OAuth or credential fallbacks.
+func NewBigQueryWithHTTPClient(ctx context.Context, project string, client *http.Client) (BigQueryClient, error) {
+	if project == "" {
+		return nil, ErrBigQueryProjectRequired
+	}
+	if client == nil {
+		return nil, ErrBigQueryHTTPClientRequired
+	}
 	bq, err := bigquery.NewClient(ctx, project, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("create bigquery client: %w", err)

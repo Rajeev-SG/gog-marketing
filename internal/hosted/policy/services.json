@@ -230,7 +230,7 @@
   "bigquery": {
     "label": "BigQuery",
     "scopes": [
-      "https://www.googleapis.com/auth/bigquery.readonly"
+      "https://www.googleapis.com/auth/bigquery"
     ],
     "writeScopes": [
       "https://www.googleapis.com/auth/bigquery"

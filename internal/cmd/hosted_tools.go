@@ -43,6 +43,7 @@ func hostedExistingTools() []mcpToolSpec {
 		}
 		tools = append(tools, spec)
 	}
+	tools = append(tools, hostedBigQueryDatasetGetTool())
 	tools = append(tools, hostedSlidesTools()...)
 	tools = append(tools, hostedTasksTools()...)
 	tools = append(tools, hostedAnalyticsAdminTools()...)

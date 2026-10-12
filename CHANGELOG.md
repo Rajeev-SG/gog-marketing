@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: add six native BigQuery dataset/table metadata, schema and bounded row reads under explicit customer-project/tool grants and GET-only admission. Correct hosted consent to the official `bigquery` scope; exclude the platform project and SQL jobs pending billing/destructive safeguards. Fixture execution/denials verified, live acceptance pending. (#52, #79)
+
 - Hosted v1: defer Photos Picker, Cloud Admin, Keep and Workspace Admin to v2; reject their consent/scopes while preserving the local CLI and selected-file Drive Picker. (#52, #79)
 
 - Hosted: expose native Photos app-created media list/get/search with account/tool grants, photoslibrary.readonly.appcreateddata and exact library GET/search admission. Legacy general-library scopes/browsing and media writes remain excluded. Fixture reads/scope-path denials verified; download/Photos Picker and live acceptance remain pending. (#52, #79)
