@@ -334,6 +334,15 @@ other native Calendar features are not implied by these tools and remain to be
 wired with the required secondary-resource/cost authorization. Fixture persistence
 and scope/foreign-calendar/destructive denials do not prove real Google writes.
 
+`drivelabels_list` and `drivelabels_get` invoke native `drive labels` schema-read
+handlers. Account/tool grants authorize schema reads without fake file resources;
+`drive.labels.readonly` is required (`drive.file` alone is not sufficient).
+Admission permits only GET on the schema collection or exact validated label/
+revision name at `drivelabels.googleapis.com`. Native pagination, customer,
+language, view and published/role/field filters are exposed. No broad Drive scope,
+schema write or privileged admin-scope bypass is registered. Selected-file label
+application/removal and real Workspace acceptance remain pending.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

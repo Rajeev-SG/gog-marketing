@@ -45,7 +45,7 @@ describe("explicit executable tool permissions", () => {
 
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(50);
+    expect(view.tools).toHaveLength(52);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);
@@ -62,6 +62,19 @@ describe("explicit executable tool permissions", () => {
       { toolName: "docs_write", enabled: false, allowDestructive: false },
     ]);
     expect(await policyTools(repo, tenant)).toEqual([]);
+  });
+
+  it("exposes read-only Drive label schemas with account grants, not synthetic files", async () => {
+    const tenant = (await repo.getTenant(session.tenantId))!;
+    await saveToolPermissions(repo, session, connectionId, [
+      { toolName: "drivelabels_get", enabled: true, allowDestructive: false },
+    ]);
+    expect((await policyTools(repo, tenant)).map((tool) => tool.name)).toEqual(["drivelabels_get"]);
+    await expect(
+      saveToolPermissions(repo, session, connectionId, [
+        { toolName: "drivelabels_get", enabled: true, allowDestructive: true },
+      ]),
+    ).rejects.toMatchObject({ code: "invalid_request" });
   });
 
   it("exposes account Tasks only with an explicit matching tool grant, without fake resources", async () => {

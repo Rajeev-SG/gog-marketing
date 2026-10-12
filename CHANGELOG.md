@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Drive label-schema list/get with account/tool grants, drive.labels.readonly, exact label/revision GET admission and pagination/view controls. No broad Drive scope, schema writes or admin-scope bypass is added. Fixture reads/denials verified; selected-file label mutations and live acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Calendar event get/create/update/delete with selected-calendar grants, write scopes and destructive deletion controls. Reuse native field clearing, recurrence planning and explicit-ID execution without ambient aliases; foreign calendars and secondary-resource integrations remain denied. Fixture CRUD/read-back verified; full Calendar parity and live acceptance remain pending. (#52, #79)
 
 - Hosted: fix Calendar event execution without local aliases or ambient configuration, reusing native listing/time-range logic with the explicitly selected calendar's timezone. Keep CLI aliases/user-timezone behavior unchanged and reject all-calendar/alternate selectors in hosted mode. Selected plus/hash IDs, date boundaries and foreign/disabled-calendar denials are fixture-tested; live acceptance and Calendar writes remain pending. (#52, #79)

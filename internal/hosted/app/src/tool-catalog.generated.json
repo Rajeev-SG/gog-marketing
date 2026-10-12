@@ -1946,5 +1946,91 @@
       },
       "name": "calendar_event_delete"
     }
+  },
+  {
+    "name": "drivelabels_list",
+    "service": "drivelabels",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Drive label schemas. Requires drive.labels.readonly and applicable Workspace permissions; no broad Drive access or schema writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minimum_role": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "published_only": {
+            "type": "boolean"
+          },
+          "view": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "drivelabels_list"
+    }
+  },
+  {
+    "name": "drivelabels_get",
+    "service": "drivelabels",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Drive label schemas. Requires drive.labels.readonly and applicable Workspace permissions; no broad Drive access or schema writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "type": "string"
+          },
+          "label_name": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string"
+          }
+        },
+        "required": ["label_name"],
+        "type": "object"
+      },
+      "name": "drivelabels_get"
+    }
   }
 ]
