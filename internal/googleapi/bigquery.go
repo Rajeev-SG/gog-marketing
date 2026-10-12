@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/bigquery"
+	bigqueryapi "google.golang.org/api/bigquery/v2"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
@@ -89,6 +90,22 @@ type bigQueryAdapter struct {
 	httpClient *http.Client
 	projectID  string
 	baseURL    string
+}
+
+// NewBigQueryProjectService uses the existing guarded Google transport for
+// project discovery without Cloud Resource Manager or Cloud Platform scopes.
+func NewBigQueryProjectService(ctx context.Context, account string) (*bigqueryapi.Service, error) {
+	client, err := NewHTTPClientForScopes(ctx, "bigquery", account, []string{scopeBigQueryFull})
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := bigqueryapi.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("create BigQuery project discovery: %w", err)
+	}
+
+	return service, nil
 }
 
 func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, error) {

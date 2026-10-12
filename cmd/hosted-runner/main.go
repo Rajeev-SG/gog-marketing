@@ -16,6 +16,7 @@ import (
 	"github.com/openclaw/gogcli/internal/cmd"
 
 	"github.com/openclaw/gogcli/internal/controlplane"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/hosted/runner"
 )
 
@@ -37,7 +38,7 @@ func main() {
 	}
 
 	engine := runner.Engine{
-		Discoverer:       controlplane.EngineDiscoverer{},
+		Discoverer:       controlplane.EngineDiscoverer{BigQueryProjectsFactory: googleapi.NewBigQueryProjectService},
 		Secret:           secret,
 		ExecuteNative:    cmd.ExecuteHostedExistingTool,
 		Counter:          nil,

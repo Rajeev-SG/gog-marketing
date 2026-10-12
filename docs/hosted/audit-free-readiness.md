@@ -288,3 +288,11 @@ MCP schemas advertise a tenant-filtered connectionId enum, required for ambiguou
 account-level tools. Account selectors are removed before native dispatch; foreign
 accounts remain denied. Fixture page-two retrieval and schema-supported two-account
 routing are regression evidence, not real Codex/Google acceptance.
+
+Hosted BigQuery project discovery now uses the current typed BigQuery projects.list
+API and paginates before selection. It excludes the platform-owned project,
+deduplicates provider IDs and creates disabled project grants. No Cloud Platform
+scopes, Cloud Admin operations, dataset creation or SQL jobs are introduced.
+Existing local explicit-project discovery is unchanged. A paginated native HTTP
+fixture verifies project grants/ownership; actual IAM/project availability remains
+subject to real account acceptance.

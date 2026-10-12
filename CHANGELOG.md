@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: discover customer BigQuery projects through the native paginated BigQuery API so project-granted tools can be selected in the product; exclude the platform project and keep discovered grants disabled. Preserve explicit-project local discovery. (#52, #79)
+
 - Hosted: advertise enabled-account selectors in MCP schemas and require selection for ambiguous account-level tools; preserve tenant filtering and strip selectors before native dispatch. Follow pagination for GA4 Ads-link get. (#52, #79)
 
 - Hosted: add native GA4 custom-dimension/custom-metric list/get/create/update/archive and GA4 Ads-link CRUD through selected-property/tool grants and exact method scopes; require destructive archive/delete permission without requesting adwords. Fixture persistence and denials verified; live acceptance pending. (#52, #79)
