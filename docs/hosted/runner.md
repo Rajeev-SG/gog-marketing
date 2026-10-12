@@ -379,6 +379,15 @@ AdSense is distinct from the deliberately excluded Google Ads service: no
 units, channels, payments/alerts/policy/sites and reports remain to be wired;
 fixture reads/denials are not actual publisher-account acceptance.
 
+`sites_get` and `sites_url` reuse native Drive-backed Google Sites handlers with
+an enabled Picker-selected `sites` file and exact account/tool grants. They need
+`drive.file`, never a broad Drive scope, and permit only GET of that file. The
+existing Picker maps Google's Sites MIME type to a default-disabled Sites grant.
+Global native Sites inventory/search is not exposed under restricted broad-Drive
+access; multi-file URL calls still need multi-resource admission. No Sites editor
+writes are invented: the native service surface is metadata/URL/list/search.
+Fixture reads/resource/scope denials are not real Google Picker/Sites acceptance.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

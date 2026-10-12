@@ -15,6 +15,8 @@ import (
 
 const OperationToolCall = "tool_call"
 
+const resourceTypeFile = "file"
+
 // ToolInvocation carries an exact-body-signed authorization snapshot. No
 // authority is read from model arguments, local config or another account.
 type ToolInvocation struct {
@@ -88,6 +90,8 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = append([]NativeToolBinding{
+	{Name: "sites_get", Service: "sites", ResourceType: resourceTypeFile, ResourceArgument: "site_id", hosts: []string{"www.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"drive.file"}, paths: exactPaths("/drive/v3/files/", "")},
+	{Name: "sites_url", Service: "sites", ResourceType: resourceTypeFile, ResourceArgument: "site_id", hosts: []string{"www.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"drive.file"}, paths: exactPaths("/drive/v3/files/", "")},
 	{Name: "groups_members", Service: "groups", hosts: []string{"cloudidentity.googleapis.com"}, scopes: []string{"cloud-identity.groups.readonly"}, paths: exactPaths("", ""), argumentPaths: validateGroupEmail},
 	{Name: "groups_list", Service: "groups", hosts: []string{"cloudidentity.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"cloud-identity.groups.readonly"}, paths: exactPaths("/v1/groups/-/memberships:searchTransitiveGroups", "")},
 	{Name: "tagmanager_versions_publish", Service: "tagmanager", ResourceType: "container", ResourceArgument: "container_path", Write: true, hosts: []string{"tagmanager.googleapis.com"}, scopes: []string{"tagmanager.publish"}, methods: []string{http.MethodPost}, destructive: true, paths: exactPaths("", ""), argumentPaths: func(args map[string]any) ([]string, error) {

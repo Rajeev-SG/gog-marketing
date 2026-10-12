@@ -2300,5 +2300,62 @@
       },
       "name": "adsense_accounts_get"
     }
+  },
+  {
+    "name": "sites_get",
+    "service": "sites",
+    "resource_type": "file",
+    "resource_argument": "site_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read an explicitly enabled Picker-selected Google Site using native Drive-backed metadata with drive.file. No global Sites inventory/search or site editing is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          }
+        },
+        "required": ["site_id"],
+        "type": "object"
+      },
+      "name": "sites_get"
+    }
+  },
+  {
+    "name": "sites_url",
+    "service": "sites",
+    "resource_type": "file",
+    "resource_argument": "site_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read an explicitly enabled Picker-selected Google Site using native Drive-backed metadata with drive.file. No global Sites inventory/search or site editing is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_id": {
+            "type": "string"
+          }
+        },
+        "required": ["site_id"],
+        "type": "object"
+      },
+      "name": "sites_url"
+    }
   }
 ]

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Google Sites metadata/editor-URL reads only for enabled Picker-selected files using drive.file and exact file GET admission. No global Sites/Drive inventory, search or invented editor writes are enabled. Fixture file/scope denials verified; multi-file URL authorization and real Picker/Sites acceptance remain pending. (#52, #79)
+
 - Hosted: expose native AdSense account list/get under account/tool grants, adsense.readonly and exact canonical-account GET admission. Preserve paging/all-pages controls; no Google Ads scope or mutations are enabled. Fixture reads/scope/path denials verified; remaining AdSense reporting/resources and live acceptance remain pending. (#52, #79)
 
 - Hosted: expose native Meet space create/get/update/end with approved per-method scopes, account/tool grants, canonical space names and destructive conference-end controls. Preserve native config masks; browser opening stays disabled. Fixture creation/config persistence/end and scope denials verified; history/participants and live-role acceptance remain pending. (#52, #79)
