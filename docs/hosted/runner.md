@@ -343,6 +343,15 @@ language, view and published/role/field filters are exposed. No broad Drive scop
 schema write or privileged admin-scope bypass is registered. Selected-file label
 application/removal and real Workspace acceptance remain pending.
 
+`groups_list` reuses the native Cloud Identity groups listing handler with an
+explicit account/tool grant and `cloud-identity.groups.readonly`. Only the fixed
+transitive-groups GET endpoint is admitted; its membership query uses the trusted
+connected Google email, not a model-supplied account. Native pagination/all-pages
+and empty-result controls remain available. Workspace/Cloud Identity privileges
+are still required, and consumer accounts remain unsupported. No group writes
+are implemented by this CLI surface or hosted tool. Native member lookup and
+actual Workspace acceptance remain pending.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

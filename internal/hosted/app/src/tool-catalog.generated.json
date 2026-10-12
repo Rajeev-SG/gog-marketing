@@ -2032,5 +2032,43 @@
       },
       "name": "drivelabels_get"
     }
+  },
+  {
+    "name": "groups_list",
+    "service": "groups",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native Cloud Identity groups for the explicitly connected Workspace account. Requires cloud-identity.groups.readonly and provider account privileges; consumer accounts are unsupported.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "groups_list"
+    }
   }
 ]

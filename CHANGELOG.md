@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Workspace Groups listing with account/tool grants, cloud-identity.groups.readonly and fixed transitive-membership GET admission. Preserve native account query, pagination and Workspace prerequisites; no writes are registered. Fixture reads/scope denials verified; membership lookup and live-role acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Drive label-schema list/get with account/tool grants, drive.labels.readonly, exact label/revision GET admission and pagination/view controls. No broad Drive scope, schema writes or admin-scope bypass is added. Fixture reads/denials verified; selected-file label mutations and live acceptance remain pending. (#52, #79)
 
 - Hosted: expose native Calendar event get/create/update/delete with selected-calendar grants, write scopes and destructive deletion controls. Reuse native field clearing, recurrence planning and explicit-ID execution without ambient aliases; foreign calendars and secondary-resource integrations remain denied. Fixture CRUD/read-back verified; full Calendar parity and live acceptance remain pending. (#52, #79)

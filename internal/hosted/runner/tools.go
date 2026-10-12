@@ -88,6 +88,7 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = append([]NativeToolBinding{
+	{Name: "groups_list", Service: "groups", hosts: []string{"cloudidentity.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"cloud-identity.groups.readonly"}, paths: exactPaths("/v1/groups/-/memberships:searchTransitiveGroups", "")},
 	{Name: "tagmanager_versions_publish", Service: "tagmanager", ResourceType: "container", ResourceArgument: "container_path", Write: true, hosts: []string{"tagmanager.googleapis.com"}, scopes: []string{"tagmanager.publish"}, methods: []string{http.MethodPost}, destructive: true, paths: exactPaths("", ""), argumentPaths: func(args map[string]any) ([]string, error) {
 		container, _ := args["container_path"].(string)
 
