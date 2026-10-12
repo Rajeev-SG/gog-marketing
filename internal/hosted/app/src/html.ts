@@ -177,7 +177,7 @@ button:disabled { cursor: default; opacity: .7; }
 }
 .toast.error { color: #c22731; border-left: 4px solid #c22731; }
 .toast.info { color: var(--status-ok); border-left: 4px solid var(--status-ok); }
-.picker { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
+.asset-picker { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
 .rail { position: sticky; top: 80px; display: grid; gap: 8px; }
 .rail-group-label { margin: 8px 0 2px; color: var(--text-faint); font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; }
 .rail-item {
@@ -212,7 +212,7 @@ button:disabled { cursor: default; opacity: .7; }
 .muted { color: var(--text-muted); }
 #user-button { min-height: 40px; }
 @media (max-width: 900px) {
-  .picker { grid-template-columns: 1fr; }
+  .asset-picker { grid-template-columns: 1fr; }
   .rail { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles, .service-consent { grid-template-columns: 1fr; }
 }
@@ -368,7 +368,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         <p>Choose existing Drive, Docs, Sheets, Slides, Forms or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
         <button id="pick-files" type="button">Choose Google files</button>
         <span id="picker-status" role="status" aria-live="polite"></span>
-        <div class="picker">
+        <div class="asset-picker">
           <nav class="rail" id="asset-rail" aria-label="Google services"></nav>
           <div id="asset-groups"></div>
         <div class="savebar">

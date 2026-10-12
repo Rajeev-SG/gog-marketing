@@ -324,6 +324,8 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(html).toContain("Add this HTTPS URL as a remote MCP server in Codex");
     expect(html).toContain("Complete the Clerk browser sign-in");
     expect(html).not.toContain("When authentication is enabled");
+    expect(html).toContain(".asset-picker {");
+    expect(html).not.toContain(".picker {");
     expect(html).not.toContain("evil.example.com");
     expect(html).not.toMatch(UUID_RE);
   });

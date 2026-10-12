@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: isolate the app asset-layout CSS from Google Picker's own classes so real file selection is not squeezed by the page grid. Require destructive permission for GTM workspace version creation and surface compiler/sync failures. (#52, #79)
+
 - Hosted: expose the complete 34-command native GTM surface with selected account/container grants, exact method/scope admission, inline-only mutation bodies and destructive deletion/publish permissions. Keep fixed catalogue permission batches usable beyond 128 tools; correct live Codex setup instructions and remove v2 consent prompts. (#52, #79)
 
 - Hosted: discover customer BigQuery projects through the native paginated BigQuery API so project-granted tools can be selected in the product; exclude the platform project and keep discovered grants disabled. Preserve explicit-project local discovery. (#52, #79)
