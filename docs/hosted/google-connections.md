@@ -14,12 +14,13 @@ existing D1 database (`internal/hosted/state/`).
    verified tenant, the exact Clerk session ID (`sid`), and the intended
    connection, then returns Google's authorization URL. Scopes are
    incremental and least-privilege: identity scopes (`openid email
-   userinfo.email`) plus read-only scopes for the explicitly selected hosted
-   services (analytics, googleads, tagmanager, searchconsole, bigquery,
-   gmail, calendar, drive). No write scopes are offered. Gmail and Drive
-   read-only scopes are restricted; they are available only to the deliberate
-   two-user Testing owner cohort. Public launch remains gated on scope review
-   and verification under #69.
+   userinfo.email`) plus scopes for explicitly selected audit-free services;
+   `writeServices` opts in to additional write consent for selected services.
+   The exact 27-service scope boundary and executable/untested status are in
+   [audit-free readiness](audit-free-readiness.md). Gmail, Google Ads, Drive
+   Activity and restricted/transitive scopes are excluded, including historical
+   owner-cohort grants. Public launch remains gated on scope review, Google
+   verification and real hosted acceptance under #69.
 2. **Consent** — the user completes Google's consent screen.
 3. **Callback** — `GET /oauth/google/callback`. The canonical registered
    redirect URI is
@@ -88,7 +89,7 @@ Set on the Worker by the coordinator (values never committed):
 | Route | Auth | Behaviour |
 | --- | --- | --- |
 | `GET /api/google/connections` | required | Tenant-scoped connection list: verified identity, status, scopes, discovery outcome. No credentials, no tenant ID. |
-| `POST /api/google/connect` | required | Starts the flow. Body: `{"services": [...]}` (new connection) or `{"connectionId": "...", "services": [...]}` (reconnect). Returns the bound authorization URL. |
+| `POST /api/google/connect` | required | Starts the flow. Body: `{"services": [...], "writeServices": [...]}` (new connection) or `{"connectionId": "...", "services": [...]}` (reconnect). Returns the bound authorization URL. |
 | `GET /oauth/google/callback` | required | Completes the flow; HTML browsers redirect home with a fixed safe outcome, API clients receive the connection view + discovery outcome. |
 | `POST /api/google/connections/:id/disconnect` | required | Best-effort Google revocation, then deletes the connection, credentials, and grants. |
 | `POST /api/google/connections/:id/refresh` | required | Validates/refreshes the stored credential. |
@@ -109,6 +110,7 @@ exception text is never echoed:
 | `identity_conflict` | 409 | The Google account is already connected elsewhere (or a reconnect would change the account). |
 | `connection_not_found` | 404 | The connection no longer exists. |
 | `needs_reconnect` | 409 | Google grant expired or was revoked (credential dropped; grants preserved). |
+| `scope_blocked` | 403 | Grant contains excluded or unknown scopes; never persisted or sent to the runner. Historical restricted grants require disconnect/revoke and fresh supported consent. |
 | `discovery_unavailable` / `discovery_error` | — (informational) | Discovery runner not configured (#63) or failed; existing grants untouched. |
 | `discovery.empty` (`status: "empty"`, detail `no_resources`) | — (informational) | Discovery succeeded with zero resources — distinct from failure. |
 
@@ -144,11 +146,30 @@ unexpected 500), browser callbacks receive a static branded HTML notice — no
 Clerk SDK load, no raw auth/provider errors, and the code/state query is
 stripped client-side from the address bar — while API callbacks retain the
 corresponding safe JSON status.
-Reconnect uses immutable Google sub equality, not email, and retains previous
-hosted service scopes. Failed new consent/code exchange does not prove the old
+Reconnect uses immutable Google sub equality, not email, and retains eligible
+hosted consent selections without adding excluded historical scopes. Actual
+returned scope metadata is authoritative, including partial consent. Failed new consent/code exchange does not prove the old
 stored grant revoked: operator/transient/denial failures leave its health and
 credentials unchanged. Only invalid_grant from stored-credential refresh marks
-needs_reconnect. Gmail gmail.readonly and Drive drive.readonly are RESTRICTED;
+needs_reconnect. Gmail gmail.readonly and Drive drive.readonly are RESTRICTED and now excluded;
 read-only is not a Google verification classification. The current central app
 is Testing with two owner test users, not a verified public beta; #69 remains
 the public-launch gate.
+
+## Google Picker selected-file onboarding (#79)
+
+The authenticated UI offers **Choose Google files** for a connected account.
+`POST /api/google/picker/start` takes only `connectionId`, returns a one-use bound
+session plus the ephemeral token required by Google's JS Picker, and sends
+no-store/no-referrer headers. This is the deliberate ephemeral-only exception to
+credential-free API views; no refresh token/client secret is exposed.
+`POST /api/google/picker/complete` accepts `connectionId`, `pickerSession` and up
+to 20 exact `fileIds`; account, names, MIME claims and arbitrary URLs are rejected.
+The trusted Go runner verifies each ID using the actual `drive.file` token.
+New Drive/Docs/Sheets/Slides/Sites grants remain disabled; saved tools are separate.
+A partial rejection count is surfaced without raw provider errors.
+
+Operator variables: `GOG_GOOGLE_PICKER_API_KEY` (public restricted key) and
+`GOG_GOOGLE_PICKER_APP_ID` (same OAuth project's number). Missing configuration
+is not a request to use full Drive scopes. Production configuration and real
+Picker acceptance remain unverified; see [readiness](audit-free-readiness.md).

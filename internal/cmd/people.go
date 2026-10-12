@@ -44,6 +44,9 @@ func (c *PeopleMeCmd) Run(ctx context.Context, flags *RootFlags) error {
 		PersonFields("names,emailAddresses,photos").
 		Do()
 	if err != nil {
+		if flags.hostedExecution {
+			return err
+		}
 		if !isPeopleAccessNotConfigured(err) {
 			return err
 		}

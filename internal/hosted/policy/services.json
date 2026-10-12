@@ -1,0 +1,279 @@
+{
+  "calendar": {
+    "label": "Calendar",
+    "scopes": [
+      "https://www.googleapis.com/auth/calendar.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/calendar"
+    ],
+    "resourceModel": true,
+    "documentation": "https://developers.google.com/workspace/calendar/api/auth"
+  },
+  "chat": {
+    "label": "Google Chat",
+    "scopes": [
+      "https://www.googleapis.com/auth/chat.spaces.readonly",
+      "https://www.googleapis.com/auth/chat.memberships.readonly",
+      "https://www.googleapis.com/auth/chat.messages.reactions.readonly",
+      "https://www.googleapis.com/auth/chat.users.readstate.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/chat.spaces",
+      "https://www.googleapis.com/auth/chat.memberships",
+      "https://www.googleapis.com/auth/chat.messages.create",
+      "https://www.googleapis.com/auth/chat.messages.reactions.create"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/chat/authenticate-authorize"
+  },
+  "classroom": {
+    "label": "Classroom",
+    "scopes": [
+      "https://www.googleapis.com/auth/classroom.courses.readonly",
+      "https://www.googleapis.com/auth/classroom.rosters.readonly",
+      "https://www.googleapis.com/auth/classroom.coursework.students.readonly",
+      "https://www.googleapis.com/auth/classroom.coursework.me.readonly",
+      "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly",
+      "https://www.googleapis.com/auth/classroom.announcements.readonly",
+      "https://www.googleapis.com/auth/classroom.topics.readonly",
+      "https://www.googleapis.com/auth/classroom.guardianlinks.students.readonly",
+      "https://www.googleapis.com/auth/classroom.profile.emails",
+      "https://www.googleapis.com/auth/classroom.profile.photos"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/classroom.courses",
+      "https://www.googleapis.com/auth/classroom.rosters",
+      "https://www.googleapis.com/auth/classroom.coursework.students",
+      "https://www.googleapis.com/auth/classroom.coursework.me",
+      "https://www.googleapis.com/auth/classroom.courseworkmaterials",
+      "https://www.googleapis.com/auth/classroom.announcements",
+      "https://www.googleapis.com/auth/classroom.topics",
+      "https://www.googleapis.com/auth/classroom.guardianlinks.students"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/classroom/guides/auth"
+  },
+  "drive": {
+    "label": "Drive (selected files)",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/drive/api/guides/api-specific-auth"
+  },
+  "drivelabels": {
+    "label": "Drive label schemas",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.labels.readonly"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/drive/labels/guides/authorize"
+  },
+  "docs": {
+    "label": "Google Docs",
+    "scopes": [
+      "https://www.googleapis.com/auth/documents.readonly",
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/documents"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/docs/api/auth"
+  },
+  "slides": {
+    "label": "Google Slides",
+    "scopes": [
+      "https://www.googleapis.com/auth/presentations.readonly",
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/presentations"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/slides/api/scopes"
+  },
+  "contacts": {
+    "label": "Contacts",
+    "scopes": [
+      "https://www.googleapis.com/auth/contacts.readonly",
+      "https://www.googleapis.com/auth/contacts.other.readonly",
+      "https://www.googleapis.com/auth/directory.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/contacts"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/people/v1/how-tos/authorizing"
+  },
+  "tasks": {
+    "label": "Tasks",
+    "scopes": [
+      "https://www.googleapis.com/auth/tasks.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/tasks"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/tasks/auth"
+  },
+  "people": {
+    "label": "People profiles",
+    "scopes": [
+      "profile"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/people/v1/how-tos/authorizing"
+  },
+  "sheets": {
+    "label": "Google Sheets",
+    "scopes": [
+      "https://www.googleapis.com/auth/spreadsheets.readonly",
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/spreadsheets"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/sheets/api/scopes"
+  },
+  "forms": {
+    "label": "Google Forms",
+    "scopes": [
+      "https://www.googleapis.com/auth/forms.body.readonly",
+      "https://www.googleapis.com/auth/forms.responses.readonly",
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/forms.body"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/forms/api/guides/apps-script-setup"
+  },
+  "sites": {
+    "label": "Google Sites (selected-file metadata)",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/drive/api/guides/api-specific-auth"
+  },
+  "meet": {
+    "label": "Google Meet",
+    "scopes": [
+      "https://www.googleapis.com/auth/meetings.space.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/meetings.space.created",
+      "https://www.googleapis.com/auth/meetings.space.settings"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/workspace/meet/api/guides/authenticate-authorize"
+  },
+  "appscript": {
+    "label": "Apps Script",
+    "scopes": [
+      "https://www.googleapis.com/auth/script.projects.readonly",
+      "https://www.googleapis.com/auth/script.deployments.readonly",
+      "https://www.googleapis.com/auth/script.processes"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/script.projects",
+      "https://www.googleapis.com/auth/script.deployments"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/apps-script/api/how-tos/execute"
+  },
+  "analytics": {
+    "label": "Google Analytics 4",
+    "scopes": [
+      "https://www.googleapis.com/auth/analytics.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/analytics.edit"
+    ],
+    "resourceModel": true,
+    "documentation": "https://developers.google.com/analytics/devguides/config/admin/v1/rest"
+  },
+  "searchconsole": {
+    "label": "Search Console",
+    "scopes": [
+      "https://www.googleapis.com/auth/webmasters.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/webmasters"
+    ],
+    "resourceModel": true,
+    "documentation": "https://developers.google.com/webmaster-tools/v1/how-tos/authorizing"
+  },
+  "tagmanager": {
+    "label": "Google Tag Manager",
+    "scopes": [
+      "https://www.googleapis.com/auth/tagmanager.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/tagmanager.edit.containers",
+      "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+      "https://www.googleapis.com/auth/tagmanager.publish",
+      "https://www.googleapis.com/auth/tagmanager.delete.containers"
+    ],
+    "resourceModel": true,
+    "documentation": "https://developers.google.com/tag-platform/tag-manager/api/v2/authorization"
+  },
+  "bigquery": {
+    "label": "BigQuery",
+    "scopes": [
+      "https://www.googleapis.com/auth/bigquery"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/bigquery"
+    ],
+    "resourceModel": true,
+    "documentation": "https://docs.cloud.google.com/bigquery/docs/authentication"
+  },
+  "adsense": {
+    "label": "AdSense",
+    "scopes": [
+      "https://www.googleapis.com/auth/adsense.readonly"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/adsense/management/reference/rest/v2/accounts/list"
+  },
+  "groups": {
+    "label": "Workspace groups",
+    "scopes": [
+      "https://www.googleapis.com/auth/cloud-identity.groups.readonly"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/identity/protocols/oauth2/scopes"
+  },
+  "youtube": {
+    "label": "YouTube",
+    "scopes": [
+      "https://www.googleapis.com/auth/youtube.readonly"
+    ],
+    "writeScopes": [
+      "https://www.googleapis.com/auth/youtube"
+    ],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps"
+  },
+  "photos": {
+    "label": "Google Photos (app-created media)",
+    "scopes": [
+      "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata"
+    ],
+    "writeScopes": [],
+    "resourceModel": false,
+    "documentation": "https://developers.google.com/photos/overview/authorization"
+  }
+}

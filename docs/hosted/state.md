@@ -85,3 +85,20 @@ Test coverage:
 - **Audit**: strict allowlisted/typed detail metadata at the storage boundary; unsafe writes (tokens, unknown keys, nested material, invalid types, oversized strings) are rejected without storage or value echo; foreign connection associations are rejected.
 - **Quota**: single-statement UPSERT ... RETURNING increments (exact `1..N` under concurrency, in Node SQLite and native D1); negative/fractional increments rejected; per-period separation; cross-tenant separation; FK rejection; high-frequency increments.
 - **Worker compatibility**: `src/index.ts` bundles for Workers with no Node built-ins; the bundled repository runs inside workerd against a real D1 binding (tenant bootstrap, BLOB roundtrip, concurrent quota).
+
+## Per-account executable tool permissions (#52 / #79)
+
+`0005_tool_grants.sql` adds `hosted_tool_grants`, keyed by tenant, connection and
+exact tool name, with a compound connection foreign key and cascade deletion.
+Service membership is taken from the executable Go-generated catalogue, not
+caller labels. Tools default disabled; destructive and billable flags default
+false. The migration seeds only the existing three GA4 reads for active accounts
+with enabled properties and never re-enables an existing explicitly disabled row.
+No resource identifiers are invented for service/tool permissions.
+
+The API validates an entire batch before the repository writes it atomically.
+MCP resolves the selected resource and enabled tool grant on the same account;
+a tool enabled on a sibling account cannot authorize execution here. Selecting an
+asset or consenting to OAuth does not authorize writes. Production schema
+application remains a coordinator deployment step after review; no provider
+resource was provisioned by this implementation.

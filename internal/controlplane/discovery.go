@@ -8,6 +8,8 @@ import (
 	"time"
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
+	bigqueryapi "google.golang.org/api/bigquery/v2"
+	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/tagmanager/v2"
 
 	"github.com/openclaw/gogcli/internal/authclient"
@@ -32,7 +34,9 @@ type EngineDiscoverer struct {
 	GoogleAdsDeveloperToken string
 	GoogleAdsLoginCustomer  string
 	BigQueryProjects        []string
+	BigQueryProjectsFactory func(context.Context, string) (*bigqueryapi.Service, error)
 	GoogleAdsDiscover       func(context.Context, Connection, OAuthToken) ([]ResourceGrant, error)
+	CalendarFactory         func(context.Context, string) (*calendar.Service, error)
 }
 
 func (d EngineDiscoverer) Discover(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
@@ -91,6 +95,8 @@ func (d EngineDiscoverer) DiscoverReport(ctx context.Context, connection Connect
 
 func (d EngineDiscoverer) discoverService(ctx context.Context, serviceName string, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
 	switch serviceName {
+	case "calendar":
+		return d.calendars(ctx, connection, token)
 	case "analytics":
 		return d.analytics(ctx, connection, token)
 	case "tagmanager":
@@ -269,6 +275,44 @@ func (d EngineDiscoverer) searchConsole(ctx context.Context, connection Connecti
 
 func (d EngineDiscoverer) bigQuery(ctx context.Context, connection Connection, token OAuthToken) ([]ResourceGrant, error) {
 	out := make([]ResourceGrant, 0)
+
+	// Hosted callers opt into native project discovery. Existing explicit local
+	// project/dataset discovery is unchanged. Project grants start disabled and
+	// metadata discovery never creates datasets or SQL jobs.
+	if len(d.BigQueryProjects) == 0 && d.BigQueryProjectsFactory != nil {
+		svc, err := d.BigQueryProjectsFactory(ctx, connection.GoogleEmail)
+		if err != nil {
+			return nil, wrapControlPlaneError(err)
+		}
+		seen := make(map[string]bool)
+
+		err = svc.Projects.List().Pages(ctx, func(page *bigqueryapi.ProjectList) error {
+			for _, project := range page.Projects {
+				if project == nil || project.ProjectReference == nil {
+					continue
+				}
+
+				id := project.ProjectReference.ProjectId
+				if id == "" || id == "gog-marketing-prod" || seen[id] {
+					continue
+				}
+				seen[id] = true
+
+				name := project.FriendlyName
+				if name == "" {
+					name = id
+				}
+				out = append(out, grant(connection, "bigquery", "project", id, name, "", token))
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, fmt.Errorf("discover BigQuery projects: %w", err)
+		}
+
+		return out, nil
+	}
 
 	for _, project := range d.BigQueryProjects {
 		project = strings.TrimSpace(project)

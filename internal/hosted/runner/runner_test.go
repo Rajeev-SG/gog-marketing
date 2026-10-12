@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/openclaw/gogcli/internal/cmd"
+
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
 	"google.golang.org/api/option"
 
@@ -28,6 +30,12 @@ import (
 )
 
 const testSecret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+type reportingDiscovererFunc func(context.Context, controlplane.Connection, controlplane.OAuthToken) (controlplane.DiscoveryReport, error)
+
+func (f reportingDiscovererFunc) DiscoverReport(ctx context.Context, connection controlplane.Connection, token controlplane.OAuthToken) (controlplane.DiscoveryReport, error) {
+	return f(ctx, connection, token)
+}
 
 type recordedDiscoverer struct {
 	report           controlplane.DiscoveryReport
@@ -84,6 +92,7 @@ func newHarness(t *testing.T, mutate func(*Engine, *recordedDiscoverer)) *testHa
 
 	engine := &Engine{
 		Secret:           testSecret,
+		ExecuteNative:    cmd.ExecuteHostedExistingTool,
 		Discoverer:       discoverer,
 		Timeout:          5 * time.Second,
 		MaxRequestBytes:  64 * 1024,
@@ -151,7 +160,7 @@ func discoverBody(t *testing.T, mutate func(*Request)) []byte {
 		Operation:    OperationDiscover,
 		GoogleEmail:  "owner@example.com",
 		AccessToken:  "ya29.synthetic-access-token",
-		Services:     []string{"analytics", "googleads"},
+		Services:     []string{"analytics", "tagmanager"},
 	}
 	if mutate != nil {
 		mutate(&req)
@@ -374,8 +383,8 @@ func TestExecuteDiscoveryDelegatesToControlPlaneEngine(t *testing.T) {
 				{Service: "analytics", ResourceType: "property", ResourceID: "properties/123", DisplayName: "Dev property"},
 			},
 			Statuses: map[string]controlplane.DiscoveryServiceStatus{
-				"analytics": {State: controlplane.DiscoveryServiceOK, ResourceCount: 1, CheckedAt: time.Now().UTC()},
-				"googleads": {State: controlplane.DiscoveryServiceUnavailable, Detail: "google_ads_unconfigured"},
+				"analytics":  {State: controlplane.DiscoveryServiceOK, ResourceCount: 1, CheckedAt: time.Now().UTC()},
+				"tagmanager": {State: controlplane.DiscoveryServiceOK, ResourceCount: 0, CheckedAt: time.Now().UTC()},
 			},
 		}
 	})
@@ -401,8 +410,8 @@ func TestExecuteDiscoveryDelegatesToControlPlaneEngine(t *testing.T) {
 		t.Fatalf("wrong resources: %+v", result.Resources)
 	}
 
-	if result.Statuses["googleads"].State != "unavailable" {
-		t.Fatalf("googleads status must stay honest: %+v", result.Statuses)
+	if result.Statuses["tagmanager"].State != "ok" {
+		t.Fatalf("tagmanager status lost: %+v", result.Statuses)
 	}
 
 	if harness.discoverer.lastAccessToken != "ya29.synthetic-access-token" {
@@ -414,23 +423,22 @@ func TestExecuteDiscoveryDelegatesToControlPlaneEngine(t *testing.T) {
 	}
 }
 
-// Real control-plane engine path: the operator-dependent Google Ads service
-// short-circuits to an honest unavailable status with no fabricated results
-// and no network calls.
-func TestExecuteDiscoveryUsesRealEngineUnavailableStatus(t *testing.T) {
-	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
-		engine.Discoverer = controlplane.EngineDiscoverer{}
-	})
+// Audit-dependent discovery is rejected before the existing local engine runs.
+func TestExecuteDiscoveryRejectsExcludedServices(t *testing.T) {
+	for _, service := range []string{"googleads", "gmail", "driveactivity"} {
+		t.Run(service, func(t *testing.T) {
+			harness := newHarness(t, nil)
+			body := discoverBody(t, func(req *Request) { req.Services = []string{service} })
 
-	body := discoverBody(t, func(req *Request) { req.Services = []string{"googleads"} })
-	response := postExecute(t, harness.server, signInvocation(t, body, nil), body)
+			response := postExecute(t, harness.server, signInvocation(t, body, nil), body)
+			if response.Status != 400 || response.Error.Code != "invalid_request" {
+				t.Fatalf("excluded service was not rejected: %d %s", response.Status, response.Body)
+			}
 
-	if response.Status != 200 || !response.OK {
-		t.Fatalf("unexpected response: %d %s", response.Status, response.Body)
-	}
-
-	if !strings.Contains(string(response.Result), `"google_ads_unconfigured"`) || strings.Contains(string(response.Result), "customers/") {
-		t.Fatalf("honest unavailable status contract failed: %s", response.Result)
+			if harness.discoverer.calls.Load() != 0 {
+				t.Fatal("excluded service reached engine")
+			}
+		})
 	}
 }
 
@@ -498,30 +506,24 @@ func TestExecuteTimesOutWithStructuredError(t *testing.T) {
 	}
 }
 
-func TestExecuteTimesOutWithRealEngineNilError(t *testing.T) {
+func TestExecuteTimesOutWithEngineNilError(t *testing.T) {
 	var discoveryCalls atomic.Int64
 	counter := newCountingCounter()
 	var logBuffer bytes.Buffer
 
 	engine := &Engine{
 		Secret: testSecret,
-		Discoverer: controlplane.EngineDiscoverer{
-			GoogleAdsDeveloperToken: "test-developer-token",
-			GoogleAdsDiscover: func(ctx context.Context, _ controlplane.Connection, token controlplane.OAuthToken) ([]controlplane.ResourceGrant, error) {
-				discoveryCalls.Add(1)
+		Discoverer: reportingDiscovererFunc(func(ctx context.Context, _ controlplane.Connection, token controlplane.OAuthToken) (controlplane.DiscoveryReport, error) {
+			discoveryCalls.Add(1)
 
-				if token.AccessToken != "ya29.synthetic-access-token" || !googleapi.ReadOnly(ctx) || !googleapi.NoInputFromContext(ctx) {
-					t.Error("guarded stored-token read-only/no-input context not propagated")
-				}
+			if token.AccessToken != "ya29.synthetic-access-token" || !googleapi.ReadOnly(ctx) || !googleapi.NoInputFromContext(ctx) {
+				t.Error("guarded stored-token read-only/no-input context not propagated")
+			}
 
-				select {
-				case <-ctx.Done():
-					return nil, fmt.Errorf("google discovery context ended: %w", ctx.Err())
-				case <-time.After(time.Second):
-					return nil, nil
-				}
-			},
-		},
+			<-ctx.Done()
+
+			return controlplane.DiscoveryReport{}, nil
+		}),
 		Counter:          counter,
 		Timeout:          80 * time.Millisecond,
 		MaxRequestBytes:  64 * 1024,
@@ -532,7 +534,7 @@ func TestExecuteTimesOutWithRealEngineNilError(t *testing.T) {
 	server := httptest.NewServer((&Server{Engine: engine}).Handler())
 	t.Cleanup(server.Close)
 
-	body := discoverBody(t, func(req *Request) { req.Services = []string{"googleads"} })
+	body := discoverBody(t, func(req *Request) { req.Services = []string{"analytics"} })
 	response := postExecute(t, server, signInvocation(t, body, nil), body)
 
 	if response.Status != 504 || response.Error.Code != "timeout" {

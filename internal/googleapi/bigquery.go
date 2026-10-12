@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"cloud.google.com/go/bigquery"
+	bigqueryapi "google.golang.org/api/bigquery/v2"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
@@ -91,6 +92,22 @@ type bigQueryAdapter struct {
 	baseURL    string
 }
 
+// NewBigQueryProjectService uses the existing guarded Google transport for
+// project discovery without Cloud Resource Manager or Cloud Platform scopes.
+func NewBigQueryProjectService(ctx context.Context, account string) (*bigqueryapi.Service, error) {
+	client, err := NewHTTPClientForScopes(ctx, "bigquery", account, []string{scopeBigQueryFull})
+	if err != nil {
+		return nil, err
+	}
+
+	service, err := bigqueryapi.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, fmt.Errorf("create BigQuery project discovery: %w", err)
+	}
+
+	return service, nil
+}
+
 func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, error) {
 	if project == "" {
 		return nil, ErrBigQueryProjectRequired
@@ -99,6 +116,20 @@ func NewBigQuery(ctx context.Context, account, project string) (BigQueryClient, 
 	client, err := NewHTTPClientForScopes(ctx, string(googleauth.ServiceBigQuery), account, bigQueryAuthScopes(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("bigquery auth client: %w", err)
+	}
+
+	return NewBigQueryWithHTTPClient(ctx, project, client)
+}
+
+// NewBigQueryWithHTTPClient composes the existing native adapter with a caller's
+// authenticated, guarded transport. It does not add OAuth or credential fallbacks.
+func NewBigQueryWithHTTPClient(ctx context.Context, project string, client *http.Client) (BigQueryClient, error) {
+	if project == "" {
+		return nil, ErrBigQueryProjectRequired
+	}
+
+	if client == nil {
+		return nil, ErrBigQueryHTTPClientRequired
 	}
 
 	bq, err := bigquery.NewClient(ctx, project, option.WithHTTPClient(client))

@@ -567,13 +567,24 @@ func (c *AnalyticsGoogleAdsLinksGetCmd) Run(ctx context.Context, flags *RootFlag
 	if err != nil {
 		return err
 	}
-	resp, err := svc.Properties.GoogleAdsLinks.List(analyticsPropertyPath(c.Property)).Context(ctx).Do()
-	if err != nil {
-		return err
-	}
-	for _, item := range resp.GoogleAdsLinks {
-		if item.Name == analyticsResourcePath(c.GoogleAdsLink) || strings.HasSuffix(item.Name, "/"+strings.TrimSpace(c.GoogleAdsLink)) {
-			return writeAnalyticsAdminItem(ctx, "google_ads_link", item)
+	next := ""
+	for {
+		call := svc.Properties.GoogleAdsLinks.List(analyticsPropertyPath(c.Property)).Context(ctx)
+		if next != "" {
+			call = call.PageToken(next)
+		}
+		resp, callErr := call.Do()
+		if callErr != nil {
+			return callErr
+		}
+		for _, item := range resp.GoogleAdsLinks {
+			if item != nil && (item.Name == analyticsResourcePath(c.GoogleAdsLink) || strings.HasSuffix(item.Name, "/"+strings.TrimSpace(c.GoogleAdsLink))) {
+				return writeAnalyticsAdminItem(ctx, "google_ads_link", item)
+			}
+		}
+		next = resp.NextPageToken
+		if next == "" {
+			break
 		}
 	}
 	return usage("Google Ads link not found")

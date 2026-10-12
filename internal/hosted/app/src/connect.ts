@@ -41,10 +41,15 @@ import {
   isHostedService,
   UnknownServiceError,
   scopesForServices,
+  assertHostedScopes,
+  UnsafeHostedScopeError,
 } from "./scopes.js";
 import { WorkloadIdentityClient, validateRunnerIdentityConfig } from "./runner-auth.js";
 
 export interface ConnectEnv {
+  /** Public, website/API-restricted Picker key and its OAuth project's number. */
+  GOG_GOOGLE_PICKER_API_KEY?: string;
+  GOG_GOOGLE_PICKER_APP_ID?: string;
   GOG_GOOGLE_OAUTH_CLIENT_ID?: string;
   GOG_GOOGLE_OAUTH_CLIENT_SECRET?: string;
   GOG_GOOGLE_OAUTH_REDIRECT_URI?: string;
@@ -89,6 +94,8 @@ export type ConnectErrorCode =
   | "identity_conflict"
   | "connection_not_found"
   | "needs_reconnect"
+  | "scope_blocked"
+  | "picker_rate_limited"
   | "discovery_unavailable"
   | "discovery_error"
   | "internal_error";
@@ -111,6 +118,10 @@ export const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
   identity_conflict: "That Google account is already connected to a different connection.",
   connection_not_found: "That Google connection no longer exists.",
   needs_reconnect: "This Google account needs to be reconnected.",
+  scope_blocked:
+    "This Google grant includes permissions excluded from the audit-free hosted product. Disconnect and reconnect with only supported services.",
+  picker_rate_limited:
+    "Google file selection reached this workspace's daily limit. Try again tomorrow.",
   discovery_unavailable: "The account is connected. Resource discovery is temporarily unavailable.",
   discovery_error: "The account is connected, but resource discovery failed.",
   internal_error: "Something went wrong connecting your Google account.",
@@ -122,6 +133,7 @@ export function auditSafeError(code: ConnectErrorCode): string {
     case "consent_denied":
     case "callback_wrong_tenant":
     case "identity_conflict":
+    case "scope_blocked":
       return "permission_denied";
     case "invalid_request":
     case "state_unknown":
@@ -413,11 +425,20 @@ function viewFor(connection: GoogleConnection): ConnectionView {
 function servicesForScopes(scopes: string[]): string[] {
   const services: string[] = [];
   for (const [service, info] of Object.entries(HOSTED_SERVICES)) {
-    if (info.resourceModel && info.scopes.every((scope) => scopes.includes(scope))) {
+    if (info.scopes.every((scope) => scopes.includes(scope))) {
       services.push(service);
     }
   }
   return services;
+}
+
+function requireSafeScopes(scopes: string[]): void {
+  try {
+    assertHostedScopes(scopes);
+  } catch (error) {
+    if (error instanceof UnsafeHostedScopeError) throw new ConnectError("scope_blocked", 403);
+    throw error;
+  }
 }
 
 /** Stable tuple identity: a delimiter cannot join two distinct resources. */
@@ -459,11 +480,14 @@ export interface StartResult {
 export async function startConnect(
   deps: ConnectDeps,
   session: ConnectSession,
-  body: { connectionId?: unknown; services?: unknown },
+  body: { connectionId?: unknown; services?: unknown; writeServices?: unknown },
 ): Promise<StartResult> {
   let services: string[];
+  let writeServices: string[];
   try {
     services = normalizeServices(body.services);
+    writeServices = normalizeServices(body.writeServices);
+    scopesForServices(services, writeServices);
   } catch (error) {
     if (error instanceof UnknownServiceError) {
       throw new ConnectError("invalid_request", 400);
@@ -500,9 +524,17 @@ export async function startConnect(
       if (info.scopes.every((scope) => previous.includes(scope)) && !services.includes(service)) {
         services.push(service);
       }
+      if (
+        services.includes(service) &&
+        info.writeScopes.length &&
+        info.writeScopes.every((scope) => previous.includes(scope)) &&
+        !writeServices.includes(service)
+      ) {
+        writeServices.push(service);
+      }
     }
   }
-  const scopes = scopesForServices(services);
+  const scopes = scopesForServices(services, writeServices);
   const state = randomToken(32);
   const codeVerifier = randomToken(48);
   const nonce = randomToken(24);
@@ -550,6 +582,7 @@ export interface CallbackResult {
 }
 
 function failureToConnectError(error: unknown): ConnectError {
+  if (error instanceof ConnectError) return error;
   if (error instanceof GoogleOAuthError) {
     switch (error.kind) {
       case "consent_denied":
@@ -656,6 +689,7 @@ export async function completeCallback(
       nonce: bound.nonce,
       redirectUri: bound.redirectUri,
     });
+    requireSafeScopes(token.grantedScopes);
     identity = await deps.oauth.identity(token.accessToken);
   } catch (error) {
     const connectError = failureToConnectError(error);
@@ -723,15 +757,9 @@ export async function completeCallback(
     throw connectError;
   }
 
-  const previousScopes = (() => {
-    try {
-      const parsed = JSON.parse(connection.grantedScopesJson);
-      return Array.isArray(parsed) ? parsed.map(String) : [];
-    } catch {
-      return [];
-    }
-  })();
-  const mergedScopes = mergeScopes(previousScopes, token.grantedScopes);
+  // Google's returned scope set is authoritative. Never reintroduce historical
+  // restricted scopes (or scopes declined in incremental consent).
+  const mergedScopes = mergeScopes([], token.grantedScopes);
   await deps.repo.updateConnectionIdentity(session.tenantId, connection.id, {
     googleSubject: identity.subject,
     email: identity.email,
@@ -751,7 +779,11 @@ export async function completeCallback(
     deps,
     session,
     connection.id,
-    bound.services,
+    bound.services.filter(
+      (name) =>
+        HOSTED_SERVICES[name]?.resourceModel &&
+        HOSTED_SERVICES[name]!.scopes.every((scope) => token.grantedScopes.includes(scope)),
+    ),
     token.accessToken,
   );
 
@@ -861,7 +893,9 @@ export async function discoverConnection(
       return [];
     }
   })();
-  const services = servicesForScopes(grantedScopes);
+  const services = servicesForScopes(grantedScopes).filter(
+    (name) => HOSTED_SERVICES[name]!.resourceModel,
+  );
   const discovery = await runDiscovery(deps, session, connection.id, services, accessToken);
   const updated = await deps.repo.getConnection(session.tenantId, connection.id);
   return {
@@ -878,6 +912,15 @@ export async function accessTokenForConnection(
   session: ConnectSession,
   connection: GoogleConnection,
 ): Promise<string> {
+  return (await googleGrantForConnection(deps, session, connection)).accessToken;
+}
+
+/** The encrypted grant, not mutable connection metadata, is scope authority. */
+export async function googleGrantForConnection(
+  deps: ConnectDeps,
+  session: ConnectSession,
+  connection: GoogleConnection,
+): Promise<{ accessToken: string; scopes: string[] }> {
   const stored = await deps.repo.getCredential(session.tenantId, connection.id);
   if (!stored) {
     await deps.repo.updateConnectionStatus(
@@ -889,16 +932,18 @@ export async function accessTokenForConnection(
     throw new ConnectError("needs_reconnect", 409);
   }
   const payload = await deps.cipher.decrypt(session.tenantId, connection.id, stored);
+  requireSafeScopes(payload.granted_scopes);
   const expiresAt = Date.parse(payload.expiry);
   if (Number.isFinite(expiresAt) && expiresAt > Date.now() + 60_000 && payload.access_token) {
-    return payload.access_token;
+    return { accessToken: payload.access_token, scopes: payload.granted_scopes };
   }
   await refreshConnection(deps, session, connection.id);
   const refreshed = await deps.repo.getCredential(session.tenantId, connection.id);
   if (!refreshed) throw new ConnectError("needs_reconnect", 409);
   const refreshedPayload = await deps.cipher.decrypt(session.tenantId, connection.id, refreshed);
+  requireSafeScopes(refreshedPayload.granted_scopes);
   if (!refreshedPayload.access_token) throw new ConnectError("needs_reconnect", 409);
-  return refreshedPayload.access_token;
+  return { accessToken: refreshedPayload.access_token, scopes: refreshedPayload.granted_scopes };
 }
 
 export async function saveResourceGrants(
@@ -1093,6 +1138,7 @@ export async function refreshConnection(
     throw failureToConnectError(error);
   }
 
+  requireSafeScopes(payload.granted_scopes);
   let token: GoogleTokenSet;
   try {
     token = await deps.oauth.refreshTokenSet({
@@ -1132,6 +1178,7 @@ export async function refreshConnection(
     throw connectError;
   }
 
+  requireSafeScopes(token.grantedScopes);
   const encrypted = await deps.cipher.encrypt(session.tenantId, connectionId, {
     access_token: token.accessToken,
     refresh_token: token.refreshToken || payload.refresh_token,
@@ -1147,12 +1194,11 @@ export async function refreshConnection(
     keyVersion: Number(encrypted.keyVersion),
   });
 
-  const previousScopes = payload.granted_scopes;
   await deps.repo.updateConnectionIdentity(session.tenantId, connectionId, {
     googleSubject: connection.googleSubject,
     email: connection.email,
     displayName: connection.displayName,
-    grantedScopesJson: JSON.stringify(mergeScopes(previousScopes, token.grantedScopes)),
+    grantedScopesJson: JSON.stringify(mergeScopes([], token.grantedScopes)),
   });
   await deps.repo.updateConnectionStatus(session.tenantId, connectionId, "active", "");
   await audit(deps, session, connectionId, "google.connect.refresh", "allow", {

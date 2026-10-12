@@ -60,6 +60,7 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     "0002_oauth_states_discovery.sql",
     "0003_rate_limit_counters.sql",
     "0004_mcp_signal_counters.sql",
+    "0005_tool_grants.sql",
   ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
@@ -170,11 +171,25 @@ async function grantService(
     connection.id,
     service,
     `resource-${service}`,
-    "resource",
+    service === "analytics" ? "property" : "resource",
     service,
     enabled,
     "{}",
   );
+  if (service === "analytics")
+    await repo.saveToolGrants(
+      tenant.id,
+      connection.id,
+      ["analytics_properties_get", "analytics_report", "analytics_datastreams_list"].map(
+        (toolName) => ({
+          service,
+          toolName,
+          enabled: true,
+          allowDestructive: false,
+          allowBillable: false,
+        }),
+      ),
+    );
 }
 
 interface ToolFixture {
@@ -209,13 +224,26 @@ async function createToolFixture(
     enabled,
     "{}",
   );
+  await repo.saveToolGrants(
+    tenant.id,
+    connection.id,
+    ["analytics_properties_get", "analytics_report", "analytics_datastreams_list"].map(
+      (toolName) => ({
+        service: "analytics",
+        toolName,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      }),
+    ),
+  );
   const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
   const credential: StoredGoogleCredential = {
     access_token: ACCESS_TOKEN,
     refresh_token: REFRESH_TOKEN,
     token_type: "Bearer",
     expiry: new Date(Date.now() + 3_600_000).toISOString(),
-    granted_scopes: [],
+    granted_scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
   };
   const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
   await repo.upsertCredential({
@@ -449,14 +477,18 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
       ),
     );
     const namesA = listA.result.tools.map((tool: { name: string }) => tool.name);
-    expect(namesA).toContain("analytics_report");
+    expect(namesA).toEqual([
+      "analytics_report",
+      "analytics_properties_get",
+      "analytics_datastreams_list",
+    ]);
     expect(namesA).not.toContain("googleads_query");
     expect(namesA).not.toContain("tagmanager_accounts_list");
     expect(JSON.stringify(listA)).not.toContain("user_a");
 
     const listB = await rpcJson(await rpc(env, "tools/list", undefined, { token: tokenB }));
     const namesB = listB.result.tools.map((tool: { name: string }) => tool.name);
-    expect(namesB).toContain("tagmanager_accounts_list");
+    expect(namesB).toEqual([]);
     expect(namesB).not.toContain("analytics_report");
   });
 
@@ -498,9 +530,9 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         },
       },
       {
-        detail: "unsupported_tool_mapping",
+        detail: "unknown_tool",
         params: {
-          name: "analytics_report",
+          name: "analytics_accounts",
           arguments: { property: fixture.resourceId },
         },
       },
@@ -664,6 +696,634 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     });
   });
 
+  // This multi-step native D1/JWT case competes with Go builds on the two-CPU
+  // Oracle runner. Keep every assertion and a finite, test-only deadline.
+  it(
+    "routes the added GA4 reads with encrypted scope authority and rejects disabled properties",
+    { timeout: 20_000 },
+    async () => {
+      const requests: ToolExecutionRequest[] = [];
+      const env = await createEnv({
+        __testToolRunner: {
+          async execute(request) {
+            requests.push(request);
+            return { status: "ok", result: { verifiedFixture: true } };
+          },
+        },
+      });
+      const fixture = await createToolFixture(env, "user_native_reads", true);
+      const token = await tokenFor("user_native_reads");
+      for (const name of ["analytics_report", "analytics_datastreams_list"]) {
+        const result = await rpcJson(
+          await rpc(
+            env,
+            "tools/call",
+            {
+              name,
+              arguments: { property: fixture.resourceId, connectionId: fixture.connectionId },
+            },
+            { token },
+          ),
+        );
+        expect(result.result.structuredContent).toEqual({ verifiedFixture: true });
+        expect(requests.at(-1)!.nativeTool).toEqual({
+          name,
+          arguments: { property: fixture.resourceId },
+          scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
+          allowedTools: [name],
+          allowWrite: false,
+          allowDestructive: false,
+        });
+        expect(requests.at(-1)!.tenantId).toBe(fixture.tenantId);
+      }
+      await fixture.repo.setResourceGrantsEnabled(fixture.tenantId, fixture.connectionId, [
+        { service: "analytics", resourceId: fixture.resourceId, enabled: false },
+      ]);
+      const denied = await rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          { name: "analytics_report", arguments: { property: fixture.resourceId } },
+          { token },
+        ),
+      );
+      expect(denied.error.data.detail).toBe("grant_denied");
+      expect(requests).toHaveLength(2);
+    },
+  );
+
+  it("routes Calendar event creation only for an enabled calendar and tool", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { event: { id: "created" } } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "calendar-owner", true);
+    const calendar = "owner+beta@example.test";
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "calendar",
+      calendar,
+      "calendar",
+      "Calendar",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/calendar"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("calendar-owner");
+    const params = {
+      name: "calendar_event_create",
+      arguments: {
+        calendar_id: calendar,
+        summary: "Beta test",
+        from: "2026-10-12T10:00:00Z",
+        to: "2026-10-12T11:00:00Z",
+      },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "calendar",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ event: { id: "created" } });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ resourceType: "calendar", resourceId: calendar });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      allowWrite: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { ...params, arguments: { ...params.arguments, calendar_id: "foreign@example.test" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
+  it("routes account Contacts writes without fabricated contact assets", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { contact: { resourceName: "people/c7" } } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "contacts-owner", true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/contacts"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("contacts-owner");
+    const params = {
+      name: "contacts_create",
+      arguments: { given: "Hosted", email: "test@example.test" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "contacts",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ contact: { resourceName: "people/c7" } });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      service: "contacts",
+      resourceType: "",
+      resourceId: "",
+      connectionId: fixture.connectionId,
+    });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      arguments: params.arguments,
+      allowWrite: true,
+      scopes: ["https://www.googleapis.com/auth/contacts"],
+    });
+  });
+
+  it("routes sitemap submission only for an enabled Search Console site", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { submitted: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "search-owner", true);
+    const site = "https://example.test/";
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "searchconsole",
+      site,
+      "site",
+      "Site",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/webmasters"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("search-owner");
+    const params = {
+      name: "searchconsole_sitemaps_submit",
+      arguments: { site_url: site, feed_path: "https://example.test/sitemap.xml" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "searchconsole",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const submitted = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(submitted.result.structuredContent).toEqual({ submitted: true });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({ resourceType: "site", resourceId: site });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      scopes: ["https://www.googleapis.com/auth/webmasters"],
+      allowWrite: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { ...params, arguments: { ...params.arguments, site_url: "https://foreign.test/" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
+  it("routes explicit GA4 Admin writes only within an enabled property", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { name: "properties/123/keyEvents/7" } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "admin-owner", true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/analytics.edit"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("admin-owner");
+    const params = {
+      name: "analytics_keyevents_create",
+      arguments: { property: fixture.resourceId, body_json: '{"eventName":"hosted_test"}' },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "analytics",
+        toolName: params.name,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ name: "properties/123/keyEvents/7" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      scopes: ["https://www.googleapis.com/auth/analytics.edit"],
+      allowWrite: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { ...params, arguments: { ...params.arguments, property: "properties/999" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
+  it("routes GTM publishing only for an enabled canonical container and tool", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { published: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "gtm-owner", true);
+    const container = "accounts/111/containers/222";
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "tagmanager",
+      container,
+      "container",
+      "GTM",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/tagmanager.publish"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("gtm-owner");
+    const params = {
+      name: "tagmanager_versions_publish",
+      arguments: { container_path: container, version: "7" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "tagmanager",
+        toolName: "tagmanager_versions_publish",
+        enabled: true,
+        allowDestructive: true,
+        allowBillable: false,
+      },
+    ]);
+    const published = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(published.result.structuredContent).toEqual({ published: true });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      service: "tagmanager",
+      resourceType: "container",
+      resourceId: container,
+    });
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name: params.name,
+      arguments: params.arguments,
+      allowWrite: true,
+      allowDestructive: true,
+    });
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        {
+          ...params,
+          arguments: { ...params.arguments, container_path: "accounts/111/containers/333" },
+        },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
+  it("routes account Tasks without fake resources and rejects a foreign account", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { id: "new-list" } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "tasks-owner", true);
+    const foreign = await createToolFixture(env, "tasks-foreign", true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/tasks"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("tasks-owner");
+    const params = {
+      name: "tasks_lists_create",
+      arguments: { title: "New list" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(created.result.structuredContent).toEqual({ id: "new-list" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      connectionId: fixture.connectionId,
+      service: "tasks",
+      resourceType: "",
+      resourceId: "",
+    });
+    expect(requests[0]!.nativeTool!.arguments).toEqual({ title: "New list" });
+    const rejected = await rpcJson(
+      await rpc(env, "tools/call", { ...params, connectionId: foreign.connectionId }, { token }),
+    );
+    expect(rejected.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+
+    const sibling = await fixture.repo.createConnection(
+      fixture.tenantId,
+      "tasks-sibling",
+      "sibling@example.test",
+      "Sibling",
+      "[]",
+    );
+    await fixture.repo.saveToolGrants(fixture.tenantId, sibling.id, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const ambiguous = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        {
+          name: params.name,
+          arguments: params.arguments,
+        },
+        { token },
+      ),
+    );
+    expect(ambiguous.error.data.detail).toBe("connection_ambiguous");
+    expect(requests).toHaveLength(1);
+    const listed = await rpcJson(await rpc(env, "tools/list", {}, { token }));
+    const schema = listed.result.tools.find(
+      (tool: { name: string }) => tool.name === params.name,
+    ).inputSchema;
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.properties.connectionId.enum.sort()).toEqual(
+      [fixture.connectionId, sibling.id].sort(),
+    );
+    expect(schema.properties.connectionId.enum).not.toContain(foreign.connectionId);
+    expect(schema.required).toContain("connectionId");
+    const siblingEncrypted = await cipher.encrypt(fixture.tenantId, sibling.id, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/tasks"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: sibling.id,
+      ciphertext: siblingEncrypted.ciphertext,
+      nonce: siblingEncrypted.nonce,
+      keyVersion: Number(siblingEncrypted.keyVersion),
+    });
+    for (const selected of schema.properties.connectionId.enum) {
+      const response = await rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          {
+            name: params.name,
+            arguments: { title: "New list", connectionId: selected },
+          },
+          { token },
+        ),
+      );
+      expect(response.result.structuredContent).toEqual({ id: "new-list" });
+      expect(requests.at(-1)!.connectionId).toBe(selected);
+      expect(requests.at(-1)!.nativeTool!.arguments).toEqual({ title: "New list" });
+    }
+    expect(requests).toHaveLength(3);
+  });
+
+  it("routes an explicitly permitted selected-file write and denies after tool disable", async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { written: true } };
+        },
+      },
+    });
+    const fixture = await createToolFixture(env, "docs-owner", true);
+    await fixture.repo.upsertResourceGrant(
+      fixture.tenantId,
+      fixture.connectionId,
+      "docs",
+      "selected-doc",
+      "file",
+      "Doc",
+      true,
+      "{}",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(fixture.tenantId, fixture.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: fixture.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("docs-owner");
+    const params = {
+      name: "docs_write",
+      arguments: { document_id: "selected-doc", text: "hello" },
+      connectionId: fixture.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "docs",
+        toolName: "docs_write",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const written = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(written.result.structuredContent).toEqual({ written: true });
+    expect(requests[0]!.nativeTool).toEqual({
+      name: "docs_write",
+      arguments: { document_id: "selected-doc", text: "hello" },
+      scopes: ["https://www.googleapis.com/auth/drive.file"],
+      allowedTools: ["docs_write"],
+      allowWrite: true,
+      allowDestructive: false,
+    });
+    await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+      {
+        service: "docs",
+        toolName: "docs_write",
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const disabled = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(disabled.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+
   it("executes the mapped read through the runner and rechecks disabled grants", async () => {
     const mock = mockToolRunner();
     const env = await createEnv({ __testToolRunner: mock.runner });
@@ -808,6 +1468,38 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(serialized).not.toContain(ACCESS_TOKEN);
     expect(serialized).not.toContain(REFRESH_TOKEN);
     expect(serialized).not.toContain("raw runner failure");
+  });
+
+  it("preserves structured runner diagnostics in execution errors", async () => {
+    const runner: ToolRunner = {
+      async execute() {
+        return {
+          status: "error",
+          detail: { runnerStatus: 502, runnerBodyJson: true },
+        };
+      },
+    };
+    const env = await createEnv({ __testToolRunner: runner });
+    const fixture = await createToolFixture(env, "user_runner_diagnostics", true);
+    const body = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+        { token: await tokenFor("user_runner_diagnostics") },
+      ),
+    );
+
+    expect(body).toMatchObject({
+      error: {
+        code: -32002,
+        data: {
+          reason: "execution_failed",
+          runner_detail: { runnerStatus: 502, runnerBodyJson: true },
+        },
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain("[object Object]");
   });
 
   it("returns JSON-RPC parse, invalid-request, and method-not-found errors", async () => {

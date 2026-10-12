@@ -26,9 +26,9 @@ const (
 // token) stay inside this set and surface honest unavailable statuses from
 // the engine; they are never fabricated as successes.
 var establishedDiscoveryServices = map[string]bool{
+	"calendar":      true,
 	"analytics":     true,
 	"tagmanager":    true,
-	"googleads":     true,
 	"searchconsole": true,
 	"bigquery":      true,
 }
@@ -58,6 +58,8 @@ type Request struct {
 	AccessToken   string              `json:"access_token"`
 	Services      []string            `json:"services,omitempty"`
 	Resource      *ResourceGrantInput `json:"resource,omitempty"`
+	Tool          *ToolInvocation     `json:"tool,omitempty"`
+	FileSelection *FileSelection      `json:"file_selection,omitempty"`
 }
 
 type validator struct{}
@@ -115,7 +117,7 @@ func (v validator) validateRequest(req *Request) error {
 		return err
 	}
 
-	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead {
+	if req.Operation != OperationDiscover && req.Operation != OperationAnalyticsPropertyRead && req.Operation != OperationToolCall && req.Operation != OperationVerifyFiles {
 		return invalidf("unsupported operation")
 	}
 
@@ -150,6 +152,18 @@ func (v validator) validateRequest(req *Request) error {
 	}
 
 	switch req.Operation {
+	case OperationVerifyFiles:
+		if req.GoogleSubject == "" {
+			return invalidf("missing google_subject")
+		}
+
+		return validateFileSelection(req.FileSelection)
+	case OperationToolCall:
+		if req.GoogleSubject == "" {
+			return invalidf("missing google_subject")
+		}
+
+		return validateToolInvocation(req.Tool)
 	case OperationDiscover:
 		return v.validateDiscoveryServices(req.Services)
 	case OperationAnalyticsPropertyRead:

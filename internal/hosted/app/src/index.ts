@@ -26,6 +26,8 @@
  * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
 import { HostedRepository } from "../../state/src/repository.js";
+import { saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
+import { startPicker, completePicker } from "./picker.js";
 import { authenticate, type ClerkEnv } from "./auth.js";
 import {
   buildConnectDeps,
@@ -113,6 +115,9 @@ const GOOGLE_API_PATHS = [
   "/api/google/connect",
   "/api/google/resources",
   "/api/google/grants",
+  "/api/google/tools",
+  "/api/google/picker/start",
+  "/api/google/picker/complete",
   "/oauth/google/callback",
 ];
 const GOOGLE_CONNECTION_ACTION =
@@ -201,6 +206,46 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
           tenantId: session.tenant.id,
         });
         return Response.json(result, { headers: securityHeaders() });
+      }
+      if (path === "/api/google/tools") {
+        const context = {
+          userId: session.userId,
+          sessionId: session.sessionId,
+          tenantId: session.tenant.id,
+        };
+        try {
+          if (request.method === "GET") {
+            return Response.json(
+              await toolPermissionView(repo, context, url.searchParams.get("connectionId") ?? ""),
+              { headers: securityHeaders() },
+            );
+          }
+          if (request.method === "POST") {
+            let body: Record<string, unknown>;
+            try {
+              body = (await request.json()) as Record<string, unknown>;
+            } catch {
+              throw new ConnectError("invalid_request", 400);
+            }
+            if (
+              !body ||
+              Array.isArray(body) ||
+              typeof body.connectionId !== "string" ||
+              Object.keys(body).some((key) => !["connectionId", "grants"].includes(key))
+            ) {
+              throw new ConnectError("invalid_request", 400);
+            }
+            return Response.json(
+              await saveToolPermissions(repo, context, body.connectionId, body.grants),
+              { headers: securityHeaders() },
+            );
+          }
+          return safeError(405, "Unsupported request for this route.");
+        } catch (error) {
+          if (error instanceof ConnectError)
+            return connectErrorResponse(error.status, error.code, error.message);
+          throw error;
+        }
       }
       if (path === "/api/google/grants" && request.method === "POST") {
         let body: Record<string, unknown> = {};
@@ -331,6 +376,31 @@ async function handleGoogleRoute(
   const deps = depsOutcome.deps;
 
   try {
+    if (request.method === "POST" && path === "/api/google/picker/start") {
+      const body = (await request.json()) as Record<string, unknown>;
+      if (
+        typeof body.connectionId !== "string" ||
+        Object.keys(body).some((key) => key !== "connectionId")
+      )
+        throw new ConnectError("invalid_request", 400);
+      const result = await startPicker(deps, session, body.connectionId, {
+        apiKey: env.GOG_GOOGLE_PICKER_API_KEY ?? "",
+        appId: env.GOG_GOOGLE_PICKER_APP_ID ?? "",
+      });
+      return Response.json(result, {
+        headers: {
+          ...securityHeaders(),
+          "Cache-Control": "no-store",
+          "Referrer-Policy": "no-referrer",
+        },
+      });
+    }
+    if (request.method === "POST" && path === "/api/google/picker/complete") {
+      const result = await completePicker(deps, session, await request.json());
+      return Response.json(result, {
+        headers: { ...securityHeaders(), "Cache-Control": "no-store" },
+      });
+    }
     if (request.method === "GET" && path === "/api/google/connections") {
       const result = await listConnections(deps, session);
       return Response.json(result, { headers: securityHeaders() });

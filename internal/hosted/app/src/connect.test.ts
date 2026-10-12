@@ -9,7 +9,9 @@ import {
   disconnect,
   listConnections,
   refreshConnection,
+  discoverConnection,
   startConnect,
+  accessTokenForConnection,
   type ConnectDeps,
   type ConnectSession,
 } from "./connect.js";
@@ -129,7 +131,9 @@ describe("hosted Google connection lifecycle (#62)", () => {
 
   it("starts a bound flow: stub connection + one-use state + PKCE/nonce URL", async () => {
     const session = await harness.sessionFor(TENANT_A);
-    const start = await startConnect(harness.deps(), session, { services: ["analytics", "gmail"] });
+    const start = await startConnect(harness.deps(), session, {
+      services: ["analytics", "calendar"],
+    });
     expect(start.authorizationUrl).toContain("accounts.google.com");
     expect(start.authorizationUrl).toContain("code_challenge_method=S256");
     expect(start.authorizationUrl).toContain("access_type=offline");
@@ -148,7 +152,7 @@ describe("hosted Google connection lifecycle (#62)", () => {
   it("rejects unknown services and reconnects to missing connections", async () => {
     const session = await harness.sessionFor(TENANT_A);
     await expect(
-      startConnect(harness.deps(), session, { services: ["youtube"] }),
+      startConnect(harness.deps(), session, { services: ["gmail"] }),
     ).rejects.toMatchObject({
       code: "invalid_request",
     });
@@ -338,6 +342,89 @@ describe("hosted Google connection lifecycle (#62)", () => {
     );
     expect(result.connection.status).toBe("active");
     expect(result.connection.id).toBe(connection.id);
+  });
+
+  it("discovers calendars after consent and preserves enabled choices across refresh/failure", async () => {
+    const session = await harness.sessionFor(TENANT_A);
+    const google = {
+      token: tokenResponse({
+        scope: "openid email https://www.googleapis.com/auth/calendar.readonly",
+      }),
+      userinfo: { sub: "calendar-sub", email: "calendar@example.test", email_verified: true },
+    };
+    let fail = false;
+    let expanded = false;
+    const runner: DiscoveryRunner = {
+      async discover(request) {
+        expect(request.services).toEqual(["calendar"]);
+        if (fail)
+          return { status: "error", detail: "synthetic page failure", resources: [], statuses: {} };
+        return mapWireReport({
+          resources: [
+            {
+              service: "calendar",
+              resource_type: "calendar",
+              resource_id: "owner+beta@example.test",
+              display_name: "Primary",
+            },
+            ...(expanded
+              ? [
+                  {
+                    service: "calendar",
+                    resource_type: "calendar",
+                    resource_id: "en.uk#holiday@group.v.calendar.google.com",
+                    display_name: "Holidays",
+                  },
+                ]
+              : []),
+          ],
+          statuses: {
+            calendar: {
+              state: "ok",
+              detail: "",
+              resource_count: expanded ? 2 : 1,
+              checked_at: "2026-10-12T00:00:00Z",
+            },
+          },
+        });
+      },
+    };
+    const deps = harness.deps({ google, runner });
+    const started = await startConnect(deps, session, { services: ["calendar"] });
+    const done = await completeCallback(
+      deps,
+      session,
+      new URLSearchParams({
+        code: "code",
+        state: new URL(started.authorizationUrl).searchParams.get("state")!,
+      }),
+    );
+    const first = await harness.repo.listResourceGrants(session.tenantId, done.connection.id);
+    expect(first).toHaveLength(1);
+    expect(first[0]!.enabled).toBe(false);
+    await harness.repo.upsertResourceGrant(
+      session.tenantId,
+      done.connection.id,
+      "calendar",
+      first[0]!.resourceId,
+      "calendar",
+      "Primary",
+      true,
+      "{}",
+    );
+    expanded = true;
+    await discoverConnection(deps, session, done.connection.id);
+    const refreshed = await harness.repo.listResourceGrants(session.tenantId, done.connection.id);
+    expect(refreshed).toHaveLength(2);
+    expect(refreshed.find((grant) => grant.resourceId === first[0]!.resourceId)!.enabled).toBe(
+      true,
+    );
+    expect(refreshed.find((grant) => grant.resourceId.startsWith("en.uk#"))!.enabled).toBe(false);
+    fail = true;
+    await discoverConnection(deps, session, done.connection.id);
+    expect(await harness.repo.listResourceGrants(session.tenantId, done.connection.id)).toEqual(
+      refreshed,
+    );
   });
 
   it("applies discovery results with least privilege and preserves grants on failure", async () => {
@@ -683,5 +770,111 @@ describe("hosted Google connection lifecycle (#62)", () => {
     expect(await harness.repo.listResourceGrants(session.tenantId, done.connection.id)).toEqual(
       grants,
     );
+  });
+  it("requests incremental write consent only for explicit selected services", async () => {
+    const session = await harness.sessionFor(TENANT_A);
+    const start = await startConnect(harness.deps(), session, {
+      services: ["analytics", "calendar"],
+      writeServices: ["analytics"],
+    });
+    const url = new URL(start.authorizationUrl);
+    const requested = url.searchParams.get("scope")!.split(" ");
+    expect(requested).toContain("https://www.googleapis.com/auth/analytics.edit");
+    expect(requested).not.toContain("https://www.googleapis.com/auth/calendar");
+    expect(url.searchParams.get("include_granted_scopes")).toBe("true");
+    await expect(
+      startConnect(harness.deps(), session, {
+        services: ["analytics"],
+        writeServices: ["calendar"],
+      }),
+    ).rejects.toMatchObject({ code: "invalid_request" });
+  });
+
+  it.each(["drive", "chat.messages", "adwords", "gmail.readonly", "new.transitive.scope"])(
+    "rejects an indirectly returned %s scope before persistence or discovery",
+    async (scope) => {
+      const session = await harness.sessionFor(TENANT_A);
+      const start = await startConnect(harness.deps(), session, { services: ["analytics"] });
+      const deps = harness.deps({
+        google: {
+          token: tokenResponse({ scope: "openid email https://www.googleapis.com/auth/" + scope }),
+          userinfo: { sub: "sub-1", email: "a@example.com", email_verified: true },
+        },
+      });
+      await expect(
+        completeCallback(
+          deps,
+          session,
+          new URLSearchParams({
+            code: "c",
+            state: new URL(start.authorizationUrl).searchParams.get("state")!,
+          }),
+        ),
+      ).rejects.toMatchObject({ code: "scope_blocked", status: 403 });
+      expect(await harness.repo.getCredential(session.tenantId, start.connectionId)).toBeNull();
+      expect(await harness.repo.listConnections(session.tenantId)).toHaveLength(0);
+    },
+  );
+
+  it("blocks historical restricted stored credentials before refresh or execution", async () => {
+    const session = await harness.sessionFor(TENANT_A);
+    const start = await startConnect(harness.deps(), session, { services: ["analytics"] });
+    const done = await completeCallback(
+      harness.deps(),
+      session,
+      new URLSearchParams({
+        code: "c",
+        state: new URL(start.authorizationUrl).searchParams.get("state")!,
+      }),
+    );
+    const connection = (await harness.repo.getConnection(session.tenantId, done.connection.id))!;
+    const encrypted = await harness.cipher.encrypt(session.tenantId, connection.id, {
+      access_token: "ya29.historical",
+      refresh_token: "1//historical",
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    });
+    await harness.repo.upsertCredential({
+      tenantId: session.tenantId,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    await expect(
+      accessTokenForConnection(harness.deps(), session, connection),
+    ).rejects.toMatchObject({ code: "scope_blocked" });
+    await expect(refreshConnection(harness.deps(), session, connection.id)).rejects.toMatchObject({
+      code: "scope_blocked",
+    });
+  });
+
+  it("does not overwrite safe credentials when a refresh returns a restricted scope", async () => {
+    const session = await harness.sessionFor(TENANT_A);
+    const start = await startConnect(harness.deps(), session, { services: ["analytics"] });
+    const done = await completeCallback(
+      harness.deps(),
+      session,
+      new URLSearchParams({
+        code: "c",
+        state: new URL(start.authorizationUrl).searchParams.get("state")!,
+      }),
+    );
+    const before = await harness.repo.getCredential(session.tenantId, done.connection.id);
+    await expect(
+      refreshConnection(
+        harness.deps({
+          google: {
+            token: tokenResponse({
+              scope: "openid https://www.googleapis.com/auth/drive",
+            }),
+          },
+        }),
+        session,
+        done.connection.id,
+      ),
+    ).rejects.toMatchObject({ code: "scope_blocked" });
+    expect(await harness.repo.getCredential(session.tenantId, done.connection.id)).toEqual(before);
   });
 });

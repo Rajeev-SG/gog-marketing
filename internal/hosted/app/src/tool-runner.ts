@@ -9,8 +9,10 @@
  */
 
 import { signRunnerCapabilityJwt, type NativeIdentityProvider } from "./runner-auth.js";
+import { assertHostedScopes } from "./scopes.js";
 
 export const ANALYTICS_PROPERTY_READ = "analytics_property_read" as const;
+export const NATIVE_TOOL_CALL = "tool_call" as const;
 
 export interface AnalyticsPropertyResult {
   name: string;
@@ -22,12 +24,20 @@ export interface AnalyticsPropertyResult {
 export interface ToolExecutionRequest {
   tenantId: string;
   connectionId: string;
-  service: "analytics";
-  resourceType: "property";
+  service: string;
+  resourceType: string;
   resourceId: string;
   accessToken: string;
   googleEmail: string;
   googleSubject: string;
+  nativeTool?: {
+    name: string;
+    arguments: Record<string, unknown>;
+    scopes: string[];
+    allowedTools: string[];
+    allowWrite: boolean;
+    allowDestructive: boolean;
+  };
 }
 
 export interface RunnerResponseDiagnostics {
@@ -36,12 +46,30 @@ export interface RunnerResponseDiagnostics {
 }
 
 export type ToolExecutionOutcome =
-  | { status: "ok"; result: AnalyticsPropertyResult }
+  | { status: "ok"; result: unknown }
   | { status: "unavailable" | "error"; detail: string | RunnerResponseDiagnostics };
 
 export interface ToolRunner {
   execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome>;
+  verifyFiles?(request: SelectedFilesRequest): Promise<SelectedFilesOutcome>;
 }
+
+export interface SelectedFilesRequest {
+  tenantId: string;
+  connectionId: string;
+  googleEmail: string;
+  googleSubject: string;
+  accessToken: string;
+  scopes: string[];
+  ids: string[];
+}
+export type SelectedFilesOutcome =
+  | {
+      status: "ok";
+      files: Array<{ id: string; name: string; mime_type: string }>;
+      rejected: string[];
+    }
+  | { status: "error" | "unavailable" };
 
 export class UnavailableToolRunner implements ToolRunner {
   async execute(_request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
@@ -106,7 +134,91 @@ export class RemoteToolRunner implements ToolRunner {
     this.fetchImpl = options.fetchImpl ?? fetch.bind(globalThis);
   }
 
+  async verifyFiles(request: SelectedFilesRequest): Promise<SelectedFilesOutcome> {
+    try {
+      assertHostedScopes(request.scopes);
+      if (!request.scopes.includes("https://www.googleapis.com/auth/drive.file"))
+        return { status: "error" };
+      const signal = AbortSignal.timeout(20_000);
+      const nativeToken = await this.identity.nativeIdToken(this.url.origin, signal);
+      const bytes = new TextEncoder().encode(
+        JSON.stringify({
+          request_id: crypto.randomUUID(),
+          tenant_id: request.tenantId,
+          connection_id: request.connectionId,
+          operation: "verify_files",
+          google_email: request.googleEmail,
+          google_subject: request.googleSubject,
+          access_token: request.accessToken,
+          file_selection: { ids: request.ids, scopes: request.scopes },
+        }),
+      );
+      const capability = await signRunnerCapabilityJwt(
+        this.invocationToken,
+        {
+          tenantId: request.tenantId,
+          connectionId: request.connectionId,
+          operation: "verify_files",
+        },
+        bytes,
+      );
+      const response = await this.fetchImpl(this.url, {
+        method: "POST",
+        redirect: "manual",
+        signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${capability}`,
+          "X-Serverless-Authorization": `Bearer ${nativeToken}`,
+        },
+        body: bytes,
+      });
+      if (!response.ok) return { status: "error" };
+      const wire: unknown = await response.json();
+      if (
+        !isPlainObject(wire) ||
+        wire.operation !== "verify_files" ||
+        wire.ok !== true ||
+        !isPlainObject(wire.result) ||
+        !Array.isArray(wire.result.files) ||
+        !Array.isArray(wire.result.rejected)
+      )
+        return { status: "error" };
+      const files: Array<{ id: string; name: string; mime_type: string }> = [];
+      for (const item of wire.result.files) {
+        if (
+          !isPlainObject(item) ||
+          typeof item.id !== "string" ||
+          typeof item.name !== "string" ||
+          typeof item.mime_type !== "string" ||
+          !request.ids.includes(item.id)
+        )
+          return { status: "error" };
+        files.push({ id: item.id, name: item.name, mime_type: item.mime_type });
+      }
+      if (
+        !wire.result.rejected.every(
+          (id: unknown) => typeof id === "string" && request.ids.includes(id),
+        )
+      )
+        return { status: "error" };
+      const accounted = [...files.map((file) => file.id), ...wire.result.rejected];
+      if (new Set(accounted).size !== request.ids.length || accounted.length !== request.ids.length)
+        return { status: "error" };
+      return { status: "ok", files, rejected: wire.result.rejected };
+    } catch {
+      return { status: "unavailable" };
+    }
+  }
+
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionOutcome> {
+    if (request.nativeTool) {
+      try {
+        assertHostedScopes(request.nativeTool.scopes);
+      } catch {
+        return { status: "error", detail: "scope_blocked" };
+      }
+    }
     const deadlineSignal = AbortSignal.timeout(20_000);
     if (deadlineSignal.aborted) return { status: "error", detail: "runner_timeout" };
 
@@ -117,20 +229,40 @@ export class RemoteToolRunner implements ToolRunner {
       return { status: "unavailable", detail: "operator_identity_unavailable" };
     }
 
+    const resource =
+      request.resourceType === ""
+        ? null
+        : {
+            service: request.service,
+            resource_type: request.resourceType,
+            resource_id: request.resourceId,
+            enabled: true,
+          };
+    const operation = request.nativeTool ? NATIVE_TOOL_CALL : ANALYTICS_PROPERTY_READ;
     const body = {
       request_id: crypto.randomUUID(),
       tenant_id: request.tenantId,
       connection_id: request.connectionId,
-      operation: ANALYTICS_PROPERTY_READ,
+      operation,
       google_email: request.googleEmail,
       google_subject: request.googleSubject,
       access_token: request.accessToken,
-      resource: {
-        service: request.service,
-        resource_type: request.resourceType,
-        resource_id: request.resourceId,
-        enabled: true,
-      },
+      ...(request.nativeTool
+        ? {
+            tool: {
+              name: request.nativeTool.name,
+              arguments: request.nativeTool.arguments,
+              authorization: {
+                service: request.service,
+                allowed_tools: request.nativeTool.allowedTools,
+                scopes: request.nativeTool.scopes,
+                resource,
+                allow_write: request.nativeTool.allowWrite,
+                allow_destructive: request.nativeTool.allowDestructive,
+              },
+            },
+          }
+        : { resource }),
     };
     const exactBodyBytes = new TextEncoder().encode(JSON.stringify(body));
     const capability = await signRunnerCapabilityJwt(
@@ -138,7 +270,7 @@ export class RemoteToolRunner implements ToolRunner {
       {
         tenantId: request.tenantId,
         connectionId: request.connectionId,
-        operation: ANALYTICS_PROPERTY_READ,
+        operation,
       },
       exactBodyBytes,
     );
@@ -185,6 +317,17 @@ export class RemoteToolRunner implements ToolRunner {
         status: "error",
         detail: { runnerStatus: response.status, runnerBodyJson },
       };
+    }
+    if (request.nativeTool) {
+      if (
+        !isPlainObject(wire) ||
+        wire.operation !== NATIVE_TOOL_CALL ||
+        wire.ok !== true ||
+        !(isPlainObject(wire.result) || typeof wire.result === "string")
+      ) {
+        return { status: "error", detail: "runner_invalid_response" };
+      }
+      return { status: "ok", result: wire.result };
     }
     if (!isRunnerEnvelope(wire)) {
       return { status: "error", detail: "runner_invalid_response" };

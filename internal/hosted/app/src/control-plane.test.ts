@@ -62,7 +62,12 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     }),
   );
   const db = (await mf.getD1Database("DB")) as unknown as D1Database;
-  for (const file of ["0001_initial_schema.sql", "0002_oauth_states_discovery.sql"]) {
+  for (const file of [
+    "0001_initial_schema.sql",
+    "0002_oauth_states_discovery.sql",
+    "0005_tool_grants.sql",
+    "0006_picker_sessions.sql",
+  ]) {
     for (const statement of splitMigrationStatements(loadMigrationSql(file))) {
       const result = await db.batch([db.prepare(statement)]);
       if (!result[0]?.success) throw new Error(`migration failed: ${statement}`);
@@ -141,6 +146,139 @@ async function readRepo(env: Env): Promise<HostedRepository> {
 }
 
 describe("control plane route and UI contracts (#64)", () => {
+  it("issues Picker-only ephemeral credentials and persists server-verified selections through native D1", async () => {
+    const env = await createEnv({
+      GOG_GOOGLE_OAUTH_CLIENT_ID: "client",
+      GOG_GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+      GOG_GOOGLE_OAUTH_REDIRECT_URI: `${ORIGIN}/oauth/google/callback`,
+      GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY: CREDENTIAL_KEY,
+      GOG_GOOGLE_PICKER_API_KEY: "restricted-public-key",
+      GOG_GOOGLE_PICKER_APP_ID: "123",
+      __testToolRunner: {
+        async execute() {
+          return { status: "unavailable", detail: "unused" };
+        },
+        async verifyFiles(request) {
+          return {
+            status: "ok",
+            files: request.ids.map((id) => ({
+              id,
+              name: "Server verified",
+              mime_type: "application/vnd.google-apps.document",
+            })),
+            rejected: [],
+          };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("picker-owner");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "picker-google",
+      "owner@example.com",
+      "",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, {
+      access_token: "ephemeral-picker-token",
+      refresh_token: "never-browser-refresh",
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+    });
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const started = await authenticatedRequest(
+      `${ORIGIN}/api/google/picker/start`,
+      "picker-owner",
+      env,
+      { method: "POST", body: JSON.stringify({ connectionId: connection.id }) },
+    );
+    expect(started.status).toBe(200);
+    expect(started.headers.get("cache-control")).toBe("no-store");
+    const config = (await started.json()) as { pickerSession: string; accessToken: string };
+    expect(config.accessToken).toBe("ephemeral-picker-token");
+    expect(JSON.stringify(config)).not.toContain("never-browser-refresh");
+    const done = await authenticatedRequest(
+      `${ORIGIN}/api/google/picker/complete`,
+      "picker-owner",
+      env,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          connectionId: connection.id,
+          pickerSession: config.pickerSession,
+          fileIds: ["selected-doc"],
+        }),
+      },
+    );
+    expect(done.status).toBe(200);
+    expect(await done.json()).toEqual({ selectedCount: 1, rejectedCount: 0 });
+    const grants = await repo.listResourceGrants(tenant.id, connection.id);
+    expect(grants.map((grant) => grant.service)).toEqual(["docs", "drive"]);
+    expect(grants.every((grant) => !grant.enabled)).toBe(true);
+  });
+
+  it("persists account-scoped tool permissions through authenticated native-D1 routes", async () => {
+    const env = await createEnv();
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("tool-owner");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-tool-owner",
+      "owner@example.com",
+      "",
+      "[]",
+    );
+    const payload = {
+      connectionId: connection.id,
+      grants: [{ toolName: "docs_write", enabled: true, allowDestructive: false }],
+    };
+    const saved = await authenticatedRequest(`${ORIGIN}/api/google/tools`, "tool-owner", env, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    expect(saved.status).toBe(200);
+    expect(
+      ((await saved.json()) as { tools: Array<{ name: string; enabled: boolean }> }).tools.find(
+        (tool) => tool.name === "docs_write",
+      )!.enabled,
+    ).toBe(true);
+    const reread = await authenticatedRequest(
+      `${ORIGIN}/api/google/tools?connectionId=${connection.id}`,
+      "tool-owner",
+      env,
+    );
+    expect(reread.status).toBe(200);
+    expect(
+      ((await reread.json()) as { tools: Array<{ name: string; enabled: boolean }> }).tools.find(
+        (tool) => tool.name === "docs_write",
+      )!.enabled,
+    ).toBe(true);
+    const foreign = await authenticatedRequest(
+      `${ORIGIN}/api/google/tools`,
+      "foreign-tool-owner",
+      env,
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+    expect(foreign.status).toBe(404);
+    const rejected = await cookieRequest(
+      `${ORIGIN}/api/google/tools`,
+      "tool-owner",
+      env,
+      JSON.stringify(payload),
+      "https://attacker.example",
+    );
+    expect(rejected.status).toBe(403);
+  });
+
   it("rejects protected resource and mutation routes without authentication", async () => {
     const env = await createEnv();
     for (const [path, init] of [
@@ -170,7 +308,7 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain("Workspace address is not configured.");
-    expect(html).toContain("authentication is not enabled yet");
+    expect(html).toContain("not a public-beta readiness claim");
     expect(html).not.toContain(`${CANONICAL_ORIGIN}/mcp`);
     expect(html).toContain('<button id="copy-mcp-url" type="button" disabled>');
   });
@@ -183,7 +321,11 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain(`${CANONICAL_ORIGIN}/mcp`);
-    expect(html).toContain("When authentication is enabled, add the URL as a remote MCP server");
+    expect(html).toContain("Add this HTTPS URL as a remote MCP server in Codex");
+    expect(html).toContain("Complete the Clerk browser sign-in");
+    expect(html).not.toContain("When authentication is enabled");
+    expect(html).toContain(".asset-picker {");
+    expect(html).not.toContain(".picker {");
     expect(html).not.toContain("evil.example.com");
     expect(html).not.toMatch(UUID_RE);
   });
@@ -563,18 +705,28 @@ describe("control plane route and UI contracts (#64)", () => {
     const reconnect = new Function(
       "startConnection",
       "selectedServices",
+      "selectedWriteServices",
       "connection",
       `${extraction("reconnect")}; return reconnect(connection);`,
     );
     const reconnectRequest: Record<string, unknown> = {};
     const connection = { id: "owned-connection", email: "owner@example.com" };
-    (reconnect as (start: unknown, selected: () => string[], context: unknown) => void)(
+    (
+      reconnect as (
+        start: unknown,
+        selected: () => string[],
+        writes: () => string[],
+        context: unknown,
+      ) => void
+    )(
       (request: Record<string, unknown>) => Object.assign(reconnectRequest, request),
       () => ["analytics", "tagmanager"],
+      () => ["tagmanager"],
       connection,
     );
     expect(reconnectRequest.connectionId).toBe("owned-connection");
     expect(reconnectRequest.services).toEqual(["analytics", "tagmanager"]);
+    expect(reconnectRequest.writeServices).toEqual(["tagmanager"]);
 
     const guarded = new Function(
       "message",

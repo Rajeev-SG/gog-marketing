@@ -24,6 +24,64 @@ async function close(server: Server): Promise<void> {
 }
 
 describe("RemoteToolRunner transport", () => {
+  it("signs a read-only native invocation with trusted resource and actual scopes", async () => {
+    let sent: Record<string, unknown> | undefined;
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/v1/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async (_url, init) => {
+        sent = JSON.parse(new TextDecoder().decode(init!.body as Uint8Array));
+        return Response.json({
+          operation: "tool_call",
+          ok: true,
+          result: { rows: [{ metric: 3 }] },
+        });
+      }) as typeof fetch,
+    });
+    const result = await runner.execute({
+      tenantId: "trusted-tenant",
+      connectionId: "trusted-connection",
+      service: "analytics",
+      resourceType: "property",
+      resourceId: "properties/123",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "owner@example.com",
+      googleSubject: "trusted-sub",
+      nativeTool: {
+        name: "analytics_report",
+        arguments: { property: "properties/123" },
+        scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+        allowedTools: ["analytics_report"],
+        allowWrite: false,
+        allowDestructive: false,
+      },
+    });
+    expect(sent).toMatchObject({
+      operation: "tool_call",
+      tenant_id: "trusted-tenant",
+      connection_id: "trusted-connection",
+      tool: {
+        name: "analytics_report",
+        arguments: { property: "properties/123" },
+        authorization: {
+          allowed_tools: ["analytics_report"],
+          scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+          resource: { service: "analytics", resource_id: "properties/123", enabled: true },
+          allow_write: false,
+          allow_destructive: false,
+        },
+      },
+    });
+    expect(sent).not.toHaveProperty("resource");
+    expect(result).toEqual({ status: "ok", result: { rows: [{ metric: 3 }] } });
+    expect(JSON.stringify(result)).not.toContain(GOOGLE_ACCESS_TOKEN);
+  });
+
   it("returns only non-secret response diagnostics for non-2xx responses", async () => {
     const runner = new RemoteToolRunner({
       url: new URL("https://runner.example.test/execute"),

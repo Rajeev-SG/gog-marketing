@@ -1,3 +1,5 @@
+import { HOSTED_SERVICES } from "./scopes.js";
+
 /**
  * HTML shell rendering for the hosted Worker.
  *
@@ -54,12 +56,12 @@ export function securityHeaders(clerkDomain = ""): Record<string, string> {
   const clerkScriptSources = clerkDomain ? [`https://${clerkDomain}`] : [];
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `script-src 'self' 'unsafe-inline' ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com https://apis.google.com`,
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: ${clerkScriptSources.join(" ")} https://img.clerk.com`,
     `font-src 'self' ${clerkScriptSources.join(" ")}`,
     `connect-src 'self' ${clerkSources.join(" ")} https://*.protect.clerk.com:*`,
-    `frame-src ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com`,
+    `frame-src ${clerkScriptSources.join(" ")} https://challenges.cloudflare.com https://*.protect.clerk.com https://docs.google.com`,
     "worker-src 'self' blob:",
     `form-action 'self' ${clerkScriptSources.join(" ")}`,
     "object-src 'none'",
@@ -152,6 +154,10 @@ button:disabled { cursor: default; opacity: .7; }
 .service-consent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin-bottom: 12px; }
 .service-choice { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
 .service-choice input { width: 18px; height: 18px; accent-color: var(--action); }
+.tool-choice { display: grid; gap: 8px; margin: 12px 0; font-size: 13.5px; }
+.tool-choice label { display: flex; align-items: flex-start; gap: 8px; }
+.tool-choice input { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--action); }
+#tool-status { display: block; margin-top: 8px; }
 .connect-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .account-card + .account-card { margin-top: 16px; }
 .status {
@@ -171,7 +177,7 @@ button:disabled { cursor: default; opacity: .7; }
 }
 .toast.error { color: #c22731; border-left: 4px solid #c22731; }
 .toast.info { color: var(--status-ok); border-left: 4px solid var(--status-ok); }
-.picker { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
+.asset-picker { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
 .rail { position: sticky; top: 80px; display: grid; gap: 8px; }
 .rail-group-label { margin: 8px 0 2px; color: var(--text-faint); font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; }
 .rail-item {
@@ -206,7 +212,7 @@ button:disabled { cursor: default; opacity: .7; }
 .muted { color: var(--text-muted); }
 #user-button { min-height: 40px; }
 @media (max-width: 900px) {
-  .picker { grid-template-columns: 1fr; }
+  .asset-picker { grid-template-columns: 1fr; }
   .rail { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tiles, .service-consent { grid-template-columns: 1fr; }
 }
@@ -339,7 +345,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         <p class="eyebrow">Home</p>
         <h1>Your Google accounts</h1>
         <p>Your workspace is ready.</p>
-        <p>Connect accounts with read-only consent, then choose exactly which assets your agents may use.</p>
+        <p>Connect accounts with only the permissions you select, then choose exactly which assets your agents may use.</p>
       </div>
       <div id="app-message" class="toast" role="status" aria-live="polite" hidden><span></span></div>
       <div class="tiles" aria-label="Workspace summary">
@@ -351,15 +357,18 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       </section>
       <section class="stack">
         <h2>Connect a Google account</h2>
-        <p class="connect-help">Select only what this account should use. Access is read-only and agents start with zero assets enabled.</p>
-        <div id="connect-services" class="service-consent" aria-label="Optional read-only services"></div>
+        <p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled. Scope eligibility does not guarantee account or hosted-tool availability. Some Google permissions combine read and write; explicit tool and resource grants remain required.</p>
+        <div id="connect-services" class="service-consent" aria-label="Optional Google service permissions"></div>
         <div class="connect-actions">
           <button id="connect-google" type="button" class="primary">Connect Google account</button>
           <span id="connect-status" class="muted" role="status" aria-live="polite"></span>
         </div>
       </section>
       <section id="asset-workspace" hidden aria-label="Assets and access">
-        <div class="picker">
+        <p>Choose existing Drive, Docs, Sheets, Slides, Forms or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
+        <button id="pick-files" type="button">Choose Google files</button>
+        <span id="picker-status" role="status" aria-live="polite"></span>
+        <div class="asset-picker">
           <nav class="rail" id="asset-rail" aria-label="Google services"></nav>
           <div id="asset-groups"></div>
         <div class="savebar">
@@ -368,34 +377,36 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         </div>
         </div>
       </section>
+      <section id="tool-workspace" class="card" hidden aria-labelledby="tool-heading">
+        <h2 id="tool-heading">AI tool permissions</h2>
+        <p>Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes. Changes affect this account only.</p>
+        <div id="tool-choices" aria-label="Tools for the selected Google account"></div>
+        <button id="save-tools" type="button" class="primary">Save tool permissions</button>
+        <span id="tool-status" role="status" aria-live="polite"></span>
+      </section>
       <section class="card ai-panel" aria-labelledby="ai-panel-heading">
         <p class="eyebrow">Connect to your AI</p>
         <h2 id="ai-panel-heading">Codex remote MCP endpoint</h2>
-        <p>This is the canonical public HTTPS address for your workspace. The endpoint is prepared, but authentication is not enabled yet; Codex will not connect successfully today.</p>
+        <p>Use this canonical HTTPS address in Codex, sign in with Clerk, then execute only the tools and assets enabled for your Google account. Expanded service coverage is still being verified; this is not a public-beta readiness claim.</p>
         <div class="mcp-row">
           <code id="mcp-url">${canonicalMcpUrl || "Workspace address is not configured."}</code>
           <button id="copy-mcp-url" type="button"${canonicalMcpUrl ? "" : " disabled"}>Copy URL</button>
         </div>
         <ol class="setup-list">
-          <li>Copy the URL and keep it for your future Codex remote MCP configuration.</li>
-          <li>When authentication is enabled, add the URL as a remote MCP server in Codex.</li>
-          <li>Codex will then prompt you to complete browser OAuth. Do not paste tokens.</li>
+          <li>Add this HTTPS URL as a remote MCP server in Codex.</li>
+          <li>Complete the Clerk browser sign-in when Codex prompts you.</li>
+          <li>Enable the intended account, tools and assets in this workspace, then run a test call. Never paste tokens.</li>
         </ol>
         <p class="muted">Tenant identifiers, database IDs, provider IDs, and credentials are never shown here.</p>
       </section>
     </main>
   </div>
   <script>
-    var SERVICE_CATEGORIES = {
-      analytics: 'Marketing', googleads: 'Marketing', tagmanager: 'Marketing',
-      searchconsole: 'Marketing', bigquery: 'Marketing',
-      gmail: 'Workspace', calendar: 'Workspace', drive: 'Workspace'
-    };
-    var SERVICE_LABELS = {
-      analytics: 'Google Analytics 4', googleads: 'Google Ads',
-      tagmanager: 'Google Tag Manager', searchconsole: 'Search Console',
-      bigquery: 'BigQuery', gmail: 'Gmail', calendar: 'Calendar', drive: 'Drive'
-    };
+    var SERVICE_INFO = ${JSON.stringify(HOSTED_SERVICES)};
+    var SERVICE_CATEGORIES = Object.fromEntries(Object.keys(SERVICE_INFO).map(function (name) {
+      return [name, ['analytics', 'tagmanager', 'searchconsole', 'bigquery', 'adsense', 'cloudadmin', 'youtube'].includes(name) ? 'Marketing' : 'Workspace'];
+    }));
+    var SERVICE_LABELS = Object.fromEntries(Object.entries(SERVICE_INFO).map(function (entry) { return [entry[0], entry[1].label]; }));
     var data = { connections: [] };
     var selectedId = null;
     var originalChoices = new Map();
@@ -565,12 +576,104 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       return 'Run discovery to check this account.';
     }
     function selectAccount(id) {
+      if (id !== selectedId && toolChoicesDirty && !window.confirm('Discard unsaved tool permission changes for this account?')) return;
       selectedId = id;
-      renderAccounts(); renderAssets();
+      renderAccounts(); renderAssets(); renderToolPermissions();
       el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    var toolChoices = new Map();
+    var toolChoicesConnectionId = null;
+    var toolChoicesDirty = false;
+    async function renderToolPermissions() {
+      var connection = selectedAccount(); var panel = el('tool-workspace');
+      if (!connection) { panel.hidden = true; return; }
+      panel.hidden = false; toolChoices.clear(); toolChoicesConnectionId = null; el('save-tools').disabled = true; el('tool-choices').textContent = ''; el('tool-status').textContent = 'Loading tool permissions…';
+      var connectionId = connection.id;
+      try {
+        var response = await fetch('/api/google/tools?connectionId=' + encodeURIComponent(connectionId));
+        if (!response.ok) throw new Error('Could not load tool permissions.');
+        var result = await response.json();
+        if (!selectedAccount() || selectedAccount().id !== connectionId) return;
+        toolChoices.clear(); toolChoicesDirty = false; toolChoicesConnectionId = connectionId; el('save-tools').disabled = false; el('tool-status').textContent = '';
+        result.tools.forEach(function (tool) {
+          var row = document.createElement('div'); row.className = 'tool-choice';
+          var labelNode = document.createElement('label');
+          var input = document.createElement('input'); input.type = 'checkbox'; input.checked = tool.enabled;
+          var choice = { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive };
+          toolChoices.set(tool.name, choice);
+          input.addEventListener('change', function () {
+            if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for this account?')) input.checked = false;
+            choice.enabled = input.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
+            if (!input.checked) { choice.allowDestructive = false; if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; } }
+            else if (destructiveInput) destructiveInput.disabled = false;
+          });
+          labelNode.appendChild(input); labelNode.append(document.createTextNode(tool.name + (tool.write ? ' · writes' : ' · reads') + ' — ' + tool.description)); row.appendChild(labelNode);
+          var destructiveInput = null;
+          if (tool.write) {
+            var destructiveLabel = document.createElement('label'); destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = tool.allowDestructive; destructiveInput.disabled = !tool.enabled;
+            destructiveInput.addEventListener('change', function () {
+              if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) destructiveInput.checked = false;
+              choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
+            });
+            destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel);
+          }
+          el('tool-choices').appendChild(row);
+        });
+      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not load tools.'; }
+    }
+    async function saveTools() {
+      var connection = selectedAccount(); if (!connection) return;
+      var connectionId = connection.id; if (toolChoicesConnectionId !== connectionId) return;
+      var grants = Array.from(toolChoices.values()).map(function (choice) { return { toolName: choice.toolName, enabled: choice.enabled, allowDestructive: choice.allowDestructive }; });
+      el('tool-status').textContent = 'Saving…';
+      try {
+        var response = await jsonFetch('/api/google/tools', { connectionId: connectionId, grants: grants });
+        if (!response.ok) { var result = await response.json(); throw new Error(result.error || 'Could not save tool permissions.'); }
+        if (selectedAccount() && selectedAccount().id === connectionId) { await renderToolPermissions(); el('tool-status').textContent = 'Tool permissions saved for this account.'; }
+      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not save tools.'; }
     }
     function jsonFetch(url, body) {
       return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : '{}' });
+    }
+    var pickerLibraryPromise = null;
+    function loadPickerLibrary() {
+      if (!pickerLibraryPromise) pickerLibraryPromise = new Promise(function (resolve, reject) {
+        var script = document.createElement('script'); script.src = 'https://apis.google.com/js/api.js';
+        script.onload = function () { gapi.load('picker', { callback: resolve, onerror: function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); } }); };
+        script.onerror = function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); };
+        document.head.appendChild(script);
+      });
+      return pickerLibraryPromise;
+    }
+    async function pickFiles() {
+      var connection = selectedAccount(); if (!connection) return;
+      var connectionId = connection.id; var status = el('picker-status');
+      status.textContent = 'Preparing Google Picker for ' + connection.email + '…';
+      try {
+        await loadPickerLibrary();
+        var response = await jsonFetch('/api/google/picker/start', { connectionId: connectionId });
+        var config = await response.json();
+        if (!response.ok) throw new Error(config.error || 'Picker is not configured. The operator must configure its restricted API key/project number; reconnect with selected-file consent if needed.');
+        var picker = new google.picker.PickerBuilder()
+          .setDeveloperKey(config.apiKey).setAppId(config.appId).setOAuthToken(config.accessToken)
+          .setOrigin(window.location.origin).addView(new google.picker.DocsView(google.picker.ViewId.DOCS))
+          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+          .setCallback(async function (result) {
+            if (result.action === google.picker.Action.CANCEL) { config.accessToken = ''; status.textContent = 'File selection cancelled. Existing access is unchanged.'; return; }
+            if (result.action !== google.picker.Action.PICKED) return;
+            config.accessToken = '';
+            var ids = result[google.picker.Response.DOCUMENTS].map(function (item) { return item[google.picker.Document.ID]; });
+            try {
+              var verified = await jsonFetch('/api/google/picker/complete', { connectionId: connectionId, pickerSession: config.pickerSession, fileIds: ids });
+              var saved = await verified.json();
+              if (!verified.ok) throw new Error(saved.error || 'Selected files could not be verified. Open Picker again to retry.');
+              await loadResources();
+              status.textContent = saved.selectedCount + ' files verified for ' + connection.email + '; ' + saved.rejectedCount + ' unavailable. New files remain disabled.';
+            } catch (error) { status.textContent = error.message || 'File verification failed.'; }
+          }).build();
+        picker.setVisible(true);
+        status.textContent = 'Select files for ' + config.googleEmail + '. No other account will be changed.';
+      } catch (error) { status.textContent = error.message || 'Could not open Google Picker.'; }
     }
     async function loadResources() {
       try {
@@ -579,7 +682,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         data = await response.json();
         if (!data.connections || !data.connections.length) { data.connections = []; selectedId = null; }
         else if (!selectedId || !data.connections.some(function (item) { return item.id === selectedId; })) selectedId = data.connections[0].id;
-        renderAccounts(); renderAssets();
+        renderAccounts(); renderAssets(); renderToolPermissions();
         return true;
       } catch { message('Could not load your Google assets. Try again.', 'error'); return false; }
     }
@@ -596,7 +699,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         message(actionLabel + ' complete.', 'info');
       } catch (error) { message(error.message || actionLabel + ' failed.', 'error'); }
     }
-    function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices() }); }
+    function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices(), writeServices: selectedWriteServices() }); }
     function refresh(connection) { guardedAction('Refresh', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/refresh'); }); }
     function discover(connection) { guardedAction('Discovery', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/discover'); }); }
     function disconnect(connection) {
@@ -618,13 +721,23 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       var target = el('connect-services'); target.textContent = '';
       Object.keys(SERVICE_LABELS).forEach(function (service) {
         var wrapper = document.createElement('label'); wrapper.className = 'service-choice';
-        var input = document.createElement('input'); input.type = 'checkbox'; input.value = service;
-        wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read-only'));
+        var input = document.createElement('input'); input.type = 'checkbox'; input.value = service; input.dataset.permission = 'read';
+        wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read access'));
         target.appendChild(wrapper);
+        if (SERVICE_INFO[service].writeScopes.length) {
+          var writeLabel = document.createElement('label'); writeLabel.className = 'service-choice';
+          var writeInput = document.createElement('input'); writeInput.type = 'checkbox'; writeInput.value = service; writeInput.dataset.permission = 'write'; writeInput.disabled = true;
+          input.addEventListener('change', function () { writeInput.disabled = !input.checked; if (!input.checked) writeInput.checked = false; });
+          writeLabel.appendChild(writeInput); writeLabel.append(document.createTextNode('Allow ' + SERVICE_LABELS[service] + ' writes'));
+          target.appendChild(writeLabel);
+        }
       });
     }
+    function selectedWriteServices() {
+      return Array.from(el('connect-services').querySelectorAll('input[data-permission="write"]:checked')).map(function (input) { return input.value; });
+    }
     function selectedServices() {
-      return Array.from(el('connect-services').querySelectorAll('input:checked')).map(function (input) { return input.value; });
+      return Array.from(el('connect-services').querySelectorAll('input[data-permission="read"]:checked')).map(function (input) { return input.value; });
     }
     async function startConnection(body) {
       var status = el('connect-status'); status.textContent = '';
@@ -641,8 +754,10 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       if (userButton) Clerk.mountUserButton(userButton);
       var signOutButton = el('sign-out');
       if (signOutButton) signOutButton.addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
-      el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices() }); });
+      el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); });
       el('save-grants').addEventListener('click', function () { return save(); });
+      el('save-tools').addEventListener('click', saveTools);
+      el('pick-files').addEventListener('click', pickFiles);
       var copyButton = el('copy-mcp-url');
       if (copyButton) copyButton.addEventListener('click', function () {
         navigator.clipboard.writeText(el('mcp-url').textContent);

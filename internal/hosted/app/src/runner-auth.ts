@@ -15,7 +15,7 @@ const IAM_CREDENTIALS_HOST = "https://iamcredentials.googleapis.com";
 const NATIVE_ID_CACHE_SKEW_MS = 60_000;
 
 /** Allowed signed contexts, mirroring the Go request's fixed operations. */
-export type RunnerOperation = "discover" | "analytics_property_read";
+export type RunnerOperation = "discover" | "analytics_property_read" | "tool_call" | "verify_files";
 
 /** Exact WIF configuration supplied by the trusted operator environment. */
 export interface RunnerIdentityConfig {

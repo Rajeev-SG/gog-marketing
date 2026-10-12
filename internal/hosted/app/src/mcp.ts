@@ -21,22 +21,24 @@ import {
   type ClerkEnv,
 } from "./auth.js";
 import {
-  accessTokenForConnection,
+  googleGrantForConnection,
   buildConnectDeps,
   ConnectError,
   type ConnectEnv,
   type ConnectSession,
 } from "./connect.js";
+import { EXECUTABLE_TOOLS } from "./tool-permissions.js";
 import { HostedRepository } from "../../state/src/repository.js";
 import type {
   GoogleConnection,
   McpObservableSignal,
   ResourceGrant,
   Tenant,
+  ToolGrant,
 } from "../../state/src/types.js";
 import {
   ANALYTICS_PROPERTY_READ,
-  type AnalyticsPropertyResult,
+  NATIVE_TOOL_CALL,
   type ToolExecutionOutcome,
 } from "./tool-runner.js";
 
@@ -77,177 +79,42 @@ interface McpTool {
   annotations?: Record<string, boolean>;
 }
 
-function schema(
-  properties: Record<string, unknown> = {},
-  required: string[] = [],
-): Record<string, unknown> {
-  return { type: "object", properties, required, additionalProperties: false };
+const TOOL_CATALOG: Record<string, McpTool[]> = {};
+for (const entry of EXECUTABLE_TOOLS) {
+  (TOOL_CATALOG[entry.service] ??= []).push(entry.tool);
 }
-
-const STRING = { type: "string" } as const;
-const INTEGER = (minimum: number, maximum: number, defaultValue?: number) => ({
-  type: "integer",
-  minimum,
-  maximum,
-  ...(defaultValue === undefined ? {} : { default: defaultValue }),
-});
-
-function tool(
-  name: string,
-  description: string,
-  properties: Record<string, unknown> = {},
-  required: string[] = [],
-): McpTool {
-  return {
-    name,
-    description,
-    inputSchema: schema(properties, required),
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-  };
-}
-
-// Names, descriptions, and argument contracts mirror internal/cmd/mcp_marketing.go.
-const TOOL_CATALOG: Record<string, McpTool[]> = {
-  analytics: [
-    tool("analytics_accounts", "List GA4 account summaries.", {
-      max: INTEGER(1, 200, 50),
-    }),
-    tool(
-      "analytics_report",
-      "Run a GA4 Data API report.",
-      {
-        property: STRING,
-        dimensions: { type: "string", default: "date" },
-        metrics: { type: "string", default: "activeUsers" },
-        from: { type: "string", default: "7daysAgo" },
-        to: { type: "string", default: "today" },
-        max: INTEGER(1, 250000, 100),
-      },
-      ["property"],
-    ),
-    tool("analytics_properties_list", "List GA4 properties.", { max: INTEGER(1, 200, 50) }),
-    tool("analytics_properties_get", "Get one GA4 property.", { property: STRING }, ["property"]),
-    tool(
-      "analytics_datastreams_list",
-      "List GA4 data streams.",
-      { property: STRING, max: INTEGER(1, 200, 50) },
-      ["property"],
-    ),
-  ],
-  tagmanager: [
-    tool("tagmanager_accounts_list", "List GTM accounts."),
-    tool("tagmanager_containers_list", "List GTM containers for an account.", { account: STRING }, [
-      "account",
-    ]),
-    tool(
-      "tagmanager_workspaces_list",
-      "List GTM workspaces.",
-      { account: STRING, container: STRING },
-      ["account", "container"],
-    ),
-    ...["tags", "triggers", "variables"].map((kind) =>
-      tool(
-        `tagmanager_${kind}_list`,
-        `List GTM ${kind}.`,
-        { account: STRING, container: STRING, workspace: STRING },
-        ["account", "container", "workspace"],
-      ),
-    ),
-    tool(
-      "tagmanager_versions_list",
-      "List GTM container version headers.",
-      { account: STRING, container: STRING, workspace: STRING },
-      ["account", "container", "workspace"],
-    ),
-  ],
-  googleads: [
-    tool("googleads_customers_list", "List accessible Google Ads customers."),
-    tool(
-      "googleads_query",
-      "Run a bounded Google Ads GAQL search.",
-      {
-        customer_id: STRING,
-        query: STRING,
-        page_size: INTEGER(1, 10000, 100),
-        all: { type: "boolean", default: false },
-      },
-      ["customer_id", "query"],
-    ),
-  ],
-  searchconsole: [
-    tool("searchconsole_sites_list", "List Search Console sites."),
-    tool(
-      "searchconsole_query",
-      "Run a Search Console Search Analytics query.",
-      {
-        site_url: STRING,
-        from: STRING,
-        to: STRING,
-        dimensions: { type: "string", default: "QUERY" },
-        max: INTEGER(1, 25000, 1000),
-      },
-      ["site_url", "from", "to"],
-    ),
-    tool("searchconsole_sitemaps_list", "List Search Console sitemaps.", { site_url: STRING }, [
-      "site_url",
-    ]),
-  ],
-  bigquery: [
-    tool(
-      "bigquery_datasets_list",
-      "List BigQuery datasets.",
-      { project: STRING, max: INTEGER(1, 1000, 100) },
-      ["project"],
-    ),
-    tool(
-      "bigquery_tables_list",
-      "List BigQuery tables.",
-      { project: STRING, dataset: STRING, max: INTEGER(1, 1000, 100) },
-      ["project", "dataset"],
-    ),
-    tool(
-      "bigquery_table_get",
-      "Get BigQuery table metadata.",
-      { project: STRING, dataset: STRING, table: STRING },
-      ["project", "dataset", "table"],
-    ),
-    tool(
-      "bigquery_table_schema",
-      "Get BigQuery table schema.",
-      { project: STRING, dataset: STRING, table: STRING },
-      ["project", "dataset", "table"],
-    ),
-    tool(
-      "bigquery_table_rows",
-      "Read a bounded number of BigQuery table rows.",
-      {
-        project: STRING,
-        dataset: STRING,
-        table: STRING,
-        max: INTEGER(1, 10000, 100),
-      },
-      ["project", "dataset", "table"],
-    ),
-  ],
-};
 
 interface ToolResourceMapping {
-  service: "analytics";
-  resourceType: "property";
-  resourceArgument: "property";
+  service: string;
+  resourceType: string;
+  resourceArgument: string;
   resourcePattern: RegExp;
-  operation: typeof ANALYTICS_PROPERTY_READ;
+  operation: typeof ANALYTICS_PROPERTY_READ | typeof NATIVE_TOOL_CALL;
 }
-
-const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = {
-  analytics_properties_get: {
-    service: "analytics",
-    resourceType: "property",
-    resourceArgument: "property",
-    resourcePattern: /^properties\/[0-9]+$/,
-    operation: ANALYTICS_PROPERTY_READ,
-  },
-};
+const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = Object.fromEntries(
+  EXECUTABLE_TOOLS.map((entry) => [
+    entry.name,
+    {
+      service: entry.service,
+      resourceType: entry.resource_type,
+      resourceArgument: entry.resource_argument,
+      resourcePattern:
+        entry.resource_type === "property"
+          ? /^properties\/[0-9]+$/
+          : entry.resource_type === "account"
+            ? /^accounts\/[0-9]+$/
+            : entry.resource_type === "container"
+              ? /^accounts\/[0-9]+\/containers\/[0-9]+$/
+              : entry.resource_type === "site"
+                ? /^(?:sc-domain:[A-Za-z0-9.-]+|https?:\/\/[^\s?#]+)$/
+                : entry.resource_type === "calendar"
+                  ? /^[A-Za-z0-9._@#+-]{1,256}$/
+                  : /^[A-Za-z0-9_-]{1,256}$/,
+      operation:
+        entry.name === "analytics_properties_get" ? ANALYTICS_PROPERTY_READ : NATIVE_TOOL_CALL,
+    },
+  ]),
+);
 const MAX_RESOURCE_IDENTIFIER_LENGTH = 256;
 
 type ToolDenialReason =
@@ -541,24 +408,57 @@ export async function handleMcpMetadata(
   }
 }
 
-async function permittedServices(repo: HostedRepository, tenantId: string): Promise<Set<string>> {
-  const services = new Set<string>();
-  const connections = await repo.listConnections(tenantId);
-  for (const connection of connections) {
-    if (connection.status !== "active") continue;
-    for (const grant of await repo.listResourceGrants(tenantId, connection.id)) {
-      if (grant.enabled) services.add(grant.service);
-    }
-  }
-  return services;
-}
-
 export async function policyTools(repo: HostedRepository, tenant: Tenant): Promise<McpTool[]> {
   if (tenant.status !== "active") return [];
-  const services = await permittedServices(repo, tenant.id);
-  return Object.entries(TOOL_CATALOG)
-    .filter(([service]) => services.has(service))
-    .flatMap(([, tools]) => tools);
+  const permitted = new Map<string, string[]>();
+  for (const connection of await repo.listConnections(tenant.id)) {
+    if (connection.status !== "active") continue;
+    const resources = await repo.listResourceGrants(tenant.id, connection.id);
+    for (const grant of await repo.listToolGrants(tenant.id, connection.id)) {
+      const definition = EXECUTABLE_TOOLS.find(
+        (entry) => entry.name === grant.toolName && entry.service === grant.service,
+      );
+      if (
+        grant.enabled &&
+        definition &&
+        (definition.resource_type === "" ||
+          resources.some(
+            (resource) =>
+              resource.enabled &&
+              resource.service === definition.service &&
+              resource.resourceType === definition.resource_type,
+          ))
+      ) {
+        const accounts = permitted.get(grant.toolName) ?? [];
+        accounts.push(connection.id);
+        permitted.set(grant.toolName, accounts);
+      }
+    }
+  }
+  return EXECUTABLE_TOOLS.filter((entry) => permitted.has(entry.name)).map((entry) => {
+    const tool: McpTool = entry.tool;
+    const accounts = permitted.get(entry.name)!;
+    const properties = isRecord(tool.inputSchema.properties) ? tool.inputSchema.properties : {};
+    const required = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required : [];
+    return {
+      ...tool,
+      inputSchema: {
+        ...tool.inputSchema,
+        properties: {
+          ...properties,
+          connectionId: {
+            type: "string",
+            enum: accounts,
+            description:
+              "Select an enabled Google connection ID from the enum; required when multiple accounts enable this account-level tool.",
+          },
+        },
+        ...(entry.resource_type === "" && accounts.length > 1
+          ? { required: [...required, "connectionId"] }
+          : {}),
+      },
+    };
+  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -581,7 +481,8 @@ function auditIdentifiers(
   resourceId: string,
 ): { operation: string; service: string; resourceType: string; resource: string } {
   const resourceMatches =
-    resourceId.length <= MAX_RESOURCE_IDENTIFIER_LENGTH &&
+    resourceId.length <=
+      (mapping?.resourceType === "site" ? 2048 : MAX_RESOURCE_IDENTIFIER_LENGTH) &&
     (mapping?.resourcePattern.test(resourceId) ?? false);
   return {
     operation: catalogTool(toolName)?.name ?? "unknown",
@@ -679,7 +580,7 @@ function toolCallDenial(id: JsonRpcId, reason: ToolDenialReason) {
 }
 
 type GrantedResource =
-  | { kind: "ok"; connection: GoogleConnection; grant: ResourceGrant }
+  | { kind: "ok"; connection: GoogleConnection; grant: ResourceGrant | null; toolGrant: ToolGrant }
   | { kind: "deny"; reason: ToolDenialReason };
 
 async function resolveGrantedResource(
@@ -688,7 +589,29 @@ async function resolveGrantedResource(
   mapping: ToolResourceMapping,
   resourceId: string,
   connectionId: string | null,
+  toolName: string,
 ): Promise<GrantedResource> {
+  if (mapping.resourceType === "") {
+    const candidates: Array<{ connection: GoogleConnection; grant: null; toolGrant: ToolGrant }> =
+      [];
+    const connections =
+      connectionId === null
+        ? await repo.listConnections(tenantId)
+        : [await repo.getConnection(tenantId, connectionId)];
+    for (const connection of connections) {
+      if (!connection || connection.status !== "active") continue;
+      const toolGrant = (await repo.listToolGrants(tenantId, connection.id)).find(
+        (entry) =>
+          entry.toolName === toolName && entry.service === mapping.service && entry.enabled,
+      );
+      if (toolGrant) candidates.push({ connection, grant: null, toolGrant });
+    }
+    if (candidates.length === 1) return { kind: "ok", ...candidates[0]! };
+    return {
+      kind: "deny",
+      reason: candidates.length > 1 ? "connection_ambiguous" : "grant_denied",
+    };
+  }
   const matches = (grant: ResourceGrant) =>
     grant.service === mapping.service &&
     grant.resourceType === mapping.resourceType &&
@@ -701,14 +624,26 @@ async function resolveGrantedResource(
     }
     const grant = (await repo.listResourceGrants(tenantId, connection.id)).find(matches);
     if (!grant || !grant.enabled) return { kind: "deny", reason: "grant_denied" };
-    return { kind: "ok", connection, grant };
+    const toolGrant = (await repo.listToolGrants(tenantId, connection.id)).find(
+      (entry) => entry.toolName === toolName && entry.service === mapping.service && entry.enabled,
+    );
+    if (!toolGrant) return { kind: "deny", reason: "grant_denied" };
+    return { kind: "ok", connection, grant, toolGrant };
   }
 
-  const candidates: Array<{ connection: GoogleConnection; grant: ResourceGrant }> = [];
+  const candidates: Array<{
+    connection: GoogleConnection;
+    grant: ResourceGrant;
+    toolGrant: ToolGrant;
+  }> = [];
   for (const connection of await repo.listConnections(tenantId)) {
     if (connection.status !== "active") continue;
+    const toolGrant = (await repo.listToolGrants(tenantId, connection.id)).find(
+      (entry) => entry.toolName === toolName && entry.service === mapping.service && entry.enabled,
+    );
+    if (!toolGrant) continue;
     for (const grant of await repo.listResourceGrants(tenantId, connection.id)) {
-      if (grant.enabled && matches(grant)) candidates.push({ connection, grant });
+      if (grant.enabled && matches(grant)) candidates.push({ connection, grant, toolGrant });
     }
   }
   if (candidates.length === 1) return { kind: "ok", ...candidates[0]! };
@@ -737,11 +672,11 @@ function originRejected(request: Request, resource: string): boolean {
   return origin !== new URL(resource).origin && origin !== new URL(request.url).origin;
 }
 
-function toolCallResult(id: JsonRpcId, result: AnalyticsPropertyResult) {
+function toolCallResult(id: JsonRpcId, result: unknown) {
   return {
     body: jsonRpcResult(id, {
       content: [{ type: "text", text: JSON.stringify(result) }],
-      structuredContent: result,
+      ...(isRecord(result) ? { structuredContent: result } : {}),
     }),
     status: 200,
   };
@@ -1001,8 +936,8 @@ async function handleToolCall(
   const rawResource = args[mapping.resourceArgument];
   const resourceId = typeof rawResource === "string" ? rawResource.trim() : "";
   if (
-    resourceId.length > MAX_RESOURCE_IDENTIFIER_LENGTH ||
-    !mapping.resourcePattern.test(resourceId)
+    resourceId.length > (mapping.resourceType === "site" ? 2048 : MAX_RESOURCE_IDENTIFIER_LENGTH) ||
+    (mapping.resourceType !== "" && !mapping.resourcePattern.test(resourceId))
   ) {
     await writeToolAudit(
       repo,
@@ -1022,6 +957,7 @@ async function handleToolCall(
     mapping,
     resourceId,
     connectionId,
+    name,
   );
   const resolvedIdentifiers = auditIdentifiers(name, mapping, resourceId);
   if (resolved.kind === "deny") {
@@ -1084,13 +1020,28 @@ async function handleToolCall(
   }
 
   let accessToken: string;
+  let grantedScopes: string[] = [];
   try {
-    accessToken = await accessTokenForConnection(
+    const grant = await googleGrantForConnection(
       depsOutcome.deps,
       connectSession,
       resolved.connection,
     );
+    accessToken = grant.accessToken;
+    grantedScopes = grant.scopes;
   } catch (error) {
+    if (error instanceof ConnectError && error.code === "scope_blocked") {
+      await writeToolAudit(
+        repo,
+        session,
+        resolved.connection.id,
+        "deny",
+        resolvedIdentifiers,
+        latencyMs(),
+        "permission_denied",
+      );
+      return toolExecutionError(id, "scope_blocked");
+    }
     const reconnect = error instanceof ConnectError && error.code === "needs_reconnect";
     await writeToolAudit(
       repo,
@@ -1111,10 +1062,29 @@ async function handleToolCall(
       connectionId: resolved.connection.id,
       service: mapping.service,
       resourceType: mapping.resourceType,
-      resourceId: resolved.grant.resourceId,
+      resourceId: resolved.grant?.resourceId ?? "",
       accessToken,
       googleEmail: resolved.connection.email,
       googleSubject: resolved.connection.googleSubject,
+      ...(mapping.operation === NATIVE_TOOL_CALL
+        ? {
+            nativeTool: {
+              name,
+              arguments: {
+                ...Object.fromEntries(
+                  Object.entries(args).filter(
+                    ([key]) => key !== "tenantId" && key !== "connectionId",
+                  ),
+                ),
+                ...(mapping.resourceArgument ? { [mapping.resourceArgument]: resourceId } : {}),
+              },
+              scopes: grantedScopes,
+              allowedTools: [resolved.toolGrant.toolName],
+              allowWrite: EXECUTABLE_TOOLS.find((entry) => entry.name === name)!.write,
+              allowDestructive: resolved.toolGrant.allowDestructive,
+            },
+          }
+        : {}),
     });
   } catch {
     await writeToolAudit(
@@ -1142,7 +1112,7 @@ async function handleToolCall(
     return toolExecutionError(
       id,
       outcome.status === "unavailable" ? "execution_unavailable" : "execution_failed",
-      outcome.detail === "" ? undefined : { runner_detail: String(outcome.detail) },
+      outcome.detail === "" ? undefined : { runner_detail: outcome.detail },
     );
   }
 

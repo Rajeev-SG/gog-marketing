@@ -7,50 +7,102 @@ import {
   normalizeServices,
   scopesForServices,
   UnknownServiceError,
+  assertHostedScopes,
+  UnsafeHostedScopeError,
 } from "./scopes.js";
 
 describe("hosted Google scope catalog (#62)", () => {
-  it("requests read-only scopes only for the hosted service surface", () => {
-    expect(HOSTED_SERVICES.analytics.scopes).toEqual([
-      "https://www.googleapis.com/auth/analytics.readonly",
+  it("covers exactly the 23 v1 services and excludes owner-disabled services", () => {
+    expect(Object.keys(HOSTED_SERVICES).sort()).toEqual([
+      "adsense",
+      "analytics",
+      "appscript",
+      "bigquery",
+      "calendar",
+      "chat",
+      "classroom",
+      "contacts",
+      "docs",
+      "drive",
+      "drivelabels",
+      "forms",
+      "groups",
+      "meet",
+      "people",
+      "photos",
+      "searchconsole",
+      "sheets",
+      "sites",
+      "slides",
+      "tagmanager",
+      "tasks",
+      "youtube",
     ]);
-    expect(HOSTED_SERVICES.gmail.scopes).toEqual([
-      "https://www.googleapis.com/auth/gmail.readonly",
-    ]);
-    expect(HOSTED_SERVICES.drive.scopes).toEqual([
-      "https://www.googleapis.com/auth/drive.readonly",
-    ]);
-    expect(HOSTED_SERVICES.calendar.scopes).toEqual([
-      "https://www.googleapis.com/auth/calendar.readonly",
-    ]);
-    expect(HOSTED_SERVICES.tagmanager.scopes).toEqual([
-      "https://www.googleapis.com/auth/tagmanager.readonly",
-    ]);
-    expect(HOSTED_SERVICES.searchconsole.scopes).toEqual([
-      "https://www.googleapis.com/auth/webmasters.readonly",
-    ]);
-    expect(HOSTED_SERVICES.bigquery.scopes).toEqual([
-      "https://www.googleapis.com/auth/bigquery.readonly",
-    ]);
-    expect(HOSTED_SERVICES.googleads.scopes).toEqual(["https://www.googleapis.com/auth/adwords"]);
+    for (const service of [
+      "gmail",
+      "googleads",
+      "driveactivity",
+      "admin",
+      "cloudadmin",
+      "keep",
+      "photospicker",
+      "constructor",
+      "__proto__",
+    ]) {
+      expect(isHostedService(service)).toBe(false);
+      expect(() => scopesForServices([service])).toThrow(UnknownServiceError);
+    }
   });
 
-  it("never offers write scopes", () => {
-    const allScopes = Object.values(HOSTED_SERVICES).flatMap((s) => s.scopes);
-    const forbidden = [
-      "https://www.googleapis.com/auth/gmail.modify",
-      "https://www.googleapis.com/auth/gmail.send",
-      "https://www.googleapis.com/auth/gmail.settings.basic",
-      "https://www.googleapis.com/auth/drive",
-      "https://www.googleapis.com/auth/calendar",
-      "https://www.googleapis.com/auth/analytics.edit",
-      "https://www.googleapis.com/auth/bigquery",
-      "https://www.googleapis.com/auth/tagmanager.edit.containers",
-      "https://www.googleapis.com/auth/webmasters",
-    ];
-    for (const scope of forbidden) {
-      expect(allScopes).not.toContain(scope);
+  it("requests write scopes only for explicit selected write services", () => {
+    const read = scopesForServices(["analytics", "tagmanager", "youtube"]);
+    expect(read).not.toContain("https://www.googleapis.com/auth/analytics.edit");
+    const write = scopesForServices(
+      ["analytics", "tagmanager", "youtube"],
+      ["analytics", "tagmanager", "youtube"],
+    );
+    expect(write).toContain("https://www.googleapis.com/auth/analytics.edit");
+    expect(write).toContain("https://www.googleapis.com/auth/tagmanager.publish");
+    expect(write).toContain("https://www.googleapis.com/auth/youtube");
+    expect(() => scopesForServices(["analytics"], ["calendar"])).toThrow(UnknownServiceError);
+    expect(() => scopesForServices(["adsense"], ["adsense"])).toThrow(UnknownServiceError);
+  });
+
+  it("never introduces restricted dependencies through any service or write combination", () => {
+    const names = Object.keys(HOSTED_SERVICES);
+    const writes = names.filter((name) => HOSTED_SERVICES[name]!.writeScopes.length);
+    const all = scopesForServices(names, writes);
+    expect(all).toContain("https://www.googleapis.com/auth/drive.file");
+    for (const name of [
+      "drive",
+      "drive.readonly",
+      "drive.metadata",
+      "drive.metadata.readonly",
+      "drive.activity.readonly",
+      "chat.messages",
+      "chat.messages.readonly",
+      "adwords",
+      "cloud-platform",
+      "keep",
+      "admin.directory.user",
+      "photospicker.mediaitems.readonly",
+      "gmail.readonly",
+      "gmail.send",
+      "mail.google.com",
+    ]) {
+      expect(all).not.toContain("https://www.googleapis.com/auth/" + name);
+      expect(() => assertHostedScopes(["https://www.googleapis.com/auth/" + name])).toThrow(
+        UnsafeHostedScopeError,
+      );
+      expect(() => mergeScopes(["openid"], ["https://www.googleapis.com/auth/" + name])).toThrow(
+        UnsafeHostedScopeError,
+      );
     }
+    expect(() => assertHostedScopes(["https://mail.google.com/"])).toThrow(UnsafeHostedScopeError);
+    expect(() => assertHostedScopes(["https://www.googleapis.com/auth/new.unknown.scope"])).toThrow(
+      UnsafeHostedScopeError,
+    );
+    expect(() => assertHostedScopes([])).toThrow(UnsafeHostedScopeError);
   });
 
   it("always includes identity scopes for verified identity", () => {
@@ -66,17 +118,17 @@ describe("hosted Google scope catalog (#62)", () => {
   });
 
   it("rejects unknown services", () => {
-    expect(() => scopesForServices(["youtube"])).toThrow(UnknownServiceError);
+    expect(() => scopesForServices(["not-a-service"])).toThrow(UnknownServiceError);
     expect(() => normalizeServices(["not-a-service"])).toThrow(UnknownServiceError);
     expect(() => normalizeServices("analytics")).toThrow(UnknownServiceError);
     expect(isHostedService("analytics")).toBe(true);
-    expect(isHostedService("youtube")).toBe(false);
+    expect(isHostedService("youtube")).toBe(true);
   });
 
   it("normalizes and dedupes services case-insensitively", () => {
-    expect(normalizeServices(["Analytics", " analytics ", "gmail"])).toEqual([
+    expect(normalizeServices(["Analytics", " analytics ", "calendar"])).toEqual([
       "analytics",
-      "gmail",
+      "calendar",
     ]);
     expect(normalizeServices(undefined)).toEqual([]);
   });

@@ -14,7 +14,9 @@ import (
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
 
+	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/controlplane"
+	"github.com/openclaw/gogcli/internal/hosted/native"
 )
 
 // Engine holds the guarded execution configuration and injected seams. It is
@@ -31,6 +33,9 @@ type Engine struct {
 
 	// AnalyticsAdminFactory defaults to googleapi.NewAnalyticsAdmin.
 	AnalyticsAdminFactory func(context.Context, string) (*analyticsadmin.Service, error)
+	// Native service-factory seams; production uses the existing Google engine.
+	NativeServices app.Services
+	ExecuteNative  native.Execute
 
 	Counter          Counter
 	Timeout          time.Duration

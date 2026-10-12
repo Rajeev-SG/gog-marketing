@@ -57,6 +57,7 @@ type RootFlags struct {
 	configStoreResolver func() (*config.ConfigStore, error)
 	authMode            googleapi.AuthMode
 	connection          *config.Connection
+	hostedExecution     bool // Trusted in-process bridge only; never a CLI flag.
 }
 
 type CLI struct {

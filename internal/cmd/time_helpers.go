@@ -222,6 +222,15 @@ func ResolveTimeRangeWithDefaults(ctx context.Context, svc *calendar.Service, fl
 		return nil, err
 	}
 
+	return resolveTimeRangeInLocation(flags, defaults, loc)
+}
+
+// Reuse the native date/range algorithm with an admitted calendar timezone.
+func resolveTimeRangeInLocation(flags TimeRangeFlags, defaults TimeRangeDefaults, loc *time.Location) (*TimeRange, error) {
+	if err := validateTimeRangeFlags(flags); err != nil {
+		return nil, err
+	}
+	var err error
 	now := time.Now().In(loc)
 	var from, to time.Time
 

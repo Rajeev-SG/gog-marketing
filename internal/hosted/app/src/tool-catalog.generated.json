@@ -1,0 +1,4924 @@
+[
+  {
+    "name": "drive_get",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get Google Drive file metadata by ID.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "description": "Optional Drive API field mask",
+            "type": "string"
+          },
+          "file_id": {
+            "description": "Drive file ID",
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_get"
+    }
+  },
+  {
+    "name": "docs_get",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a Google Doc as wrapped text, all tabs, or one tab.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_tabs": {
+            "default": false,
+            "description": "Read all tabs",
+            "type": "boolean"
+          },
+          "document_id": {
+            "description": "Google Docs document ID",
+            "type": "string"
+          },
+          "max_bytes": {
+            "default": 2000000,
+            "description": "Maximum text bytes, 0 for unlimited",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "description": "Optional tab title or ID",
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_get"
+    }
+  },
+  {
+    "name": "sheets_read_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read values from a Google Sheets range.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "description": "A1 notation or named range",
+            "type": "string"
+          },
+          "render": {
+            "description": "Value render option",
+            "enum": ["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"],
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "description": "Google Sheets spreadsheet ID",
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_read_range"
+    }
+  },
+  {
+    "name": "calendar_events",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Google Calendar events from primary or selected calendars.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "description": "Calendar ID or selector; default primary",
+            "type": "string"
+          },
+          "days": {
+            "default": 0,
+            "description": "Window length in days, measured from the from argument when given, otherwise from today",
+            "maximum": 31,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "from": {
+            "description": "Start time: RFC3339, date, or relative value",
+            "type": "string"
+          },
+          "max": {
+            "default": 10,
+            "description": "Maximum results",
+            "maximum": 250,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "description": "Free text search",
+            "type": "string"
+          },
+          "to": {
+            "description": "End time: RFC3339, date, or relative value",
+            "type": "string"
+          },
+          "today": {
+            "default": false,
+            "description": "Today only",
+            "type": "boolean"
+          },
+          "tomorrow": {
+            "default": false,
+            "description": "Tomorrow only",
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id"],
+        "type": "object"
+      },
+      "name": "calendar_events"
+    }
+  },
+  {
+    "name": "docs_write",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Write text to a Google Doc. Requires --allow-write on the MCP server.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "append": {
+            "default": true,
+            "description": "Append instead of replacing",
+            "type": "boolean"
+          },
+          "document_id": {
+            "description": "Google Docs document ID",
+            "type": "string"
+          },
+          "markdown": {
+            "default": false,
+            "description": "Convert markdown to Docs formatting",
+            "type": "boolean"
+          },
+          "replace": {
+            "default": false,
+            "description": "Replace all existing content",
+            "type": "boolean"
+          },
+          "tab": {
+            "description": "Optional tab title or ID",
+            "type": "string"
+          },
+          "text": {
+            "description": "Text or markdown to write",
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_write"
+    }
+  },
+  {
+    "name": "sheets_update_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update values in a Google Sheets range. Requires --allow-write on the MCP server.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "default": "USER_ENTERED",
+            "description": "Value input option",
+            "enum": ["RAW", "USER_ENTERED"],
+            "type": "string"
+          },
+          "range": {
+            "description": "A1 notation or named range",
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "description": "Google Sheets spreadsheet ID",
+            "type": "string"
+          },
+          "values_json": {
+            "description": "JSON 2D array of values",
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "values_json"],
+        "type": "object"
+      },
+      "name": "sheets_update_range"
+    }
+  },
+  {
+    "name": "analytics_report",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a GA4 Data API report.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "default": "date",
+            "type": "string"
+          },
+          "from": {
+            "default": "7daysAgo",
+            "type": "string"
+          },
+          "max": {
+            "default": 100,
+            "maximum": 250000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "metrics": {
+            "default": "activeUsers",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "to": {
+            "default": "today",
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_report"
+    }
+  },
+  {
+    "name": "analytics_properties_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get one GA4 property.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_properties_get"
+    }
+  },
+  {
+    "name": "searchconsole_sites_list",
+    "service": "searchconsole",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Search Console sites.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "searchconsole_sites_list"
+    }
+  },
+  {
+    "name": "searchconsole_query",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a Search Console Search Analytics query.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "default": "QUERY",
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "max": {
+            "default": 1000,
+            "maximum": 25000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "site_url": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "from", "to"],
+        "type": "object"
+      },
+      "name": "searchconsole_query"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_list",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List Search Console sitemaps.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_list"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_submit",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Submit a Search Console sitemap. Requires --allow-write.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_submit"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_delete",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a Search Console sitemap. Requires --allow-write and destructive confirmation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_delete"
+    }
+  },
+  {
+    "name": "searchconsole_inspect",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Inspect Search Console URL indexing.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "url"],
+        "type": "object"
+      },
+      "name": "searchconsole_inspect"
+    }
+  },
+  {
+    "name": "bigquery_datasets_list",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List BigQuery datasets in an explicit execution project.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project"],
+        "type": "object"
+      },
+      "name": "bigquery_datasets_list"
+    }
+  },
+  {
+    "name": "bigquery_tables_list",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List BigQuery tables.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset"],
+        "type": "object"
+      },
+      "name": "bigquery_tables_list"
+    }
+  },
+  {
+    "name": "bigquery_table_get",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get BigQuery table metadata.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_get"
+    }
+  },
+  {
+    "name": "bigquery_table_schema",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get BigQuery table schema.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_schema"
+    }
+  },
+  {
+    "name": "bigquery_table_rows",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a bounded number of BigQuery table rows.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "max": {
+            "default": 100,
+            "maximum": 10000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "project": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset", "table"],
+        "type": "object"
+      },
+      "name": "bigquery_table_rows"
+    }
+  },
+  {
+    "name": "tagmanager_accounts_list",
+    "service": "tagmanager",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM accounts list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "tagmanager_accounts_list"
+    }
+  },
+  {
+    "name": "tagmanager_accounts_get",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM accounts get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          }
+        },
+        "required": ["account_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_accounts_get"
+    }
+  },
+  {
+    "name": "tagmanager_containers_list",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["account_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_list"
+    }
+  },
+  {
+    "name": "tagmanager_containers_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_get"
+    }
+  },
+  {
+    "name": "tagmanager_containers_create",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          },
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          }
+        },
+        "required": ["account_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_create"
+    }
+  },
+  {
+    "name": "tagmanager_containers_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_update"
+    }
+  },
+  {
+    "name": "tagmanager_containers_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_delete"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_list"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_get"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_create"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_update"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_delete"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_status",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces status under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_status"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_sync",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces sync under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_sync"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_create-version",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces create-version under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "version_name": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_create-version"
+    }
+  },
+  {
+    "name": "tagmanager_tags_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_list"
+    }
+  },
+  {
+    "name": "tagmanager_tags_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_get"
+    }
+  },
+  {
+    "name": "tagmanager_tags_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_create"
+    }
+  },
+  {
+    "name": "tagmanager_tags_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_update"
+    }
+  },
+  {
+    "name": "tagmanager_tags_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_delete"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_list"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_get"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_create"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_update"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_delete"
+    }
+  },
+  {
+    "name": "tagmanager_variables_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_list"
+    }
+  },
+  {
+    "name": "tagmanager_variables_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_get"
+    }
+  },
+  {
+    "name": "tagmanager_variables_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_create"
+    }
+  },
+  {
+    "name": "tagmanager_variables_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_update"
+    }
+  },
+  {
+    "name": "tagmanager_variables_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_delete"
+    }
+  },
+  {
+    "name": "tagmanager_versions_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_list"
+    }
+  },
+  {
+    "name": "tagmanager_versions_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "version_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_get"
+    }
+  },
+  {
+    "name": "tagmanager_versions_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "version_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_delete"
+    }
+  },
+  {
+    "name": "tagmanager_versions_publish",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Publish a version of an explicitly enabled GTM container. Requires publish scope, write and destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "description": "Enabled container path: accounts/123/containers/456",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_publish"
+    }
+  },
+  {
+    "name": "bigquery_dataset_get",
+    "service": "bigquery",
+    "resource_type": "project",
+    "resource_argument": "project",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get native BigQuery dataset metadata in an explicitly enabled customer project. No SQL job execution or platform billing.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset": {
+            "type": "string"
+          },
+          "project": {
+            "type": "string"
+          }
+        },
+        "required": ["project", "dataset"],
+        "type": "object"
+      },
+      "name": "bigquery_dataset_get"
+    }
+  },
+  {
+    "name": "slides_list_slides",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List slide object IDs and skipped state in a selected presentation.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id"],
+        "type": "object"
+      },
+      "name": "slides_list_slides"
+    }
+  },
+  {
+    "name": "slides_update_notes",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Replace speaker notes on a slide in a selected presentation. Requires destructive permission; empty notes clear existing notes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id", "notes"],
+        "type": "object"
+      },
+      "name": "slides_update_notes"
+    }
+  },
+  {
+    "name": "tasks_lists",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks lists list for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "tasks_lists"
+    }
+  },
+  {
+    "name": "tasks_lists_create",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks lists create for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "tasks_lists_create"
+    }
+  },
+  {
+    "name": "tasks_list",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks list for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "completed_max": {
+            "type": "string"
+          },
+          "completed_min": {
+            "type": "string"
+          },
+          "due_max": {
+            "type": "string"
+          },
+          "due_min": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "show_assigned": {
+            "type": "boolean"
+          },
+          "show_completed": {
+            "type": "boolean"
+          },
+          "show_deleted": {
+            "type": "boolean"
+          },
+          "show_hidden": {
+            "type": "boolean"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "updated_min": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_list"
+    }
+  },
+  {
+    "name": "tasks_get",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks get for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_get"
+    }
+  },
+  {
+    "name": "tasks_raw",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks raw for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "pretty": {
+            "type": "boolean"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_raw"
+    }
+  },
+  {
+    "name": "tasks_add",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks add for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "due": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "recur": {
+            "type": "string"
+          },
+          "recur_rrule": {
+            "type": "string"
+          },
+          "repeat": {
+            "type": "string"
+          },
+          "repeat_count": {
+            "maximum": 1000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "repeat_until": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "title"],
+        "type": "object"
+      },
+      "name": "tasks_add"
+    }
+  },
+  {
+    "name": "tasks_update",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks update for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "due": {
+            "type": "string"
+          },
+          "notes": {
+            "description": "Empty string clears this field; omit to leave unchanged",
+            "type": "string"
+          },
+          "status": {
+            "enum": ["needsAction", "completed"],
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          },
+          "title": {
+            "description": "Empty string clears this field; omit to leave unchanged",
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_update"
+    }
+  },
+  {
+    "name": "tasks_done",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks done for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_done"
+    }
+  },
+  {
+    "name": "tasks_undo",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks undo for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_undo"
+    }
+  },
+  {
+    "name": "tasks_delete",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks delete for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_delete"
+    }
+  },
+  {
+    "name": "tasks_clear",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Google Tasks clear for an explicitly authorized account. Use an opaque task-list ID or @default; delete/clear require destructive permission. Repeated creation requires repeat_count (1–1000), including when repeat_until is supplied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_clear"
+    }
+  },
+  {
+    "name": "analytics_datastreams_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_list"
+    }
+  },
+  {
+    "name": "analytics_datastreams_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_get"
+    }
+  },
+  {
+    "name": "analytics_datastreams_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_create"
+    }
+  },
+  {
+    "name": "analytics_datastreams_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_update"
+    }
+  },
+  {
+    "name": "analytics_datastreams_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin datastreams delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_datastreams_delete"
+    }
+  },
+  {
+    "name": "analytics_keyevents_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_list"
+    }
+  },
+  {
+    "name": "analytics_keyevents_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_get"
+    }
+  },
+  {
+    "name": "analytics_keyevents_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_create"
+    }
+  },
+  {
+    "name": "analytics_keyevents_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_update"
+    }
+  },
+  {
+    "name": "analytics_keyevents_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin keyevents delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_keyevents_delete"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_list"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_get"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_create"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_update"
+    }
+  },
+  {
+    "name": "analytics_custom-dimensions_archive",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-dimensions archive within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-dimensions_archive"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_list"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_get"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_create"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_update"
+    }
+  },
+  {
+    "name": "analytics_custom-metrics_archive",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin custom-metrics archive within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_custom-metrics_archive"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_list",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links list within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_list"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links get within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_get"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_create",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links create within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property", "body_json"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_create"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links update within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline resource JSON object only; no files or @file references",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          },
+          "update_mask": {
+            "description": "Required snake_case Google field mask, e.g. display_name or counting_method",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_update"
+    }
+  },
+  {
+    "name": "analytics_googleads-links_delete",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GA4 Admin googleads-links delete within an explicitly enabled property. Writes require analytics.edit; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          },
+          "resource_id": {
+            "description": "Child resource ID within the selected property",
+            "type": "string"
+          }
+        },
+        "required": ["property", "resource_id"],
+        "type": "object"
+      },
+      "name": "analytics_googleads-links_delete"
+    }
+  },
+  {
+    "name": "searchconsole_sites_get",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get metadata for an explicitly enabled Search Console site.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url"],
+        "type": "object"
+      },
+      "name": "searchconsole_sites_get"
+    }
+  },
+  {
+    "name": "searchconsole_sitemaps_get",
+    "service": "searchconsole",
+    "resource_type": "site",
+    "resource_argument": "site_url",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read one sitemap belonging to an explicitly enabled Search Console site.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "feed_path": {
+            "type": "string"
+          },
+          "site_url": {
+            "type": "string"
+          }
+        },
+        "required": ["site_url", "feed_path"],
+        "type": "object"
+      },
+      "name": "searchconsole_sitemaps_get"
+    }
+  },
+  {
+    "name": "contacts_list",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts list in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "contacts_list"
+    }
+  },
+  {
+    "name": "contacts_search",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts search in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 30,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": ["query"],
+        "type": "object"
+      },
+      "name": "contacts_search"
+    }
+  },
+  {
+    "name": "contacts_get",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts get in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_get"
+    }
+  },
+  {
+    "name": "contacts_create",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts create in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "custom": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "email": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "org": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "relation": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": ["given"],
+        "type": "object"
+      },
+      "name": "contacts_create"
+    }
+  },
+  {
+    "name": "contacts_update",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts update in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "address": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "birthday": {
+            "type": "string"
+          },
+          "custom": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "email": {
+            "type": "string"
+          },
+          "family": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string"
+          },
+          "given": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "org": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "relation": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "url": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_update"
+    }
+  },
+  {
+    "name": "contacts_delete",
+    "service": "contacts",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Contacts delete in an explicitly enabled account. Update retains native etag protection. Deletion requires destructive permission; file input/etag bypass is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_name": {
+            "description": "Explicit people/... resource name, not email lookup",
+            "type": "string"
+          }
+        },
+        "required": ["resource_name"],
+        "type": "object"
+      },
+      "name": "contacts_delete"
+    }
+  },
+  {
+    "name": "calendar_event_get",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event get in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_get"
+    }
+  },
+  {
+    "name": "calendar_event_create",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event create in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_day": {
+            "type": "boolean"
+          },
+          "attendees": {
+            "type": "string"
+          },
+          "calendar_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "end_timezone": {
+            "type": "string"
+          },
+          "event_color": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          },
+          "start_timezone": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "transparency": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "with_meet": {
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_create"
+    }
+  },
+  {
+    "name": "calendar_event_update",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event update in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_day": {
+            "type": "boolean"
+          },
+          "attendees": {
+            "type": "string"
+          },
+          "calendar_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "end_timezone": {
+            "type": "string"
+          },
+          "event_color": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          },
+          "original_start": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": ["single", "future", "all"],
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          },
+          "start_timezone": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "transparency": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string"
+          },
+          "with_meet": {
+            "type": "boolean"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_update"
+    }
+  },
+  {
+    "name": "calendar_event_delete",
+    "service": "calendar",
+    "resource_type": "calendar",
+    "resource_argument": "calendar_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Calendar event delete in an explicitly enabled calendar. Delete requires destructive permission. Drive attachments, external integrations and moving to other calendars are not exposed by this tool.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "calendar_id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "original_start": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": ["single", "future", "all"],
+            "type": "string"
+          },
+          "send_updates": {
+            "type": "string"
+          }
+        },
+        "required": ["calendar_id", "event_id"],
+        "type": "object"
+      },
+      "name": "calendar_event_delete"
+    }
+  },
+  {
+    "name": "drivelabels_list",
+    "service": "drivelabels",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Drive label schemas. Requires drive.labels.readonly and applicable Workspace permissions; no broad Drive access or schema writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "customer": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "minimum_role": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "published_only": {
+            "type": "boolean"
+          },
+          "view": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "drivelabels_list"
+    }
+  },
+  {
+    "name": "drivelabels_get",
+    "service": "drivelabels",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Drive label schemas. Requires drive.labels.readonly and applicable Workspace permissions; no broad Drive access or schema writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "type": "string"
+          },
+          "label_name": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "view": {
+            "type": "string"
+          }
+        },
+        "required": ["label_name"],
+        "type": "object"
+      },
+      "name": "drivelabels_get"
+    }
+  },
+  {
+    "name": "groups_list",
+    "service": "groups",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native Cloud Identity groups for the explicitly connected Workspace account. Requires cloud-identity.groups.readonly and provider account privileges; consumer accounts are unsupported.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "groups_list"
+    }
+  },
+  {
+    "name": "groups_members",
+    "service": "groups",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native members of an explicit group email in the connected Workspace account. Requires cloud-identity.groups.readonly and Google group privileges.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "group_email": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["group_email"],
+        "type": "object"
+      },
+      "name": "groups_members"
+    }
+  },
+  {
+    "name": "meet_space_create",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space create for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "access": {
+            "enum": ["open", "trusted", "restricted"],
+            "type": "string"
+          },
+          "entry_point": {
+            "enum": ["all", "creator-only"],
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "meet_space_create"
+    }
+  },
+  {
+    "name": "meet_space_get",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space get for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_get"
+    }
+  },
+  {
+    "name": "meet_space_update",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space update for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "access": {
+            "enum": ["open", "trusted", "restricted"],
+            "type": "string"
+          },
+          "entry_point": {
+            "enum": ["all", "creator-only"],
+            "type": "string"
+          },
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_update"
+    }
+  },
+  {
+    "name": "meet_space_end",
+    "service": "meet",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Meet space end for the connected account with approved Meet permissions. Ending requires destructive permission; browser opening is disabled.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "description": "Canonical spaces/... resource name, not meeting-code alias",
+            "type": "string"
+          }
+        },
+        "required": ["space_name"],
+        "type": "object"
+      },
+      "name": "meet_space_end"
+    }
+  },
+  {
+    "name": "adsense_accounts_list",
+    "service": "adsense",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native AdSense accounts for the connected Google account. Requires adsense.readonly; no Google Ads permission or mutations.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "adsense_accounts_list"
+    }
+  },
+  {
+    "name": "adsense_accounts_get",
+    "service": "adsense",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a canonical AdSense account through the existing native client with explicit account/tool permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_name": {
+            "type": "string"
+          }
+        },
+        "required": ["account_name"],
+        "type": "object"
+      },
+      "name": "adsense_accounts_get"
+    }
+  },
+  {
+    "name": "sites_get",
+    "service": "sites",
+    "resource_type": "file",
+    "resource_argument": "site_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read an explicitly enabled Picker-selected Google Site using native Drive-backed metadata with drive.file. No global Sites inventory/search or site editing is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fields": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string"
+          }
+        },
+        "required": ["site_id"],
+        "type": "object"
+      },
+      "name": "sites_get"
+    }
+  },
+  {
+    "name": "sites_url",
+    "service": "sites",
+    "resource_type": "file",
+    "resource_argument": "site_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read an explicitly enabled Picker-selected Google Site using native Drive-backed metadata with drive.file. No global Sites inventory/search or site editing is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_id": {
+            "type": "string"
+          }
+        },
+        "required": ["site_id"],
+        "type": "object"
+      },
+      "name": "sites_url"
+    }
+  },
+  {
+    "name": "forms_get",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms get on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_get"
+    }
+  },
+  {
+    "name": "forms_update",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms update on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "quiz": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_update"
+    }
+  },
+  {
+    "name": "forms_publish",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms publish on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "accepting_responses": {
+            "type": "boolean"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "unpublish": {
+            "type": "boolean"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_publish"
+    }
+  },
+  {
+    "name": "forms_responses_list",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms responses_list on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 5000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_responses_list"
+    }
+  },
+  {
+    "name": "forms_responses_get",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms responses_get on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "type": "string"
+          },
+          "response_id": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id", "response_id"],
+        "type": "object"
+      },
+      "name": "forms_responses_get"
+    }
+  },
+  {
+    "name": "appscript_get",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project get with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_get"
+    }
+  },
+  {
+    "name": "appscript_content",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project content with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_content"
+    }
+  },
+  {
+    "name": "appscript_create",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project create with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "appscript_create"
+    }
+  },
+  {
+    "name": "chat_spaces_list",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native Chat spaces with explicit account/tool permission. No message history is read.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "chat_spaces_list"
+    }
+  },
+  {
+    "name": "chat_spaces_create",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a native Chat space using audit-free space scope. Member setup is a separate pending capability.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "type": "string"
+          }
+        },
+        "required": ["display_name"],
+        "type": "object"
+      },
+      "name": "chat_spaces_create"
+    }
+  },
+  {
+    "name": "chat_messages_send",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Send native Chat text to an explicit space with chat.messages.create and account/tool grants; no history/update/delete scope or attachment upload is used.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["space_name", "text"],
+        "type": "object"
+      },
+      "name": "chat_messages_send"
+    }
+  },
+  {
+    "name": "classroom_courses_list",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses list with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "student": {
+            "type": "string"
+          },
+          "teacher": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "classroom_courses_list"
+    }
+  },
+  {
+    "name": "classroom_courses_get",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses get with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_get"
+    }
+  },
+  {
+    "name": "classroom_courses_create",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses create with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "description_heading": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "name": "classroom_courses_create"
+    }
+  },
+  {
+    "name": "classroom_courses_update",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses update with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_heading": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_update"
+    }
+  },
+  {
+    "name": "classroom_courses_delete",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses delete with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_delete"
+    }
+  },
+  {
+    "name": "youtube_playlists_list",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List the connected account's native YouTube playlists with explicit tool permission; no API-key or arbitrary-channel fallback.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "youtube_playlists_list"
+    }
+  },
+  {
+    "name": "youtube_playlists_create",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a native YouTube playlist for the connected account with youtube scope and exact account/tool grant. Default privacy remains private.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "privacy": {
+            "enum": ["public", "unlisted", "private"],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "youtube_playlists_create"
+    }
+  },
+  {
+    "name": "youtube_playlists_delete",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a native YouTube playlist using explicit write/destructive permission and youtube scope.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "playlist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["playlist_id"],
+        "type": "object"
+      },
+      "name": "youtube_playlists_delete"
+    }
+  },
+  {
+    "name": "people_me",
+    "service": "people",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read the connected account's native People self-profile with explicit account/tool permission and approved profile scope. No directory access or local-token fallback.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "people_me"
+    }
+  },
+  {
+    "name": "photos_list",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "photos_list"
+    }
+  },
+  {
+    "name": "photos_get",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "media_id": {
+            "type": "string"
+          }
+        },
+        "required": ["media_id"],
+        "type": "object"
+      },
+      "name": "photos_get"
+    }
+  },
+  {
+    "name": "photos_search",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "album": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "include_archived": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "order": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "photos_search"
+    }
+  }
+]
