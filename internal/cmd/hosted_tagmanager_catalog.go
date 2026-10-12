@@ -41,7 +41,7 @@ func hostedTagManagerTools() []mcpToolSpec {
 		if op.Method != http.MethodGet {
 			risk = mcpRiskWrite
 		}
-		result = append(result, mcpToolSpec{Name: op.Name(), Service: "tagmanager", Risk: risk, Description: "Run native GTM " + op.Family + " " + op.Action + " under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.", Options: options, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		result = append(result, mcpToolSpec{Name: op.Name(), Service: "tagmanager", Risk: risk, Description: "Run native GTM " + op.Family + " " + op.Action + " under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion and workspace version creation require destructive permission.", Options: options, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
 			path, err := op.Path(req.GetArguments())
 			if err != nil {
 				return nil, ErrHostedToolInput

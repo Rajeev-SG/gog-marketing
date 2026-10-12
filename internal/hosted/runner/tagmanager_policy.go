@@ -14,9 +14,7 @@ func nativeTagManagerBindings() []NativeToolBinding {
 		scopes := []string{op.Scope}
 		if op.Method == http.MethodGet {
 			scopes = []string{"tagmanager.readonly"}
-			if op.Family != "accounts" {
-				scopes = append(scopes, "tagmanager.edit.containers")
-			}
+			scopes = append(scopes, "tagmanager.edit.containers")
 
 			if op.Family == "versions" {
 				scopes = append(scopes, "tagmanager.edit.containerversions")

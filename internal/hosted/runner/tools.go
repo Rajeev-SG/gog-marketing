@@ -445,10 +445,21 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 		}
 	}
 
-	if req.Tool.Name == "tagmanager_versions_publish" {
+	gtmResultKey := map[string]string{
+		"tagmanager_versions_publish":          "publish",
+		"tagmanager_workspaces_create-version": "container_version",
+		"tagmanager_workspaces_sync":           "workspace_sync",
+	}[req.Tool.Name]
+	if gtmResultKey != "" {
 		if envelope, ok := result.(map[string]any); ok {
-			if published, ok := envelope["publish"].(map[string]any); ok && published["compilerError"] == true {
-				return engineOutcome("GTM version compilation failed")
+			if value, ok := envelope[gtmResultKey].(map[string]any); ok {
+				if value["compilerError"] == true {
+					return engineOutcome("GTM version compilation failed")
+				}
+
+				if syncStatus, ok := value["syncStatus"].(map[string]any); ok && (syncStatus["syncError"] == true || syncStatus["mergeConflict"] == true) {
+					return engineOutcome("GTM workspace synchronization failed")
+				}
 			}
 		}
 	}

@@ -37,7 +37,7 @@ func TagManagerOperations() []TagManagerOperation {
 		}
 
 		for _, action := range actions {
-			op := TagManagerOperation{Family: family, Action: action, Selector: "container", Method: http.MethodGet, Scope: "tagmanager.edit.containers", Destructive: action == "delete"}
+			op := TagManagerOperation{Family: family, Action: action, Selector: "container", Method: http.MethodGet, Scope: "tagmanager.edit.containers", Destructive: action == "delete" || action == "create-version"}
 			switch action {
 			case "create", "sync", "create-version":
 				op.Method = http.MethodPost

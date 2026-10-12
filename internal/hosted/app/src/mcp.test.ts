@@ -696,52 +696,61 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     });
   });
 
-  it("routes the added GA4 reads with encrypted scope authority and rejects disabled properties", async () => {
-    const requests: ToolExecutionRequest[] = [];
-    const env = await createEnv({
-      __testToolRunner: {
-        async execute(request) {
-          requests.push(request);
-          return { status: "ok", result: { verifiedFixture: true } };
+  // This multi-step native D1/JWT case competes with Go builds on the two-CPU
+  // Oracle runner. Keep every assertion and a finite, test-only deadline.
+  it(
+    "routes the added GA4 reads with encrypted scope authority and rejects disabled properties",
+    { timeout: 20_000 },
+    async () => {
+      const requests: ToolExecutionRequest[] = [];
+      const env = await createEnv({
+        __testToolRunner: {
+          async execute(request) {
+            requests.push(request);
+            return { status: "ok", result: { verifiedFixture: true } };
+          },
         },
-      },
-    });
-    const fixture = await createToolFixture(env, "user_native_reads", true);
-    const token = await tokenFor("user_native_reads");
-    for (const name of ["analytics_report", "analytics_datastreams_list"]) {
-      const result = await rpcJson(
+      });
+      const fixture = await createToolFixture(env, "user_native_reads", true);
+      const token = await tokenFor("user_native_reads");
+      for (const name of ["analytics_report", "analytics_datastreams_list"]) {
+        const result = await rpcJson(
+          await rpc(
+            env,
+            "tools/call",
+            {
+              name,
+              arguments: { property: fixture.resourceId, connectionId: fixture.connectionId },
+            },
+            { token },
+          ),
+        );
+        expect(result.result.structuredContent).toEqual({ verifiedFixture: true });
+        expect(requests.at(-1)!.nativeTool).toEqual({
+          name,
+          arguments: { property: fixture.resourceId },
+          scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
+          allowedTools: [name],
+          allowWrite: false,
+          allowDestructive: false,
+        });
+        expect(requests.at(-1)!.tenantId).toBe(fixture.tenantId);
+      }
+      await fixture.repo.setResourceGrantsEnabled(fixture.tenantId, fixture.connectionId, [
+        { service: "analytics", resourceId: fixture.resourceId, enabled: false },
+      ]);
+      const denied = await rpcJson(
         await rpc(
           env,
           "tools/call",
-          { name, arguments: { property: fixture.resourceId, connectionId: fixture.connectionId } },
+          { name: "analytics_report", arguments: { property: fixture.resourceId } },
           { token },
         ),
       );
-      expect(result.result.structuredContent).toEqual({ verifiedFixture: true });
-      expect(requests.at(-1)!.nativeTool).toEqual({
-        name,
-        arguments: { property: fixture.resourceId },
-        scopes: ["openid", "https://www.googleapis.com/auth/analytics.readonly"],
-        allowedTools: [name],
-        allowWrite: false,
-        allowDestructive: false,
-      });
-      expect(requests.at(-1)!.tenantId).toBe(fixture.tenantId);
-    }
-    await fixture.repo.setResourceGrantsEnabled(fixture.tenantId, fixture.connectionId, [
-      { service: "analytics", resourceId: fixture.resourceId, enabled: false },
-    ]);
-    const denied = await rpcJson(
-      await rpc(
-        env,
-        "tools/call",
-        { name: "analytics_report", arguments: { property: fixture.resourceId } },
-        { token },
-      ),
-    );
-    expect(denied.error.data.detail).toBe("grant_denied");
-    expect(requests).toHaveLength(2);
-  });
+      expect(denied.error.data.detail).toBe("grant_denied");
+      expect(requests).toHaveLength(2);
+    },
+  );
 
   it("routes Calendar event creation only for an enabled calendar and tool", async () => {
     const requests: ToolExecutionRequest[] = [];

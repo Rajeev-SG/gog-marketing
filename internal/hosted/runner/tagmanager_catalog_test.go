@@ -49,6 +49,7 @@ func TestAllNativeTagManagerOperationsUseExactGrantsMethodsAndScopes(t *testing.
 				t.Fatal(err)
 			}
 			var calls atomic.Int64
+			var failureBody string
 			harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
 				engine.NativeServices.TagManager = func(ctx context.Context, _ string) (*tagmanager.Service, error) {
 					transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
@@ -82,7 +83,11 @@ func TestAllNativeTagManagerOperationsUseExactGrantsMethodsAndScopes(t *testing.
 						if op.Action == "create-version" {
 							body = map[string]any{"compilerError": false, "containerVersion": item}
 						}
+
 						raw, _ := json.Marshal(body)
+						if failureBody != "" {
+							raw = []byte(failureBody)
+						}
 
 						return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(string(raw))), Request: r}, nil
 					})
@@ -114,6 +119,29 @@ func TestAllNativeTagManagerOperationsUseExactGrantsMethodsAndScopes(t *testing.
 			result := call(scope, true, true, args)
 			if !result.OK || calls.Load() != 1 {
 				t.Fatalf("native operation failed: %s, calls=%d", result.Body, calls.Load())
+			}
+
+			if op.Family == "accounts" {
+				if result := call("tagmanager.edit.containers", true, true, args); !result.OK {
+					t.Fatalf("valid edit-only account read rejected: %s", result.Body)
+				}
+			}
+
+			if op.Action == "create-version" || op.Action == "sync" {
+				failures := []string{`{"syncStatus":{"syncError":true}}`, `{"syncStatus":{"mergeConflict":true}}`}
+				if op.Action == "create-version" {
+					failures = append(failures, `{"compilerError":true}`)
+				}
+
+				for _, body := range failures {
+					failureBody = body
+
+					result := call(scope, true, true, args)
+					if result.OK || result.Status != 502 {
+						t.Fatalf("provider failure reported as success: %s", result.Body)
+					}
+				}
+				failureBody = ""
 			}
 			before := calls.Load()
 
