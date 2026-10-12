@@ -2235,5 +2235,70 @@
       },
       "name": "meet_space_end"
     }
+  },
+  {
+    "name": "adsense_accounts_list",
+    "service": "adsense",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native AdSense accounts for the connected Google account. Requires adsense.readonly; no Google Ads permission or mutations.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "adsense_accounts_list"
+    }
+  },
+  {
+    "name": "adsense_accounts_get",
+    "service": "adsense",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a canonical AdSense account through the existing native client with explicit account/tool permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_name": {
+            "type": "string"
+          }
+        },
+        "required": ["account_name"],
+        "type": "object"
+      },
+      "name": "adsense_accounts_get"
+    }
   }
 ]

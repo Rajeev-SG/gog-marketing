@@ -51,7 +51,8 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedCalendarEventTools()...)
 	tools = append(tools, hostedDriveLabelsTools()...)
 	tools = append(tools, hostedGroupsListTool(), hostedGroupsMembersTool())
-	return append(tools, hostedMeetSpaceTools()...)
+	tools = append(tools, hostedMeetSpaceTools()...)
+	return append(tools, hostedAdSenseAccountTools()...)
 }
 
 // HostedExistingToolCatalog reuses the same schemas and typed argument builders

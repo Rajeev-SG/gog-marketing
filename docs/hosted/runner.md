@@ -370,6 +370,15 @@ configuration masks remain intact, and browser-opening flags are not exposed.
 History/participants, account/API prerequisites and real Meet acceptance remain
 pending; fixture creation/update/end is not evidence of live Google operation.
 
+AdSense account list/get now call existing native handlers with explicit account/
+tool grants and `adsense.readonly`. Get requires canonical `accounts/pub-...`
+names; admission permits only the collection/exact-account GET endpoints on
+`adsense.googleapis.com`. Paging/all-pages and empty-result controls are retained.
+AdSense is distinct from the deliberately excluded Google Ads service: no
+`adwords` scope or mutations are enabled here. Native child accounts, ad clients/
+units, channels, payments/alerts/policy/sites and reports remain to be wired;
+fixture reads/denials are not actual publisher-account acceptance.
+
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign
 files, unexpected endpoints/redirects, method overrides and token query strings.

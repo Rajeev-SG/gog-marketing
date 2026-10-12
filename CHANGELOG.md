@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native AdSense account list/get under account/tool grants, adsense.readonly and exact canonical-account GET admission. Preserve paging/all-pages controls; no Google Ads scope or mutations are enabled. Fixture reads/scope/path denials verified; remaining AdSense reporting/resources and live acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Meet space create/get/update/end with approved per-method scopes, account/tool grants, canonical space names and destructive conference-end controls. Preserve native config masks; browser opening stays disabled. Fixture creation/config persistence/end and scope denials verified; history/participants and live-role acceptance remain pending. (#52, #79)
 
 - Hosted: expose native Groups member listing with explicit group-email lookup admission, validated provider-resolved membership paths and the existing read-only/account permissions. Both existing Groups command leaves now have callable tools; no writes are invented. Fixture success/malformed-name denials verified; actual Workspace role/live acceptance remains pending. (#52, #79)
