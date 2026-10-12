@@ -365,7 +365,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
         </div>
       </section>
       <section id="asset-workspace" hidden aria-label="Assets and access">
-        <p>Choose existing Drive, Docs, Sheets, Slides or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
+        <p>Choose existing Drive, Docs, Sheets, Slides, Forms or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
         <button id="pick-files" type="button">Choose Google files</button>
         <span id="picker-status" role="status" aria-live="polite"></span>
         <div class="picker">

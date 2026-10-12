@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native selected-form get/update/publish and response list/get with file/tool grants, exact Forms endpoints and destructive unpublish controls. Map authoritative Forms MIME from Picker and request audit-free drive.file for form selection; broad Drive access is unchanged/excluded. Fixture update/publish/unpublish/responses verified; creation/questions/watches and real acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Google Sites metadata/editor-URL reads only for enabled Picker-selected files using drive.file and exact file GET admission. No global Sites/Drive inventory, search or invented editor writes are enabled. Fixture file/scope denials verified; multi-file URL authorization and real Picker/Sites acceptance remain pending. (#52, #79)
 
 - Hosted: expose native AdSense account list/get under account/tool grants, adsense.readonly and exact canonical-account GET admission. Preserve paging/all-pages controls; no Google Ads scope or mutations are enabled. Fixture reads/scope/path denials verified; remaining AdSense reporting/resources and live acceptance remain pending. (#52, #79)

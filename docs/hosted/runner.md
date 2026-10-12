@@ -414,3 +414,15 @@ IDs, never provider exception text. Trashed files, shortcuts and returned-ID
 mismatches are rejected. Partial failures are explicit. This privileged UI
 onboarding operation is not exposed to MCP clients; its authority comes from a
 one-use account/Clerk-session-bound Picker flow in the Worker.
+
+Selected Forms get/update/publish and response list/get now reuse native handlers
+with enabled `forms` file grants plus exact account/tool permissions. Picker's
+authoritative `application/vnd.google-apps.form` MIME maps to a default-disabled
+Forms grant. Forms consent includes `drive.file` for the selection/verification
+path; the official Forms methods accept it as an audit-free selected-file scope.
+Existing forms.body/readonly/responses scopes also remain approved as appropriate
+per method. Only the selected form/response and batchUpdate/publish-action paths
+are admitted. Unpublishing requires destructive permission, and browser/file/
+Pub/Sub provisioning is not performed. Creation, question editing and watches
+remain engineering gaps. Fixture read/update/publish/response and Picker MIME
+checks do not prove real Google Forms or Picker acceptance.

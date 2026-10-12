@@ -2357,5 +2357,169 @@
       },
       "name": "sites_url"
     }
+  },
+  {
+    "name": "forms_get",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms get on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_get"
+    }
+  },
+  {
+    "name": "forms_update",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms update on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "quiz": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_update"
+    }
+  },
+  {
+    "name": "forms_publish",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms publish on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "accepting_responses": {
+            "type": "boolean"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "unpublish": {
+            "type": "boolean"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_publish"
+    }
+  },
+  {
+    "name": "forms_responses_list",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms responses_list on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "filter": {
+            "type": "string"
+          },
+          "form_id": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 5000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_responses_list"
+    }
+  },
+  {
+    "name": "forms_responses_get",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Forms responses_get on an explicitly enabled Picker-selected form. Unpublishing requires destructive permission; creation, questions and Pub/Sub watches are separate pending capabilities.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "type": "string"
+          },
+          "response_id": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id", "response_id"],
+        "type": "object"
+      },
+      "name": "forms_responses_get"
+    }
   }
 ]

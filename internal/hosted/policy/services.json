@@ -147,7 +147,8 @@
     "label": "Google Forms",
     "scopes": [
       "https://www.googleapis.com/auth/forms.body.readonly",
-      "https://www.googleapis.com/auth/forms.responses.readonly"
+      "https://www.googleapis.com/auth/forms.responses.readonly",
+      "https://www.googleapis.com/auth/drive.file"
     ],
     "writeScopes": [
       "https://www.googleapis.com/auth/forms.body"

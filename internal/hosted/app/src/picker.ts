@@ -68,6 +68,7 @@ const MIME_SERVICE: Record<string, string> = {
   "application/vnd.google-apps.spreadsheet": "sheets",
   "application/vnd.google-apps.presentation": "slides",
   "application/vnd.google-apps.site": "sites",
+  "application/vnd.google-apps.form": "forms",
 };
 
 export async function completePicker(deps: ConnectDeps, session: ConnectSession, raw: unknown) {

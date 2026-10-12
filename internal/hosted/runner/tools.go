@@ -122,7 +122,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), nativeAdSenseAccountBindings()...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), nativeFormsBindings()...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -184,6 +184,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	if err := validateAdminReplacement(invocation); err != nil {
 		return err
+	}
+
+	if invocation.Name == "forms_publish" && invocation.Arguments["unpublish"] == true && !auth.AllowDestructive {
+		return invalidf("unpublishing requires destructive permission")
 	}
 
 	if binding.argumentPaths != nil {
@@ -341,11 +345,8 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			return native.ErrDenied
 		}
 
-		if invocation.Name == "meet_space_end" {
-			action := strings.HasSuffix(path, ":endActiveConference")
-			if (action && request.Method != http.MethodPost) || (!action && request.Method != http.MethodGet) {
-				return native.ErrDenied
-			}
+		if err := admitNamedActionMethod(invocation.Name, path, request.Method); err != nil {
+			return err
 		}
 
 		if !binding.Write && len(binding.methods) == 0 && request.Method != http.MethodGet && request.Method != http.MethodHead {
@@ -378,6 +379,26 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		return nil
 	}
+}
+
+func admitNamedActionMethod(name, path, method string) error {
+	var suffix string
+
+	switch name {
+	case "meet_space_end":
+		suffix = ":endActiveConference"
+	case "forms_publish":
+		suffix = ":setPublishSettings"
+	default:
+		return nil
+	}
+
+	action := strings.HasSuffix(path, suffix)
+	if (action && method != http.MethodPost) || (!action && method != http.MethodGet) {
+		return native.ErrDenied
+	}
+
+	return nil
 }
 
 func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {

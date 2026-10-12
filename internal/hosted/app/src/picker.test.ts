@@ -85,6 +85,35 @@ describe("Picker account/session and verified-file grants", () => {
     };
   });
   afterEach(() => db.close());
+  it("uses authoritative Forms MIME to create disabled form grants", async () => {
+    deps.tools!.verifyFiles = async (request) => ({
+      status: "ok",
+      files: request.ids.map((id) => ({
+        id,
+        name: "Google form",
+        mime_type: "application/vnd.google-apps.form",
+      })),
+      rejected: [],
+    });
+    const config = await startPicker(deps, session, connectionId, {
+      apiKey: "public-key",
+      appId: "123",
+    });
+    await completePicker(deps, session, {
+      connectionId,
+      pickerSession: config.pickerSession,
+      fileIds: ["selected-form"],
+    });
+    const grants = await deps.repo.listResourceGrants(session.tenantId, connectionId);
+    expect(
+      grants
+        .filter((grant) => grant.resourceId === "selected-form")
+        .map((grant) => grant.service)
+        .sort(),
+    ).toEqual(["drive", "forms"]);
+    expect(grants.every((grant) => !grant.enabled)).toBe(true);
+  });
+
   it("returns only ephemeral Picker material and saves verified files disabled with existing choices preserved", async () => {
     const config = await startPicker(deps, session, connectionId, {
       apiKey: "restricted-public-key",
