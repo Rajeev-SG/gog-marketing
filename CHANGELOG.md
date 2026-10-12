@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Classroom course list/get/create/update/delete with account/tool grants, approved course-method scopes, exact course endpoints and destructive deletion permission. Native planning/update masks remain intact; provider teacher/account privileges still apply. Fixture CRUD/scope-path denials verified; remaining Classroom families and live-role acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Chat space list/setup and text-message send with explicit account/tool grants, approved space/chat.messages.create scopes and exact endpoint admission. Restricted history/search/update/delete remain excluded; attachment/thread/member adapters are not implied. Fixture operations/scope-path denials verified; live Workspace acceptance and remaining partial Chat parity are pending. (#52, #79)
 
 - Hosted: expose native Apps Script project metadata/content reads and standalone creation with account/tool grants, project-method scopes and exact project endpoint admission. No script execution, bound-file creation or local pull is enabled; indirect restricted target scopes remain excluded. Fixture reads/creation/scope-path denials verified; deployments/versions and live acceptance remain pending. (#52, #79)

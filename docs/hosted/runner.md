@@ -445,3 +445,13 @@ setup and exact space-message POST endpoints are admitted. Restricted message
 history/search/update/delete scopes and tools remain excluded; sending never
 performs a history read. Membership/thread/reaction/attachment adapters and actual
 Workspace acceptance remain pending. Fixture send/setup success is not live proof.
+
+Classroom course list/get/create/update/delete now reuse native course handlers
+under explicit account/tool grants. Reads accept `classroom.courses.readonly` or
+`classroom.courses`; mutations need `classroom.courses`, and deletion requires
+destructive permission. Native creation/update plans and masks remain unchanged;
+only the exact course collection/validated course-ID endpoints and methods are
+admitted. Google still enforces teacher/admin/account privileges. Rosters,
+coursework/materials/submissions, announcements/topics, guardians/invitations and
+remaining course actions are not implied by these five tools and remain required
+engineering work. Fixture CRUD/denials do not prove real Classroom acceptance.

@@ -2697,5 +2697,199 @@
       },
       "name": "chat_messages_send"
     }
+  },
+  {
+    "name": "classroom_courses_list",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses list with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "student": {
+            "type": "string"
+          },
+          "teacher": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "classroom_courses_list"
+    }
+  },
+  {
+    "name": "classroom_courses_get",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses get with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_get"
+    }
+  },
+  {
+    "name": "classroom_courses_create",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses create with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "description_heading": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["name"],
+        "type": "object"
+      },
+      "name": "classroom_courses_create"
+    }
+  },
+  {
+    "name": "classroom_courses_update",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses update with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "description_heading": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "room": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_update"
+    }
+  },
+  {
+    "name": "classroom_courses_delete",
+    "service": "classroom",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Classroom courses delete with account/tool grants and approved course scopes. Google account/teacher roles still apply; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "course_id": {
+            "type": "string"
+          }
+        },
+        "required": ["course_id"],
+        "type": "object"
+      },
+      "name": "classroom_courses_delete"
+    }
   }
 ]
