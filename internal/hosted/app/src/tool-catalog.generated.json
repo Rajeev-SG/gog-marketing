@@ -2602,5 +2602,100 @@
       },
       "name": "appscript_create"
     }
+  },
+  {
+    "name": "chat_spaces_list",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native Chat spaces with explicit account/tool permission. No message history is read.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "chat_spaces_list"
+    }
+  },
+  {
+    "name": "chat_spaces_create",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a native Chat space using audit-free space scope. Member setup is a separate pending capability.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "type": "string"
+          }
+        },
+        "required": ["display_name"],
+        "type": "object"
+      },
+      "name": "chat_spaces_create"
+    }
+  },
+  {
+    "name": "chat_messages_send",
+    "service": "chat",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Send native Chat text to an explicit space with chat.messages.create and account/tool grants; no history/update/delete scope or attachment upload is used.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "space_name": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["space_name", "text"],
+        "type": "object"
+      },
+      "name": "chat_messages_send"
+    }
   }
 ]

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Chat space list/setup and text-message send with explicit account/tool grants, approved space/chat.messages.create scopes and exact endpoint admission. Restricted history/search/update/delete remain excluded; attachment/thread/member adapters are not implied. Fixture operations/scope-path denials verified; live Workspace acceptance and remaining partial Chat parity are pending. (#52, #79)
+
 - Hosted: expose native Apps Script project metadata/content reads and standalone creation with account/tool grants, project-method scopes and exact project endpoint admission. No script execution, bound-file creation or local pull is enabled; indirect restricted target scopes remain excluded. Fixture reads/creation/scope-path denials verified; deployments/versions and live acceptance remain pending. (#52, #79)
 
 - Hosted: expose native selected-form get/update/publish and response list/get with file/tool grants, exact Forms endpoints and destructive unpublish controls. Map authoritative Forms MIME from Picker and request audit-free drive.file for form selection; broad Drive access is unchanged/excluded. Fixture update/publish/unpublish/responses verified; creation/questions/watches and real acceptance remain pending. (#52, #79)

@@ -435,3 +435,13 @@ as data; no function execution endpoint is registered, no target-app OAuth scope
 are requested, and bound-file/local-pull inputs are not exposed. Deployment/
 version management, safe file adapters and actual Apps Script API acceptance
 remain pending. Fixtures do not prove real project creation or execution.
+
+Chat space list/create and text-message send now invoke existing native handlers
+with explicit account/tool grants. Native creation uses `spaces:setup` with no
+member inputs; its approved `chat.spaces` scope is admitted. Listing accepts
+`chat.spaces.readonly` or `chat.spaces`, and sending requires
+`chat.messages.create` with a canonical space name. Only the fixed space list/
+setup and exact space-message POST endpoints are admitted. Restricted message
+history/search/update/delete scopes and tools remain excluded; sending never
+performs a history read. Membership/thread/reaction/attachment adapters and actual
+Workspace acceptance remain pending. Fixture send/setup success is not live proof.
