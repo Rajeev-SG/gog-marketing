@@ -21,6 +21,12 @@ jobs:
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -56,6 +62,12 @@ jobs:
     env:
       GOTOOLCHAIN: local
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -85,6 +97,12 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -101,6 +119,12 @@ jobs:
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -127,6 +151,12 @@ jobs:
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -153,6 +183,12 @@ jobs:
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
     steps:
+      - name: Use disk-backed temporary storage
+        # Oracle's /tmp is a small, user-quota-limited tmpfs. RUNNER_TEMP is
+        # on /workspace and the Actions runner clears it before/after each job.
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:

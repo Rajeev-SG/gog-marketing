@@ -6,6 +6,13 @@ All gog-marketing workflows execute on the repository-specific Oracle runner
 service credentials are stored on that host, never in the repository. The service
 is `actions.runner.Rajeev-SG-gog-marketing.oracle-gog-marketing-arm64.service`.
 
+All six CI jobs set `TMPDIR` and `GOTMPDIR` to the runner's existing
+`RUNNER_TEMP` directory on the disk-backed `/workspace` filesystem. Oracle's
+`/tmp` is a small RAM-backed filesystem with per-user quotas and is not suitable
+for concurrent Go builds or native D1 tests. The Actions runner empties its
+per-job temporary directory before and after each job; no global cache, other
+job directory or unrelated data is deleted. No storage or billing is added.
+
 The required CI jobs are `test`, `minimum-go`, `postgres`, `worker`,
 `hosted-state`, and `hosted-app`. Windows/macOS jobs were retired by the owner's
 explicit decision: the hosted product is deployed on Linux. No Linux/product
