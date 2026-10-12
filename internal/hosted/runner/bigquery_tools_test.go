@@ -17,10 +17,12 @@ func TestNativeBigQueryReadToolsUseGrantedProjectAndNeverCreateJobs(t *testing.T
 		engine.NativeServices.BigQuery = func(ctx context.Context, _ string, project string) (googleapi.BigQueryClient, error) {
 			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
 				calls.Add(1)
+
 				if r.Method != http.MethodGet || r.URL.Host != "bigquery.googleapis.com" {
 					t.Errorf("unexpected BigQuery operation %s %s", r.Method, r.URL)
 				}
 				body := ""
+
 				switch r.URL.Path {
 				case "/bigquery/v2/projects/customer-proj/datasets":
 					body = `{"datasets":[{"datasetReference":{"projectId":"customer-proj","datasetId":"demo"}}]}`
@@ -35,16 +37,20 @@ func TestNativeBigQueryReadToolsUseGrantedProjectAndNeverCreateJobs(t *testing.T
 				default:
 					t.Errorf("undeclared BigQuery path %s", r.URL.Path)
 				}
+
 				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
 			})
+
 			return googleapi.NewBigQueryWithHTTPClient(ctx, project, &http.Client{Transport: googleapi.GuardedTransport(ctx, transport)})
 		}
 	})
+
 	call := func(name, project, scope string, args map[string]any, enabled bool) capturedResponse {
 		args["project"] = project
 		body := nativeToolBody(t, func(req *Request) {
 			req.Tool = &ToolInvocation{Name: name, Arguments: args, Authorization: ToolAuthorization{Service: "bigquery", AllowedTools: []string{name}, Scopes: []string{"https://www.googleapis.com/auth/" + scope}, Resource: &ResourceGrantInput{Service: "bigquery", ResourceType: "project", ResourceID: "customer-proj", Enabled: enabled}}}
 		})
+
 		return postExecute(t, harness.server, signInvocation(t, body, func(claims map[string]any) { claims["operation"] = OperationToolCall }), body)
 	}
 	for _, name := range []string{"bigquery_datasets_list", "bigquery_dataset_get", "bigquery_tables_list", "bigquery_table_get", "bigquery_table_schema", "bigquery_table_rows"} {
@@ -52,21 +58,26 @@ func TestNativeBigQueryReadToolsUseGrantedProjectAndNeverCreateJobs(t *testing.T
 		if name != "bigquery_datasets_list" {
 			args["dataset"] = "demo"
 		}
+
 		if strings.HasPrefix(name, "bigquery_table_") {
 			args["table"] = "events"
 		}
+
 		if name == "bigquery_table_rows" {
 			args["max"] = 1
 		}
+
 		response := call(name, "customer-proj", "bigquery", args, true)
 		if !response.OK {
 			t.Fatalf("native %s: %s", name, response.Body)
 		}
+
 		if name == "bigquery_table_rows" && !strings.Contains(string(response.Result), `"id":"1"`) {
 			t.Fatalf("native row data missing: %s", response.Body)
 		}
 	}
 	before := calls.Load()
+
 	for _, entry := range []struct {
 		name, project, scope string
 		args                 map[string]any
@@ -83,17 +94,20 @@ func TestNativeBigQueryReadToolsUseGrantedProjectAndNeverCreateJobs(t *testing.T
 			t.Fatalf("unsafe invocation allowed: %#v", entry)
 		}
 	}
+
 	if calls.Load() != before {
 		t.Fatal("denied invocation reached Google")
 	}
 	invocation := &ToolInvocation{Name: "bigquery_table_rows", Arguments: map[string]any{"project": "customer-proj", "dataset": "demo", "table": "events"}}
 	guard := nativeRequestGuard(invocation)
+
 	for _, target := range []string{"https://bigquery.googleapis.com/bigquery/v2/projects/customer-proj/jobs", "https://bigquery.googleapis.com/bigquery/v2/projects/foreign-proj/datasets/demo/tables/events"} {
 		req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet, target, nil)
 		if guard(req) == nil {
 			t.Fatalf("foreign endpoint admitted: %s", target)
 		}
 	}
+
 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "https://bigquery.googleapis.com/bigquery/v2/projects/customer-proj/datasets/demo/tables/events", nil)
 	if guard(req) == nil {
 		t.Fatal("write method admitted for BigQuery read")

@@ -19,32 +19,40 @@ func nativeBigQueryReadBindings() []NativeToolBinding {
 			if !bigQueryProjectID.MatchString(project) || project == "gog-marketing-prod" {
 				return nil, invalidf("invalid or platform-owned BigQuery project")
 			}
+
 			path := "/bigquery/v2/projects/" + project + "/datasets"
 			if name == "bigquery_datasets_list" {
 				return []string{path}, nil
 			}
+
 			dataset, _ := args["dataset"].(string)
 			if len(dataset) > 1024 || !bigQueryDatasetID.MatchString(dataset) {
 				return nil, invalidf("invalid BigQuery dataset")
 			}
+
 			path += "/" + dataset
 			if name == "bigquery_dataset_get" {
 				return []string{path}, nil
 			}
+
 			path += "/tables"
 			if name == "bigquery_tables_list" {
 				return []string{path}, nil
 			}
+
 			table, _ := args["table"].(string)
 			if len(table) > 1024 || !bigQueryTableID.MatchString(table) {
 				return nil, invalidf("invalid BigQuery table")
 			}
+
 			path += "/" + table
 			if name == "bigquery_table_rows" {
 				return []string{path, path + "/data"}, nil
 			}
+
 			return []string{path}, nil
 		}})
 	}
+
 	return result
 }

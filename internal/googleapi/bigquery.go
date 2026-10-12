@@ -110,9 +110,11 @@ func NewBigQueryWithHTTPClient(ctx context.Context, project string, client *http
 	if project == "" {
 		return nil, ErrBigQueryProjectRequired
 	}
+
 	if client == nil {
 		return nil, ErrBigQueryHTTPClientRequired
 	}
+
 	bq, err := bigquery.NewClient(ctx, project, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, fmt.Errorf("create bigquery client: %w", err)
