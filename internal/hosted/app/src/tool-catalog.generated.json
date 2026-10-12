@@ -2521,5 +2521,86 @@
       },
       "name": "forms_responses_get"
     }
+  },
+  {
+    "name": "appscript_get",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project get with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_get"
+    }
+  },
+  {
+    "name": "appscript_content",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project content with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_content"
+    }
+  },
+  {
+    "name": "appscript_create",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native Apps Script project create with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "appscript_create"
+    }
   }
 ]

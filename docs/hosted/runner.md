@@ -426,3 +426,12 @@ are admitted. Unpublishing requires destructive permission, and browser/file/
 Pub/Sub provisioning is not performed. Creation, question editing and watches
 remain engineering gaps. Fixture read/update/publish/response and Picker MIME
 checks do not prove real Google Forms or Picker acceptance.
+
+Apps Script project get/content/create now invoke existing native handlers with
+account/tool grants. Reads accept `script.projects.readonly` or `script.projects`;
+standalone creation needs `script.projects`. Only canonical project IDs and exact
+metadata/content GET or collection POST paths are admitted. Code content is read
+as data; no function execution endpoint is registered, no target-app OAuth scopes
+are requested, and bound-file/local-pull inputs are not exposed. Deployment/
+version management, safe file adapters and actual Apps Script API acceptance
+remain pending. Fixtures do not prove real project creation or execution.
