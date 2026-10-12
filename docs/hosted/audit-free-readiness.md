@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of seventy-eight native Go
+The Worker now consumes a generated catalogue of eighty-one native Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; Workspace Groups listing/member reads; Meet space create/get/update/end; AdSense account list/get; selected-file Sites metadata/URL reads; five selected Forms tools; Apps Script project get/content/create; partial Chat space/send tools; and Classroom course CRUD. All invoke existing typed native handlers. MCP discovery and execution
+Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; Workspace Groups listing/member reads; Meet space create/get/update/end; AdSense account list/get; selected-file Sites metadata/URL reads; five selected Forms tools; Apps Script project get/content/create; partial Chat space/send tools; Classroom course CRUD; and YouTube playlist read/create/delete. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
@@ -115,7 +115,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `groups` | `cloud-identity.groups.readonly` | No existing service write scope requested | **untested** | Both native groups_list/groups_members use account/tool grants, exact read-only scope, bound email lookup and validated membership paths; fixture reads/denials pass. Workspace role/live acceptance pending; no native writes claimed | [Google](https://developers.google.com/identity/protocols/oauth2/scopes) |
 | `keep` | `keep` | `keep` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/keep/api/reference/rest) |
 | `admin` | `admin.directory.user.readonly admin.directory.group.readonly admin.directory.group.member.readonly admin.directory.orgunit.readonly` | `admin.directory.user admin.directory.group admin.directory.group.member admin.directory.orgunit` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/admin/directory/v1/guides/authorizing) |
-| `youtube` | `youtube.readonly` | `youtube` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps) |
+| `youtube` | `youtube.readonly` | `youtube` | **untested** | Native playlist list/create/delete use account/tool grants, mine selector, youtube write scope and destructive deletion permission; fixture persistence/read-scope denials pass. Remaining video/comment/channel/subscription/item features and live acceptance pending | [Google](https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps) |
 | `photos` | `photoslibrary.readonly.appcreateddata` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/photos/overview/authorization) |
 | `photospicker` | `photospicker.mediaitems.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/photos/picker/guides/get-started-picker) |
 
@@ -256,3 +256,5 @@ Apps Script project scopes checked 12 October 2026 in [official Script v1 discov
 Chat methods checked 12 October 2026 in [official Chat v1 discovery](https://chat.googleapis.com/$discovery/rest?version=v1): spaces.list accepts chat.spaces/readonly; native space creation uses spaces.setup with chat.spaces; messages.create permits chat.messages.create. Broad restricted chat.messages/readonly and history endpoints remain excluded. Actual Workspace privileges, production classifications and live behavior remain unverified.
 
 Classroom course method scopes checked 12 October 2026 in [official Classroom v1 discovery](https://classroom.googleapis.com/$discovery/rest?version=v1): list/get support classroom.courses.readonly/courses; create/patch/delete require classroom.courses. Native masks/role constraints are retained. Actual account roles, production classifications and real Google operations remain unverified.
+
+YouTube playlist scopes checked 12 October 2026 in [official YouTube v3 discovery](https://youtube.googleapis.com/$discovery/rest?version=v3): list supports youtube.readonly/youtube; insert/delete support youtube, not youtube.readonly. No upload or unrelated integrations are added. Actual channel prerequisites, production scope classifications and live writes remain unverified.

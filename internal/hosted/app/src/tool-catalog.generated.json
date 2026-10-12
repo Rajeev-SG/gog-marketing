@@ -2891,5 +2891,98 @@
       },
       "name": "classroom_courses_delete"
     }
+  },
+  {
+    "name": "youtube_playlists_list",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List the connected account's native YouTube playlists with explicit tool permission; no API-key or arbitrary-channel fallback.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "youtube_playlists_list"
+    }
+  },
+  {
+    "name": "youtube_playlists_create",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a native YouTube playlist for the connected account with youtube scope and exact account/tool grant. Default privacy remains private.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "privacy": {
+            "enum": ["public", "unlisted", "private"],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "youtube_playlists_create"
+    }
+  },
+  {
+    "name": "youtube_playlists_delete",
+    "service": "youtube",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a native YouTube playlist using explicit write/destructive permission and youtube scope.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "playlist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["playlist_id"],
+        "type": "object"
+      },
+      "name": "youtube_playlists_delete"
+    }
   }
 ]

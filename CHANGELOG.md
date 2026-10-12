@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native YouTube playlist list/create/delete with connected-account listing, approved youtube read/write scopes, exact playlist/query admission and destructive deletion permission. Preserve private creation defaults and avoid local API-key fallback. Fixture creation/list/deletion/scope denials verified; remaining YouTube families and live acceptance remain pending. (#52, #79)
+
 - Hosted: expose native Classroom course list/get/create/update/delete with account/tool grants, approved course-method scopes, exact course endpoints and destructive deletion permission. Native planning/update masks remain intact; provider teacher/account privileges still apply. Fixture CRUD/scope-path denials verified; remaining Classroom families and live-role acceptance remain pending. (#52, #79)
 
 - Hosted: expose native Chat space list/setup and text-message send with explicit account/tool grants, approved space/chat.messages.create scopes and exact endpoint admission. Restricted history/search/update/delete remain excluded; attachment/thread/member adapters are not implied. Fixture operations/scope-path denials verified; live Workspace acceptance and remaining partial Chat parity are pending. (#52, #79)

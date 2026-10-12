@@ -122,7 +122,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), nativeClassroomCourseBindings()...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), nativeYouTubePlaylistBindings()...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -347,6 +347,12 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if err := admitNamedActionMethod(invocation.Name, path, request.Method); err != nil {
 			return err
+		}
+
+		if binding.Service == "youtube" {
+			if err := admitYouTubePlaylistQuery(invocation, request); err != nil {
+				return err
+			}
 		}
 
 		if !binding.Write && len(binding.methods) == 0 && request.Method != http.MethodGet && request.Method != http.MethodHead {

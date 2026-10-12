@@ -455,3 +455,13 @@ admitted. Google still enforces teacher/admin/account privileges. Rosters,
 coursework/materials/submissions, announcements/topics, guardians/invitations and
 remaining course actions are not implied by these five tools and remain required
 engineering work. Fixture CRUD/denials do not prove real Classroom acceptance.
+
+YouTube playlist list/create/delete now reuse native handlers with account/tool
+grants. Listing is explicitly `mine=true` for the connected account and accepts
+`youtube.readonly` or `youtube`; mutations require `youtube`, never read-only
+consent, and deletion needs destructive permission. The guard admits only the
+playlist collection endpoint and binds DELETE's query ID to the invocation.
+Creation retains native private privacy defaults and does not use local API-key
+fallback. Videos/comments/channels/search/subscriptions and playlist-item/native
+reporting features remain to be wired. Fixture playlist persistence/denials are
+not real Google/YouTube acceptance or production-scope verification.
