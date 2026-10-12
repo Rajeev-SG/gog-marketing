@@ -1194,6 +1194,47 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     );
     expect(ambiguous.error.data.detail).toBe("connection_ambiguous");
     expect(requests).toHaveLength(1);
+    const listed = await rpcJson(await rpc(env, "tools/list", {}, { token }));
+    const schema = listed.result.tools.find(
+      (tool: { name: string }) => tool.name === params.name,
+    ).inputSchema;
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.properties.connectionId.enum.sort()).toEqual(
+      [fixture.connectionId, sibling.id].sort(),
+    );
+    expect(schema.properties.connectionId.enum).not.toContain(foreign.connectionId);
+    expect(schema.required).toContain("connectionId");
+    const siblingEncrypted = await cipher.encrypt(fixture.tenantId, sibling.id, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/tasks"],
+    });
+    await fixture.repo.upsertCredential({
+      tenantId: fixture.tenantId,
+      connectionId: sibling.id,
+      ciphertext: siblingEncrypted.ciphertext,
+      nonce: siblingEncrypted.nonce,
+      keyVersion: Number(siblingEncrypted.keyVersion),
+    });
+    for (const selected of schema.properties.connectionId.enum) {
+      const response = await rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          {
+            name: params.name,
+            arguments: { title: "New list", connectionId: selected },
+          },
+          { token },
+        ),
+      );
+      expect(response.result.structuredContent).toEqual({ id: "new-list" });
+      expect(requests.at(-1)!.connectionId).toBe(selected);
+      expect(requests.at(-1)!.nativeTool!.arguments).toEqual({ title: "New list" });
+    }
+    expect(requests).toHaveLength(3);
   });
 
   it("routes an explicitly permitted selected-file write and denies after tool disable", async () => {

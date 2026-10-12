@@ -408,7 +408,7 @@ export async function handleMcpMetadata(
 
 export async function policyTools(repo: HostedRepository, tenant: Tenant): Promise<McpTool[]> {
   if (tenant.status !== "active") return [];
-  const permitted = new Set<string>();
+  const permitted = new Map<string, string[]>();
   for (const connection of await repo.listConnections(tenant.id)) {
     if (connection.status !== "active") continue;
     const resources = await repo.listResourceGrants(tenant.id, connection.id);
@@ -427,11 +427,36 @@ export async function policyTools(repo: HostedRepository, tenant: Tenant): Promi
               resource.resourceType === definition.resource_type,
           ))
       ) {
-        permitted.add(grant.toolName);
+        const accounts = permitted.get(grant.toolName) ?? [];
+        accounts.push(connection.id);
+        permitted.set(grant.toolName, accounts);
       }
     }
   }
-  return EXECUTABLE_TOOLS.filter((entry) => permitted.has(entry.name)).map((entry) => entry.tool);
+  return EXECUTABLE_TOOLS.filter((entry) => permitted.has(entry.name)).map((entry) => {
+    const tool: McpTool = entry.tool;
+    const accounts = permitted.get(entry.name)!;
+    const properties = isRecord(tool.inputSchema.properties) ? tool.inputSchema.properties : {};
+    const required = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required : [];
+    return {
+      ...tool,
+      inputSchema: {
+        ...tool.inputSchema,
+        properties: {
+          ...properties,
+          connectionId: {
+            type: "string",
+            enum: accounts,
+            description:
+              "Select an enabled Google connection ID from the enum; required when multiple accounts enable this account-level tool.",
+          },
+        },
+        ...(entry.resource_type === "" && accounts.length > 1
+          ? { required: [...required, "connectionId"] }
+          : {}),
+      },
+    };
+  });
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

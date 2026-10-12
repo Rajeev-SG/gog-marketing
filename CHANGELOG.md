@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: advertise enabled-account selectors in MCP schemas and require selection for ambiguous account-level tools; preserve tenant filtering and strip selectors before native dispatch. Follow pagination for GA4 Ads-link get. (#52, #79)
+
 - Hosted: add native GA4 custom-dimension/custom-metric list/get/create/update/archive and GA4 Ads-link CRUD through selected-property/tool grants and exact method scopes; require destructive archive/delete permission without requesting adwords. Fixture persistence and denials verified; live acceptance pending. (#52, #79)
 
 - Hosted: add six native BigQuery dataset/table metadata, schema and bounded row reads under explicit customer-project/tool grants and GET-only admission. Correct hosted consent to the official `bigquery` scope; exclude the platform project and SQL jobs pending billing/destructive safeguards. Fixture execution/denials verified, live acceptance pending. (#52, #79)

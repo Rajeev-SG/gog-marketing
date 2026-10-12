@@ -494,3 +494,9 @@ GA4 Ads links expose native list/get/create/update/delete. Exact selected-proper
 paths and analytics scopes are enforced. Archive and deletion require destructive
 permission. The Ads-link get command uses its native collection-list lookup; no
 Google Ads API scope or arbitrary cross-property request is introduced.
+
+Public MCP schemas add a tenant-filtered `connectionId` enum. It is required when
+multiple accounts enable an account-level tool, and optional for resource tools.
+The Worker resolves ownership/grants and removes the selector before validating
+and dispatching the original native schema. No account emails or Clerk subjects
+are added to the public tool schema.

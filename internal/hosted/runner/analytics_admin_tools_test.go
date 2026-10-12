@@ -163,3 +163,35 @@ func TestNativeAdminCRUDUsesSelectedPropertyAndInlinePayloads(t *testing.T) {
 		})
 	}
 }
+
+func TestNativeAdsLinkGetFollowsPagination(t *testing.T) {
+	var calls atomic.Int64
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.AnalyticsAdmin = func(ctx context.Context, _ string) (*analyticsadmin.Service, error) {
+			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+				calls.Add(1)
+
+				if r.URL.Path != "/v1beta/properties/123/googleAdsLinks" || r.Method != http.MethodGet {
+					t.Errorf("unexpected request: %s %s", r.Method, r.URL)
+				}
+
+				body := `{"googleAdsLinks":[{"name":"properties/123/googleAdsLinks/1","customerId":"111"}],"nextPageToken":"page-two"}`
+				if r.URL.Query().Get("pageToken") == "page-two" {
+					body = `{"googleAdsLinks":[{"name":"properties/123/googleAdsLinks/7","customerId":"777"}]}`
+				}
+
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+			})
+
+			return analyticsadmin.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, transport)}))
+		}
+	})
+	body := nativeToolBody(t, func(req *Request) {
+		req.Tool = &ToolInvocation{Name: "analytics_googleads-links_get", Arguments: map[string]any{"property": "properties/123", "resource_id": "7"}, Authorization: ToolAuthorization{Service: "analytics", AllowedTools: []string{"analytics_googleads-links_get"}, Scopes: []string{"https://www.googleapis.com/auth/analytics.readonly"}, Resource: &ResourceGrantInput{Service: "analytics", ResourceType: "property", ResourceID: "properties/123", Enabled: true}}}
+	})
+
+	response := postExecute(t, harness.server, signInvocation(t, body, func(claims map[string]any) { claims["operation"] = OperationToolCall }), body)
+	if !response.OK || !strings.Contains(string(response.Result), `"customerId":"777"`) || calls.Load() != 2 {
+		t.Fatalf("page-two link lookup failed: %s (calls %d)", response.Body, calls.Load())
+	}
+}

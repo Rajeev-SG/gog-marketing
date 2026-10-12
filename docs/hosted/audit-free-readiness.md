@@ -10,8 +10,10 @@ owner on 12 October 2026 and are excluded from hosted v1 consent. Existing local
 CLI functionality is unchanged. Drive Picker is separate and remains necessary
 for authorizing pre-existing user files under `drive.file`.
 
-Google production Data Access classifications and brand/sensitive verification
-are **not yet console-verified/approved** for this expanded set. Nothing here
+Google production Data Access classifications were **console-verified and saved**
+on 12 October 2026: 22 non-sensitive, 49 sensitive and zero restricted scopes,
+including identity scopes. Brand/sensitive verification is **not approved**; the
+existing app remains External/Testing with the two owner test accounts. Nothing here
 proves the 23 services executable or working through hosted MCP.
 
 The Worker now consumes a generated catalogue of one hundred and six native Go
@@ -38,7 +40,7 @@ Google Picker selected-file onboarding is now implemented, including account/ses
 binding and server-side typed Drive verification. Complete 23-service command
 coverage and live verification remain required. Workspace bindings cannot access
 an arbitrary file: an enabled verified selected-file grant must exist. Real
-Picker use remains untested pending operator API-key/project-number configuration.
+Picker use remains untested; the restricted key/project number are now configured.
 
 The runner validates the exact signed tenant/connection/operation/body, explicit
 tool allowlist, audit-free and method-appropriate scopes, enabled resource grant
@@ -143,8 +145,10 @@ Official linked API documentation and these policy sources were fetched on
 - [Google incremental web-server consent](https://developers.google.com/identity/protocols/oauth2/web-server)
 
 These pages do not replace production Console classification screenshots.
-The production scope/verification gate is **blocked pending console evidence**,
-not approved based on absence from a general list. Exact per-tool method/role
+The production Console classification check now has direct saved evidence:
+`/Users/rajeev/output/gog-marketing-parity/oauth-classification-20261012.png`.
+The app remains External/Testing; free brand/sensitive verification and approved
+legal/homepage configuration are still launch gates. Classification is not approval. Exact per-tool method/role
 requirements must be attached during typed execution implementation.
 
 Hosted-app lint, typecheck/build, all 136 app tests, runner tests, and the CLI
@@ -208,11 +212,14 @@ The earlier `/guides/enable` link returns 404; the current sample contains setup
 This implementation uses the JavaScript Picker, **not** the separate OAuth
 one-pick flow that forbids combined scopes.
 
-**Not provisioned / not verified:** website/API-restricted public
+**Provisioned 12 October 2026 / not verified live:** website/API-restricted public
 `GOG_GOOGLE_PICKER_API_KEY`, `GOG_GOOGLE_PICKER_APP_ID` (Google project number from
 the same project as the central web OAuth client), Picker/Drive API enablement,
-production origins and a real account's Google Picker consent. No keys,
-subscriptions, resources or paid assessments were created. Missing prerequisites
+production origin and a real account's Google Picker consent. One key was created
+in the existing project, restricted to Picker API and the existing HTTPS Worker
+origin. Picker/API Keys APIs were enabled; Drive API was already enabled. Both
+Picker bindings are stored as Worker secrets (the browser-visible key is not an
+OAuth secret). No subscriptions, billing changes or paid assessments occurred. Missing prerequisites
 produce an explicit operator configuration error; no broad Drive fallback exists.
 
 Local tests cover state replay/expiry, sibling sessions/foreign accounts,
@@ -275,3 +282,9 @@ GA4 customDimensions/customMetrics and googleAdsLinks method scopes checked
 analytics.readonly or analytics.edit; mutations/archive require analytics.edit.
 These are Analytics endpoints, not Google Ads API/adwords. Fixture CRUD/archive
 persistence and scope/property/destructive/payload denials are not live evidence.
+
+Review repairs: native GA4 Ads-link get now follows provider pagination; hosted
+MCP schemas advertise a tenant-filtered connectionId enum, required for ambiguous
+account-level tools. Account selectors are removed before native dispatch; foreign
+accounts remain denied. Fixture page-two retrieval and schema-supported two-account
+routing are regression evidence, not real Codex/Google acceptance.
