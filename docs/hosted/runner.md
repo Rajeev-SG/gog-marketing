@@ -473,3 +473,12 @@ hosted execution returns the provider failure before the legacy local-token/
 keyring fallback; ordinary CLI behavior is unchanged. Arbitrary-profile reads,
 directory/relations/raw capabilities and any needed scope-specific adapters
 remain pending. Fixture profile/failure paths are not actual Google acceptance.
+
+Photos app-created media list/get/search now invoke the existing native Photos
+client under account/tool grants and `photoslibrary.readonly.appcreateddata`.
+Only library collection/item GET and the fixed semantically read-only search POST
+are admitted; media IDs must be safe opaque values. Native paging/date/album/type
+filters are retained. No withdrawn general-library scope, broad browsing, media
+write, local download or Photos Picker operation is implied by these tools.
+Google's app-created-data restriction and account prerequisites remain in force;
+fixture reads/denials do not establish real Photos availability or acceptance.

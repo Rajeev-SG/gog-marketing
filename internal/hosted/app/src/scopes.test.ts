@@ -12,9 +12,8 @@ import {
 } from "./scopes.js";
 
 describe("hosted Google scope catalog (#62)", () => {
-  it("covers exactly the 27 eligible services and excludes owner-disabled services", () => {
+  it("covers exactly the 23 v1 services and excludes owner-disabled services", () => {
     expect(Object.keys(HOSTED_SERVICES).sort()).toEqual([
-      "admin",
       "adsense",
       "analytics",
       "appscript",
@@ -22,18 +21,15 @@ describe("hosted Google scope catalog (#62)", () => {
       "calendar",
       "chat",
       "classroom",
-      "cloudadmin",
       "contacts",
       "docs",
       "drive",
       "drivelabels",
       "forms",
       "groups",
-      "keep",
       "meet",
       "people",
       "photos",
-      "photospicker",
       "searchconsole",
       "sheets",
       "sites",
@@ -42,7 +38,17 @@ describe("hosted Google scope catalog (#62)", () => {
       "tasks",
       "youtube",
     ]);
-    for (const service of ["gmail", "googleads", "driveactivity", "constructor", "__proto__"]) {
+    for (const service of [
+      "gmail",
+      "googleads",
+      "driveactivity",
+      "admin",
+      "cloudadmin",
+      "keep",
+      "photospicker",
+      "constructor",
+      "__proto__",
+    ]) {
       expect(isHostedService(service)).toBe(false);
       expect(() => scopesForServices([service])).toThrow(UnknownServiceError);
     }
@@ -76,6 +82,10 @@ describe("hosted Google scope catalog (#62)", () => {
       "chat.messages",
       "chat.messages.readonly",
       "adwords",
+      "cloud-platform",
+      "keep",
+      "admin.directory.user",
+      "photospicker.mediaitems.readonly",
       "gmail.readonly",
       "gmail.send",
       "mail.google.com",

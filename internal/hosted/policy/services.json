@@ -247,17 +247,6 @@
     "resourceModel": false,
     "documentation": "https://developers.google.com/adsense/management/reference/rest/v2/accounts/list"
   },
-  "cloudadmin": {
-    "label": "Google Cloud administration",
-    "scopes": [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ],
-    "writeScopes": [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ],
-    "resourceModel": false,
-    "documentation": "https://docs.cloud.google.com/docs/authentication"
-  },
   "groups": {
     "label": "Workspace groups",
     "scopes": [
@@ -266,34 +255,6 @@
     "writeScopes": [],
     "resourceModel": false,
     "documentation": "https://developers.google.com/identity/protocols/oauth2/scopes"
-  },
-  "keep": {
-    "label": "Google Keep",
-    "scopes": [
-      "https://www.googleapis.com/auth/keep"
-    ],
-    "writeScopes": [
-      "https://www.googleapis.com/auth/keep"
-    ],
-    "resourceModel": false,
-    "documentation": "https://developers.google.com/workspace/keep/api/reference/rest"
-  },
-  "admin": {
-    "label": "Workspace Admin",
-    "scopes": [
-      "https://www.googleapis.com/auth/admin.directory.user.readonly",
-      "https://www.googleapis.com/auth/admin.directory.group.readonly",
-      "https://www.googleapis.com/auth/admin.directory.group.member.readonly",
-      "https://www.googleapis.com/auth/admin.directory.orgunit.readonly"
-    ],
-    "writeScopes": [
-      "https://www.googleapis.com/auth/admin.directory.user",
-      "https://www.googleapis.com/auth/admin.directory.group",
-      "https://www.googleapis.com/auth/admin.directory.group.member",
-      "https://www.googleapis.com/auth/admin.directory.orgunit"
-    ],
-    "resourceModel": false,
-    "documentation": "https://developers.google.com/workspace/admin/directory/v1/guides/authorizing"
   },
   "youtube": {
     "label": "YouTube",
@@ -314,14 +275,5 @@
     "writeScopes": [],
     "resourceModel": false,
     "documentation": "https://developers.google.com/photos/overview/authorization"
-  },
-  "photospicker": {
-    "label": "Google Photos Picker",
-    "scopes": [
-      "https://www.googleapis.com/auth/photospicker.mediaitems.readonly"
-    ],
-    "writeScopes": [],
-    "resourceModel": false,
-    "documentation": "https://developers.google.com/photos/picker/guides/get-started-picker"
   }
 }

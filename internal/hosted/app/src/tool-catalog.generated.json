@@ -3007,5 +3007,114 @@
       },
       "name": "people_me"
     }
+  },
+  {
+    "name": "photos_list",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "photos_list"
+    }
+  },
+  {
+    "name": "photos_get",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "media_id": {
+            "type": "string"
+          }
+        },
+        "required": ["media_id"],
+        "type": "object"
+      },
+      "name": "photos_get"
+    }
+  },
+  {
+    "name": "photos_search",
+    "service": "photos",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native app-created Photos media only with explicit account/tool grants and photoslibrary.readonly.appcreateddata. No general-library browsing or media writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "album": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "include_archived": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "media_type": {
+            "type": "string"
+          },
+          "order": {
+            "type": "string"
+          },
+          "page": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "photos_search"
+    }
   }
 ]

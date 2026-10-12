@@ -2,6 +2,10 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted v1: defer Photos Picker, Cloud Admin, Keep and Workspace Admin to v2; reject their consent/scopes while preserving the local CLI and selected-file Drive Picker. (#52, #79)
+
+- Hosted: expose native Photos app-created media list/get/search with account/tool grants, photoslibrary.readonly.appcreateddata and exact library GET/search admission. Legacy general-library scopes/browsing and media writes remain excluded. Fixture reads/scope-path denials verified; download/Photos Picker and live acceptance remain pending. (#52, #79)
+
 - Hosted: expose native People self-profile reads with account/tool grants, profile scope aliases and exact people/me admission. Disable legacy local-refresh-token fallback only for trusted hosted execution; normal CLI behavior remains unchanged. Fixture profile/unavailable-API handling verified; arbitrary-profile/directory/relations/raw adapters and real acceptance remain pending. (#52, #79)
 
 - Hosted: expose native YouTube playlist list/create/delete with connected-account listing, approved youtube read/write scopes, exact playlist/query admission and destructive deletion permission. Preserve private creation defaults and avoid local API-key fallback. Fixture creation/list/deletion/scope denials verified; remaining YouTube families and live acceptance remain pending. (#52, #79)

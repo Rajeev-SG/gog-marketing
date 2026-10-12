@@ -3,16 +3,21 @@
 ## Current milestone (12 October 2026)
 
 This is an **engineering checkpoint, not public-beta readiness or live acceptance**.
-The hosted-only consent policy contains 27 eligible service identifiers and an
+The hosted-only consent policy contains 23 v1 service identifiers and an
 exact OAuth scope allowlist. Local CLI scopes and capabilities are unchanged.
+Photos Picker, Cloud Admin, Keep and Workspace Admin are deferred to v2 by the
+owner on 12 October 2026 and are excluded from hosted v1 consent. Existing local
+CLI functionality is unchanged. Drive Picker is separate and remains necessary
+for authorizing pre-existing user files under `drive.file`.
+
 Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
-proves the 27 services executable or working through hosted MCP.
+proves the 23 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of eighty-two native Go
+The Worker now consumes a generated catalogue of eighty-five native Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; Workspace Groups listing/member reads; Meet space create/get/update/end; AdSense account list/get; selected-file Sites metadata/URL reads; five selected Forms tools; Apps Script project get/content/create; partial Chat space/send tools; Classroom course CRUD; YouTube playlist read/create/delete; and People self-profile read. All invoke existing typed native handlers. MCP discovery and execution
+Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; Workspace Groups listing/member reads; Meet space create/get/update/end; AdSense account list/get; selected-file Sites metadata/URL reads; five selected Forms tools; Apps Script project get/content/create; partial Chat space/send tools; Classroom course CRUD; YouTube playlist read/create/delete; People self-profile read; and app-created Photos list/get/search. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
@@ -30,7 +35,7 @@ another account.
 
 These are **local/PR implementation changes**, not a deployed acceptance claim.
 Google Picker selected-file onboarding is now implemented, including account/session
-binding and server-side typed Drive verification. Complete 27-service command
+binding and server-side typed Drive verification. Complete 23-service command
 coverage and live verification remain required. Workspace bindings cannot access
 an arbitrary file: an enabled verified selected-file grant must exist. Real
 Picker use remains untested pending operator API-key/project-number configuration.
@@ -111,13 +116,13 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | `tagmanager_versions_publish` uses the existing native handler, canonical enabled-container grants, publish scope and destructive permission; compiler failures are errors. Fixture execution/denial tests pass; live publish/read-back and remaining GTM reads/CRUD pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
 | `bigquery` | `bigquery.readonly` | `bigquery` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
 | `adsense` | `adsense.readonly` | No existing service write scope requested | **untested** | Native account list/get use account/tool grants, adsense.readonly and exact GET/canonical-account admission; fixture reads/scope/path denials pass. Remaining native AdSense resources/reports, publisher prerequisites and live acceptance pending | [Google](https://developers.google.com/adsense/management/reference/rest/v2/accounts/list) |
-| `cloudadmin` | `cloud-platform` | `cloud-platform` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/docs/authentication) |
+| `cloudadmin` | Not offered in v1 | Not offered in v1 | **v2 deferred** | Owner-deferred on 12 October 2026; excluded from hosted v1 consent and completion gates; local CLI preserved | [Google](https://docs.cloud.google.com/docs/authentication) |
 | `groups` | `cloud-identity.groups.readonly` | No existing service write scope requested | **untested** | Both native groups_list/groups_members use account/tool grants, exact read-only scope, bound email lookup and validated membership paths; fixture reads/denials pass. Workspace role/live acceptance pending; no native writes claimed | [Google](https://developers.google.com/identity/protocols/oauth2/scopes) |
-| `keep` | `keep` | `keep` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/keep/api/reference/rest) |
-| `admin` | `admin.directory.user.readonly admin.directory.group.readonly admin.directory.group.member.readonly admin.directory.orgunit.readonly` | `admin.directory.user admin.directory.group admin.directory.group.member admin.directory.orgunit` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/admin/directory/v1/guides/authorizing) |
+| `keep` | Not offered in v1 | Not offered in v1 | **v2 deferred** | Owner-deferred on 12 October 2026; excluded from hosted v1 consent and completion gates; local CLI preserved | [Google](https://developers.google.com/workspace/keep/api/reference/rest) |
+| `admin` | Not offered in v1 | Not offered in v1 | **v2 deferred** | Owner-deferred on 12 October 2026; excluded from hosted v1 consent and completion gates; local CLI preserved | [Google](https://developers.google.com/workspace/admin/directory/v1/guides/authorizing) |
 | `youtube` | `youtube.readonly` | `youtube` | **untested** | Native playlist list/create/delete use account/tool grants, mine selector, youtube write scope and destructive deletion permission; fixture persistence/read-scope denials pass. Remaining video/comment/channel/subscription/item features and live acceptance pending | [Google](https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps) |
-| `photos` | `photoslibrary.readonly.appcreateddata` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/photos/overview/authorization) |
-| `photospicker` | `photospicker.mediaitems.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/photos/picker/guides/get-started-picker) |
+| `photos` | `photoslibrary.readonly.appcreateddata` | No existing service write scope requested | **untested** | Native app-created list/get/search use exact library endpoints and approved scope/account/tool grants; fixture reads/legacy-scope/path denials pass. General-library browsing/writes excluded; download/Picker adapters and real app-created/account acceptance pending | [Google](https://developers.google.com/photos/overview/authorization) |
+| `photospicker` | Not offered in v1 | Not offered in v1 | **v2 deferred** | Owner-deferred on 12 October 2026; excluded from hosted v1 consent and completion gates; local CLI preserved | [Google](https://developers.google.com/photos/picker/guides/get-started-picker) |
 
 **Excluded:** `gmail`, `googleads`, `driveactivity`; local CLI remains intact.
 Tag Manager container deletion uses its separate `tagmanager.delete.containers`
@@ -260,3 +265,5 @@ Classroom course method scopes checked 12 October 2026 in [official Classroom v1
 YouTube playlist scopes checked 12 October 2026 in [official YouTube v3 discovery](https://youtube.googleapis.com/$discovery/rest?version=v3): list supports youtube.readonly/youtube; insert/delete support youtube, not youtube.readonly. No upload or unrelated integrations are added. Actual channel prerequisites, production scope classifications and live writes remain unverified.
 
 People self-profile checked 12 October 2026 in [official People v1 discovery](https://people.googleapis.com/$discovery/rest?version=v1): people.get supports userinfo.profile. Existing approved basic profile scope aliases are accepted; no extra sensitive or restricted profile/directory scope is introduced. Real API enablement/account behavior remains unverified.
+
+Photos library method scopes checked 12 October 2026 in [mediaItems.list](https://developers.google.com/photos/library/reference/rest/v1/mediaItems/list), [get](https://developers.google.com/photos/library/reference/rest/v1/mediaItems/get) and [search](https://developers.google.com/photos/library/reference/rest/v1/mediaItems/search): photoslibrary.readonly.appcreateddata is supported. Withdrawn general-library browsing is not introduced. Real app-created media/Google execution remain unverified.

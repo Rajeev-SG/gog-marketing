@@ -6,7 +6,7 @@ import (
 )
 
 func TestHostedScopesRejectRestrictedAndUnknownTransitiveGrants(t *testing.T) {
-	for _, scope := range []string{"drive", "drive.readonly", "drive.metadata.readonly", "drive.activity.readonly", "chat.messages", "chat.messages.readonly", "adwords", "gmail.send", "gmail.readonly", "unknown.future.scope"} {
+	for _, scope := range []string{"drive", "drive.readonly", "drive.metadata.readonly", "drive.activity.readonly", "chat.messages", "chat.messages.readonly", "adwords", "gmail.send", "gmail.readonly", "unknown.future.scope", "cloud-platform", "keep", "admin.directory.user", "photospicker.mediaitems.readonly"} {
 		if err := ValidateScopes([]string{"openid", "https://www.googleapis.com/auth/" + scope}); !errors.Is(err, ErrScopeBlocked) {
 			t.Errorf("unsafe scope accepted: %s %v", scope, err)
 		}
@@ -16,7 +16,7 @@ func TestHostedScopesRejectRestrictedAndUnknownTransitiveGrants(t *testing.T) {
 		t.Fatal("unknown grant accepted")
 	}
 
-	for _, service := range []string{"gmail", "googleads", "driveactivity"} {
+	for _, service := range []string{"gmail", "googleads", "driveactivity", "admin", "cloudadmin", "keep", "photospicker"} {
 		if _, ok := LookupService(service); ok {
 			t.Errorf("excluded service accepted: %s", service)
 		}
@@ -24,8 +24,8 @@ func TestHostedScopesRejectRestrictedAndUnknownTransitiveGrants(t *testing.T) {
 }
 
 func TestHostedConsentCatalogueIsAuditFreeAndImmutable(t *testing.T) {
-	if len(services) != 27 {
-		t.Fatalf("eligible services=%d, want 27", len(services))
+	if len(services) != 23 {
+		t.Fatalf("eligible services=%d, want 23", len(services))
 	}
 
 	for name, service := range services {
