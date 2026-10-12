@@ -345,40 +345,6 @@
     }
   },
   {
-    "name": "tagmanager_versions_publish",
-    "service": "tagmanager",
-    "resource_type": "container",
-    "resource_argument": "container_path",
-    "write": true,
-    "tool": {
-      "annotations": {
-        "readOnlyHint": false,
-        "destructiveHint": true,
-        "idempotentHint": false,
-        "openWorldHint": true
-      },
-      "description": "Publish a version of an explicitly enabled GTM container. Requires publish scope, write and destructive permission.",
-      "inputSchema": {
-        "additionalProperties": false,
-        "properties": {
-          "container_path": {
-            "description": "Enabled container path: accounts/123/containers/456",
-            "type": "string"
-          },
-          "fingerprint": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          }
-        },
-        "required": ["container_path", "version"],
-        "type": "object"
-      },
-      "name": "tagmanager_versions_publish"
-    }
-  },
-  {
     "name": "searchconsole_sites_list",
     "service": "searchconsole",
     "resource_type": "",
@@ -721,6 +687,1133 @@
         "type": "object"
       },
       "name": "bigquery_table_rows"
+    }
+  },
+  {
+    "name": "tagmanager_accounts_list",
+    "service": "tagmanager",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM accounts list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "tagmanager_accounts_list"
+    }
+  },
+  {
+    "name": "tagmanager_accounts_get",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM accounts get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          }
+        },
+        "required": ["account_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_accounts_get"
+    }
+  },
+  {
+    "name": "tagmanager_containers_list",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["account_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_list"
+    }
+  },
+  {
+    "name": "tagmanager_containers_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_get"
+    }
+  },
+  {
+    "name": "tagmanager_containers_create",
+    "service": "tagmanager",
+    "resource_type": "account",
+    "resource_argument": "account_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account_path": {
+            "type": "string"
+          },
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          }
+        },
+        "required": ["account_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_create"
+    }
+  },
+  {
+    "name": "tagmanager_containers_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_update"
+    }
+  },
+  {
+    "name": "tagmanager_containers_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM containers delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_containers_delete"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_list"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_get"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_create"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_update"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_delete"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_status",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces status under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_status"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_sync",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces sync under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_sync"
+    }
+  },
+  {
+    "name": "tagmanager_workspaces_create-version",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM workspaces create-version under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "version_name": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_workspaces_create-version"
+    }
+  },
+  {
+    "name": "tagmanager_tags_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_list"
+    }
+  },
+  {
+    "name": "tagmanager_tags_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_get"
+    }
+  },
+  {
+    "name": "tagmanager_tags_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_create"
+    }
+  },
+  {
+    "name": "tagmanager_tags_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_update"
+    }
+  },
+  {
+    "name": "tagmanager_tags_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM tags delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_tags_delete"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_list"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_get"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_create"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_update"
+    }
+  },
+  {
+    "name": "tagmanager_triggers_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM triggers delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_triggers_delete"
+    }
+  },
+  {
+    "name": "tagmanager_variables_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_list"
+    }
+  },
+  {
+    "name": "tagmanager_variables_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_get"
+    }
+  },
+  {
+    "name": "tagmanager_variables_create",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables create under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_create"
+    }
+  },
+  {
+    "name": "tagmanager_variables_update",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables update under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "body_json": {
+            "description": "Inline native resource JSON object; no files or foreign paths",
+            "type": "string"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_update"
+    }
+  },
+  {
+    "name": "tagmanager_variables_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM variables delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "resource_id": {
+            "type": "string"
+          },
+          "workspace_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "workspace_id", "resource_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_variables_delete"
+    }
+  },
+  {
+    "name": "tagmanager_versions_list",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions list under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "container_path": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_list"
+    }
+  },
+  {
+    "name": "tagmanager_versions_get",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions get under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "version_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_get"
+    }
+  },
+  {
+    "name": "tagmanager_versions_delete",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Run native GTM versions delete under explicit account/tool and selected account/container grants. Mutations require method-appropriate consent; deletion requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "type": "string"
+          },
+          "version_id": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version_id"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_delete"
+    }
+  },
+  {
+    "name": "tagmanager_versions_publish",
+    "service": "tagmanager",
+    "resource_type": "container",
+    "resource_argument": "container_path",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Publish a version of an explicitly enabled GTM container. Requires publish scope, write and destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "container_path": {
+            "description": "Enabled container path: accounts/123/containers/456",
+            "type": "string"
+          },
+          "fingerprint": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["container_path", "version"],
+        "type": "object"
+      },
+      "name": "tagmanager_versions_publish"
     }
   },
   {

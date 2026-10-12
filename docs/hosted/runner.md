@@ -500,3 +500,13 @@ multiple accounts enable an account-level tool, and optional for resource tools.
 The Worker resolves ownership/grants and removes the selector before validating
 and dispatching the original native schema. No account emails or Clerk subjects
 are added to the public tool schema.
+
+The complete existing 34-command GTM surface uses fixed schemas and shared
+operation descriptors. Account reads/creation use real discovered account grants;
+container/workspace/tag/trigger/variable/version operations use exact selected
+container paths plus numeric child IDs. Workspace/container deletion requires
+`tagmanager.delete.containers`, version creation/deletion uses
+`tagmanager.edit.containerversions`, and publish retains destructive authorization.
+Mutation JSON must be inline and cannot name a foreign path. Permission update
+batches are bounded by the fixed generated catalogue, not an obsolete 128-tool
+ceiling. No additional GTM API operations absent from the native CLI are exposed.

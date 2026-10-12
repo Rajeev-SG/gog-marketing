@@ -6,7 +6,7 @@ import {
 } from "../../state/src/sqlite-adapter.js";
 import { loadMigrationSql } from "../../state/src/dev-migrations.js";
 import { HostedRepository } from "../../state/src/repository.js";
-import { saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
+import { EXECUTABLE_TOOLS, saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
 import type { ConnectSession } from "./connect.js";
 import { policyTools } from "./mcp.js";
 
@@ -43,9 +43,27 @@ describe("explicit executable tool permissions", () => {
   });
   afterEach(() => db.close());
 
+  it("persists the entire expanded fixed catalogue without granting unknown or duplicate tools", async () => {
+    const updates = EXECUTABLE_TOOLS.map((tool) => ({
+      toolName: tool.name,
+      enabled: false,
+      allowDestructive: false,
+    }));
+    await saveToolPermissions(repo, session, connectionId, updates);
+    expect(await repo.listToolGrants(session.tenantId, connectionId)).toHaveLength(
+      EXECUTABLE_TOOLS.length,
+    );
+    expect(
+      (await toolPermissionView(repo, session, connectionId)).tools.every((tool) => !tool.enabled),
+    ).toBe(true);
+    await expect(
+      saveToolPermissions(repo, session, connectionId, [...updates, updates[0]!]),
+    ).rejects.toMatchObject({ code: "invalid_request" });
+  });
+
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(106);
+    expect(view.tools).toHaveLength(139);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);

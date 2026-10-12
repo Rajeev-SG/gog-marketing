@@ -123,14 +123,15 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), nativeBigQueryReadBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), nativeTagManagerBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
-	fileResourceID       = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
-	canonicalContainerID = regexp.MustCompile(`^accounts/[0-9]+/containers/[0-9]+$`)
-	numericVersionID     = regexp.MustCompile(`^[0-9]+$`)
-	calendarResourceID   = regexp.MustCompile(`^[A-Za-z0-9._@#+-]{1,256}$`)
-	crossFileFormula     = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
+	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
+	canonicalGoogleAccountID = regexp.MustCompile(`^accounts/[0-9]+$`)
+	canonicalContainerID     = regexp.MustCompile(`^accounts/[0-9]+/containers/[0-9]+$`)
+	numericVersionID         = regexp.MustCompile(`^[0-9]+$`)
+	calendarResourceID       = regexp.MustCompile(`^[A-Za-z0-9._@#+-]{1,256}$`)
+	crossFileFormula         = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
 )
 
 func nativeBinding(name string) (NativeToolBinding, bool) {
@@ -247,6 +248,11 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 func validateNativeResourceArgument(resourceType, argument string) error {
 	switch resourceType {
+	case "account":
+		if !canonicalGoogleAccountID.MatchString(argument) {
+			return invalidf("invalid account resource")
+		}
+
 	case "project":
 		if !bigQueryProjectID.MatchString(argument) || argument == "gog-marketing-prod" {
 			return invalidf("invalid or platform-owned BigQuery project")

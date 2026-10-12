@@ -35,14 +35,12 @@ type HostedTool = native.Tool
 func hostedExistingTools() []mcpToolSpec {
 	var tools []mcpToolSpec
 	for _, spec := range mcpAllTools() {
-		if spec.Service == "gmail" || spec.Service == "googleads" || spec.Name == "drive_search" || spec.Name == "analytics_datastreams_list" {
+		if spec.Service == "tagmanager" || spec.Service == "gmail" || spec.Service == "googleads" || spec.Name == "drive_search" || spec.Name == "analytics_datastreams_list" {
 			continue
-		}
-		if spec.Name == "tagmanager_versions_publish" {
-			spec = hostedTagManagerPublishTool()
 		}
 		tools = append(tools, spec)
 	}
+	tools = append(tools, hostedTagManagerTools()...)
 	tools = append(tools, hostedBigQueryDatasetGetTool())
 	tools = append(tools, hostedSlidesTools()...)
 	tools = append(tools, hostedTasksTools()...)

@@ -357,7 +357,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       </section>
       <section class="stack">
         <h2>Connect a Google account</h2>
-        <p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled. Scope eligibility does not guarantee account or hosted-tool availability. Keep and Workspace Admin require delegated administrator configuration; cloud operations can incur charges in your own project.</p>
+        <p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled. Scope eligibility does not guarantee account or hosted-tool availability. Some Google permissions combine read and write; explicit tool and resource grants remain required.</p>
         <div id="connect-services" class="service-consent" aria-label="Optional Google service permissions"></div>
         <div class="connect-actions">
           <button id="connect-google" type="button" class="primary">Connect Google account</button>
@@ -393,9 +393,9 @@ export function renderHome(htmlConfig: HtmlConfig): string {
           <button id="copy-mcp-url" type="button"${canonicalMcpUrl ? "" : " disabled"}>Copy URL</button>
         </div>
         <ol class="setup-list">
-          <li>Copy the URL and keep it for your future Codex remote MCP configuration.</li>
-          <li>When authentication is enabled, add the URL as a remote MCP server in Codex.</li>
-          <li>Codex will then prompt you to complete browser OAuth. Do not paste tokens.</li>
+          <li>Add this HTTPS URL as a remote MCP server in Codex.</li>
+          <li>Complete the Clerk browser sign-in when Codex prompts you.</li>
+          <li>Enable the intended account, tools and assets in this workspace, then run a test call. Never paste tokens.</li>
         </ol>
         <p class="muted">Tenant identifiers, database IDs, provider IDs, and credentials are never shown here.</p>
       </section>

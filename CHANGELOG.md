@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose the complete 34-command native GTM surface with selected account/container grants, exact method/scope admission, inline-only mutation bodies and destructive deletion/publish permissions. Keep fixed catalogue permission batches usable beyond 128 tools; correct live Codex setup instructions and remove v2 consent prompts. (#52, #79)
+
 - Hosted: discover customer BigQuery projects through the native paginated BigQuery API so project-granted tools can be selected in the product; exclude the platform project and keep discovered grants disabled. Preserve explicit-project local discovery. (#52, #79)
 
 - Hosted: advertise enabled-account selectors in MCP schemas and require selection for ambiguous account-level tools; preserve tenant filtering and strip selectors before native dispatch. Follow pagination for GA4 Ads-link get. (#52, #79)

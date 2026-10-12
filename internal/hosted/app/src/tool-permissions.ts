@@ -42,7 +42,8 @@ export async function saveToolPermissions(
 ) {
   if (!(await repo.getConnection(session.tenantId, connectionId)))
     throw new ConnectError("connection_not_found", 404);
-  if (!Array.isArray(raw) || raw.length > 128) throw new ConnectError("invalid_request", 400);
+  if (!Array.isArray(raw) || raw.length > EXECUTABLE_TOOLS.length)
+    throw new ConnectError("invalid_request", 400);
   const seen = new Set<string>();
   const updates = raw.map((value: unknown) => {
     if (!value || typeof value !== "object" || Array.isArray(value))

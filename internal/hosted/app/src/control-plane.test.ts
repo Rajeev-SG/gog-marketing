@@ -321,7 +321,9 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(response.status).toBe(200);
     const html = await response.text();
     expect(html).toContain(`${CANONICAL_ORIGIN}/mcp`);
-    expect(html).toContain("When authentication is enabled, add the URL as a remote MCP server");
+    expect(html).toContain("Add this HTTPS URL as a remote MCP server in Codex");
+    expect(html).toContain("Complete the Clerk browser sign-in");
+    expect(html).not.toContain("When authentication is enabled");
     expect(html).not.toContain("evil.example.com");
     expect(html).not.toMatch(UUID_RE);
   });
