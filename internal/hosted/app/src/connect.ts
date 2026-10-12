@@ -92,6 +92,7 @@ export type ConnectErrorCode =
   | "google_unavailable"
   | "google_identity_failed"
   | "identity_conflict"
+  | "reconnect_identity_mismatch"
   | "connection_not_found"
   | "needs_reconnect"
   | "scope_blocked"
@@ -116,6 +117,8 @@ export const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
   google_unavailable: "Google's service is temporarily unreachable. Please try again.",
   google_identity_failed: "Google's account identity could not be verified.",
   identity_conflict: "That Google account is already connected to a different connection.",
+  reconnect_identity_mismatch:
+    "That Google account does not match this connection. Choose the original account or add it separately.",
   connection_not_found: "That Google connection no longer exists.",
   needs_reconnect: "This Google account needs to be reconnected.",
   scope_blocked:
@@ -133,6 +136,7 @@ export function auditSafeError(code: ConnectErrorCode): string {
     case "consent_denied":
     case "callback_wrong_tenant":
     case "identity_conflict":
+    case "reconnect_identity_mismatch":
     case "scope_blocked":
       return "permission_denied";
     case "invalid_request":
@@ -711,7 +715,7 @@ export async function completeCallback(
         operation: "reconnect",
         error: "permission_denied",
       });
-      throw new ConnectError("identity_conflict", 409);
+      throw new ConnectError("reconnect_identity_mismatch", 409);
     }
   }
 

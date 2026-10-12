@@ -658,7 +658,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const home = await worker.fetch(request, env);
     expect(home.status).toBe(200);
     const html = await home.text();
-    expect(html).toContain("Your workspace is ready.");
+    expect(html).toContain("Your Google marketing data");
     expect(html).not.toContain(token);
     expect(html).not.toContain("test_dev_browser");
     const first = await tenantIdForClerkUser(env, "user_cookie");
@@ -1110,7 +1110,10 @@ describe("hosted Google connection routes (#62)", () => {
     headers.set("Accept", "text/html");
     const browser = await worker.fetch(new Request(callbackUrl, { headers }), env);
     expect(browser.status).toBe(303);
-    expect(browser.headers.get("location")).toBe("/?google=connected");
+    const completionLocation = new URL(browser.headers.get("location")!, ORIGIN);
+    expect(completionLocation.pathname).toBe("/");
+    expect(completionLocation.searchParams.get("google")).toBe("connected");
+    expect(completionLocation.searchParams.get("connection")).toBeTruthy();
     expect(await browser.text()).toBe("");
     const replay = await worker.fetch(new Request(callbackUrl, { headers }), env);
     expect(replay.headers.get("location")).toBe("/?google=state_replayed");

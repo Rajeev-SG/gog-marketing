@@ -1,15 +1,7 @@
+import { PRODUCT_CSS } from "./product-css.generated.js";
 import { HOSTED_SERVICES } from "./scopes.js";
 
-/**
- * HTML shell rendering for the hosted Worker.
- *
- * Serves the Clerk-protected hosted product shell: sign-in/sign-up for
- * unauthenticated visitors and the marketer workspace for authenticated
- * users. It preserves the existing Go marketer UI
- * structure and safety language, while the MCP panel is explicitly marked as
- * not yet authenticated/working.
- */
-
+/** HTML shell rendering for the canonical hosted customer UI. */
 export interface HtmlConfig {
   publishableKey: string;
   authorizedParties: string[];
@@ -23,8 +15,7 @@ export function deriveClerkDomain(publishableKey: string): string {
     const parts = publishableKey.split("_");
     if (parts.length < 3 || !parts[2]) return "";
     const domain = atob(parts[2]).slice(0, -1);
-    if (!isValidClerkDomain(domain)) return "";
-    return domain;
+    return isValidClerkDomain(domain) ? domain : "";
   } catch {
     return "";
   }
@@ -34,7 +25,6 @@ function isValidClerkDomain(domain: string): boolean {
   return /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(domain);
 }
 
-/** Escape a value for use inside a double-quoted HTML attribute. */
 function escapeHtmlAttr(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -44,13 +34,7 @@ function escapeHtmlAttr(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-/**
- * Baseline CSP follows Clerk's manual CSP guide, including bot/fraud hosts:
- * https://clerk.com/docs/guides/secure/best-practices/csp-headers
- * `unsafe-inline` supports the shell loader and Clerk runtime styles. The
- * protect-host port wildcard is required only for connect-src; no broad
- * all-origin or http(s)-scheme sources are allowed.
- */
+/** Baseline CSP follows Clerk's manual CSP guide and existing hosted policy. */
 export function securityHeaders(clerkDomain = ""): Record<string, string> {
   const clerkSources = clerkDomain ? [`https://${clerkDomain}`, `wss://${clerkDomain}`] : [];
   const clerkScriptSources = clerkDomain ? [`https://${clerkDomain}`] : [];
@@ -68,708 +52,260 @@ export function securityHeaders(clerkDomain = ""): Record<string, string> {
     "base-uri 'self'",
     "frame-ancestors 'none'",
   ].join("; ");
-  return {
-    "Content-Security-Policy": csp,
-    "X-Content-Type-Options": "nosniff",
-  };
+  return { "Content-Security-Policy": csp, "X-Content-Type-Options": "nosniff" };
 }
 
-const CSS = `
-:root {
-  --surface-page: #f4f6f9;
-  --surface-card: #ffffff;
-  --surface-sunken: #eef1f5;
-  --text: #1a2333;
-  --text-muted: #5a6577;
-  --text-faint: #627086;
-  --border: #dde3ec;
-  --border-strong: #c3ccda;
-  --action: #245bd6;
-  --action-hover: #1e4fbf;
-  --action-soft: #e9effb;
-  --status-ok: #176f30;
-  --status-ok-soft: #e6f4ea;
-  --status-warn: #855900;
-  --status-warn-soft: #fdf3d7;
-  --radius: 10px;
-  --radius-l: 14px;
-  --shadow: 0 1px 2px rgb(23 32 51 / .06), 0 4px 12px rgb(23 32 51 / .07);
-  --focus-ring: 0 0 0 2px var(--surface-card), 0 0 0 4px var(--action);
+function icon(name: string): string {
+  const paths: Record<string, string> = {
+    home: '<path d="M3 10.8 12 3l9 7.8"/><path d="M5 9.8V21h14V9.8"/><path d="M9 21v-7h6v7"/>',
+    data: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    activity: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    settings:
+      '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.4 2.6a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 2.6h5l.4-2.6a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z"/>',
+    shield: '<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 3.2 2.4c-.9.3-.9 1.1-.9 1.6"/><path d="M12 17h.01"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    check: '<path d="m5 12 4 4L19 6"/>',
+    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    sparkles:
+      '<path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4L12 3Z"/><path d="m18 14 .8 2.2L21 17l-2.2.8L18 20l-.8-2.2L15 17l2.2-.8L18 14Z"/>',
+  };
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? ""}</svg>`;
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: "Avenir Next", "Segoe UI", system-ui, -apple-system, sans-serif;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--surface-page);
-  -webkit-font-smoothing: antialiased;
-}
-a { color: var(--action); text-decoration: none; }
-h1 { font-size: 26px; font-weight: 650; letter-spacing: -.015em; margin: 0 0 8px; }
-h2 { font-size: 18px; font-weight: 650; margin: 0 0 12px; }
-h3 { font-size: 15.5px; font-weight: 600; margin: 0; }
-p { margin: 0 0 12px; color: var(--text-muted); }
-:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
-.shell { max-width: 520px; margin: 48px auto; padding: 0 20px; }
-.workspace { min-height: 100vh; background: var(--surface-page); color: var(--text); }
-.shell-top {
-  position: sticky; top: 0; z-index: 2;
-  background: var(--surface-card); border-bottom: 1px solid var(--border);
-  padding: 12px 24px; display: flex; align-items: center; gap: 16px;
-}
-.shell-brand { color: var(--text); font-weight: 700; font-size: 15px; }
-.shell-nav { margin-left: auto; display: flex; align-items: center; gap: 16px; }
-.shell-account { color: var(--text-muted); font-size: 13.5px; }
-main { max-width: 1120px; margin: 32px auto; padding: 0 24px; }
-main > * + * { margin-top: 24px; }
-.eyebrow {
-  margin: 0 0 4px; font-size: 12px; font-weight: 650; text-transform: uppercase;
-  letter-spacing: .08em; color: var(--text-faint);
-}
-.intro { max-width: 660px; }
-.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.tile { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
-.tile-label { color: var(--text-muted); font-size: 13px; margin: 0 0 2px; }
-.tile-value { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 0; }
-.tile small { color: var(--text-faint); font-size: 12.5px; }
-.card { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-l); padding: 20px; }
-.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
-.card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-button {
-  font: inherit; font-size: 14px; font-weight: 600; color: var(--text);
-  background: var(--surface-card); border: 1px solid var(--border-strong);
-  border-radius: 6px; padding: 8px 14px; min-height: 40px; cursor: pointer;
-  display: inline-flex; align-items: center; justify-content: center;
-  transition: background 140ms ease, border-color 140ms ease;
-}
-button:hover { background: var(--surface-sunken); }
-button.primary { background: var(--action); border-color: var(--action); color: #fff; }
-button.primary:hover { background: var(--action-hover); }
-button.attention { background: var(--status-warn-soft); border-color: #d9a441; color: var(--status-warn); }
-button:disabled { cursor: default; opacity: .7; }
-.stack { display: flex; flex-direction: column; }
-.connect-help { font-size: 15.5px; }
-.service-consent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin-bottom: 12px; }
-.service-choice { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
-.service-choice input { width: 18px; height: 18px; accent-color: var(--action); }
-.tool-choice { display: grid; gap: 8px; margin: 12px 0; font-size: 13.5px; }
-.tool-choice label { display: flex; align-items: flex-start; gap: 8px; }
-.tool-choice input { width: 18px; height: 18px; flex: none; margin-top: 2px; accent-color: var(--action); }
-#tool-status { display: block; margin-top: 8px; }
-.connect-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.account-card + .account-card { margin-top: 16px; }
-.status {
-  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  background: var(--status-ok-soft); color: var(--status-ok); border-radius: 999px;
-  padding: 3px 10px; font-size: 12.5px; font-weight: 600;
-}
-.status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
-.status.needs_attention, .status.unavailable { background: var(--status-warn-soft); color: var(--status-warn); }
-.status.disconnected { background: var(--surface-sunken); color: var(--text-muted); }
-.alert { border: 1px solid var(--border); border-left: 4px solid #d9a441; border-radius: var(--radius); padding: 16px; margin-top: 16px; }
-.alert h3 { color: var(--status-warn); margin-bottom: 4px; }
-.toast {
-  display: flex; align-items: center; padding: 12px 16px; font-size: 14px;
-  border: 1px solid var(--border); border-radius: var(--radius);
-  background: var(--surface-card); box-shadow: var(--shadow);
-}
-.toast.error { color: #c22731; border-left: 4px solid #c22731; }
-.toast.info { color: var(--status-ok); border-left: 4px solid var(--status-ok); }
-.asset-picker { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
-.rail { position: sticky; top: 80px; display: grid; gap: 8px; }
-.rail-group-label { margin: 8px 0 2px; color: var(--text-faint); font-size: 11.5px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; }
-.rail-item {
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 10px 12px; color: var(--text); font-size: 13.5px; font-weight: 600;
-}
-.service-block { background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-l); padding: 16px 20px; margin-bottom: 16px; scroll-margin-top: 24px; }
-.service-meta { margin: 0 0 12px; color: var(--text-muted); font-size: 13px; }
-.rows { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-.row { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-bottom: 1px solid var(--border); }
-.row:last-child { border-bottom: 0; }
-.row input[type=checkbox] { width: 18px; height: 18px; flex: none; margin-top: 3px; accent-color: var(--action); }
-.row-label { flex: 1; min-width: 0; cursor: pointer; display: block; }
-.row-label strong { display: block; font-size: 14.5px; overflow-wrap: anywhere; }
-.row-label small { display: block; margin-top: 1px; color: var(--text-muted); font-size: 12.5px; }
-.row-details { max-width: 280px; color: var(--text-faint); font-size: 12px; }
-.row-details summary { color: var(--action); cursor: pointer; font-weight: 600; }
-.savebar {
-  position: sticky; bottom: 16px; display: flex; justify-content: space-between; align-items: center; gap: 16px;
-  background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 12px 16px; margin-top: 16px;
-}
-.savebar p { margin: 0; font-size: 13.5px; }
-.empty { text-align: center; padding: 48px 24px; }
-.ai-panel .mcp-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.ai-panel code {
-  flex: 1; min-width: 280px; padding: 10px 12px; border: 1px solid var(--border);
-  border-radius: 6px; background: var(--surface-sunken); overflow-wrap: anywhere;
-}
-.setup-list { padding-left: 20px; color: var(--text-muted); }
-.muted { color: var(--text-muted); }
-#user-button { min-height: 40px; }
-@media (max-width: 900px) {
-  .asset-picker { grid-template-columns: 1fr; }
-  .rail { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .tiles, .service-consent { grid-template-columns: 1fr; }
-}
-@media (max-width: 600px) {
-  .shell-top, main { padding-left: 16px; padding-right: 16px; }
-  main { margin-top: 20px; }
-  .shell-nav { width: 100%; margin-left: 0; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-  .shell-account { order: 4; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .card, .service-block, .tile { padding: 16px; }
-  .card-head { flex-direction: column; }
-  .card-actions { width: 100%; }
-  .row { flex-wrap: wrap; }
-  .savebar { bottom: 0; flex-wrap: wrap; }
-  .savebar button { width: 100%; }
-  .ai-panel code { min-width: 0; }
-}
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
-`;
 
 function clerkScriptTags(htmlConfig: HtmlConfig): string {
   const pk = escapeHtmlAttr(htmlConfig.publishableKey);
-  return `
-  <script defer crossorigin="anonymous" type="text/javascript"
-    src="https://${htmlConfig.clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
-  <script defer crossorigin="anonymous" type="text/javascript"
-    data-clerk-publishable-key="${pk}"
-    src="https://${htmlConfig.clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>`;
+  return `<script defer crossorigin="anonymous" type="text/javascript" src="https://${htmlConfig.clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
+  <script defer crossorigin="anonymous" type="text/javascript" data-clerk-publishable-key="${pk}" src="https://${htmlConfig.clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>`;
 }
 
-function renderShell(
-  title: string,
-  content: string,
-  htmlConfig: HtmlConfig,
-  shellClass = "shell",
-): string {
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
-  <style>${CSS}</style>
-${clerkScriptTags(htmlConfig)}
-</head>
-<body>
-  <div class="${shellClass}">${content}</div>
-</body>
-</html>`;
+function documentShell(title: string, content: string, htmlConfig: HtmlConfig): string {
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title><style>${PRODUCT_CSS}</style>${clerkScriptTags(htmlConfig)}</head><body>${content}</body></html>`;
 }
 
-/** Render the sign-in / sign-up page for unauthenticated visitors. */
+function navItem(href: string, label: string, iconName: string, active = false): string {
+  return `<a href="${href}"${active ? ' aria-current="page"' : ""}>${icon(iconName)}<span>${label}</span></a>`;
+}
+
+function appShell(content: string, htmlConfig: HtmlConfig): string {
+  return documentShell(
+    "Home — gog-marketing",
+    `<a class="skip-link" href="#main-content">Skip to content</a><div class="app-shell" id="app-shell">
+    <aside class="sidebar" id="app-sidebar" aria-label="Application navigation"><a class="sidebar-brand" href="/"><span class="brand-mark">g</span><span>gog-marketing</span></a><div class="sidebar-rule"></div><nav class="side-nav">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav><div class="sidebar-spacer"></div><div class="trust-card">${icon("shield")}<strong>Secure by design</strong><p>Least-privilege access to the Google data you choose.</p></div><div class="sidebar-user"><span class="avatar">G</span><span>Google access workspace</span></div></aside>
+    <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Search" aria-label="Search workspace"></label><div class="topbar-actions"><a class="button secondary-action" href="#settings">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><span>Privacy · Terms</span></footer></div>
+    <nav class="bottom-nav" aria-label="Mobile navigation">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav></div>`,
+    htmlConfig,
+  );
+}
+
 export function renderSignIn(htmlConfig: HtmlConfig): string {
-  const content = `
-  <div class="brand">gog-marketing</div>
-  <div class="sub">Sign in to access your marketing workspace.</div>
-  <div class="card">
-    <span class="tag">Clerk authentication</span>
-    <div id="sign-in"></div>
-  </div>
-  <script>
-    window.addEventListener('load', async function () {
-      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
-      var el = document.getElementById('sign-in');
-      if (el) Clerk.mountSignIn(el, { fallbackRedirectUrl: '/' });
-    });
-  </script>`;
-  return renderShell("Sign in — gog-marketing", content, htmlConfig);
+  return documentShell(
+    "Sign in — gog-marketing",
+    `<main class="shell" id="main-content" tabindex="-1"><section class="card intro sign-in-card"><p class="eyebrow">Get started</p><h1>Connect your Google marketing data</h1><p>Control exactly which Google accounts, services and assets your AI agents can access.</p><div id="sign-in"><p>Clerk authentication is loading…</p></div><p class="faint">Your credentials stay with Google. gog-marketing stores only the access you explicitly approve.</p></section></main><script>window.addEventListener('load', async function () { await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } }); var target = document.getElementById('sign-in'); if (target) Clerk.mountSignIn(target, { fallbackRedirectUrl: '/' }); });</script>`,
+    htmlConfig,
+  );
 }
 
-/**
- * Render a static branded notice for terminal Clerk failures on the Google
- * callback route. The shell intentionally has NO Clerk SDK scripts: the SDK
- * must never load when authentication configuration is invalid, and a
- * terminal-failure page gains nothing from it. The renderer never receives
- * request-derived values — only fixed operator-defined titles and messages —
- * so OAuth code/state/nonce can never be echoed into the page. The inline
- * script strips the secret-bearing query parameters from the address bar
- * without navigating anywhere, which cannot create a redirect loop.
- */
 export function renderCallbackNotice(title: string, message: string): string {
-  const content = `
-  <div class="brand">gog-marketing</div>
-  <div class="sub">Google connection could not be completed.</div>
-  <div class="card">
-    <span class="tag">${escapeHtmlAttr(title)}</span>
-    <p class="home-info">${escapeHtmlAttr(message)}</p>
-    <div class="home-actions">
-      <a href="/">Return to the workspace</a>
-    </div>
-  </div>
-  <script>
-    window.history.replaceState(null, '', '/oauth/google/callback');
-  </script>`;
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapeHtmlAttr(title)} — gog-marketing</title>
-  <style>${CSS}</style>
-</head>
-<body>
-  <div class="shell">${content}</div>
-</body>
-</html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title} — gog-marketing</title><style>${PRODUCT_CSS}</style></head><body><main class="shell"><section class="card intro"><p class="eyebrow">gog-marketing</p><h1>${title}</h1><p>${message}</p><a class="button primary" href="/">Return to workspace</a></section></main><script>window.history.replaceState(null, '', window.location.pathname);</script></body></html>`;
 }
 
-/**
- Render the protected product home for an authenticated user.
- * The visual structure intentionally follows the existing Go marketer product:
- * an overview, account cards, a service rail, asset rows, and explicit safety
- * controls. The app is lightweight and uses no external framework.
- */
 export function renderHome(htmlConfig: HtmlConfig): string {
   const canonicalMcpUrl = htmlConfig.mcpOrigin
     ? new URL("/mcp", htmlConfig.mcpOrigin).toString()
     : "";
-  const content = `
-  <div class="workspace">
-    <header class="shell-top">
-      <a class="shell-brand" href="/">gog-marketing</a>
-      <nav class="shell-nav" aria-label="Primary">
-        <span class="shell-account">Workspace</span>
-        <button id="sign-out" type="button">Sign out</button>
-        <div id="user-button"></div>
-      </nav>
-    </header>
-    <main id="main-content" tabindex="-1">
-      <div class="intro">
-        <p class="eyebrow">Home</p>
-        <h1>Your Google accounts</h1>
-        <p>Your workspace is ready.</p>
-        <p>Connect accounts with only the permissions you select, then choose exactly which assets your agents may use.</p>
-      </div>
-      <div id="app-message" class="toast" role="status" aria-live="polite" hidden><span></span></div>
-      <div class="tiles" aria-label="Workspace summary">
-        <div class="tile"><p class="tile-label">Google accounts</p><p class="tile-value" id="tile-accounts">—</p><small id="tile-connected">—</small></div>
-        <div class="tile"><p class="tile-label">Assets selected</p><p class="tile-value" id="tile-selected">—</p><small id="tile-assets">—</small></div>
-      </div>
-      <section aria-label="Google accounts">
-        <div id="google-accounts"></div>
-      </section>
-      <section class="stack">
-        <h2>Connect a Google account</h2>
-        <p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled. Scope eligibility does not guarantee account or hosted-tool availability. Some Google permissions combine read and write; explicit tool and resource grants remain required.</p>
-        <div id="connect-services" class="service-consent" aria-label="Optional Google service permissions"></div>
-        <div class="connect-actions">
-          <button id="connect-google" type="button" class="primary">Connect Google account</button>
-          <span id="connect-status" class="muted" role="status" aria-live="polite"></span>
-        </div>
-      </section>
-      <section id="asset-workspace" hidden aria-label="Assets and access">
-        <p>Choose existing Drive, Docs, Sheets, Slides, Forms or Sites files with Google Picker. Files start disabled; enable the selected assets and exact AI tools separately.</p>
-        <button id="pick-files" type="button">Choose Google files</button>
-        <span id="picker-status" role="status" aria-live="polite"></span>
-        <div class="asset-picker">
-          <nav class="rail" id="asset-rail" aria-label="Google services"></nav>
-          <div id="asset-groups"></div>
-        <div class="savebar">
-          <p>Saving applies only asset changes visible above. New discoveries stay disabled.</p>
-          <button id="save-grants" type="button" class="primary">Save access</button>
-        </div>
-        </div>
-      </section>
-      <section id="tool-workspace" class="card" hidden aria-labelledby="tool-heading">
-        <h2 id="tool-heading">AI tool permissions</h2>
-        <p>Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes. Changes affect this account only.</p>
-        <div id="tool-choices" aria-label="Tools for the selected Google account"></div>
-        <button id="save-tools" type="button" class="primary">Save tool permissions</button>
-        <span id="tool-status" role="status" aria-live="polite"></span>
-      </section>
-      <section class="card ai-panel" aria-labelledby="ai-panel-heading">
-        <p class="eyebrow">Connect to your AI</p>
-        <h2 id="ai-panel-heading">Codex remote MCP endpoint</h2>
-        <p>Use this canonical HTTPS address in Codex, sign in with Clerk, then execute only the tools and assets enabled for your Google account. Expanded service coverage is still being verified; this is not a public-beta readiness claim.</p>
-        <div class="mcp-row">
-          <code id="mcp-url">${canonicalMcpUrl || "Workspace address is not configured."}</code>
-          <button id="copy-mcp-url" type="button"${canonicalMcpUrl ? "" : " disabled"}>Copy URL</button>
-        </div>
-        <ol class="setup-list">
-          <li>Add this HTTPS URL as a remote MCP server in Codex.</li>
-          <li>Complete the Clerk browser sign-in when Codex prompts you.</li>
-          <li>Enable the intended account, tools and assets in this workspace, then run a test call. Never paste tokens.</li>
-        </ol>
-        <p class="muted">Tenant identifiers, database IDs, provider IDs, and credentials are never shown here.</p>
-      </section>
-    </main>
-  </div>
+  const serviceData = JSON.stringify(HOSTED_SERVICES).replaceAll("<", "\\u003c");
+  const content = `<div id="app-message" class="toast" role="status" aria-live="polite" hidden><span></span><button class="toast-close" type="button" aria-label="Dismiss notification">×</button></div>
+    <section class="state-banner" id="state-banner" hidden aria-live="polite"></section>
+    <section class="panel completion" id="completion-state" hidden aria-labelledby="completion-heading"><div class="completion-progress" aria-label="Connection progress"><div class="progress-step done"><span class="progress-dot">${icon("check")}</span><span>1 Connect Google</span></div><div class="progress-step" id="completion-step-data"><span class="progress-dot" id="completion-step-data-dot">2</span><span>2 Choose data</span></div><div class="progress-step" id="completion-step-ready"><span class="progress-dot">3</span><strong>Ready</strong></div></div><div class="completion-body"><span class="completion-check" id="completion-check">${icon("check")}</span><h2 id="completion-heading">Google connected — choose your data</h2><p id="completion-description">No assets are available to connected AI tools until you make a selection.</p><div class="completion-metrics"><div class="completion-metric"><strong id="completion-accounts">0</strong><span>accounts connected</span></div><div class="completion-metric"><strong id="completion-services">0</strong><span>services enabled</span></div><div class="completion-metric"><strong id="completion-assets">0</strong><span>assets enabled</span></div></div><button class="button primary" id="completion-continue" type="button">Choose data →</button></div></section>
+    <header class="page-header" id="home"><div><p class="eyebrow">Home</p><h1>Your Google marketing data</h1><p>Secure access and permissions for AI agents and tools.</p></div><div class="page-actions"><button class="button secondary-action" id="view-assets" type="button">${icon("data")} Manage data</button><button class="button primary" id="add-connection" type="button">${icon("plus")} Add Google account</button></div></header>
+    <section class="panel loading-panel" id="loading-state" aria-live="polite"><div class="loading-heading"><span class="spinner" aria-hidden="true"></span><div><h2>Finding your Google marketing assets…</h2><p>Checking connected accounts and the access you already approved.</p></div></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div></section>
+    <section class="panel loading-panel" id="load-error" hidden><h2>We couldn’t load your Google access</h2><p>Your existing permissions have not changed.</p><button class="button primary" id="retry-load" type="button">Try again</button></section>
+    <div id="workspace-content" hidden><section class="metric-strip" aria-label="Workspace summary"><div class="metric"><span class="metric-icon">${icon("data")}</span><div><strong id="tile-accounts">0</strong><span id="tile-connected">0 connected</span></div></div><div class="metric"><span class="metric-icon">${icon("shield")}</span><div><strong id="tile-selected">0</strong><span id="tile-assets">0 of 0 assets enabled</span></div></div><div class="metric"><span class="metric-icon">${icon("sparkles")}</span><div><strong id="tile-services">0</strong><span>services connected</span></div></div><div class="metric"><span class="metric-icon">${icon("check")}</span><div><strong id="tile-health">All healthy</strong><span id="tile-health-detail">No issues detected</span></div></div></section>
+    <section class="panel" aria-labelledby="services-heading"><div class="panel-head"><div><h2 id="services-heading">Google services</h2><p>Connection status and enabled assets</p></div><button class="panel-link" id="manage-services" type="button">Manage access →</button></div><div class="service-table" id="service-overview-rows"></div></section>
+    <div class="overview-grid"><section class="panel" aria-labelledby="accounts-heading"><div class="panel-head"><div><h2 id="accounts-heading">Connected Google accounts</h2><p>Accounts you’ve authorized</p></div><button class="panel-link" id="manage-accounts" type="button">Manage →</button></div><div class="account-list" id="account-overview"></div></section><section class="panel" id="activity" aria-labelledby="access-heading"><div class="panel-head"><div><h2 id="access-heading">Access model</h2><p>Least-privilege controls for connected tools</p></div></div><div class="quiet-list"><div class="quiet-item">${icon("shield")}<div><strong>Selected assets only</strong><p>Agents can access only the resources you explicitly enable.</p></div></div><div class="quiet-item">${icon("lock")}<div><strong>Read access by default</strong><p>Writes require separate service opt-in and tool permission.</p></div></div><div class="quiet-item">${icon("activity")}<div><strong>Independent accounts</strong><p>Credentials and grants remain isolated by account and tenant.</p></div></div></div></section></div>
+    <section class="panel" id="google-data" aria-labelledby="google-data-heading"><div class="panel-head"><div><h2 id="google-data-heading">Google accounts</h2><p>Manage access for each connected account.</p></div></div><div id="google-accounts" style="padding:0 20px 20px"></div></section>
+    <section class="panel" id="asset-workspace" hidden aria-labelledby="asset-heading"><div class="panel-head"><div><p class="eyebrow">Google data</p><h2 id="asset-heading">Manage asset access</h2><p>Choose the existing Google assets your AI agents and tools can access. This controls access, not reporting.</p></div><button class="button" id="pick-files" type="button">Choose Google files</button></div><div id="picker-status" role="status" aria-live="polite"></div><div class="asset-frame"><div class="asset-toolbar"><div class="searchbar"><input id="asset-search" type="search" placeholder="Search assets…" aria-label="Search assets"><button id="clear-search" type="button">Clear</button></div><div class="asset-summary"><strong id="asset-selected-count">0 selected</strong><span id="asset-health">● All services healthy</span></div></div><div class="asset-picker"><nav class="rail" id="asset-rail" aria-label="Google services"></nav><div class="asset-content" id="asset-groups"></div></div><div class="savebar"><p>New discoveries stay disabled until you choose them.</p><button id="save-grants" type="button" class="primary">Save changes</button></div></div></section>
+    <section class="panel" id="tool-workspace" hidden aria-labelledby="tool-heading"><div class="panel-head"><div><h2 id="tool-heading">AI tool permissions</h2><p>Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes.</p></div></div><div class="connect-panel"><div class="tool-list" id="tool-choices" aria-label="Tools for the selected Google account"></div><button id="save-tools" type="button" class="primary">Save tool permissions</button> <span id="tool-status" role="status" aria-live="polite"></span></div></section>
+    <section class="panel connect-panel" id="connect-panel" aria-labelledby="connect-heading"><div class="connect-layout"><div><p class="eyebrow">Add access</p><h2 id="connect-heading">Connect a Google account</h2><p class="connect-help">Select only what this account should use. Writes require separate opt-in; agents start with zero assets enabled.</p><div id="connect-services" class="service-consent" aria-label="Optional Google service permissions"></div><div class="connect-actions"><button id="connect-google" type="button" class="primary">${icon("plus")} Connect Google account</button><span id="connect-status" class="muted" role="status" aria-live="polite"></span></div></div><aside class="safety-note"><strong>Least privilege by default</strong><p>Scope eligibility does not guarantee account or hosted-tool availability. Explicit tool and resource grants remain required.</p></aside></div></section>
+    <section class="panel connect-panel" id="settings" aria-labelledby="mcp-heading"><p class="eyebrow">Connect to your AI</p><h2 id="mcp-heading">Codex remote MCP endpoint</h2>${canonicalMcpUrl ? `<p>Add this HTTPS URL as a remote MCP server in Codex. Complete the Clerk browser sign-in, then execute only the tools and assets enabled for your Google account.</p><div class="ai-panel"><code id="mcp-url">${canonicalMcpUrl}</code><button id="copy-mcp-url" type="button">Copy URL</button></div>` : `<p>Workspace address is not configured.</p><div class="ai-panel"><code>Remote MCP address unavailable</code><button id="copy-mcp-url" type="button" disabled>Copy URL</button></div>`}<p class="faint">Expanded service coverage is still being verified; this is not a public-beta readiness claim.</p></section></div>
   <script>
-    var SERVICE_INFO = ${JSON.stringify(HOSTED_SERVICES)};
-    var SERVICE_CATEGORIES = Object.fromEntries(Object.keys(SERVICE_INFO).map(function (name) {
-      return [name, ['analytics', 'tagmanager', 'searchconsole', 'bigquery', 'adsense', 'cloudadmin', 'youtube'].includes(name) ? 'Marketing' : 'Workspace'];
-    }));
+    var SERVICE_INFO = ${serviceData};
+    var SERVICE_CATEGORIES = Object.fromEntries(Object.keys(SERVICE_INFO).map(function (name) { return [name, ['analytics','tagmanager','searchconsole','bigquery','adsense','youtube'].includes(name) ? 'Marketing' : 'Workspace']; }));
     var SERVICE_LABELS = Object.fromEntries(Object.entries(SERVICE_INFO).map(function (entry) { return [entry[0], entry[1].label]; }));
-    var data = { connections: [] };
-    var selectedId = null;
-    var originalChoices = new Map();
-    var changedChoices = new Map();
-
+    var data = { connections: [] }; var selectedId = null; var activeService = ''; var assetDrafts = new Map();
     function el(id) { return document.getElementById(id); }
     function setText(id, value) { var target = el(id); if (target) target.textContent = value; }
-    function message(text, kind) {
-      var target = el('app-message');
-      if (!target) return;
-      target.className = 'toast' + (kind ? ' ' + kind : '');
-      target.hidden = !text;
-      target.firstElementChild.textContent = text;
-    }
+    function message(text, kind) { var target = el('app-message'); if (!target) return; target.className = 'toast' + (kind ? ' ' + kind : ''); target.hidden = !text; target.firstElementChild.textContent = text; }
     function safeStatus(connection) {
-      if (connection.status === 'needs_reconnect') return ['needs_attention', 'Needs reconnect'];
-      if (connection.status === 'revoked') return ['unavailable', 'Revoked'];
+      if (connection.status === 'needs_reconnect') return ['needs_attention', 'Needs attention'];
+      if (connection.status === 'revoked') return ['unavailable', 'Access paused'];
       var discovery = connection.discovery || {};
-      if (discovery.status === 'ok') return ['ok', 'Discovery ready'];
-      if (discovery.status === 'empty') return ['disconnected', 'No resources found'];
-      if (discovery.status === 'unavailable') return ['unavailable', 'Discovery unavailable'];
-      if (discovery.status === 'error') return ['unavailable', 'Discovery failed'];
-      return ['disconnected', 'Not checked'];
+      if (discovery.status === 'error' || discovery.status === 'unavailable') return ['unavailable', 'Check delayed'];
+      if (discovery.status === 'empty') return ['disconnected', 'Ready'];
+      return ['ok', 'Healthy'];
     }
     function category(service) { return SERVICE_CATEGORIES[service] || 'Google'; }
     function label(service) { return SERVICE_LABELS[service] || service; }
-    function selectedAccount() { return data.connections.find(function (item) { return item.id === selectedId; }); }
-    function selectedCount() {
-      return data.connections.reduce(function (total, connection) {
-        return total + (connection.resources || []).filter(function (resource) { return resource.enabled; }).length;
-      }, 0);
+    function serviceKey(serviceLabel) { return Object.keys(SERVICE_LABELS).find(function (key) { return SERVICE_LABELS[key] === serviceLabel; }) || ''; }
+    function serviceMark(service, serviceLabel) {
+      var marks = { analytics: 'GA', tagmanager: 'GTM', searchconsole: 'SC', bigquery: 'BQ', drive: 'D', docs: 'Doc', sheets: 'Sh', slides: 'Sl', calendar: 'Cal', chat: 'Chat', forms: 'Form', youtube: 'YT' };
+      var key = service || serviceKey(serviceLabel); return '<span class="service-mark ' + (key || 'default') + '" aria-hidden="true">' + (marks[key] || (serviceLabel || 'G').slice(0, 2)) + '</span>';
     }
-    function assetCount() {
-      return data.connections.reduce(function (total, connection) { return total + (connection.resources || []).length; }, 0);
+    function resourceKey(resource) { return resource.service + '\u0000' + resource.resourceId; }
+    function draftFor(connection) {
+      if (!assetDrafts.has(connection.id)) {
+        var draft = new Map(); (connection.resources || []).forEach(function (resource) { draft.set(resourceKey(resource), resource.enabled); }); assetDrafts.set(connection.id, draft);
+      }
+      var stored = assetDrafts.get(connection.id); (connection.resources || []).forEach(function (resource) { if (!stored.has(resourceKey(resource))) stored.set(resourceKey(resource), resource.enabled); }); return stored;
+    }
+    function selectedAccount() { return data.connections.find(function (item) { return item.id === selectedId; }); }
+    function selectedCountFor(connection) { return (connection.resources || []).filter(function (resource) { return resource.enabled; }).length; }
+    function selectedCount() { return data.connections.reduce(function (total, connection) { return total + (connection.resources || []).filter(function (resource) { return resource.enabled; }).length; }, 0); }
+    function assetCount() { return data.connections.reduce(function (total, connection) { return total + (connection.resources || []).length; }, 0); }
+    function serviceCount() {
+      var keys = new Set(); data.connections.forEach(function (connection) { (connection.resources || []).forEach(function (resource) { keys.add(resource.service); }); (connection.services || []).forEach(function (name) { var key = serviceKey(name); if (key) keys.add(key); }); }); return keys.size;
     }
     function updateTiles() {
-      var connected = data.connections.filter(function (item) { return item.status === 'active'; }).length;
-      setText('tile-accounts', String(data.connections.length));
-      setText('tile-connected', connected + ' connected');
-      setText('tile-selected', String(selectedCount()));
-      setText('tile-assets', selectedCount() + ' of ' + assetCount() + ' discovered');
+      var connected = data.connections.filter(function (item) { return item.status === 'active'; }).length; var needsAttention = data.connections.some(function (item) { return item.status !== 'active'; }); var delayed = data.connections.some(function (item) { return item.discovery.status === 'error' || item.discovery.status === 'unavailable'; });
+      var health = needsAttention ? 'Needs attention' : delayed ? 'Some checks delayed' : 'All healthy'; var detail = needsAttention ? 'Review the highlighted account' : delayed ? 'Existing access remains available' : 'No issues detected';
+      setText('tile-accounts', String(data.connections.length)); setText('tile-connected', connected + ' connected'); setText('tile-selected', String(selectedCount())); setText('tile-assets', selectedCount() + ' of ' + assetCount() + ' assets enabled'); setText('tile-services', String(serviceCount())); setText('tile-health', health); setText('tile-health-detail', detail);
+    }
+    function renderStateBanner() {
+      var target = el('state-banner'); target.textContent = ''; target.hidden = true;
+      var attention = data.connections.find(function (item) { return item.status !== 'active'; });
+      var delayed = attention ? null : data.connections.find(function (item) { return (item.discovery.status === 'error' || item.discovery.status === 'unavailable') && (item.resources || []).length; });
+      var connection = attention || delayed; if (!connection) return;
+      var copy = document.createElement('div'); var heading = document.createElement('strong'); var detail = document.createElement('p');
+      if (attention) { heading.textContent = (connection.email || connection.displayName || 'Google account') + ' needs attention'; detail.textContent = 'Google needs you to reconnect before access can be refreshed. Existing selections are preserved.'; }
+      else { heading.textContent = 'Some Google services couldn’t be checked'; detail.textContent = 'Your existing selections are unchanged and remain available.'; }
+      copy.appendChild(heading); copy.appendChild(detail);
+      var action = document.createElement('button'); action.type = 'button'; action.className = 'button primary'; action.textContent = attention ? 'Reconnect Google' : 'Try again'; action.addEventListener('click', function () { if (attention) reconnect(connection); else discover(connection); });
+      target.appendChild(copy); target.appendChild(action); target.hidden = false;
+    }
+    function renderServiceOverview() {
+      var target = el('service-overview-rows'); if (!target) return; target.textContent = ''; var services = new Map();
+      data.connections.forEach(function (connection) {
+        (connection.resources || []).forEach(function (resource) { if (!services.has(resource.service)) services.set(resource.service, { service: resource.service, label: resource.serviceLabel || label(resource.service), total: 0, selected: 0, accounts: new Set(), delayed: false, attention: false }); var item = services.get(resource.service); item.total += 1; if (resource.enabled) item.selected += 1; item.accounts.add(connection.id); if (connection.discovery.status === 'error' || connection.discovery.status === 'unavailable') item.delayed = true; if (connection.status !== 'active') item.attention = true; });
+        (connection.services || []).forEach(function (name) { var key = serviceKey(name); if (!key || services.has(key)) return; services.set(key, { service: key, label: name, total: 0, selected: 0, accounts: new Set([connection.id]), delayed: connection.discovery.status === 'error' || connection.discovery.status === 'unavailable', attention: connection.status !== 'active' }); });
+      });
+      if (!services.size) { target.innerHTML = '<div class="empty"><h2>No Google services connected yet</h2><p>Connect an account to see its approved services here.</p></div>'; return; }
+      Array.from(services.values()).sort(function (a, b) { return category(a.service).localeCompare(category(b.service)) || a.label.localeCompare(b.label); }).forEach(function (item) {
+        var row = document.createElement('div'); row.className = 'service-row'; var statusClass = item.attention ? 'needs_attention' : item.delayed ? 'unavailable' : 'ok'; var statusLabel = item.attention ? 'Needs attention' : item.delayed ? 'Check delayed' : 'Connected';
+        row.innerHTML = '<div class="service-identity">' + serviceMark(item.service, item.label) + '<div><strong>' + item.label + '</strong><small>' + category(item.service) + ' access</small></div></div><div class="service-cell"><strong>' + item.accounts.size + '</strong><small>accounts</small></div><div class="service-cell selected-cell"><strong>' + item.selected + ' enabled</strong><small>' + item.total + ' available</small></div><div class="service-cell status-cell"><span class="status ' + statusClass + '">' + statusLabel + '</span></div><span class="row-chevron" aria-hidden="true">›</span>'; target.appendChild(row);
+      });
+    }
+    function renderAccountOverview() {
+      var target = el('account-overview'); if (!target) return; target.textContent = ''; data.connections.forEach(function (connection) { var entry = document.createElement('div'); entry.className = 'account-entry'; var copy = document.createElement('div'); copy.className = 'account-copy'; var strong = document.createElement('strong'); strong.textContent = connection.email || connection.displayName || 'Google account'; var small = document.createElement('small'); small.textContent = (connection.services || []).length + ' services · ' + (connection.resources || []).filter(function (resource) { return resource.enabled; }).length + ' assets enabled'; copy.appendChild(strong); copy.appendChild(small); var statusData = safeStatus(connection); var badge = document.createElement('span'); badge.className = 'status ' + statusData[0]; badge.textContent = statusData[1]; entry.appendChild(copy); entry.appendChild(badge); target.appendChild(entry); });
     }
     function renderAccounts() {
-      var target = el('google-accounts');
-      target.textContent = '';
+      var target = el('google-accounts'); if (!target) return; target.textContent = '';
       data.connections.forEach(function (connection) {
-        var card = document.createElement('article');
-        card.className = 'card account-card';
-        var head = document.createElement('div');
-        head.className = 'card-head';
-        var info = document.createElement('div');
-        var title = document.createElement('h3');
-        title.textContent = connection.email || connection.displayName || 'Google account';
-        var status = document.createElement('p');
-        var statusData = safeStatus(connection);
-        status.className = 'account-status';
-        var badge = document.createElement('span');
-        badge.className = 'status ' + statusData[0];
-        badge.textContent = statusData[1];
-        status.appendChild(badge);
-        info.appendChild(title); info.appendChild(status);
-        var actions = document.createElement('div');
-        actions.className = 'card-actions';
-        function action(buttonLabel, kind, listener) {
-          var button = document.createElement('button');
-          button.type = 'button'; button.textContent = buttonLabel;
-          if (kind) button.className = kind;
-          button.setAttribute('aria-busy', 'false');
-          button.addEventListener('click', listener);
-          actions.appendChild(button);
-        }
-        action('Manage access', '', function () { selectAccount(connection.id); });
-        action('Reconnect', 'attention', function () { reconnect(connection); });
-        action('Refresh', '', function () { refresh(connection); });
-        action('Discover', '', function () { discover(connection); });
-        action('Disconnect', '', function () { disconnect(connection); });
-        head.appendChild(info); head.appendChild(actions); card.appendChild(head);
-        if (connection.status !== 'active') {
-          var alert = document.createElement('div');
-          alert.className = 'alert attention';
-          var h = document.createElement('h3'); h.textContent = 'Google needs your attention';
-          var p = document.createElement('p'); p.textContent = 'Reconnect this account. Existing asset choices are preserved.';
-          alert.appendChild(h); alert.appendChild(p); card.appendChild(alert);
-        }
+        var card = document.createElement('article'); card.className = 'card account-card'; var avatar = document.createElement('span'); avatar.className = 'avatar'; avatar.textContent = (connection.email || 'G').slice(0, 1).toUpperCase(); var info = document.createElement('div'); var title = document.createElement('h3'); title.textContent = connection.email || connection.displayName || 'Google account'; var subtitle = document.createElement('p'); subtitle.className = 'muted'; subtitle.textContent = (connection.services || []).length + ' services · ' + (connection.resources || []).filter(function (resource) { return resource.enabled; }).length + ' assets enabled'; var status = document.createElement('p'); status.className = 'account-status'; var statusData = safeStatus(connection); var badge = document.createElement('span'); badge.className = 'status ' + statusData[0]; badge.textContent = statusData[1]; status.appendChild(badge); info.appendChild(title); info.appendChild(subtitle); info.appendChild(status);
+        var actions = document.createElement('div'); actions.className = 'card-actions'; var manage = document.createElement('button'); manage.type = 'button'; manage.className = 'button' + (connection.status === 'active' ? ' primary' : ''); manage.textContent = connection.status === 'active' ? 'Manage data access' : 'Manage access'; manage.addEventListener('click', function () { selectAccount(connection.id); }); actions.appendChild(manage);
+        if (connection.status !== 'active') { var reconnectButton = document.createElement('button'); reconnectButton.type = 'button'; reconnectButton.className = 'button attention'; reconnectButton.textContent = 'Reconnect Google'; reconnectButton.addEventListener('click', function () { reconnect(connection); }); actions.appendChild(reconnectButton); }
+        var menu = document.createElement('details'); menu.className = 'context-menu'; var summary = document.createElement('summary'); summary.setAttribute('aria-label', 'More account actions'); summary.textContent = '⋮'; menu.appendChild(summary); var menuBody = document.createElement('div'); menuBody.className = 'context-menu-menu';
+        function menuAction(buttonLabel, kind, listener) { var button = document.createElement('button'); button.type = 'button'; button.textContent = buttonLabel; if (kind) button.className = kind; button.addEventListener('click', function () { menu.open = false; listener(); }); menuBody.appendChild(button); }
+        menuAction('Refresh connection', '', function () { refresh(connection); }); menuAction('Check assets', '', function () { discover(connection); }); menuAction('Disconnect account', 'danger', function () { disconnect(connection); }); menu.appendChild(menuBody); actions.appendChild(menu); card.appendChild(avatar); card.appendChild(info); card.appendChild(actions);
+        if (connection.discovery && (connection.discovery.status === 'error' || connection.discovery.status === 'unavailable') && (connection.resources || []).length) { var partial = document.createElement('div'); partial.className = 'partial-banner'; partial.innerHTML = '<div><strong>Some Google services couldn’t be checked</strong><p>Your existing selections are unchanged and remain available.</p></div>'; var retry = document.createElement('button'); retry.type = 'button'; retry.textContent = 'Try again'; retry.addEventListener('click', function () { discover(connection); }); partial.appendChild(retry); card.appendChild(partial); }
         target.appendChild(card);
       });
-      updateTiles();
+      updateTiles(); renderStateBanner(); renderServiceOverview(); renderAccountOverview();
     }
-    function serviceGroups(connection) {
-      var groups = new Map();
-      (connection.resources || []).forEach(function (resource) {
-        var key = resource.service;
-        if (!groups.has(key)) groups.set(key, { service: key, label: resource.serviceLabel || label(key), resources: [] });
-        groups.get(key).resources.push(resource);
-      });
-      return Array.from(groups.values()).sort(function (a, b) { return a.label.localeCompare(b.label); });
-    }
+    function serviceGroups(connection) { var groups = new Map(); (connection.resources || []).forEach(function (resource) { var key = resource.service; if (!groups.has(key)) groups.set(key, { service: key, label: resource.serviceLabel || label(key), resources: [] }); groups.get(key).resources.push(resource); }); return Array.from(groups.values()).sort(function (a, b) { return category(a.service).localeCompare(category(b.service)) || a.label.localeCompare(b.label); }); }
     function renderAssets() {
-      var connection = selectedAccount();
-      var workspace = el('asset-workspace');
-      if (!connection) { workspace.hidden = true; return; }
-      workspace.hidden = false;
-      originalChoices.clear(); changedChoices.clear();
-      var rail = el('asset-rail'); rail.textContent = '';
-      var groups = serviceGroups(connection);
-      var marketing = groups.filter(function (group) { return category(group.service) === 'Marketing'; });
-      var workspaceGroups = groups.filter(function (group) { return category(group.service) === 'Workspace'; });
-      var renderRailGroup = function (groupName, items) {
-        if (!items.length) return;
-        var heading = document.createElement('p'); heading.className = 'rail-group-label'; heading.textContent = groupName; rail.appendChild(heading);
-        items.forEach(function (group) {
-          var enabled = group.resources.filter(function (resource) { return resource.enabled; }).length;
-          var item = document.createElement('a');
-          item.className = 'rail-item'; item.href = '#rail-' + connection.id + '-' + group.service;
-          var text = document.createElement('span'); text.textContent = group.label;
-          var status = document.createElement('span'); status.className = 'status' + (enabled ? '' : ' disconnected'); status.textContent = enabled ? enabled + ' selected' : 'disabled';
-          item.appendChild(text); item.appendChild(status); rail.appendChild(item);
-        });
-      };
-      renderRailGroup('Marketing', marketing); renderRailGroup('Workspace', workspaceGroups);
-      var target = el('asset-groups'); target.textContent = '';
-      groups.forEach(function (group) {
-        var block = document.createElement('section'); block.className = 'service-block'; block.id = 'rail-' + connection.id + '-' + group.service;
-        var head = document.createElement('div'); head.className = 'card-head';
-        var heading = document.createElement('h3'); heading.textContent = group.label;
-        var meta = document.createElement('p'); meta.className = 'service-meta'; meta.textContent = group.resources.length + ' assets · ' + group.resources.filter(function (resource) { return resource.enabled; }).length + ' selected';
-        head.appendChild(heading); head.appendChild(meta); block.appendChild(head);
-        var rows = document.createElement('div'); rows.className = 'rows';
-        group.resources.forEach(function (resource) {
-          originalChoices.set(resource, resource.enabled);
-          var row = document.createElement('div'); row.className = 'row';
-          var input = document.createElement('input');
-          input.type = 'checkbox'; input.checked = resource.enabled;
-          var rowId = 'asset-' + connection.id + '-' + resource.service + '-' + resource.resourceId;
-          input.id = rowId;
-          var choice = { connectionId: connection.id, service: resource.service, resourceId: resource.resourceId };
-          input.setAttribute('aria-label', (resource.displayName || resource.resourceId) + ' access');
-          input.addEventListener('change', function () {
-            var original = originalChoices.get(resource);
-            if (input.checked === original) changedChoices.delete(choice); else changedChoices.set(choice, input.checked);
-          });
-          var box = document.createElement('label'); box.className = 'row-label'; box.setAttribute('for', rowId);
-          var strong = document.createElement('strong'); strong.textContent = resource.displayName || resource.resourceId;
-          var small = document.createElement('small'); small.textContent = resource.resourceType + (resource.parent ? ' · ' + resource.parent : '');
-          box.appendChild(strong); box.appendChild(small);
-          var details = document.createElement('details'); details.className = 'row-details';
-          var summary = document.createElement('summary'); summary.textContent = 'Asset details';
-          var code = document.createElement('code'); code.textContent = resource.resourceId;
-          details.appendChild(summary); details.appendChild(code);
-          row.appendChild(input); row.appendChild(box); row.appendChild(details); rows.appendChild(row);
-        });
-        block.appendChild(rows); target.appendChild(block);
-      });
-      if (!groups.length) {
-        var empty = document.createElement('div'); empty.className = 'card empty';
-        var heading = document.createElement('h2'); heading.textContent = 'No assets found yet';
-        var copy = document.createElement('p');
-        copy.textContent = discoveryText(connection) + ' Existing choices are unchanged.';
-        empty.appendChild(heading); empty.appendChild(copy); target.appendChild(empty);
-      }
+      var connection = selectedAccount(); var workspace = el('asset-workspace'); if (!connection) { workspace.hidden = true; return; } workspace.hidden = false; var groups = serviceGroups(connection); if (!groups.length) { el('asset-rail').textContent = ''; el('asset-groups').innerHTML = '<div class="empty"><h2>No assets found yet</h2><p>This account is connected. Check again when Google has assets available.</p></div>'; return; }
+      if (!activeService || !groups.some(function (group) { return group.service === activeService; })) activeService = groups[0].service; var rail = el('asset-rail'); rail.textContent = ''; groups.forEach(function (group) { var item = document.createElement('button'); item.type = 'button'; item.className = 'rail-item' + (group.service === activeService ? ' is-active' : ''); item.innerHTML = serviceMark(group.service, group.label) + '<span>' + group.label + '</span><span>' + group.resources.length + '</span>'; item.addEventListener('click', function () { activeService = group.service; renderAssets(); }); rail.appendChild(item); });
+      var query = (el('asset-search').value || '').trim().toLowerCase(); var activeGroup = groups.find(function (group) { return group.service === activeService; }); var target = el('asset-groups'); target.textContent = ''; var block = document.createElement('section'); block.className = 'service-block'; var head = document.createElement('div'); head.className = 'card-head'; var heading = document.createElement('h3'); heading.textContent = activeGroup.label; var meta = document.createElement('p'); meta.className = 'service-meta'; meta.textContent = activeGroup.resources.length + ' assets available'; head.appendChild(heading); head.appendChild(meta); block.appendChild(head);
+      var visible = activeGroup.resources.filter(function (resource) { return !query || (resource.displayName + ' ' + resource.parent + ' ' + resource.resourceId).toLowerCase().includes(query); }); var rows = document.createElement('div'); rows.className = 'rows';
+      var draft = draftFor(connection);
+      visible.forEach(function (resource) { var row = document.createElement('div'); row.className = 'row'; var input = document.createElement('input'); input.type = 'checkbox'; input.checked = draft.get(resourceKey(resource)) === true; var rowId = 'asset-' + connection.id + '-' + resource.service + '-' + resource.resourceId; input.id = rowId; input.setAttribute('aria-label', (resource.displayName || resource.resourceId) + ' access'); input.addEventListener('change', function () { draft.set(resourceKey(resource), input.checked); updateAssetSummary(); }); var choice = document.createElement('label'); choice.className = 'row-label'; choice.htmlFor = rowId; var strong = document.createElement('strong'); strong.textContent = resource.displayName || resource.resourceId; var small = document.createElement('small'); small.textContent = resource.resourceType + (resource.parent ? ' · ' + resource.parent : ''); choice.appendChild(strong); choice.appendChild(small); var side = document.createElement('div'); side.className = 'row-side'; side.innerHTML = '<span class="status ok">Available</span>'; row.appendChild(input); row.appendChild(choice); row.appendChild(side); rows.appendChild(row); });
+      if (!visible.length) rows.innerHTML = '<div class="empty"><h2>No matching assets</h2><p>No assets match this search. Existing selections are unchanged.</p></div>'; block.appendChild(rows); target.appendChild(block); updateAssetSummary();
     }
-    function discoveryText(connection) {
-      var discovery = connection.discovery || {};
-      if (discovery.status === 'unavailable') return 'Discovery is temporarily unavailable.';
-      if (discovery.status === 'error') return 'Discovery failed, so no new assets were selected.';
-      if (discovery.status === 'empty') return 'The successful check found no assets.';
-      return 'Run discovery to check this account.';
+    function updateAssetSummary() { var connection = selectedAccount(); if (!connection) return; var draft = draftFor(connection); var selected = Array.from(draft.values()).filter(Boolean).length; setText('asset-selected-count', selected + ' selected'); var partial = connection.discovery.status === 'error' || connection.discovery.status === 'unavailable'; setText('asset-health', partial ? '● Check delayed' : '● All services healthy'); }
+    function selectAccount(connectionId) {
+      if (connectionId && connectionId !== selectedId && toolChoicesDirty && !window.confirm('Discard unsaved tool permission changes for this account?')) return;
+      selectedId = connectionId; activeService = ''; renderAssets(); renderToolPermissions(); el('google-data').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    function selectAccount(id) {
-      if (id !== selectedId && toolChoicesDirty && !window.confirm('Discard unsaved tool permission changes for this account?')) return;
-      selectedId = id;
-      renderAccounts(); renderAssets(); renderToolPermissions();
-      el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    var toolChoices = new Map();
-    var toolChoicesConnectionId = null;
-    var toolChoicesDirty = false;
+    var toolChoices = new Map(); var toolChoicesConnectionId = null; var toolChoicesDirty = false;
     async function renderToolPermissions() {
-      var connection = selectedAccount(); var panel = el('tool-workspace');
-      if (!connection) { panel.hidden = true; return; }
-      panel.hidden = false; toolChoices.clear(); toolChoicesConnectionId = null; el('save-tools').disabled = true; el('tool-choices').textContent = ''; el('tool-status').textContent = 'Loading tool permissions…';
-      var connectionId = connection.id;
+      var connection = selectedAccount(); var workspace = el('tool-workspace'); if (!connection) { workspace.hidden = true; return; }
+      workspace.hidden = false; var connectionId = connection.id; var target = el('tool-choices'); target.textContent = 'Loading tool permissions…'; el('save-tools').disabled = true; el('tool-status').textContent = ''; toolChoices.clear(); toolChoicesConnectionId = null; toolChoicesDirty = false;
       try {
-        var response = await fetch('/api/google/tools?connectionId=' + encodeURIComponent(connectionId));
-        if (!response.ok) throw new Error('Could not load tool permissions.');
-        var result = await response.json();
-        if (!selectedAccount() || selectedAccount().id !== connectionId) return;
-        toolChoices.clear(); toolChoicesDirty = false; toolChoicesConnectionId = connectionId; el('save-tools').disabled = false; el('tool-status').textContent = '';
-        result.tools.forEach(function (tool) {
-          var row = document.createElement('div'); row.className = 'tool-choice';
-          var labelNode = document.createElement('label');
-          var input = document.createElement('input'); input.type = 'checkbox'; input.checked = tool.enabled;
-          var choice = { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive };
-          toolChoices.set(tool.name, choice);
-          input.addEventListener('change', function () {
-            if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for this account?')) input.checked = false;
-            choice.enabled = input.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
-            if (!input.checked) { choice.allowDestructive = false; if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; } }
-            else if (destructiveInput) destructiveInput.disabled = false;
-          });
-          labelNode.appendChild(input); labelNode.append(document.createTextNode(tool.name + (tool.write ? ' · writes' : ' · reads') + ' — ' + tool.description)); row.appendChild(labelNode);
+        var response = await fetch('/api/google/tools?connectionId=' + encodeURIComponent(connectionId)); if (!response.ok) throw new Error('Could not load tool permissions.'); var permissions = await response.json(); if (!selectedAccount() || selectedAccount().id !== connectionId) return;
+        target.textContent = ''; toolChoicesConnectionId = connectionId; el('save-tools').disabled = false;
+        permissions.tools.forEach(function (tool) {
+          var row = document.createElement('div'); row.className = 'tool-choice'; var labelNode = document.createElement('label'); var input = document.createElement('input'); input.type = 'checkbox'; input.checked = tool.enabled; input.dataset.toolName = tool.name;
+          var choice = { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive }; toolChoices.set(tool.name, choice);
           var destructiveInput = null;
-          if (tool.write) {
-            var destructiveLabel = document.createElement('label'); destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = tool.allowDestructive; destructiveInput.disabled = !tool.enabled;
-            destructiveInput.addEventListener('change', function () {
-              if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) destructiveInput.checked = false;
-              choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.';
-            });
-            destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel);
-          }
-          el('tool-choices').appendChild(row);
+          input.addEventListener('change', function () { if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for this account?')) input.checked = false; choice.enabled = input.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.'; if (!input.checked) { choice.allowDestructive = false; if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; } } else if (destructiveInput) destructiveInput.disabled = false; });
+          labelNode.appendChild(input); labelNode.append(document.createTextNode(tool.name + (tool.write ? ' · writes' : ' · reads') + ' — ' + tool.description)); row.appendChild(labelNode);
+          if (tool.write) { var destructiveLabel = document.createElement('label'); destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = tool.allowDestructive; destructiveInput.disabled = !tool.enabled; destructiveInput.addEventListener('change', function () { if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) destructiveInput.checked = false; choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.'; }); destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel); }
+          target.appendChild(row);
         });
-      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not load tools.'; }
+      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) { target.textContent = ''; el('tool-status').textContent = error.message || 'Could not load tools. Existing grants are unchanged.'; } }
     }
-    async function saveTools() {
-      var connection = selectedAccount(); if (!connection) return;
-      var connectionId = connection.id; if (toolChoicesConnectionId !== connectionId) return;
-      var grants = Array.from(toolChoices.values()).map(function (choice) { return { toolName: choice.toolName, enabled: choice.enabled, allowDestructive: choice.allowDestructive }; });
-      el('tool-status').textContent = 'Saving…';
-      try {
-        var response = await jsonFetch('/api/google/tools', { connectionId: connectionId, grants: grants });
-        if (!response.ok) { var result = await response.json(); throw new Error(result.error || 'Could not save tool permissions.'); }
-        if (selectedAccount() && selectedAccount().id === connectionId) { await renderToolPermissions(); el('tool-status').textContent = 'Tool permissions saved for this account.'; }
-      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not save tools.'; }
-    }
-    function jsonFetch(url, body) {
-      return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : '{}' });
-    }
-    var pickerLibraryPromise = null;
-    function loadPickerLibrary() {
-      if (!pickerLibraryPromise) pickerLibraryPromise = new Promise(function (resolve, reject) {
-        var script = document.createElement('script'); script.src = 'https://apis.google.com/js/api.js';
-        script.onload = function () { gapi.load('picker', { callback: resolve, onerror: function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); } }); };
-        script.onerror = function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); };
-        document.head.appendChild(script);
-      });
-      return pickerLibraryPromise;
-    }
-    async function pickFiles() {
-      var connection = selectedAccount(); if (!connection) return;
-      var connectionId = connection.id; var status = el('picker-status');
-      status.textContent = 'Preparing Google Picker for ' + connection.email + '…';
-      try {
-        await loadPickerLibrary();
-        var response = await jsonFetch('/api/google/picker/start', { connectionId: connectionId });
-        var config = await response.json();
-        if (!response.ok) throw new Error(config.error || 'Picker is not configured. The operator must configure its restricted API key/project number; reconnect with selected-file consent if needed.');
-        var picker = new google.picker.PickerBuilder()
-          .setDeveloperKey(config.apiKey).setAppId(config.appId).setOAuthToken(config.accessToken)
-          .setOrigin(window.location.origin).addView(new google.picker.DocsView(google.picker.ViewId.DOCS))
-          .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
-          .setCallback(async function (result) {
-            if (result.action === google.picker.Action.CANCEL) { config.accessToken = ''; status.textContent = 'File selection cancelled. Existing access is unchanged.'; return; }
-            if (result.action !== google.picker.Action.PICKED) return;
-            config.accessToken = '';
-            var ids = result[google.picker.Response.DOCUMENTS].map(function (item) { return item[google.picker.Document.ID]; });
-            try {
-              var verified = await jsonFetch('/api/google/picker/complete', { connectionId: connectionId, pickerSession: config.pickerSession, fileIds: ids });
-              var saved = await verified.json();
-              if (!verified.ok) throw new Error(saved.error || 'Selected files could not be verified. Open Picker again to retry.');
-              await loadResources();
-              status.textContent = saved.selectedCount + ' files verified for ' + connection.email + '; ' + saved.rejectedCount + ' unavailable. New files remain disabled.';
-            } catch (error) { status.textContent = error.message || 'File verification failed.'; }
-          }).build();
-        picker.setVisible(true);
-        status.textContent = 'Select files for ' + config.googleEmail + '. No other account will be changed.';
-      } catch (error) { status.textContent = error.message || 'Could not open Google Picker.'; }
-    }
+    async function jsonFetch(url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
     async function loadResources() {
-      try {
-        var response = await fetch('/api/google/resources');
-        if (!response.ok) throw new Error();
-        data = await response.json();
-        if (!data.connections || !data.connections.length) { data.connections = []; selectedId = null; }
-        else if (!selectedId || !data.connections.some(function (item) { return item.id === selectedId; })) selectedId = data.connections[0].id;
-        renderAccounts(); renderAssets(); renderToolPermissions();
-        return true;
-      } catch { message('Could not load your Google assets. Try again.', 'error'); return false; }
+      el('load-error').hidden = true; el('loading-state').hidden = false; el('workspace-content').hidden = true; try { var response = await fetch('/api/google/resources'); if (!response.ok) throw new Error(); data = await response.json(); if (!data.connections || !data.connections.length) { data.connections = []; selectedId = null; } else if (!selectedId || !data.connections.some(function (item) { return item.id === selectedId; })) selectedId = data.connections[0].id; data.connections.forEach(draftFor); el('loading-state').hidden = true; el('workspace-content').hidden = false; renderAccounts(); renderAssets(); await renderToolPermissions(); return true; } catch { el('loading-state').hidden = true; el('load-error').hidden = false; return false; }
     }
     async function guardedAction(actionLabel, connection, request) {
-      message('');
-      try {
-        var response = await request();
-        if (!response.ok) {
-          var failure = await response.json().catch(function () { return {}; });
-          throw new Error(failure.error || actionLabel + ' failed.');
-        }
-        var reloaded = await loadResources();
-        if (!reloaded) return;
-        message(actionLabel + ' complete.', 'info');
-      } catch (error) { message(error.message || actionLabel + ' failed.', 'error'); }
+      message(''); try { var response = await request(); if (!response.ok) { var failure = await response.json().catch(function () { return {}; }); throw new Error(failure.error || actionLabel + ' failed.'); } var reloaded = await loadResources(); if (!reloaded) return false; message(actionLabel + ' complete.', 'info'); return true; } catch (error) { message(error.message || actionLabel + ' failed.', 'error'); return false; }
     }
     function reconnect(connection) { startConnection({ connectionId: connection.id, services: selectedServices(), writeServices: selectedWriteServices() }); }
     function refresh(connection) { guardedAction('Refresh', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/refresh'); }); }
-    function discover(connection) { guardedAction('Discovery', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/discover'); }); }
-    function disconnect(connection) {
-      var confirmed = window.confirm('Disconnect ' + (connection.email || connection.displayName || 'this Google account') + '? Agents will lose access.');
-      if (!confirmed) return;
-      guardedAction('Disconnect', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/disconnect'); });
-    }
+    function discover(connection) { guardedAction('Asset check', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/discover'); }); }
+    function disconnect(connection) { var confirmed = window.confirm('Disconnect ' + (connection.email || connection.displayName || 'this Google account') + '? Agents will lose access.'); if (!confirmed) return; guardedAction('Disconnect', connection, function () { return jsonFetch('/api/google/connections/' + encodeURIComponent(connection.id) + '/disconnect'); }); }
     async function save() {
-      var connection = selectedAccount(); if (!connection) return;
-      var grants = Array.from(changedChoices.entries()).map(function (entry) {
-        return { service: entry[0].service, resourceId: entry[0].resourceId, enabled: entry[1] };
-      });
+      var connection = selectedAccount(); if (!connection) return; var draft = draftFor(connection);
+      var grants = (connection.resources || []).filter(function (resource) { return draft.get(resourceKey(resource)) !== resource.enabled; }).map(function (resource) { return { service: resource.service, resourceId: resource.resourceId, enabled: draft.get(resourceKey(resource)) === true }; });
       if (!grants.length) { message('No changes to save.', 'info'); return; }
-      await guardedAction('Access saved', connection, function () {
-        return jsonFetch('/api/google/grants', { connectionId: connection.id, grants: grants });
-      });
+      var connectionId = connection.id; var saved = await guardedAction('Access saved', connection, function () { return jsonFetch('/api/google/grants', { connectionId: connectionId, grants: grants }); });
+      if (saved) { assetDrafts.delete(connectionId); if (selectedAccount() && selectedAccount().id === connectionId) renderAssets(); }
+    }
+    async function saveTools() {
+      var connection = selectedAccount(); if (!connection || toolChoicesConnectionId !== connection.id) return; var connectionId = connection.id;
+      var grants = Array.from(toolChoices.values()).map(function (choice) { return { toolName: choice.toolName, enabled: choice.enabled, allowDestructive: choice.allowDestructive }; }); el('tool-status').textContent = 'Saving…';
+      try { var response = await jsonFetch('/api/google/tools', { connectionId: connectionId, grants: grants }); if (!response.ok) { var result = await response.json(); throw new Error(result.error || 'Could not save tool permissions.'); } if (selectedAccount() && selectedAccount().id === connectionId) { await renderToolPermissions(); el('tool-status').textContent = 'Tool permissions saved for this account.'; } } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) el('tool-status').textContent = error.message || 'Could not save tools.'; }
+    }
+    var pickerLibraryPromise = null;
+    function loadPickerLibrary() {
+      if (!pickerLibraryPromise) pickerLibraryPromise = new Promise(function (resolve, reject) { var script = document.createElement('script'); script.src = 'https://apis.google.com/js/api.js'; script.onload = function () { gapi.load('picker', { callback: resolve, onerror: function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); } }); }; script.onerror = function () { pickerLibraryPromise = null; reject(new Error('Google Picker could not load.')); }; document.head.appendChild(script); }); return pickerLibraryPromise;
+    }
+    async function pickFiles() {
+      var connection = selectedAccount(); if (!connection) return; var connectionId = connection.id; var status = el('picker-status'); status.textContent = 'Preparing Google Picker for ' + connection.email + '…';
+      try {
+        await loadPickerLibrary(); var response = await jsonFetch('/api/google/picker/start', { connectionId: connectionId }); var config = await response.json(); if (!response.ok) throw new Error(config.error || 'Picker is not configured. The operator must configure its restricted API key/project number; reconnect with selected-file consent if needed.');
+        var picker = new google.picker.PickerBuilder().setDeveloperKey(config.apiKey).setAppId(config.appId).setOAuthToken(config.accessToken).setOrigin(window.location.origin).addView(new google.picker.DocsView(google.picker.ViewId.DOCS)).enableFeature(google.picker.Feature.MULTISELECT_ENABLED).setCallback(async function (result) {
+          if (result.action === google.picker.Action.CANCEL) { config.accessToken = ''; status.textContent = 'File selection cancelled. Existing access is unchanged.'; return; } if (result.action !== google.picker.Action.PICKED) return; config.accessToken = '';
+          var ids = result[google.picker.Response.DOCUMENTS].map(function (item) { return item[google.picker.Document.ID]; });
+          try { var verified = await jsonFetch('/api/google/picker/complete', { connectionId: connectionId, pickerSession: config.pickerSession, fileIds: ids }); var saved = await verified.json(); if (!verified.ok) throw new Error(saved.error || 'Selected files could not be verified. Open Picker again to retry.'); await loadResources(); status.textContent = saved.selectedCount + ' files verified for ' + connection.email + '; ' + saved.rejectedCount + ' unavailable. New files remain disabled.'; } catch (error) { status.textContent = error.message || 'File verification failed.'; }
+        }).build(); picker.setVisible(true); status.textContent = 'Select files for ' + config.googleEmail + '. No other account will be changed.';
+      } catch (error) { status.textContent = error.message || 'Could not open Google Picker.'; }
     }
     function renderConsentChoices() {
-      var target = el('connect-services'); target.textContent = '';
-      Object.keys(SERVICE_LABELS).forEach(function (service) {
-        var wrapper = document.createElement('label'); wrapper.className = 'service-choice';
-        var input = document.createElement('input'); input.type = 'checkbox'; input.value = service; input.dataset.permission = 'read';
-        wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read access'));
-        target.appendChild(wrapper);
-        if (SERVICE_INFO[service].writeScopes.length) {
-          var writeLabel = document.createElement('label'); writeLabel.className = 'service-choice';
-          var writeInput = document.createElement('input'); writeInput.type = 'checkbox'; writeInput.value = service; writeInput.dataset.permission = 'write'; writeInput.disabled = true;
-          input.addEventListener('change', function () { writeInput.disabled = !input.checked; if (!input.checked) writeInput.checked = false; });
-          writeLabel.appendChild(writeInput); writeLabel.append(document.createTextNode('Allow ' + SERVICE_LABELS[service] + ' writes'));
-          target.appendChild(writeLabel);
-        }
-      });
+      var target = el('connect-services'); target.textContent = ''; Object.keys(SERVICE_INFO).forEach(function (service) { var wrapper = document.createElement('label'); wrapper.className = 'service-choice'; var input = document.createElement('input'); input.type = 'checkbox'; input.value = service; input.dataset.permission = 'read'; wrapper.appendChild(input); wrapper.append(document.createTextNode(SERVICE_LABELS[service] + ' · read access')); target.appendChild(wrapper); if (SERVICE_INFO[service].writeScopes.length) { var writeLabel = document.createElement('label'); writeLabel.className = 'service-choice'; var writeInput = document.createElement('input'); writeInput.type = 'checkbox'; writeInput.value = service; writeInput.dataset.permission = 'write'; writeInput.disabled = true; input.addEventListener('change', function () { writeInput.disabled = !input.checked; if (!input.checked) writeInput.checked = false; }); writeLabel.appendChild(writeInput); writeLabel.append(document.createTextNode('Allow ' + SERVICE_LABELS[service] + ' writes')); target.appendChild(writeLabel); } });
     }
-    function selectedWriteServices() {
-      return Array.from(el('connect-services').querySelectorAll('input[data-permission="write"]:checked')).map(function (input) { return input.value; });
-    }
-    function selectedServices() {
-      return Array.from(el('connect-services').querySelectorAll('input[data-permission="read"]:checked')).map(function (input) { return input.value; });
-    }
-    async function startConnection(body) {
-      var status = el('connect-status'); status.textContent = '';
-      try {
-        var response = await jsonFetch('/api/google/connect', body);
-        var result = await response.json().catch(function () { return {}; });
-        if (!response.ok || !result.authorizationUrl) throw new Error(result.error || 'Could not start Google connection.');
-        window.location.assign(result.authorizationUrl);
-      } catch (error) { status.textContent = error.message || 'Could not start Google connection.'; }
+    function selectedWriteServices() { return Array.from(el('connect-services').querySelectorAll('input[data-permission="write"]:checked')).map(function (input) { return input.value; }); }
+    function selectedServices() { return Array.from(el('connect-services').querySelectorAll('input[data-permission="read"]:checked')).map(function (input) { return input.value; }); }
+    async function startConnection(body) { var status = el('connect-status'); status.textContent = ''; try { var response = await jsonFetch('/api/google/connect', body); var result = await response.json().catch(function () { return {}; }); if (!response.ok || !result.authorizationUrl) throw new Error(result.error || 'Could not start Google connection.'); window.location.assign(result.authorizationUrl); } catch (error) { status.textContent = error.message || 'Could not start Google connection.'; } }
+    function showOutcome(outcome, connectionId) {
+      if (!outcome) return; var messages = { connected: ['Google account connected.', 'info'], consent_denied: ['Google consent was denied. Your previous access was not changed.', ''], operator_config_missing: ['Google connection is not configured yet.', ''], google_unavailable: ['Google is temporarily unavailable. Please try again.', ''], google_api_error: ['Google could not complete the connection. Please try again.', ''], identity_conflict: ['Already connected — this Google account is already available.', 'info'], reconnect_identity_mismatch: ['Choose the original Google account for this connection, or add this account separately.', 'error'], state_expired: ['The connection attempt expired. Please start again.', ''], needs_reconnect: ['This Google account needs to be reconnected.', 'error'], state_replayed: ['This connection attempt was already completed.', 'info'] }; var entry = messages[outcome] || ['The Google connection attempt could not be completed.', '']; if (outcome === 'connected') {
+        var connection = data.connections.find(function (item) { return item.id === connectionId; }) || data.connections[data.connections.length - 1]; var ready = connection && selectedCountFor(connection) > 0; var completion = el('completion-state'); completion.hidden = false; completion.dataset.ready = String(Boolean(ready)); completion.dataset.connectionId = connection ? connection.id : '';
+        setText('completion-accounts', String(data.connections.length)); setText('completion-services', String(connection ? (connection.services || []).length : 0)); setText('completion-assets', String(connection ? selectedCountFor(connection) : 0));
+        setText('completion-heading', ready ? 'Your Google data is ready' : 'Google connected — choose your data');
+        setText('completion-description', ready ? 'Only the assets you selected are available to connected AI tools.' : 'No assets are available to connected AI tools until you make a selection.');
+        setText('completion-continue', ready ? 'Go to workspace →' : 'Choose data →');
+        el('completion-step-data').className = 'progress-step' + (ready ? ' done' : ''); el('completion-step-data-dot').textContent = ready ? '✓' : '2'; el('completion-step-ready').className = 'progress-step' + (ready ? ' done' : '');
+        completion.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } message(entry[0], entry[1]); window.history.replaceState(null, '', '/');
     }
     window.addEventListener('load', async function () {
-      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } });
-      var userButton = el('user-button');
-      if (userButton) Clerk.mountUserButton(userButton);
-      var signOutButton = el('sign-out');
-      if (signOutButton) signOutButton.addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
-      el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); });
-      el('save-grants').addEventListener('click', function () { return save(); });
-      el('save-tools').addEventListener('click', saveTools);
-      el('pick-files').addEventListener('click', pickFiles);
-      var copyButton = el('copy-mcp-url');
-      if (copyButton) copyButton.addEventListener('click', function () {
-        navigator.clipboard.writeText(el('mcp-url').textContent);
-        copyButton.textContent = 'Copied';
-        setTimeout(function () { copyButton.textContent = 'Copy URL'; }, 1800);
-      });
-      var outcome = new URL(window.location.href).searchParams.get('google');
-      var messages = { connected: 'Google account connected.', consent_denied: 'Google consent was denied. Your previous access was not changed.', operator_config_missing: 'Google connection is not configured by the operator yet.', google_unavailable: 'Google is temporarily unreachable. Please try again.', google_api_error: 'Google could not complete the connection. Please try again.', identity_conflict: 'Choose the original Google account when reconnecting.', state_expired: 'The connection attempt expired. Please start again.', needs_reconnect: 'This Google account needs to be reconnected.' };
-      if (outcome) { message(messages[outcome] || 'The Google connection attempt could not be completed.'); window.history.replaceState(null, '', '/'); }
-      renderConsentChoices();
-      await loadResources();
+      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } }); var userButton = el('user-button'); if (userButton) Clerk.mountUserButton(userButton); el('sign-out').addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
+      var sidebar = el('app-sidebar'); var mobileNav = window.matchMedia('(max-width: 900px)'); function updateNavMode() { sidebar.inert = mobileNav.matches && !el('app-shell').classList.contains('nav-open'); sidebar.setAttribute('aria-hidden', String(sidebar.inert)); } updateNavMode(); mobileNav.addEventListener('change', updateNavMode);
+      el('nav-toggle').addEventListener('click', function () { var open = el('app-shell').classList.toggle('nav-open'); this.setAttribute('aria-expanded', String(open)); updateNavMode(); }); document.querySelectorAll('.side-nav a, .bottom-nav a').forEach(function (link) { link.addEventListener('click', function () { el('app-shell').classList.remove('nav-open'); el('nav-toggle').setAttribute('aria-expanded', 'false'); updateNavMode(); }); }); el('connect-google').addEventListener('click', function () { return startConnection({ services: selectedServices(), writeServices: selectedWriteServices() }); }); el('add-connection').addEventListener('click', function () { el('connect-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('view-assets').addEventListener('click', function () { selectAccount(selectedId || (data.connections[0] && data.connections[0].id)); }); el('manage-services').addEventListener('click', function () { el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('manage-accounts').addEventListener('click', function () { el('google-data').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('retry-load').addEventListener('click', loadResources); el('save-grants').addEventListener('click', save); el('save-tools').addEventListener('click', saveTools); el('pick-files').addEventListener('click', pickFiles); el('asset-search').addEventListener('input', renderAssets); el('clear-search').addEventListener('click', function () { el('asset-search').value = ''; renderAssets(); }); el('completion-continue').addEventListener('click', function () { var ready = el('completion-state').dataset.ready === 'true'; var connectionId = el('completion-state').dataset.connectionId; el('completion-state').hidden = true; if (!ready && connectionId) { selectedId = connectionId; activeService = ''; renderAssets(); renderToolPermissions(); } (ready ? el('home') : el('asset-workspace')).scrollIntoView({ behavior: 'smooth', block: 'start' }); }); document.querySelector('.toast-close').addEventListener('click', function () { message(''); }); var copyButton = el('copy-mcp-url'); if (copyButton) copyButton.addEventListener('click', function () { navigator.clipboard.writeText(el('mcp-url').textContent); copyButton.textContent = 'Copied'; setTimeout(function () { copyButton.textContent = 'Copy URL'; }, 1800); }); renderConsentChoices(); await loadResources(); var location = new URL(window.location.href); showOutcome(location.searchParams.get('google'), location.searchParams.get('connection'));
     });
   </script>`;
-  return renderShell("Home — gog-marketing", content, htmlConfig, "workspace");
+  return appShell(content, htmlConfig);
 }

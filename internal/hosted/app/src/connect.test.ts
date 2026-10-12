@@ -323,7 +323,7 @@ describe("hosted Google connection lifecycle (#62)", () => {
         session,
         new URLSearchParams({ code: "c", state: rawState }),
       ),
-    ).rejects.toMatchObject({ code: "identity_conflict" });
+    ).rejects.toMatchObject({ code: "reconnect_identity_mismatch" });
     const still = await harness.repo.getConnection(session.tenantId, connection.id);
     expect(still?.googleSubject).toBe("sub-original");
     expect(still?.status).toBe("active");
@@ -669,7 +669,7 @@ describe("hosted Google connection lifecycle (#62)", () => {
           state: new URL(reconnect.authorizationUrl).searchParams.get("state")!,
         }),
       ),
-    ).rejects.toMatchObject({ code: "identity_conflict" });
+    ).rejects.toMatchObject({ code: "reconnect_identity_mismatch" });
     expect(await harness.repo.getConnection(session.tenantId, done.connection.id)).toEqual(before);
     expect(await harness.repo.getCredential(session.tenantId, done.connection.id)).toEqual(
       credential,

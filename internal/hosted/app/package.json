@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "design:generate": "node ../../../scripts/generate-hosted-design.mjs",
+    "design:check": "node ../../../scripts/generate-hosted-design.mjs --check",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm format:check && oxlint --deny-warnings .",
