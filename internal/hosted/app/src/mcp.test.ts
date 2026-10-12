@@ -1470,6 +1470,38 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
     expect(serialized).not.toContain("raw runner failure");
   });
 
+  it("preserves structured runner diagnostics in execution errors", async () => {
+    const runner: ToolRunner = {
+      async execute() {
+        return {
+          status: "error",
+          detail: { runnerStatus: 502, runnerBodyJson: true },
+        };
+      },
+    };
+    const env = await createEnv({ __testToolRunner: runner });
+    const fixture = await createToolFixture(env, "user_runner_diagnostics", true);
+    const body = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name: "analytics_properties_get", arguments: { property: fixture.resourceId } },
+        { token: await tokenFor("user_runner_diagnostics") },
+      ),
+    );
+
+    expect(body).toMatchObject({
+      error: {
+        code: -32002,
+        data: {
+          reason: "execution_failed",
+          runner_detail: { runnerStatus: 502, runnerBodyJson: true },
+        },
+      },
+    });
+    expect(JSON.stringify(body)).not.toContain("[object Object]");
+  });
+
   it("returns JSON-RPC parse, invalid-request, and method-not-found errors", async () => {
     const now = Date.UTC(2026, 9, 8, 12, 0, 0);
     const env = await createEnv({ __testNow: () => now });

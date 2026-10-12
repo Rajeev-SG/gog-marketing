@@ -1112,7 +1112,7 @@ async function handleToolCall(
     return toolExecutionError(
       id,
       outcome.status === "unavailable" ? "execution_unavailable" : "execution_failed",
-      outcome.detail === "" ? undefined : { runner_detail: String(outcome.detail) },
+      outcome.detail === "" ? undefined : { runner_detail: outcome.detail },
     );
   }
 
