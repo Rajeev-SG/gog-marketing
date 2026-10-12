@@ -90,6 +90,7 @@ func exactPaths(prefix, suffix string) func(string) []string {
 // Bind only tools for which request paths and resource admission are explicit.
 // Native schemas/handlers are reused; this is policy, not new API integration.
 var nativeToolBindings = append([]NativeToolBinding{
+	{Name: "people_me", Service: "people", hosts: []string{"people.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"profile", "userinfo.profile"}, paths: exactPaths("/v1/people/me", "")},
 	{Name: "sites_get", Service: "sites", ResourceType: resourceTypeFile, ResourceArgument: "site_id", hosts: []string{"www.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"drive.file"}, paths: exactPaths("/drive/v3/files/", "")},
 	{Name: "sites_url", Service: "sites", ResourceType: resourceTypeFile, ResourceArgument: "site_id", hosts: []string{"www.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"drive.file"}, paths: exactPaths("/drive/v3/files/", "")},
 	{Name: "groups_members", Service: "groups", hosts: []string{"cloudidentity.googleapis.com"}, scopes: []string{"cloud-identity.groups.readonly"}, paths: exactPaths("", ""), argumentPaths: validateGroupEmail},
@@ -167,7 +168,7 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	matchedScope := false
 	for _, scope := range binding.scopes {
-		matchedScope = matchedScope || slices.Contains(auth.Scopes, "https://www.googleapis.com/auth/"+scope)
+		matchedScope = matchedScope || slices.Contains(auth.Scopes, "https://www.googleapis.com/auth/"+scope) || slices.Contains(auth.Scopes, scope)
 	}
 
 	if !matchedScope {

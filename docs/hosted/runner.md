@@ -465,3 +465,11 @@ Creation retains native private privacy defaults and does not use local API-key
 fallback. Videos/comments/channels/search/subscriptions and playlist-item/native
 reporting features remain to be wired. Fixture playlist persistence/denials are
 not real Google/YouTube acceptance or production-scope verification.
+
+`people_me` now invokes the native People self-profile handler with explicit
+account/tool grants and approved `profile`/userinfo.profile scope aliases. Only
+GET of `people/me` is admitted. When People API access is unavailable, trusted
+hosted execution returns the provider failure before the legacy local-token/
+keyring fallback; ordinary CLI behavior is unchanged. Arbitrary-profile reads,
+directory/relations/raw capabilities and any needed scope-specific adapters
+remain pending. Fixture profile/failure paths are not actual Google acceptance.

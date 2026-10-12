@@ -2984,5 +2984,28 @@
       },
       "name": "youtube_playlists_delete"
     }
+  },
+  {
+    "name": "people_me",
+    "service": "people",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read the connected account's native People self-profile with explicit account/tool permission and approved profile scope. No directory access or local-token fallback.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "name": "people_me"
+    }
   }
 ]
