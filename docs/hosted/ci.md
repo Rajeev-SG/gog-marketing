@@ -37,3 +37,7 @@ Inspect runner health with the repository Actions runners page or the GitHub
 API. On Oracle, inspect the named systemd service and its journal. A green
 workflow requires actual execution of all six required jobs on the final SHA;
 registration, an online runner, or a queued workflow alone is not acceptance.
+
+Hosted-app native D1/Clerk fixtures have finite 20-second test/hook deadlines in
+CI because they share the two-CPU host with Go builds. Local defaults and
+application/network deadlines remain unchanged; all assertions still execute.
