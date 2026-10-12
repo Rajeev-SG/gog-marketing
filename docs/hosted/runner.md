@@ -349,8 +349,16 @@ transitive-groups GET endpoint is admitted; its membership query uses the truste
 connected Google email, not a model-supplied account. Native pagination/all-pages
 and empty-result controls remain available. Workspace/Cloud Identity privileges
 are still required, and consumer accounts remain unsupported. No group writes
-are implemented by this CLI surface or hosted tool. Native member lookup and
-actual Workspace acceptance remain pending.
+are implemented by this CLI surface or hosted tool. Actual Workspace acceptance remains pending.
+
+`groups_members` completes the existing native Groups read surface. An explicit
+validated `group_email` drives the native Cloud Identity lookup; the guard binds
+the lookup query to that email and accepts only safe `groups/.../memberships`
+GET paths for the provider-resolved group. Account/tool grants and
+`cloud-identity.groups.readonly` remain mandatory, with native paging/all-pages
+and Workspace/provider privileges retained. Malformed provider names cannot
+escape request admission. Both Groups commands are fixture-tested, not live
+Workspace acceptance, and neither implements group mutations.
 
 The hosted request guard is opt-in in the existing Google transport. It admits
 only the binding's exact Google host, method and resource path, rejecting foreign

@@ -24,3 +24,31 @@ func hostedGroupsListTool() mcpToolSpec {
 		return args, nil
 	}}
 }
+
+func hostedGroupsMembersTool() mcpToolSpec {
+	spec := hostedGroupsListTool()
+	spec.Name = "groups_members"
+	spec.Description = "List native members of an explicit group email in the connected Workspace account. Requires cloud-identity.groups.readonly and Google group privileges."
+	spec.Options = append(spec.Options, mcp.WithString("group_email", mcp.Required()))
+	spec.BuildArgs = func(req mcp.CallToolRequest) ([]string, error) {
+		group, err := requireMCPString(req, "group_email")
+		if err != nil {
+			return nil, err
+		}
+		args := []string{"groups", "members", "--max=" + strconv.Itoa(req.GetInt("max", 100))}
+		if page := req.GetString("page", ""); page != "" {
+			args = append(args, "--page="+page)
+		}
+		for _, key := range []string{"all", "fail_empty"} {
+			if req.GetBool(key, false) {
+				flag := key
+				if key == "fail_empty" {
+					flag = "fail-empty"
+				}
+				args = append(args, "--"+flag)
+			}
+		}
+		return append(args, "--", group), nil
+	}
+	return spec
+}

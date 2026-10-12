@@ -2070,5 +2070,46 @@
       },
       "name": "groups_list"
     }
+  },
+  {
+    "name": "groups_members",
+    "service": "groups",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List native members of an explicit group email in the connected Workspace account. Requires cloud-identity.groups.readonly and Google group privileges.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "group_email": {
+            "type": "string"
+          },
+          "max": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["group_email"],
+        "type": "object"
+      },
+      "name": "groups_members"
+    }
   }
 ]

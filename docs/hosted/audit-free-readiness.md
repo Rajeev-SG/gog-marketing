@@ -9,10 +9,10 @@ Google production Data Access classifications and brand/sensitive verification
 are **not yet console-verified/approved** for this expanded set. Nothing here
 proves the 27 services executable or working through hosted MCP.
 
-The Worker now consumes a generated catalogue of fifty-three native Go
+The Worker now consumes a generated catalogue of fifty-four native Go
 schemas: GA4 property/report reads and data-stream/key-event CRUD; selected-file Drive get, Docs
 get/write, Sheets read/update, Slides slide listing/speaker-note replacement;
-Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; and Workspace Groups listing. All invoke existing typed native handlers. MCP discovery and execution
+Calendar event listing/CRUD; eleven Tasks command leaves; GTM version publishing; eight Search Console tools; six Contacts tools; Drive label-schema list/get; and Workspace Groups listing/member reads. All invoke existing typed native handlers. MCP discovery and execution
 require a saved account-specific tool grant plus an enabled matching resource
 grant when the tool has a resource model. Account-level Tasks tools do not invent assets. Google consent and selecting a resource do not authorize writes
 or every future tool. Scope authority comes from encrypted credentials. The native Calendar local-config blocker is now resolved using its explicit-ID
@@ -112,7 +112,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `bigquery` | `bigquery.readonly` | `bigquery` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
 | `adsense` | `adsense.readonly` | No existing service write scope requested | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/adsense/management/reference/rest/v2/accounts/list) |
 | `cloudadmin` | `cloud-platform` | `cloud-platform` | **untested** | Hosted typed execution adapter pending; connected-project billing safeguards pending | [Google](https://docs.cloud.google.com/docs/authentication) |
-| `groups` | `cloud-identity.groups.readonly` | No existing service write scope requested | **untested** | Native groups_list uses trusted-account membership query, exact GET admission and account/tool grants; fixture read/scope denial passes. Member lookup and Workspace role/live acceptance pending; no native writes claimed | [Google](https://developers.google.com/identity/protocols/oauth2/scopes) |
+| `groups` | `cloud-identity.groups.readonly` | No existing service write scope requested | **untested** | Both native groups_list/groups_members use account/tool grants, exact read-only scope, bound email lookup and validated membership paths; fixture reads/denials pass. Workspace role/live acceptance pending; no native writes claimed | [Google](https://developers.google.com/identity/protocols/oauth2/scopes) |
 | `keep` | `keep` | `keep` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/keep/api/reference/rest) |
 | `admin` | `admin.directory.user.readonly admin.directory.group.readonly admin.directory.group.member.readonly admin.directory.orgunit.readonly` | `admin.directory.user admin.directory.group admin.directory.group.member admin.directory.orgunit` | **untested** | Hosted typed execution adapter pending; delegated Workspace authority not yet configured/verified | [Google](https://developers.google.com/workspace/admin/directory/v1/guides/authorizing) |
 | `youtube` | `youtube.readonly` | `youtube` | **untested** | Hosted typed execution adapter pending | [Google](https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps) |
@@ -240,3 +240,5 @@ Calendar event method scopes checked 12 October 2026 in [official Calendar v3 di
 Drive label schema method scopes checked 12 October 2026 against [official Drive Labels v2 discovery](https://drivelabels.googleapis.com/$discovery/rest?version=v2): list/get permit `drive.labels.readonly`. Hosted code requests no write/admin label scopes or broad Drive scopes for these tools. Google Workspace permissions and real execution remain unverified.
 
 Groups listing checked 12 October 2026 against [official Cloud Identity v1 discovery](https://cloudidentity.googleapis.com/$discovery/rest?version=v1): searchTransitiveGroups supports `cloud-identity.groups.readonly`. Hosted code admits its fixed GET endpoint only and preserves native connected-account query semantics. Actual Workspace privileges and live execution remain unverified.
+
+Groups membership methods checked 12 October 2026 against [official Cloud Identity v1 discovery](https://cloudidentity.googleapis.com/$discovery/rest?version=v1): groups.lookup and memberships.list support `cloud-identity.groups.readonly`. Bound lookup/membership fixture evidence does not prove actual Workspace privileges or Google execution.
