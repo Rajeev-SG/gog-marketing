@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -68,5 +69,35 @@ func TestNativeDriveLabelSchemaReadsRequireExactScopeAndPaths(t *testing.T) {
 	denied := call("drivelabels_get", "drive.labels.readonly", map[string]any{"label_name": "labels/../foreign"})
 	if denied.OK || calls.Load() != 0 {
 		t.Fatal("invalid schema selector reached Google")
+	}
+}
+
+func TestNativeDriveLabelsWorkspaceErrorIsSanitized(t *testing.T) {
+	const secret = "SECRET_TOKEN"
+	const email = "user@example.com"
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.DriveLabels = func(ctx context.Context, _ string) (*drivelabels.Service, error) {
+			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+				body := fmt.Sprintf(`{"error":{"code":400,"message":"Drive Labels API requires a Google Workspace customer; consumer Google accounts without a valid customer: %s %s"}}`, secret, email)
+				return &http.Response{StatusCode: 400, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+			})
+			return drivelabels.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, transport)}))
+		}
+	})
+
+	call := func(name string, args map[string]any) capturedResponse {
+		body := nativeToolBody(t, func(req *Request) {
+			req.Tool = &ToolInvocation{Name: name, Arguments: args, Authorization: ToolAuthorization{Service: "drivelabels", AllowedTools: []string{name}, Scopes: []string{"https://www.googleapis.com/auth/drive.labels.readonly"}}}
+		})
+		return postExecute(t, harness.server, signInvocation(t, body, func(claims map[string]any) { claims["operation"] = OperationToolCall }), body)
+	}
+
+	response := call("drivelabels_list", map[string]any{})
+	if response.OK || response.Status != http.StatusUnprocessableEntity || response.Error.Code != "workspace_required" {
+		t.Fatalf("expected sanitized workspace_required 422, got %d %s", response.Status, response.Body)
+	}
+	payload := response.Body
+	if strings.Contains(payload, secret) || strings.Contains(payload, email) {
+		t.Fatalf("response leaked provider content: %s", payload)
 	}
 }

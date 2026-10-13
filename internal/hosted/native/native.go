@@ -17,6 +17,11 @@ var (
 	ErrInput       = errors.New("hosted tool input is invalid")
 	ErrExecution   = errors.New("hosted tool execution failed")
 	ErrOutputLimit = errors.New("hosted tool output exceeds limit")
+
+	// ErrWorkspaceRequired marks a typed tool call that failed because the
+	// account does not have a Google Workspace customer. Runners map it to a
+	// fixed consumer-facing instruction, never raw provider text.
+	ErrWorkspaceRequired = errors.New("Google Workspace required")
 )
 
 type Tool struct {

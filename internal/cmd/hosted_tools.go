@@ -14,6 +14,7 @@ import (
 	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/authclient"
 	"github.com/openclaw/gogcli/internal/config"
+	"github.com/openclaw/gogcli/internal/errfmt"
 	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/hosted/native"
 	"github.com/openclaw/gogcli/internal/outfmt"
@@ -190,6 +191,14 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 		}
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("%w: %w", ErrHostedToolExecution, ctx.Err())
+		}
+		// Drive Labels is Workspace-only; a stable provider error is re-raised
+		// as a sanitizer sentinel so runners can emit a fixed instruction.
+		if spec.Service == "drivelabels" {
+			var ufe *errfmt.UserFacingError
+			if errors.As(err, &ufe) && ufe.Message == "Drive Labels API requires a Google Workspace customer; consumer Google accounts may not have a valid customer." {
+				return nil, fmt.Errorf("%w: %w", ErrHostedToolExecution, native.ErrWorkspaceRequired)
+			}
 		}
 		// Provider text may contain account/credential data. Only stable errors
 		// leave this bridge; the private runner supplies sanitized diagnostics.

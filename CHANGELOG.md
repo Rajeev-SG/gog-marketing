@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: isolate the legacy asset-picker styles from Google Picker and preserve a sanitized Workspace-customer requirement for Drive Labels instead of a generic runner failure; retain account/resource/tool and credential-safety boundaries. (#52, #69, #79)
+
 - Hosted UI: restore the approved marketer-facing application shell and reference states in the deployed Worker, with shared Go/Worker design tokens and components, quiet healthy-account actions, real loading and preserved-selection partial-failure states, onboarding completion, duplicate-account feedback and responsive asset management. (#50, #57)
 
 - Hosted: isolate the app asset-layout CSS from Google Picker's own classes so real file selection is not squeezed by the page grid. Require destructive permission for GTM workspace version creation and surface compiler/sync failures. (#52, #79)

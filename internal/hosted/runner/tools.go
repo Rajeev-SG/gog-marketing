@@ -440,6 +440,8 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 			return invalidOutcome("invalid typed tool input")
 		case errors.Is(err, native.ErrOutputLimit):
 			return outcome{status: 422, err: &apiError{Code: "output_limit", Message: "result exceeded output limit"}}
+		case errors.Is(err, native.ErrWorkspaceRequired):
+			return outcome{status: 422, err: &apiError{Code: "workspace_required", Message: "This Drive Labels tool requires a Google Workspace customer. Reconnect with a Workspace account that can access Drive labels."}}
 		default:
 			return engineOutcome("typed tool execution failed")
 		}
