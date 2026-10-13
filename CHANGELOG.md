@@ -2,6 +2,10 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted onboarding: group the 13 priority service choices into readable Workspace/Marketing rows with labelled read/write controls, select-all services and clear-selection actions; keep deferred services out of new choices and writes separate. (#69, #79)
+
+- Hosted: expose native Sheets spreadsheet metadata reads plus value-range appends and clears for a Picker-selected file under explicit tool grants; require USER_ENTERED import-source admission and destructive clear permission, with bounded inline values and no batch or validation-copy proxy. Fixture append/read/clear/metadata and denials verified; live acceptance pending. (#52, #79)
+
 - Hosted: isolate the legacy asset-picker styles from Google Picker and preserve a sanitized Workspace-customer requirement for Drive Labels instead of a generic runner failure; retain account/resource/tool and credential-safety boundaries. (#52, #69, #79)
 
 - Hosted UI: restore the approved marketer-facing application shell and reference states in the deployed Worker, with shared Go/Worker design tokens and components, quiet healthy-account actions, real loading and preserved-selection partial-failure states, onboarding completion, duplicate-account feedback and responsive asset management. (#50, #57)
