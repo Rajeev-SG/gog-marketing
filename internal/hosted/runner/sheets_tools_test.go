@@ -194,12 +194,14 @@ func TestSignedNativeSheetsQuotedAndUnicodeRangesThroughSDKTransport(t *testing.
 				}
 
 				matched, suffix := "", ""
+
 				for _, rng := range quotedRanges {
 					if rest, ok := strings.CutPrefix(path, "/v4/spreadsheets/selected-sheet/values/"+rng); ok {
 						matched, suffix = rng, rest
 						break
 					}
 				}
+
 				if matched == "" {
 					t.Errorf("restricted/undeclared Sheets endpoint: %s %s", r.Method, r.URL)
 
@@ -254,6 +256,7 @@ func TestSignedNativeSheetsQuotedAndUnicodeRangesThroughSDKTransport(t *testing.
 	for _, rng := range quotedRanges {
 		writeAuth := sheetsLocalAuthorization("sheets_append_range", sheetsWriteScope, true, false)
 		appended := call("sheets_append_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": rng, "values_json": `[["row1","row2"]]`, "input": "RAW"}, writeAuth)
+
 		if appended.Status != 200 || !appended.OK {
 			t.Fatalf("native append of %q failed: %d %s", rng, appended.Status, appended.Body)
 		}
@@ -264,6 +267,7 @@ func TestSignedNativeSheetsQuotedAndUnicodeRangesThroughSDKTransport(t *testing.
 
 		clearAuth := sheetsLocalAuthorization("sheets_clear_range", sheetsWriteScope, true, true)
 		cleared := call("sheets_clear_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": rng}, clearAuth)
+
 		if cleared.Status != 200 || !cleared.OK {
 			t.Fatalf("native clear of %q failed: %d %s", rng, cleared.Status, cleared.Body)
 		}
