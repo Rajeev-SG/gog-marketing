@@ -27,11 +27,16 @@ jobs:
         run: |
           test -d "$RUNNER_TEMP"
           printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          # Isolate the Go build cache per job; concurrent setup-go cache
+          # restores previously shared and evicted compiled stdlib files.
+          GOCACHE_DIR="$RUNNER_TEMP/gocache-$GITHUB_JOB-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir -p "$GOCACHE_DIR"
+          printf 'GOCACHE=%s\n' "$GOCACHE_DIR" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .tools
@@ -68,11 +73,16 @@ jobs:
         run: |
           test -d "$RUNNER_TEMP"
           printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          # Isolate the Go build cache per job; concurrent setup-go cache
+          # restores previously shared and evicted compiled stdlib files.
+          GOCACHE_DIR="$RUNNER_TEMP/gocache-$GITHUB_JOB-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir -p "$GOCACHE_DIR"
+          printf 'GOCACHE=%s\n' "$GOCACHE_DIR" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.8"
-          cache: true
+          cache: false
       - name: Test minimum supported Go series
         run: go test -timeout=20m ./...
       - name: Build
@@ -103,11 +113,16 @@ jobs:
         run: |
           test -d "$RUNNER_TEMP"
           printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          # Isolate the Go build cache per job; concurrent setup-go cache
+          # restores previously shared and evicted compiled stdlib files.
+          GOCACHE_DIR="$RUNNER_TEMP/gocache-$GITHUB_JOB-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir -p "$GOCACHE_DIR"
+          printf 'GOCACHE=%s\n' "$GOCACHE_DIR" >> "$GITHUB_ENV"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache: true
+          cache: false
       - name: Test Postgres control-plane store
         env:
           CONTROL_PLANE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/gog_control_plane?sslmode=disable
