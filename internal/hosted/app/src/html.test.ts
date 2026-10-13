@@ -53,6 +53,66 @@ describe("hosted marketer UI reference states (#50)", () => {
   });
 });
 
+describe("stalled-account reconnect targeting", () => {
+  const page = renderHome(config);
+
+  it("offers Update Google permissions in every account menu", () => {
+    expect(page).toContain(
+      "menuAction('Update Google permissions', '', function () { reconnect(connection); });",
+    );
+  });
+
+  it("opens the submit form for the targeted connection instead of issuing OAuth immediately", () => {
+    expect(page).toMatch(/function reconnect\(connection\)\s*\{\s*setConnectTarget\(connection\);/);
+    expect(page).toMatch(
+      /function reconnect\(connection\)\s*\{\s*setConnectTarget\(connection\);[\s\S]*?el\('connect-panel'\)\.scrollIntoView\(\{ behavior: 'smooth', block: 'start' \}\);\s*\}/,
+    );
+    expect(page).not.toContain("startConnection({ connectionId: connection.id");
+  });
+
+  it("shows the targeted account context and swaps the submit button label", () => {
+    expect(page).toContain("function setConnectTarget(connection)");
+    expect(page).toContain("connectionTarget = connection ? connection.id : null;");
+    expect(page).toContain(
+      "'Updating permissions for ' + who + '. Existing approvals are preserved;",
+    );
+    expect(page).toContain("setText('connect-google-label', 'Update Google permissions');");
+    expect(page).toContain('id="connect-target"');
+    expect(page).toContain('id="connect-google-label"');
+  });
+
+  it("sends the target connectionId only on explicit form submit", () => {
+    expect(page).toContain(
+      "var body = { services: selectedServices(), writeServices: selectedWriteServices() }; if (connectionTarget) body.connectionId = connectionTarget;",
+    );
+    expect(page).toContain("await jsonFetch('/api/google/connect', body,");
+  });
+
+  it("resets to new-account context when Add Google account is used", () => {
+    expect(page).toContain(
+      "el('add-connection').addEventListener('click', function () { setConnectTarget(null);",
+    );
+    expect(page).toContain(
+      "if (!connection) { button.disabled = false; setText('connect-google-label', 'Connect Google account'); note.hidden = true; note.textContent = ''; return; }",
+    );
+  });
+
+  it("blocks double submit and always restores the button with an actionable failure", () => {
+    expect(page).toContain("var connectPending = false;");
+    expect(page).toContain(
+      "if (connectPending) { status.textContent = 'A Google connection request is already running. Wait for it to finish or reload the page.'; return; }",
+    );
+    expect(page).toContain("new AbortController()");
+    expect(page).toContain("}, 20000)");
+    expect(page).toContain(
+      "The Google sign-in request timed out. Check your network, then select the button again.",
+    );
+    expect(page).toContain(
+      "finally { connectPending = false; button.disabled = false; if (timer) clearTimeout(timer); }",
+    );
+  });
+});
+
 describe("connect-service consent form", () => {
   const page = renderHome(config);
 
