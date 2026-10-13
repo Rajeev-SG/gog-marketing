@@ -123,7 +123,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), nativeTagManagerBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), nativeSheetsBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -206,7 +206,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 		return invalidf("destructive grant is disabled")
 	}
 
-	if invocation.Name == "sheets_update_range" && invocation.Arguments["input"] != "RAW" {
+	// USER_ENTERED formulas must not import data from an unselected file. The
+	// current snapshot authorizes one file; secondary-file admission is not
+	// implied by write permission on the destination spreadsheet.
+	if (invocation.Name == "sheets_update_range" || invocation.Name == "sheets_append_range") && invocation.Arguments["input"] != "RAW" {
 		// USER_ENTERED formulas must not import data from an unselected file.
 		// The current snapshot authorizes one file; secondary-file admission is
 		// not implied by write permission on the destination spreadsheet.
@@ -342,7 +345,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		allowed := slices.Contains(paths, path)
-		if binding.Service == "sheets" {
+		// Legacy Sheets value reads/updates span any A1 suffix under the exact
+		// selected spreadsheet. Newer Sheets operations admit a precise path
+		// instead, so their endpoints cannot be reconstructed this loosely.
+		if binding.Service == "sheets" && (invocation.Name == "sheets_read_range" || invocation.Name == "sheets_update_range") {
 			// The ID is exact and the remaining suffix is an A1 range, not an
 			// additional spreadsheet. Other Sheets endpoints remain unavailable.
 			allowed = strings.HasPrefix(path, paths[0]) && len(path) > len(paths[0])
@@ -373,29 +379,47 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		if binding.Write {
-			switch invocation.Name {
-			case "contacts_update":
-				updatePath := strings.HasSuffix(path, ":updateContact")
-				if (request.Method == http.MethodGet && updatePath) || (request.Method == http.MethodPatch && !updatePath) {
-					return native.ErrDenied
-				}
-			case "tasks_lists_create":
-				if request.Method != http.MethodPost {
-					return native.ErrDenied
-				}
-			case "docs_write", "slides_update_notes":
-				if request.Method != http.MethodGet && !(request.Method == http.MethodPost && strings.HasSuffix(path, ":batchUpdate")) {
-					return native.ErrDenied
-				}
-			case "sheets_update_range":
-				if request.Method != http.MethodPut {
-					return native.ErrDenied
-				}
+			if err := admitWriteRequestMethod(invocation.Name, path, request.Method); err != nil {
+				return err
 			}
 		}
 
 		return nil
 	}
+}
+
+// admitWriteRequestMethod narrows each write tool to the declared mutating HTTP
+// method and, for Sheets values actions, an exact native action suffix.
+func admitWriteRequestMethod(name, path, method string) error {
+	switch name {
+	case "contacts_update":
+		updatePath := strings.HasSuffix(path, ":updateContact")
+		if (method == http.MethodGet && updatePath) || (method == http.MethodPatch && !updatePath) {
+			return native.ErrDenied
+		}
+	case "tasks_lists_create":
+		if method != http.MethodPost {
+			return native.ErrDenied
+		}
+	case "docs_write", "slides_update_notes":
+		if method != http.MethodGet && !(method == http.MethodPost && strings.HasSuffix(path, ":batchUpdate")) {
+			return native.ErrDenied
+		}
+	case "sheets_update_range":
+		if method != http.MethodPut {
+			return native.ErrDenied
+		}
+	case "sheets_append_range":
+		if method != http.MethodPost || !strings.HasSuffix(path, ":append") {
+			return native.ErrDenied
+		}
+	case "sheets_clear_range":
+		if method != http.MethodPost || !strings.HasSuffix(path, ":clear") {
+			return native.ErrDenied
+		}
+	}
+
+	return nil
 }
 
 func admitNamedActionMethod(name, path, method string) error {

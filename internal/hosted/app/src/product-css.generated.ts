@@ -508,7 +508,21 @@ button:disabled { cursor: default; opacity: .7; }
 .connect-panel { padding: 22px; }
 .connect-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .8fr); gap: 26px; align-items: start; }
 .connect-layout h2 { margin-bottom: 5px; }
-.service-consent { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 14px 0 4px; }
+.connect-consent-toolbar { display: flex; flex-wrap: wrap; gap: 10px; }
+.connect-consent-toolbar button { min-height: 36px; padding: 6px 12px; font-size: 13px; }
+.connect-consent-summary { margin: 10px 0 0; font-size: 12.5px; color: var(--text-muted); }
+.service-consent { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; margin: 14px 0 0; padding: 0; border: 0; }
+.service-consent-group { min-width: 0; margin: 0; padding: 10px 14px 14px; border: 1px solid var(--border); border-radius: var(--radius); }
+.service-consent-group legend { padding: 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.service-consent-list { display: grid; gap: 8px; }
+.service-choice { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px 14px; min-width: 0; padding: 8px 10px; background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius-s); }
+.service-choice:focus-within { border-color: var(--action); box-shadow: var(--focus-ring); }
+.service-choice-read { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.service-choice-read input, .service-choice-write input { width: 16px; height: 16px; flex: none; margin: 0; accent-color: var(--action); }
+.service-choice-name { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.service-choice-write { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; color: var(--text-muted); font-size: 12.5px; }
+.service-choice-note { color: var(--text-faint); font-size: 11.5px; font-style: italic; white-space: nowrap; }
+
 .safety-note { padding: 15px; background: var(--surface-page); border-radius: 9px; }
 .safety-note strong { display: block; font-size: 12.5px; }
 .safety-note p { font-size: 11.5px; margin: 3px 0 0; }
@@ -592,6 +606,9 @@ button:disabled { cursor: default; opacity: .7; }
   .completion-metric strong { font-size: 20px; }
   .connect-layout { grid-template-columns: 1fr; gap: 14px; }
   .service-consent { grid-template-columns: 1fr; }
+  .service-consent-group { padding: 9px 10px 11px; }
+  .connect-consent-toolbar { gap: 8px; }
+  .connect-consent-toolbar button { flex: 1 1 auto; }
   .tool-list { max-height: 420px; padding-right: 4px; }
   .app-footer { padding: 14px; display: none; }
 }

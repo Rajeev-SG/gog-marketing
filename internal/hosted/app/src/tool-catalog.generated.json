@@ -4813,6 +4813,105 @@
     }
   },
   {
+    "name": "sheets_metadata",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get native Sheets spreadsheet metadata (title, locale, time zone and tabs) for an explicitly enabled Picker-selected spreadsheet. Cell values are not included.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id"],
+        "type": "object"
+      },
+      "name": "sheets_metadata"
+    }
+  },
+  {
+    "name": "sheets_append_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Append inline literal JSON values to a Google Sheets range of an explicitly enabled Picker-selected spreadsheet. USER_ENTERED formulas may not import from an unselected file; structural edits, copied validation and raw batch requests are not supported.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "input": {
+            "default": "USER_ENTERED",
+            "enum": ["RAW", "USER_ENTERED"],
+            "type": "string"
+          },
+          "insert": {
+            "enum": ["OVERWRITE", "INSERT_ROWS"],
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "values_json": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "values_json"],
+        "type": "object"
+      },
+      "name": "sheets_append_range"
+    }
+  },
+  {
+    "name": "sheets_clear_range",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Clear values in a Google Sheets range for an explicitly enabled Picker-selected spreadsheet. Requires destructive permission and does not delete rows, tabs or formats.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_clear_range"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",

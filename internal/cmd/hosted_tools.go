@@ -60,6 +60,7 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedClassroomCourseTools()...)
 	tools = append(tools, hostedYouTubePlaylistTools()...)
 	tools = append(tools, hostedPeopleMeTool())
+	tools = append(tools, hostedSheetsTools()...)
 	return append(tools, hostedPhotosLibraryTools()...)
 }
 
