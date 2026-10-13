@@ -6,10 +6,15 @@ import (
 )
 
 // sheetsRangeSelector admits A1 ranges, anchored cell references and named
-// ranges, including quoted tab names. It rejects every URL-significant or
-// traversal character so the constructed values path stays an exact suffix of
-// one selected spreadsheet.
-var sheetsRangeSelector = regexp.MustCompile("^[A-Za-z0-9_$'!:. -]{1,512}$")
+// ranges, including quoted tab names with punctuation, spaces and Unicode
+// characters (e.g. 'Support Sales (UK)', 'Sales & Marketing', 'Français',
+// '売上'). The installed google.golang.org/api expands {range} with the value
+// verbatim in the decoded path (RawPath percent-encodes everything outside
+// [A-Za-z0-9-._~]), so the guard's exact decoded-path match holds. Characters
+// that could alter URL or range structure — / \ ? # % @ " [ ] { } * and
+// control bytes — stay rejected, and the request guard still denies traversal
+// (/../, /./, backslash) before any exact admission.
+var sheetsRangeSelector = regexp.MustCompile(`^[\p{L}\p{N}\p{M}~ _.$:!'()&+,;=-]{1,512}$`)
 
 func nativeSheetsBindings() []NativeToolBinding {
 	return []NativeToolBinding{

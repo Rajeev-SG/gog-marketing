@@ -171,6 +171,113 @@ func TestSignedNativeSheetsAppendReadClearAndMetadataUnderSelectedFileGrant(t *t
 	}
 }
 
+func TestSignedNativeSheetsQuotedAndUnicodeRangesThroughSDKTransport(t *testing.T) {
+	quotedRanges := []string{
+		`'Support Sales (UK)'!A1:C`,
+		`'Sales & Marketing'!A1:C`,
+		`'Français'!A1:C`,
+		`'売上'!A1:C`,
+	}
+	var calls atomic.Int64
+	rows := map[string][][]any{}
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices = app.Services{Sheets: func(ctx context.Context, account string) (*sheets.Service, error) {
+			if account != "owner@example.com" || authclient.AccessTokenFromContext(ctx) != "synthetic-ephemeral-token" || !googleapi.NoInputFromContext(ctx) {
+				t.Error("trusted execution identity was lost")
+			}
+			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+				calls.Add(1)
+
+				path := r.URL.Path
+				if r.URL.Hostname() != "sheets.googleapis.com" || !strings.HasPrefix(path, "/v4/spreadsheets/selected-sheet/values/") {
+					t.Errorf("unexpected native Sheets request: %s", r.URL)
+				}
+
+				matched, suffix := "", ""
+				for _, rng := range quotedRanges {
+					if rest, ok := strings.CutPrefix(path, "/v4/spreadsheets/selected-sheet/values/"+rng); ok {
+						matched, suffix = rng, rest
+						break
+					}
+				}
+				if matched == "" {
+					t.Errorf("restricted/undeclared Sheets endpoint: %s %s", r.Method, r.URL)
+
+					return &http.Response{StatusCode: 500, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader("{}")), Request: r}, nil
+				}
+
+				body := "{}"
+
+				switch {
+				case r.Method == http.MethodPost && suffix == ":append":
+					var input struct {
+						Values [][]any `json:"values"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+						t.Error(err)
+					}
+					rows[matched] = append(rows[matched], input.Values...)
+					body = `{"updates":{"updatedRange":"` + matched + `"}}`
+				case r.Method == http.MethodGet && suffix == "":
+					if stored := rows[matched]; len(stored) == 0 {
+						body = `{"range":"` + matched + `"}`
+					} else {
+						encoded, marshalErr := json.Marshal(map[string]any{"range": matched, "values": stored})
+						if marshalErr != nil {
+							t.Error(marshalErr)
+						}
+						body = string(encoded)
+					}
+				case r.Method == http.MethodPost && suffix == ":clear":
+					rows[matched] = nil
+					body = `{"clearedRange":"` + matched + `"}`
+				default:
+					t.Errorf("restricted/undeclared Sheets endpoint: %s %s", r.Method, r.URL)
+				}
+
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+			})
+
+			return sheets.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, transport)}))
+		}}
+	})
+
+	call := func(name string, args map[string]any, auth ToolAuthorization) capturedResponse {
+		body := signSheetsInvocation(t, name, args, auth)
+
+		return postExecute(t, harness.server, signInvocation(t, body, func(c map[string]any) { c["operation"] = OperationToolCall }), body)
+	}
+	read := func(rng string) capturedResponse {
+		return call("sheets_read_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": rng}, sheetsLocalAuthorization("sheets_read_range", sheetsReadScope, false, false))
+	}
+
+	for _, rng := range quotedRanges {
+		writeAuth := sheetsLocalAuthorization("sheets_append_range", sheetsWriteScope, true, false)
+		appended := call("sheets_append_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": rng, "values_json": `[["row1","row2"]]`, "input": "RAW"}, writeAuth)
+		if appended.Status != 200 || !appended.OK {
+			t.Fatalf("native append of %q failed: %d %s", rng, appended.Status, appended.Body)
+		}
+
+		if stored := read(rng); stored.Status != 200 || !stored.OK || !strings.Contains(string(stored.Result), "row1") {
+			t.Fatalf("native read of %q did not persist appended values: %d %s", rng, stored.Status, stored.Result)
+		}
+
+		clearAuth := sheetsLocalAuthorization("sheets_clear_range", sheetsWriteScope, true, true)
+		cleared := call("sheets_clear_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": rng}, clearAuth)
+		if cleared.Status != 200 || !cleared.OK {
+			t.Fatalf("native clear of %q failed: %d %s", rng, cleared.Status, cleared.Body)
+		}
+
+		if emptied := read(rng); emptied.Status != 200 || !emptied.OK || strings.Contains(string(emptied.Result), "row1") {
+			t.Fatalf("cleared values of %q were still readable: %d %s", rng, emptied.Status, emptied.Result)
+		}
+	}
+
+	if calls.Load() != int64(len(quotedRanges)*4) {
+		t.Fatalf("unexpected native call count: %d", calls.Load())
+	}
+}
+
 func TestSignedNativeSheetsDenialsNeverReachGoogle(t *testing.T) {
 	var calls atomic.Int64
 	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
@@ -209,6 +316,8 @@ func TestSignedNativeSheetsDenialsNeverReachGoogle(t *testing.T) {
 		{"write disabled", "sheets_append_range", appendArgs, sheetsLocalAuthorization("sheets_append_range", sheetsWriteScope, false, false)},
 		{"readonly scope for clear", "sheets_clear_range", clearArgs, sheetsLocalAuthorization("sheets_clear_range", sheetsReadScope, true, true)},
 		{"readonly scope for append", "sheets_append_range", appendArgs, sheetsLocalAuthorization("sheets_append_range", sheetsReadScope, true, false)},
+		{"traversal range", "sheets_append_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": "Sheet1/../../values/A1", "values_json": `[["new"]]`, "input": "USER_ENTERED"}, sheetsLocalAuthorization("sheets_append_range", sheetsWriteScope, true, false)},
+		{"quoted traversal range", "sheets_append_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": `'A/../B'!A1:C`, "values_json": `[["new"]]`, "input": "USER_ENTERED"}, sheetsLocalAuthorization("sheets_append_range", sheetsWriteScope, true, false)},
 	}
 	for _, test := range denials {
 		t.Run(test.name, func(t *testing.T) {
@@ -232,23 +341,36 @@ func TestNativeSheetsRequestGuardAdmitsOnlyExactMethodsAndSuffixes(t *testing.T)
 		path   string
 		method string
 		admit  bool
+		a1     string
 	}{
-		{"append exact suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":append", http.MethodPost, true},
-		{"append wrong method", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":append", http.MethodGet, false},
-		{"append missing action suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodPost, false},
-		{"append wrong action suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodPost, false},
-		{"append wrong spreadsheet", "sheets_append_range", "/v4/spreadsheets/unselected-sheet/values/" + sheetsValuesRange + ":append", http.MethodPost, false},
-		{"clear exact suffix", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodPost, true},
-		{"clear wrong method", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodDelete, false},
-		{"clear missing action suffix", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodPost, false},
-		{"metadata exact path", "sheets_metadata", "/v4/spreadsheets/selected-sheet", http.MethodGet, true},
-		{"metadata wrong method", "sheets_metadata", "/v4/spreadsheets/selected-sheet", http.MethodPost, false},
-		{"metadata values path", "sheets_metadata", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodGet, false},
+		{"append exact suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":append", http.MethodPost, true, ""},
+		{"append wrong method", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":append", http.MethodGet, false, ""},
+		{"append missing action suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodPost, false, ""},
+		{"append wrong action suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodPost, false, ""},
+		{"append wrong spreadsheet", "sheets_append_range", "/v4/spreadsheets/unselected-sheet/values/" + sheetsValuesRange + ":append", http.MethodPost, false, ""},
+		{"clear exact suffix", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodPost, true, ""},
+		{"clear wrong method", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange + ":clear", http.MethodDelete, false, ""},
+		{"clear missing action suffix", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodPost, false, ""},
+		{"metadata exact path", "sheets_metadata", "/v4/spreadsheets/selected-sheet", http.MethodGet, true, ""},
+		{"metadata wrong method", "sheets_metadata", "/v4/spreadsheets/selected-sheet", http.MethodPost, false, ""},
+		{"metadata values path", "sheets_metadata", "/v4/spreadsheets/selected-sheet/values/" + sheetsValuesRange, http.MethodGet, false, ""},
+		{"quoted append exact suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'Support Sales (UK)'!A1:C:append", http.MethodPost, true, `'Support Sales (UK)'!A1:C`},
+		{"quoted append wrong method", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'Support Sales (UK)'!A1:C:append", http.MethodGet, false, `'Support Sales (UK)'!A1:C`},
+		{"quoted append wrong action suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'Support Sales (UK)'!A1:C:clear", http.MethodPost, false, `'Support Sales (UK)'!A1:C`},
+		{"quoted append traversal path", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'Sheet1'!A1:C:append", http.MethodPost, false, `'Sheet1/../Sheet2'!A1:C`},
+		{"unicode append exact suffix", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'売上'!A1:C:append", http.MethodPost, true, `'売上'!A1:C`},
+		{"unicode append wrong method", "sheets_append_range", "/v4/spreadsheets/selected-sheet/values/'売上'!A1:C:append", http.MethodGet, false, `'売上'!A1:C`},
+		{"unicode clear exact suffix", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/'Français'!A1:C:clear", http.MethodPost, true, `'Français'!A1:C`},
+		{"unicode clear wrong method", "sheets_clear_range", "/v4/spreadsheets/selected-sheet/values/'Français'!A1:C:clear", http.MethodDelete, false, `'Français'!A1:C`},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			a1 := sheetsValuesRange
+			if test.a1 != "" {
+				a1 = test.a1
+			}
 			invocation := &ToolInvocation{
-				Name: test.tool, Arguments: map[string]any{"spreadsheet_id": "selected-sheet", "range": sheetsValuesRange},
+				Name: test.tool, Arguments: map[string]any{"spreadsheet_id": "selected-sheet", "range": a1},
 				Authorization: sheetsLocalAuthorization(test.tool, sheetsWriteScope, true, true),
 			}
 			guard := nativeRequestGuard(invocation)
