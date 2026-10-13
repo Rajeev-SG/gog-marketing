@@ -43,6 +43,12 @@ export interface ToolExecutionRequest {
 export interface RunnerResponseDiagnostics {
   runnerStatus: number;
   runnerBodyJson: boolean;
+  /**
+   * Optional runner error code preserved verbatim from a failed tool_call
+   * envelope. Only known diagnostic codes cross this boundary; provider text,
+   * tokens and account identifiers never do.
+   */
+  runnerCode?: "workspace_required";
 }
 
 export type ToolExecutionOutcome =
@@ -306,18 +312,28 @@ export class RemoteToolRunner implements ToolRunner {
     if (response.status >= 300 && response.status < 400) {
       return { status: "error", detail: "runner_redirect_blocked" };
     }
+    const diagnostics = (status: number): RunnerResponseDiagnostics => {
+      let runnerCode: RunnerResponseDiagnostics["runnerCode"];
+      if (
+        status === 422 &&
+        request.nativeTool &&
+        isPlainObject(wire) &&
+        wire.operation === NATIVE_TOOL_CALL &&
+        wire.ok === false
+      ) {
+        const error = wire.error;
+        if (isPlainObject(error) && error.code === "workspace_required") {
+          runnerCode = "workspace_required";
+        }
+      }
+      return runnerCode === undefined
+        ? { runnerStatus: status, runnerBodyJson }
+        : { runnerStatus: status, runnerBodyJson, runnerCode };
+    };
     if (response.status < 200 || response.status >= 300) {
-      return {
-        status: "error",
-        detail: { runnerStatus: response.status, runnerBodyJson },
-      };
+      return { status: "error", detail: diagnostics(response.status) };
     }
-    if (!runnerBodyJson) {
-      return {
-        status: "error",
-        detail: { runnerStatus: response.status, runnerBodyJson },
-      };
-    }
+    if (!runnerBodyJson) return { status: "error", detail: diagnostics(response.status) };
     if (request.nativeTool) {
       if (
         !isPlainObject(wire) ||

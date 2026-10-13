@@ -1,5 +1,58 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Current priority and real acceptance (13 October 2026)
+
+The owner defers **Contacts, YouTube, Photos, Groups, Chat, AdSense,
+Classroom, Sites, Meet and People** to later roadmap steps. These ten services
+are not current release-completion gates. Existing local CLI capabilities are
+unchanged. The earlier Photos Picker/Cloud Admin/Keep/Workspace Admin v2
+deferrals and Gmail/Google Ads/Drive Activity exclusions also remain unchanged.
+
+The priority set is **13 services**. The historical 23-service engineering
+matrix below is not the current release scope and must not override this update.
+
+| Priority service | Real hosted evidence | Remaining boundary |
+| --- | --- | --- |
+| Calendar | Explicit selected holiday-calendar event listing succeeded | Event writes and other command families remain untested live |
+| Drive | Real Picker selection and selected-file metadata reads; foreign-file denials | Wider eligible commands remain untested |
+| Drive Labels | Missing consent repaired; live call reaches execution but fails | Workspace/customer prerequisite diagnosis must be confirmed live; not working acceptance |
+| Docs | Task-created selected Doc append and independent exact-text read-back | Broader command parity and replacement coverage remain open |
+| Slides | Task-created selected presentation listing and notes update; independent browser reload confirmed persisted notes | Broader command parity remains open |
+| Tasks | Recorded real list/create/get/update/read-back/delete acceptance | Not full native command parity |
+| Sheets | Recorded real write/read/clear/final-empty and resource/account denials | Broader command parity remains open |
+| Forms | Task-created selected unpublished Form description update and independent read-back | Other mutations and response families remain untested live |
+| Apps Script | Task-created blank project's metadata and source-content reads succeeded | Project creation through hosted MCP untested; function execution stays excluded |
+| GA4 | Recorded real selected-property metadata read and mixed enabled/disabled-property batch | Broader Admin and write coverage remain untested live |
+| Search Console | Real site list and selected owned-domain site get succeeded after scope consent repair | Query, inspection and sitemap mutation coverage remain open |
+| BigQuery | Real customer-project dataset listing succeeded | Table/row coverage remains open; no SQL or billable query was attempted |
+| GTM | Real selected-container metadata read succeeded | Live mutation/publishing acceptance remains open; existing containers were not changed |
+
+The three new Docs/Slides/Forms files were created solely for acceptance and
+selected through the real Google Picker. They started disabled. After testing,
+all temporary file/tool grants (including destructive notes permission) were
+restored disabled; the three files were moved to the owner's bin. The blank
+Apps Script acceptance project was not executed. Foreign IDs were rejected by
+real Docs/Slides/Forms MCP calls with `policy_denied / grant_denied`.
+
+The restored shared stylesheet reintroduced a Google Picker collision: its
+legacy `.picker` grid rule matched Google's `.picker-dialog`, collapsing the
+real dialog to 266px. The candidate namespaces only the legacy local picker
+selectors/template and regenerates the shared Worker CSS. Applying that exact
+selector correction in the live browser restored a 1054px dialog and allowed
+all three real file selections. Source checks passed; deployment verification
+is still required before calling the deployed regression fixed.
+
+The candidate also replaces a recognized Drive Labels valid-customer error
+with a fixed `workspace_required` diagnostic, retaining generic errors for
+other provider failures and never forwarding provider messages, credentials
+or account data. Signed native-runner and Worker transport regressions cover
+this boundary. This is not evidence of successful Drive Labels execution.
+
+The OAuth app remains External/Testing. Positive second-account/non-owner
+execution, full eligible native parity, remaining live writes, truthful legal
+materials and applicable Google verification are still open. Representative
+successes and scope deferrals do **not** establish public-beta readiness.
+
 ## Current milestone (12 October 2026)
 
 This is an **engineering checkpoint, not public-beta readiness or live acceptance**.

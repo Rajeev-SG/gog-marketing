@@ -226,7 +226,7 @@ button.small, .button.small { min-height: 32px; padding: 5px 10px; font-size: 13
 .step-actions { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
 /* Asset picker layout */
-.picker { display: grid; grid-template-columns: 240px 1fr; gap: var(--space-5); align-items: start; }
+.gog-local-picker { display: grid; grid-template-columns: 240px 1fr; gap: var(--space-5); align-items: start; }
 .rail { position: sticky; top: var(--space-5); display: grid; gap: var(--space-2); }
 .rail-group-label {
   font-size: 11.5px; font-weight: 650; text-transform: uppercase;
@@ -290,7 +290,7 @@ button.small, .button.small { min-height: 32px; padding: 5px 10px; font-size: 13
 .stack { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
 
 /* Responsive */
-@media (max-width: 900px) { .tiles { grid-template-columns: 1fr; } .picker { grid-template-columns: 1fr; } .rail { position: static; } }
+@media (max-width: 900px) { .tiles { grid-template-columns: 1fr; } .gog-local-picker { grid-template-columns: 1fr; } .rail { position: static; } }
 
 @media (max-width: 600px) {
   body { font-size: 14.5px; }
@@ -320,7 +320,7 @@ button.small, .button.small { min-height: 32px; padding: 5px 10px; font-size: 13
 
 /* Keep long identities and keyboard focus readable around the sticky save bar. */
 html { scroll-padding-block: 24px 180px; }
-main, .card-head > div, .step-body, .picker > form { min-width: 0; }
+main, .card-head > div, .step-body, .gog-local-picker > form { min-width: 0; }
 h1, h3, .eyebrow, .shell-account, .row-label small, .row-details code { overflow-wrap: anywhere; }
 .row-details pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .row :is(input, summary, button) { scroll-margin-block: 24px 180px; }

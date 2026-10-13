@@ -157,6 +157,150 @@ describe("RemoteToolRunner transport", () => {
     expect(JSON.stringify(outcome)).not.toContain("runner.example.test");
   });
 
+  it("exposes only the known workspace_required runner code with no secrets", async () => {
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/v1/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async () =>
+        Response.json(
+          {
+            operation: "tool_call",
+            ok: false,
+            error: {
+              code: "workspace_required",
+              message: "Drive Labels API requires a customer; SECRET_TOKEN user@example.com",
+            },
+          },
+          { status: 422 },
+        )) as typeof fetch,
+    });
+
+    const outcome = await runner.execute({
+      tenantId: "tenant",
+      connectionId: "connection",
+      service: "drivelabels",
+      resourceType: "",
+      resourceId: "",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "user@example.com",
+      googleSubject: "google-subject",
+      nativeTool: {
+        name: "drivelabels_list",
+        arguments: {},
+        scopes: ["https://www.googleapis.com/auth/drive.labels.readonly"],
+        allowedTools: ["drivelabels_list"],
+        allowWrite: false,
+        allowDestructive: false,
+      },
+    });
+
+    expect(outcome).toEqual({
+      status: "error",
+      detail: { runnerStatus: 422, runnerBodyJson: true, runnerCode: "workspace_required" },
+    });
+    const serialized = JSON.stringify(outcome);
+    expect(serialized).not.toContain("SECRET_TOKEN");
+    expect(serialized).not.toContain("user@example.com");
+    expect(serialized).not.toContain(GOOGLE_ACCESS_TOKEN);
+    expect(serialized).not.toContain(NATIVE_ID_TOKEN);
+  });
+
+  it.each([
+    { status: 502, operation: "tool_call", ok: false },
+    { status: 422, operation: "discover", ok: false },
+    { status: 422, operation: "tool_call", ok: true },
+  ])("omits runnerCode for a mismatched error envelope %j", async (envelope) => {
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/v1/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async () =>
+        Response.json(
+          {
+            operation: envelope.operation,
+            ok: envelope.ok,
+            error: { code: "workspace_required" },
+          },
+          { status: envelope.status },
+        )) as typeof fetch,
+    });
+    const outcome = await runner.execute({
+      tenantId: "tenant",
+      connectionId: "connection",
+      service: "drivelabels",
+      resourceType: "",
+      resourceId: "",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "user@example.com",
+      googleSubject: "google-subject",
+      nativeTool: {
+        name: "drivelabels_list",
+        arguments: {},
+        scopes: ["https://www.googleapis.com/auth/drive.labels.readonly"],
+        allowedTools: ["drivelabels_list"],
+        allowWrite: false,
+        allowDestructive: false,
+      },
+    });
+    expect(outcome).toEqual({
+      status: "error",
+      detail: {
+        runnerStatus: envelope.status,
+        runnerBodyJson: true,
+      },
+    });
+  });
+
+  it("omits runnerCode for unknown error codes", async () => {
+    const runner = new RemoteToolRunner({
+      url: new URL("https://runner.example.test/v1/execute"),
+      invocationToken: INVOCATION_TOKEN,
+      identity: {
+        async nativeIdToken() {
+          return NATIVE_ID_TOKEN;
+        },
+      },
+      fetchImpl: (async () =>
+        Response.json(
+          { operation: "tool_call", ok: false, error: { code: "mystery" } },
+          { status: 422 },
+        )) as typeof fetch,
+    });
+
+    const outcome = await runner.execute({
+      tenantId: "tenant",
+      connectionId: "connection",
+      service: "drivelabels",
+      resourceType: "",
+      resourceId: "",
+      accessToken: GOOGLE_ACCESS_TOKEN,
+      googleEmail: "user@example.com",
+      googleSubject: "google-subject",
+      nativeTool: {
+        name: "drivelabels_list",
+        arguments: {},
+        scopes: ["https://www.googleapis.com/auth/drive.labels.readonly"],
+        allowedTools: ["drivelabels_list"],
+        allowWrite: false,
+        allowDestructive: false,
+      },
+    });
+
+    expect(outcome).toEqual({
+      status: "error",
+      detail: { runnerStatus: 422, runnerBodyJson: true },
+    });
+  });
+
   it("rejects redirect responses without forwarding credential headers or body", async () => {
     const redirectedRequests: Array<{ headers: string; body: string }> = [];
     const target = createServer((request, response) => {
