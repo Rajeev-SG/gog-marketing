@@ -1,3 +1,5 @@
+import vm from "node:vm";
+
 import { describe, expect, it } from "vitest";
 
 import { consentServiceIds, deferredConsentServiceIds, renderHome } from "./html.js";
@@ -104,9 +106,8 @@ describe("stalled-account reconnect targeting", () => {
     );
     expect(page).toContain("new AbortController()");
     expect(page).toContain("}, 20000)");
-    expect(page).toContain(
-      "The Google sign-in request timed out. Check your network, then select the button again.",
-    );
+    expect(page).toContain("The Google sign-in request timed out.");
+    expect(page).toContain("' Check your network, then select the button again.'");
     expect(page).toContain(
       "finally { connectPending = false; button.disabled = false; if (timer) clearTimeout(timer); }",
     );
@@ -194,5 +195,186 @@ describe("connect-service consent form", () => {
     expect(page).toContain(".service-consent { grid-template-columns: 1fr; }");
     expect(page).toContain(".service-consent-group { padding: 9px 10px 11px; }");
     expect(page).toContain(".connect-consent-toolbar button { flex: 1 1 auto; }");
+  });
+});
+
+/** Execute the actual rendered startConnection script fragment in a fresh vm context. */
+function executeConnectScript() {
+  const page = renderHome(config);
+  const start = page.indexOf("var connectPending = false;");
+  const end = page.indexOf("function showOutcome");
+  expect(start).toBeGreaterThan(-1);
+  expect(end).toBeGreaterThan(start);
+  const fragment = page.slice(start, end);
+
+  const button = { disabled: false };
+  const statusEl = { textContent: "", className: "" };
+  const calls: Array<{ url: string; body: unknown; signal?: AbortSignal }> = [];
+  const assigned: string[] = [];
+  let timerCallback: (() => void) | undefined;
+  let respond: ((signal?: AbortSignal) => unknown) | undefined;
+  let rejectFetch: ((error: unknown) => void) | undefined;
+
+  const sandbox = {
+    el: (id: string) =>
+      id === "connect-status" ? statusEl : id === "connect-google" ? button : undefined,
+    jsonFetch: async (url: string, body: unknown, signal?: AbortSignal) => {
+      calls.push({ url, body, signal });
+      if (rejectFetch) throw rejectFetch(undefined);
+      if (respond) return respond(signal);
+      return new Promise((_, reject) => {
+        signal?.addEventListener("abort", () => reject(signal.reason));
+      });
+    },
+    setTimeout: (fn: () => void) => {
+      timerCallback = fn;
+      return 1;
+    },
+    clearTimeout: () => {
+      timerCallback = undefined;
+    },
+    AbortController,
+    window: { location: { assign: (url: string) => assigned.push(url) } },
+  };
+  const context = vm.createContext(sandbox);
+  vm.runInNewContext(fragment, context, { filename: "html.ts renderHome fragment" });
+  const evaluate = (expression: string) => vm.runInContext(expression, context, { timeout: 1000 });
+  return {
+    button,
+    statusEl,
+    calls,
+    assigned,
+    fireTimer: () => {
+      expect(timerCallback, "submit timeout timer should be scheduled").toBeTypeOf("function");
+      timerCallback?.();
+    },
+    resolveWith: (factory: (signal?: AbortSignal) => unknown) => {
+      respond = factory;
+    },
+    rejectFetchWith: (factory: () => unknown) => {
+      rejectFetch = factory;
+    },
+    evaluate,
+  };
+}
+
+describe("startConnection error handling (executed script)", () => {
+  it("classifies an abort before headers as a timeout with retry guidance and restores controls", async () => {
+    const run = executeConnectScript();
+    const pending = run.evaluate(
+      "startConnection({ services: ['drive'], writeServices: [] })",
+    ) as Promise<unknown>;
+    run.fireTimer();
+    await pending;
+    expect(run.statusEl.textContent).toBe(
+      "The Google sign-in request timed out. Check your network, then select the button again.",
+    );
+    expect(run.statusEl.className).toBe("muted error");
+    expect(run.button.disabled).toBe(false);
+    expect(run.assigned).toHaveLength(0);
+    expect(run.evaluate("connectPending")).toBe(false);
+  });
+
+  it("propagates an abort during response body parsing instead of swallowing it", async () => {
+    const run = executeConnectScript();
+    run.resolveWith((signal) => ({
+      ok: true,
+      json: () =>
+        new Promise((_, reject) => {
+          if (signal?.aborted) {
+            reject(signal.reason);
+            return;
+          }
+          signal?.addEventListener("abort", () => reject(signal.reason));
+        }),
+    }));
+    const pending = run.evaluate(
+      "startConnection({ services: [], writeServices: [] })",
+    ) as Promise<unknown>;
+    run.fireTimer();
+    await pending;
+    expect(run.statusEl.textContent).toBe(
+      "The Google sign-in request timed out. Check your network, then select the button again.",
+    );
+    expect(run.assigned).toHaveLength(0);
+    expect(run.button.disabled).toBe(false);
+  });
+
+  it("appends actionable retry guidance to a network TypeError instead of trusting its message", async () => {
+    const run = executeConnectScript();
+    run.rejectFetchWith(() => new TypeError("Failed to fetch"));
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.statusEl.textContent).toBe(
+      "Failed to fetch. Check your network, then select the button again.",
+    );
+    expect(run.statusEl.className).toBe("muted error");
+    expect(run.button.disabled).toBe(false);
+    expect(run.evaluate("connectPending")).toBe(false);
+  });
+
+  it("reports an HTTP failure whose error body is malformed JSON, with retry guidance", async () => {
+    const run = executeConnectScript();
+    run.resolveWith(() => ({
+      ok: false,
+      json: () => Promise.reject(new SyntaxError("Unexpected token < in JSON")),
+    }));
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.statusEl.textContent).toBe(
+      "Could not start Google connection. Check your network, then select the button again.",
+    );
+    expect(run.button.disabled).toBe(false);
+    expect(run.evaluate("connectPending")).toBe(false);
+  });
+
+  it("appends retry guidance to server error bodies and allows a fresh submission afterwards", async () => {
+    const run = executeConnectScript();
+    run.resolveWith(() => ({
+      ok: false,
+      json: () => Promise.resolve({ error: "Invalid service selection." }),
+    }));
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.statusEl.textContent).toBe(
+      "Invalid service selection. Check your network, then select the button again.",
+    );
+    run.resolveWith(() => ({
+      ok: true,
+      json: () =>
+        Promise.resolve({ authorizationUrl: "https://accounts.google.com/o/oauth2/auth?x" }),
+    }));
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.assigned).toEqual(["https://accounts.google.com/o/oauth2/auth?x"]);
+    expect(run.button.disabled).toBe(false);
+    expect(run.evaluate("connectPending")).toBe(false);
+  });
+
+  it("suppresses a duplicate submission while one is pending, then permits the next", async () => {
+    const run = executeConnectScript();
+    run.resolveWith((signal) => ({
+      ok: true,
+      json: () =>
+        new Promise((resolve) => {
+          signal?.addEventListener("abort", () => resolve({ authorizationUrl: "https://x.test" }));
+        }),
+    }));
+    const pending = run.evaluate(
+      "startConnection({ services: ['drive'], writeServices: ['drive'] })",
+    ) as Promise<unknown>;
+    expect(run.calls).toHaveLength(1);
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.calls).toHaveLength(1);
+    expect(run.statusEl.textContent).toBe(
+      "A Google connection request is already running. Wait for it to finish or reload the page.",
+    );
+    run.fireTimer();
+    await pending;
+    expect(run.assigned).toEqual(["https://x.test"]);
+    expect(run.calls).toHaveLength(1);
+    run.resolveWith(() => ({
+      ok: true,
+      json: () => Promise.resolve({ authorizationUrl: "https://again.test" }),
+    }));
+    await run.evaluate("startConnection({ services: [], writeServices: [] })");
+    expect(run.calls).toHaveLength(2);
+    expect(run.assigned).toEqual(["https://x.test", "https://again.test"]);
   });
 });

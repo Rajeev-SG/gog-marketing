@@ -410,14 +410,22 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       connectPending = true; button.disabled = true; status.textContent = 'Starting Google sign-in…';
       var controller = typeof AbortController === 'function' ? new AbortController() : null;
       var timer = controller ? setTimeout(function () { controller.abort(); }, 20000) : null;
+      var timedOut = false;
       try {
         var response = await jsonFetch('/api/google/connect', body, controller ? controller.signal : undefined);
-        var result = await response.json().catch(function () { return {}; });
+        var result;
+        try { result = await response.json(); } catch (parseError) {
+          if (controller && controller.signal.aborted) { timedOut = true; throw new Error('The Google sign-in request timed out.'); }
+          result = {};
+        }
         if (!response.ok || !result.authorizationUrl) throw new Error(result.error || 'Could not start Google connection.');
         clearTimeout(timer); button.disabled = false; window.location.assign(result.authorizationUrl); return;
       } catch (error) {
-        var timedOut = error && error.name === 'AbortError';
-        connectFailure(timedOut ? 'The Google sign-in request timed out. Check your network, then select the button again.' : error.message || 'Could not start Google connection. Check your network, then select the button again.', 'error');
+        var guidance = ' Check your network, then select the button again.';
+        var aborted = timedOut || Boolean(controller && controller.signal.aborted);
+        var reason = aborted ? 'The Google sign-in request timed out.' : (error && error.message) || 'Could not start Google connection.';
+        if (reason.charAt(reason.length - 1) !== '.') reason += '.';
+        connectFailure(reason + guidance, 'error');
       } finally { connectPending = false; button.disabled = false; if (timer) clearTimeout(timer); }
     }
     function showOutcome(outcome, connectionId) {

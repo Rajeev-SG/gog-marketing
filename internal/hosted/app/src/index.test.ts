@@ -1127,7 +1127,7 @@ describe("hosted Google connection routes (#62)", () => {
     );
     const html = await home.text();
     expect(html).toContain("Reconnect");
-    expect(html).toContain("connectionId: connection.id");
+    expect(html).toContain("if (connectionTarget) body.connectionId = connectionTarget;");
     expect(html).toContain("Google account connected.");
     expect(html).not.toContain(state);
     expect(html).not.toContain("private-code");

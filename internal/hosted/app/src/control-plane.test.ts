@@ -703,30 +703,36 @@ describe("control plane route and UI contracts (#64)", () => {
     };
 
     const reconnect = new Function(
+      "setConnectTarget",
+      "el",
       "startConnection",
-      "selectedServices",
-      "selectedWriteServices",
       "connection",
       `${extraction("reconnect")}; return reconnect(connection);`,
     );
-    const reconnectRequest: Record<string, unknown> = {};
     const connection = { id: "owned-connection", email: "owner@example.com" };
-    (
-      reconnect as (
-        start: unknown,
-        selected: () => string[],
-        writes: () => string[],
-        context: unknown,
-      ) => void
-    )(
-      (request: Record<string, unknown>) => Object.assign(reconnectRequest, request),
-      () => ["analytics", "tagmanager"],
-      () => ["tagmanager"],
+    let target: typeof connection | undefined;
+    let scrollOptions: unknown;
+    let oauthRequests = 0;
+    reconnect(
+      (selected: typeof connection) => {
+        target = selected;
+      },
+      (id: string) => {
+        expect(id).toBe("connect-panel");
+        return {
+          scrollIntoView: (options: unknown) => {
+            scrollOptions = options;
+          },
+        };
+      },
+      () => {
+        oauthRequests += 1;
+      },
       connection,
     );
-    expect(reconnectRequest.connectionId).toBe("owned-connection");
-    expect(reconnectRequest.services).toEqual(["analytics", "tagmanager"]);
-    expect(reconnectRequest.writeServices).toEqual(["tagmanager"]);
+    expect(target).toBe(connection);
+    expect(scrollOptions).toEqual({ behavior: "smooth", block: "start" });
+    expect(oauthRequests).toBe(0);
 
     const guarded = new Function(
       "message",
