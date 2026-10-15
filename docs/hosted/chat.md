@@ -32,7 +32,13 @@ minute, 100 per UTC day, 100 KB conversation, 8,000 characters per user message,
 2,048 output tokens, and a 90-second response timeout. Limits are enforced in
 the integrated conversation store, not shared with the legacy standalone app.
 Provider failures are redacted. Native streaming, stop, reconnect and saved
-messages are retained.
+messages are retained. Recipient sessions are rechecked before native outbound
+batches, including idle sockets; expired/revoked recipients are closed before
+new conversation data is delivered. This bounded, in-memory authorization buffer
+does not replace the SDK protocol or store a second transcript. Size limits use
+UTF-8 bytes, and stopped-message annotations retain the full conversation snapshot.
+A failed Clerk sign-out closes the local chat but shows an explicit retry rather
+than claiming the server session was revoked.
 
 ## Build and operate
 

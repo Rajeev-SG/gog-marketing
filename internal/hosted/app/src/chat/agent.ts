@@ -96,6 +96,83 @@ function userMessageOnlyText(parts: unknown): boolean {
 }
 
 export class Chat extends AIChatAgent<ChatEnv> {
+  // Authorization middleware only: native SDK messages, persistence and streaming stay unchanged.
+  private outboundFrames: { message: string | ArrayBuffer | ArrayBufferView; without: string[] }[] =
+    [];
+  private outboundBytes = 0;
+  private outboundActive = false;
+
+  override broadcast(
+    message: string | ArrayBuffer | ArrayBufferView,
+    without: string[] = [],
+  ): void {
+    const bytes =
+      typeof message === "string"
+        ? new TextEncoder().encode(message).byteLength
+        : message.byteLength;
+    if (this.outboundBytes + bytes > 1_000_000) {
+      this.discardPendingDelivery();
+      return;
+    }
+    this.outboundFrames.push({ message, without: [...without] });
+    this.outboundBytes += bytes;
+    if (!this.outboundActive) this.startDelivery();
+  }
+
+  private startDelivery(): void {
+    this.outboundActive = true;
+    this.ctx.waitUntil(
+      this.deliverAuthorizedFrames()
+        .catch(() => {
+          this.discardPendingDelivery();
+        })
+        .finally(() => {
+          this.outboundActive = false;
+          if (this.outboundFrames.length) this.startDelivery();
+        }),
+    );
+  }
+
+  private discardPendingDelivery(): void {
+    this.outboundFrames = [];
+    this.outboundBytes = 0;
+    for (const connection of this.getConnections()) {
+      try {
+        connection.close(1011, "Chat is temporarily unavailable");
+      } catch {
+        /* Already closed. */
+      }
+    }
+  }
+
+  private async deliverAuthorizedFrames(): Promise<void> {
+    while (this.outboundFrames.length) {
+      const allowed = new Set<string>();
+      await Promise.all(
+        Array.from(this.getConnections()).map(async (connection) => {
+          if (await this.isAuthorizedConnection(connection)) allowed.add(connection.id);
+          else {
+            try {
+              connection.close(4401, "Sign in again");
+            } catch {
+              /* Already closed. */
+            }
+          }
+        }),
+      );
+      // Batch frames accumulated during the live check. New/unverified recipients are excluded.
+      const blocked = Array.from(this.getConnections())
+        .filter((connection) => {
+          const state = connection.state as ChatConnectionState | null;
+          return !allowed.has(connection.id) || !state || state.expiresAt <= Date.now();
+        })
+        .map((connection) => connection.id);
+      const frames = this.outboundFrames.splice(0);
+      this.outboundBytes = 0;
+      for (const frame of frames) super.broadcast(frame.message, [...frame.without, ...blocked]);
+    }
+  }
+
   constructor(ctx: AgentContext, env: ChatEnv) {
     super(ctx, env);
     // Intercept every text frame (including SDK-intercepted chat frames) after
@@ -115,7 +192,10 @@ export class Chat extends AIChatAgent<ChatEnv> {
         connection.close(4401, "Sign in again");
         return;
       }
-      if (typeof message !== "string" || message.length > MAX_CONVERSATION_BYTES) {
+      if (
+        typeof message !== "string" ||
+        new TextEncoder().encode(message).byteLength > MAX_CONVERSATION_BYTES
+      ) {
         connection.close(4400, "Message too large");
         return;
       }
@@ -215,7 +295,7 @@ export class Chat extends AIChatAgent<ChatEnv> {
     const dayCount = budget?.day === day ? (budget.dayCount ?? 0) : 0;
     if (minuteCount >= BUDGET_PER_MINUTE || dayCount >= BUDGET_PER_DAY)
       return chatError(BUDGET_MESSAGE);
-    if (JSON.stringify(this.messages).length > MAX_CONVERSATION_BYTES)
+    if (new TextEncoder().encode(JSON.stringify(this.messages)).byteLength > MAX_CONVERSATION_BYTES)
       return chatError(TEXT_ONLY_MESSAGE);
     for (const message of this.messages) {
       if (message.role !== "user") continue;
@@ -266,21 +346,16 @@ export class Chat extends AIChatAgent<ChatEnv> {
       throw new Error("Invalid message IDs.");
     }
     const ids = new Set(messageIds);
-    const updates = this.messages
-      .filter(
-        (message) => message.role === "user" && ids.has((message as { id?: string }).id ?? ""),
-      )
-      .map((message) => {
-        const metadata =
-          (message as { metadata?: unknown }).metadata &&
-          typeof (message as { metadata?: unknown }).metadata === "object"
-            ? (message as { metadata?: unknown }).metadata
-            : {};
-        return { ...message, metadata: { ...(metadata as object), gogStopped: true } };
-      });
-    // Native persistMessages merges these annotations into the existing
-    // conversation. Unlike saveMessages, it does not generate another model response.
-    if (updates.length) await this.persistMessages(updates);
+    let changed = false;
+    const messages = this.messages.map((message) => {
+      if (message.role !== "user" || !ids.has(message.id)) return message;
+      changed = true;
+      const metadata =
+        message.metadata && typeof message.metadata === "object" ? message.metadata : {};
+      return { ...message, metadata: { ...metadata, gogStopped: true } };
+    });
+    // persistMessages broadcasts a full conversation snapshot, not a patch.
+    if (changed) await this.persistMessages(messages);
   }
 }
 

@@ -285,6 +285,7 @@ function App() {
   const [session, setSession] = useState<ChatSession | null>(null);
   const [gate, setGate] = useState<SessionGate>("loading");
   const [message, setMessage] = useState("");
+  const [signOutFailed, setSignOutFailed] = useState(false);
   const applySession = useCallback((data: ChatSession) => {
     setSession(data);
     setGate("ready");
@@ -343,11 +344,18 @@ function App() {
       /* Keep the open conversation; the socket reconnects independently. */
     }
   }, [signOutView, ownerOnlyView]);
-  const signOut = useCallback(() => {
-    // Close the socket before sign-out by unmounting the conversation; the draft stays.
+  const signOut = useCallback(async () => {
+    // Close the socket first; do not claim the server session was revoked if Clerk fails.
     signOutView();
-    const c = clerk();
-    if (c?.signOut) void c.signOut({ redirectUrl: "/" });
+    setSignOutFailed(false);
+    try {
+      const c = clerk();
+      if (!c?.signOut) throw new Error("Sign-out is not available");
+      await c.signOut({ redirectUrl: "/" });
+    } catch {
+      setSignOutFailed(true);
+      setMessage("Could not complete sign-out. Please try again. Your draft is kept in this tab.");
+    }
   }, [signOutView]);
   useEffect(() => {
     void loadSession();
@@ -454,10 +462,15 @@ function App() {
             <br />
             Your conversation.
           </h1>
-          <p>
+          <p role={signOutFailed ? "alert" : undefined}>
             {message ||
               "An owner-only workspace. Sign in to pick up where you left off. Your unsent draft stays in this tab."}
           </p>
+          {signOutFailed && (
+            <button type="button" onClick={() => void signOut()}>
+              Retry sign out
+            </button>
+          )}
           <a className="signin-link" href="/chat">
             Sign in to continue
           </a>
