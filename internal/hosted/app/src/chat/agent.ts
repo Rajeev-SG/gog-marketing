@@ -101,6 +101,7 @@ export class Chat extends AIChatAgent<ChatEnv> {
     [];
   private outboundBytes = 0;
   private outboundActive = false;
+  private lastRecipientCheckAt = 0;
 
   override broadcast(
     message: string | ArrayBuffer | ArrayBufferView,
@@ -147,13 +148,24 @@ export class Chat extends AIChatAgent<ChatEnv> {
 
   private async deliverAuthorizedFrames(): Promise<void> {
     while (this.outboundFrames.length) {
+      // Clerk development instances allow 100 BAPI requests per 10 seconds.
+      // Coalesce delivery (never cache positive auth) so token-rate streams cannot exhaust it.
+      const delay = Math.max(0, 1000 - (Date.now() - this.lastRecipientCheckAt));
+      if (delay) await new Promise<void>((resolve) => setTimeout(resolve, delay));
+      this.lastRecipientCheckAt = Date.now();
       const allowed = new Set<string>();
       await Promise.all(
         Array.from(this.getConnections()).map(async (connection) => {
-          if (await this.isAuthorizedConnection(connection)) allowed.add(connection.id);
+          const authorization = await this.connectionAuthorization(connection);
+          if (authorization === "active") allowed.add(connection.id);
           else {
             try {
-              connection.close(4401, "Sign in again");
+              connection.close(
+                authorization === "unavailable" ? 1013 : 4401,
+                authorization === "unavailable"
+                  ? "Session check temporarily unavailable"
+                  : "Sign in again",
+              );
             } catch {
               /* Already closed. */
             }
@@ -179,17 +191,14 @@ export class Chat extends AIChatAgent<ChatEnv> {
     // the native handler is installed so the guard runs before inference.
     const nativeMessage = this.onMessage.bind(this);
     this.onMessage = async (connection: Connection, message: unknown) => {
-      const state = (connection.state as ChatConnectionState | null) ?? null;
-      if (
-        !state ||
-        !state.expiresAt ||
-        state.expiresAt <= Date.now() ||
-        !state.sessionId ||
-        !state.userId ||
-        !state.tenantId ||
-        !(await this.isAuthorizedConnection(connection))
-      ) {
-        connection.close(4401, "Sign in again");
+      const authorization = await this.connectionAuthorization(connection);
+      if (authorization !== "active") {
+        connection.close(
+          authorization === "unavailable" ? 1013 : 4401,
+          authorization === "unavailable"
+            ? "Session check temporarily unavailable"
+            : "Sign in again",
+        );
         return;
       }
       if (
@@ -207,7 +216,9 @@ export class Chat extends AIChatAgent<ChatEnv> {
    * Live trust helper: owner match, future expiry, active internal tenant, and
    * a live Clerk session verified through the Backend API. Fails closed.
    */
-  async isAuthorizedConnection(connection: Connection): Promise<boolean> {
+  private async connectionAuthorization(
+    connection: Connection,
+  ): Promise<"active" | "unauthenticated" | "unavailable"> {
     const owner = (this.env.CHAT_OWNER_USER_ID ?? "").trim();
     const state = (connection.state as ChatConnectionState | null) ?? null;
     if (
@@ -219,15 +230,19 @@ export class Chat extends AIChatAgent<ChatEnv> {
       !state.expiresAt ||
       state.expiresAt <= Date.now()
     ) {
-      return false;
+      return "unauthenticated";
     }
     try {
       const tenant = await new HostedRepository(this.env.DB).getTenant(state.tenantId);
-      if (!tenant || tenant.status !== "active") return false;
+      if (!tenant || tenant.status !== "active") return "unauthenticated";
       const session = await verifyActiveClerkSession(this.env, state.sessionId, state.userId);
-      return session.kind === "active";
+      return session.kind === "error"
+        ? "unavailable"
+        : session.kind === "active"
+          ? "active"
+          : "unauthenticated";
     } catch {
-      return false;
+      return "unavailable";
     }
   }
 
@@ -248,7 +263,10 @@ export class Chat extends AIChatAgent<ChatEnv> {
       return;
     }
     if (outcome.kind === "error") {
-      connection.close(outcome.status === 403 ? 4403 : 4401, "Not authorized");
+      connection.close(
+        outcome.status === 403 ? 4403 : 1013,
+        outcome.status === 403 ? "Not authorized" : "Session check temporarily unavailable",
+      );
       return;
     }
     const digest = await chatConversationDigest(outcome.session.tenant.id);
@@ -278,8 +296,11 @@ export class Chat extends AIChatAgent<ChatEnv> {
     if (!invocation || !invocation.connection) {
       return chatError(UNAVAILABLE_MESSAGE);
     }
-    if (!(await this.isAuthorizedConnection(invocation.connection))) {
-      return chatError(UNAUTHORIZED_MESSAGE);
+    const authorization = await this.connectionAuthorization(invocation.connection);
+    if (authorization !== "active") {
+      return chatError(
+        authorization === "unavailable" ? UNAVAILABLE_MESSAGE : UNAUTHORIZED_MESSAGE,
+      );
     }
     // Persist the budget in the same owner Durable Object so reconnects cannot reset it.
     const now = Date.now();

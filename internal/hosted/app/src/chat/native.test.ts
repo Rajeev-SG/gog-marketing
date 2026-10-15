@@ -16,6 +16,7 @@ let keys: TestKeyPair;
 const revoked = new Set<string>();
 const expiries = new Map<string, number>();
 let providerCalls = 0;
+let rateLimited = false;
 let sessionChecks = 0;
 const outboundRoutes: string[] = [];
 const owner = "user_native_chat_owner";
@@ -81,32 +82,47 @@ beforeAll(async () => {
                 created: 1,
                 model: "openai/gpt-4.1-mini",
               };
-              const text =
-                [
-                  {
-                    ...chunk,
-                    choices: [
-                      {
-                        index: 0,
-                        delta: { role: "assistant", content: "Native fixture reply." },
-                        finish_reason: null,
-                      },
-                    ],
-                  },
-                  {
-                    ...chunk,
-                    choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
-                    usage: { prompt_tokens: 12, completion_tokens: 4, total_tokens: 16 },
-                  },
-                ]
-                  .map((value) => "data: " + JSON.stringify(value) + "\n\n")
-                  .join("") + "data: [DONE]\n\n";
-              return new Response(text, { headers: { "Content-Type": "text/event-stream" } });
+              const chunks: Record<string, unknown>[] = Array.from(
+                "Native fixture reply.",
+                (letter, index) => ({
+                  ...chunk,
+                  choices: [
+                    {
+                      index: 0,
+                      delta: { ...(index === 0 ? { role: "assistant" } : {}), content: letter },
+                      finish_reason: null,
+                    },
+                  ],
+                }),
+              );
+              chunks.push({
+                ...chunk,
+                choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+                usage: { prompt_tokens: 12, completion_tokens: 4, total_tokens: 16 },
+              });
+              const body = new ReadableStream<Uint8Array>({
+                async start(controller) {
+                  for (const value of chunks) {
+                    controller.enqueue(
+                      new TextEncoder().encode("data: " + JSON.stringify(value) + "\n\n"),
+                    );
+                    await new Promise((resolve) => setTimeout(resolve, 20));
+                  }
+                  controller.enqueue(new TextEncoder().encode("data: [DONE]\n\n"));
+                  controller.close();
+                },
+              });
+              return new Response(body, { headers: { "Content-Type": "text/event-stream" } });
             }
             if (url.origin !== "https://api.clerk.com" || !url.pathname.startsWith("/v1/sessions/"))
               throw new Error("Unexpected native fixture network request");
             const sessionId = url.pathname.split("/").at(-1)!;
             sessionChecks++;
+            if (rateLimited)
+              return Response.json(
+                { errors: [{ code: "rate_limit_exceeded", message: "Fixture BAPI limit" }] },
+                { status: 429 },
+              );
             return Response.json({
               object: "session",
               id: sessionId,
@@ -252,6 +268,8 @@ it("keeps native streams/history intact while excluding silent revoked and expir
   expect(seenA.join("")).not.toContain("B-only native fixture message");
   expect(sessionChecks).toBeGreaterThan(checksBefore);
   expect(providerCalls).toBe(1);
+  // Paced token chunks must not cause a BAPI lookup per token/frame.
+  expect(sessionChecks - checksBefore).toBeLessThan(15);
   const first = await history(path, cookieB);
   expect(first).toHaveLength(2);
   expect(first[1].parts.some((part) => part.text === "Native fixture reply.")).toBe(true);
@@ -312,6 +330,19 @@ it("keeps native streams/history intact while excluding silent revoked and expir
   socketB.send(packet);
   expect(await closedB).toBe(4400);
   expect(providerCalls).toBe(callsBefore);
+  const cookieD = await cookieFor("sess_native_D");
+  const socketD = await open(path, cookieD);
+  rateLimited = true;
+  const retryableClose = closed(socketD);
+  socketD.send(
+    JSON.stringify({ type: "rpc", id: "rate-limit-proof", method: "markStopped", args: [[]] }),
+  );
+  expect(await retryableClose).toBe(1013);
+  rateLimited = false;
+  expect(
+    (await mf.dispatchFetch(origin + "/api/chat/session", { headers: { Cookie: cookieD } })).status,
+  ).toBe(200);
+
   expect((await history(path, cookieB)).map((message) => message.id)).toEqual(
     beforeStop.map((message) => message.id),
   );

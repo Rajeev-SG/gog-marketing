@@ -34,7 +34,13 @@ the integrated conversation store, not shared with the legacy standalone app.
 Provider failures are redacted. Native streaming, stop, reconnect and saved
 messages are retained. Recipient sessions are rechecked before native outbound
 batches, including idle sockets; expired/revoked recipients are closed before
-new conversation data is delivered. This bounded, in-memory authorization buffer
+new conversation data is delivered. Delivery is coalesced to at most one fresh
+recipient check per second, respecting Clerk's development-instance limit of
+[100 Backend API requests per 10 seconds](https://clerk.com/docs/guides/how-clerk-works/system-limits#backend-api-requests).
+This is delivery batching, not a positive-authorization cache: each batch is
+checked immediately before release. Temporary auth outages/rate limits close
+sockets with retryable code 1013 instead of falsely claiming sign-out.
+This bounded, in-memory authorization buffer
 does not replace the SDK protocol or store a second transcript. Size limits use
 UTF-8 bytes, and stopped-message annotations retain the full conversation snapshot.
 A failed Clerk sign-out closes the local chat but shows an explicit retry rather
