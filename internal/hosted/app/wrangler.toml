@@ -7,10 +7,25 @@
 # block in this file; the secret CLERK_SECRET_KEY is set via `wrangler secret put`.
 
 name = "gog-marketing"
-main = "src/index.ts"
-compatibility_date = "2024-12-01"
+main = "src/worker.ts"
+compatibility_date = "2026-10-12"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "gog-marketing"
 database_id = "328418b4-9649-480f-b26f-5bfb1cd3ffbf"
+
+# The Worker authenticates all HTML, API, and agent traffic before routing.
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+run_worker_first = true
+
+[[durable_objects.bindings]]
+name = "Chat"
+class_name = "Chat"
+
+[[migrations]]
+tag = "integrated-chat-v1"
+new_sqlite_classes = ["Chat"]

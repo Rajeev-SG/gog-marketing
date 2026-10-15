@@ -154,6 +154,7 @@ function icon(name: string): string {
   const paths: Record<string, string> = {
     home: '<path d="M3 10.8 12 3l9 7.8"/><path d="M5 9.8V21h14V9.8"/><path d="M9 21v-7h6v7"/>',
     data: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+    chat: '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9H13a8.5 8.5 0 0 1 8 8v.5Z"/>',
     activity: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
     settings:
       '<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8 8 0 0 0-1.7-1L14.5 3h-5l-.4 2.6a8 8 0 0 0-1.7 1l-2.4-1-2 3.4L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8 8 0 0 0 1.7 1l.4 2.6h5l.4-2.6a8 8 0 0 0 1.7-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z"/>',
@@ -169,7 +170,7 @@ function icon(name: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? ""}</svg>`;
 }
 
-function clerkScriptTags(htmlConfig: HtmlConfig): string {
+export function clerkScriptTags(htmlConfig: HtmlConfig): string {
   const pk = escapeHtmlAttr(htmlConfig.publishableKey);
   return `<script defer crossorigin="anonymous" type="text/javascript" src="https://${htmlConfig.clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js"></script>
   <script defer crossorigin="anonymous" type="text/javascript" data-clerk-publishable-key="${pk}" src="https://${htmlConfig.clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js"></script>`;
@@ -187,9 +188,9 @@ function appShell(content: string, htmlConfig: HtmlConfig): string {
   return documentShell(
     "Home — gog-marketing",
     `<a class="skip-link" href="#main-content">Skip to content</a><div class="app-shell" id="app-shell">
-    <aside class="sidebar" id="app-sidebar" aria-label="Application navigation"><a class="sidebar-brand" href="/"><span class="brand-mark">g</span><span>gog-marketing</span></a><div class="sidebar-rule"></div><nav class="side-nav">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav><div class="sidebar-spacer"></div><div class="trust-card">${icon("shield")}<strong>Secure by design</strong><p>Least-privilege access to the Google data you choose.</p></div><div class="sidebar-user"><span class="avatar">G</span><span>Google access workspace</span></div></aside>
+    <aside class="sidebar" id="app-sidebar" aria-label="Application navigation"><a class="sidebar-brand" href="/"><span class="brand-mark">g</span><span>gog-marketing</span></a><div class="sidebar-rule"></div><nav class="side-nav">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("/chat", "Chat", "chat")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav><div class="sidebar-spacer"></div><div class="trust-card">${icon("shield")}<strong>Secure by design</strong><p>Least-privilege access to the Google data you choose.</p></div><div class="sidebar-user"><span class="avatar">G</span><span>Google access workspace</span></div></aside>
     <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Search" aria-label="Search workspace"></label><div class="topbar-actions"><a class="button secondary-action" href="#settings">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><span>Privacy · Terms</span></footer></div>
-    <nav class="bottom-nav" aria-label="Mobile navigation">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav></div>`,
+    <nav class="bottom-nav" aria-label="Mobile navigation">${navItem("#home", "Home", "home", true)}${navItem("#google-data", "Google data", "data")}${navItem("/chat", "Chat", "chat")}${navItem("#activity", "Activity", "activity")}${navItem("#settings", "Settings", "settings")}</nav></div>`,
     htmlConfig,
   );
 }

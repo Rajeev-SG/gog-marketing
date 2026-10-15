@@ -73,6 +73,18 @@ The 12 approved interface references are stored in
 application shell, Home, service and account cards, asset selection, loading,
 attention, partial-failure, onboarding, feedback, and mobile states.
 
+## Chat
+
+Open **Chat** at `/chat` from the product navigation using the same Clerk
+sign-in. Chat is initially restricted to the configured owner and uses a
+server-side OpenRouter key. It starts a fresh saved conversation; the old
+standalone app and its history are preserved.
+
+**Google tools are not connected to chat yet.** Connecting them through the
+existing Google permissions is the next milestone, not an implied capability
+of shared sign-in. See the [chat implementation and verification record](docs/hosted/chat.md)
+and [integration issue #90](https://github.com/Rajeev-SG/gog-marketing/issues/90).
+
 ## Getting started
 
 Most users should interact through the product interface or the shipped `gog`

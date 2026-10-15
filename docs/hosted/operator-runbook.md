@@ -26,6 +26,8 @@ repository or in command output.
 
 | Name | Purpose |
 | --- | --- |
+| `CHAT_OWNER_USER_ID` | Exact Clerk user allowed to use integrated chat; unset denies all chat |
+| `OPENROUTER_MODEL` | Chat model; default `openai/gpt-4.1-mini` |
 | `CLERK_PUBLISHABLE_KEY` | Clerk publishable key identifier |
 | `CLERK_ISSUER` | Clerk authorization-server issuer URL |
 | `CLERK_AUTHORIZED_PARTIES` | Comma-separated trusted HTTPS origins |
@@ -52,6 +54,7 @@ from stdin and must not echo it:
 
 | Name | Purpose |
 | --- | --- |
+| `OPENROUTER_API_KEY` | Existing owner model-provider key; integrated chat only, never browser-visible |
 | `CLERK_SECRET_KEY` | Clerk server-side secret |
 | `GOG_GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth client secret |
 | `GOG_HOSTED_CREDENTIAL_ENCRYPTION_KEY` | Credential-encryption root key |
@@ -120,6 +123,22 @@ names without values:
 npx wrangler secret list --name gog-marketing
 npx wrangler deployments status --name gog-marketing --json
 ```
+
+## Integrated chat deployment
+
+Build the chat assets with `pnpm build` in `internal/hosted/app` before deploying.
+Provision the existing owner OpenRouter key using `wrangler secret put OPENROUTER_API_KEY`
+without printing the value. Set `CHAT_OWNER_USER_ID` to the existing owner's verified
+user ID **in the deployed Clerk instance**, not an email or a different instance's ID.
+Set `OPENROUTER_MODEL` to the tested model if overriding the default.
+
+For this additive integration, use `wrangler deploy --keep-vars` plus the new
+owner/model variables so existing Google, Clerk, Picker, runner and MCP variables
+are retained. Do not replace existing secrets or apply D1 migrations for chat.
+The new `integrated-chat-v1` Durable Object migration creates a fresh namespace
+inside `gog-marketing`; it does not transfer or delete the standalone namespace.
+Record the deployed version and verify shared sign-in, streaming and Google-settings
+regressions before calling the delivery complete. Follow [the chat record](chat.md).
 
 ## Apply D1 migrations
 

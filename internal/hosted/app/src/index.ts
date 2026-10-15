@@ -25,6 +25,8 @@
  *
  * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
+import { handleChat } from "./chat/routes.js";
+import type { ChatEnv } from "./chat/access.js";
 import { HostedRepository } from "../../state/src/repository.js";
 import { saveToolPermissions, toolPermissionView } from "./tool-permissions.js";
 import { startPicker, completePicker } from "./picker.js";
@@ -53,7 +55,7 @@ import {
 } from "./html.js";
 import { handleMcp, handleMcpMetadata } from "./mcp.js";
 
-export interface Env extends ClerkEnv, ConnectEnv {
+export interface Env extends ClerkEnv, ConnectEnv, ChatEnv {
   CLERK_SECRET_KEY?: string;
   CLERK_PUBLISHABLE_KEY?: string;
   CLERK_AUTHORIZED_PARTIES?: string;
@@ -481,6 +483,15 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const repo = new HostedRepository(env.DB);
     try {
+      const chatResponse = await handleChat(request, env, repo);
+      if (chatResponse) return chatResponse;
+      if (
+        new URL(request.url).pathname.startsWith("/assets/") &&
+        env.ASSETS &&
+        request.method === "GET"
+      ) {
+        return env.ASSETS.fetch(request);
+      }
       return await handleRoute(request, env, repo);
     } catch {
       if (isBrowserGoogleCallback(request, new URL(request.url).pathname)) {

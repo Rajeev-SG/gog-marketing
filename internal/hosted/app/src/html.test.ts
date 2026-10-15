@@ -24,6 +24,16 @@ describe("hosted marketer UI reference states (#50)", () => {
     expect(html).toContain("Your Google marketing data");
   });
 
+  it("offers Chat in both desktop and mobile navigation without changing Google settings", () => {
+    const desktop = html.match(/<nav class="side-nav">([\s\S]*?)<\/nav>/)?.[1];
+    const mobile = html.match(/<nav class="bottom-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
+    for (const navigation of [desktop, mobile]) {
+      expect(navigation).toContain('href="/chat"');
+      expect(navigation).toContain('href="#google-data"');
+    }
+    expect(PRODUCT_CSS).toContain("grid-auto-flow: column; grid-auto-columns: 1fr");
+  });
+
   it("represents loading, partial failure, completion and duplicate feedback", () => {
     expect(html).toContain('id="loading-state"');
     expect(html).toContain("Finding your Google marketing assets…");
