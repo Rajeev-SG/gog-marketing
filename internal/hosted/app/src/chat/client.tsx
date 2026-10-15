@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAISDKRuntime } from "@assistant-ui/ai-sdk";
@@ -86,6 +86,28 @@ function Chat({
       onDisconnect();
     },
   });
+  const transport = useRef<{ readyState: number; reconnect: () => void } | null>(null);
+  const lastVerifiedReconnect = useRef(0);
+  const verifiedSession = useRef(session);
+  transport.current = agent;
+  useEffect(() => {
+    // A new session object comes only from a successful /api/chat/session check.
+    // The SDK deliberately stops after terminal closes; retry through its own transport
+    // only after server-side ownership/session verification has succeeded again.
+    // Let the SDK own its initial connect; recovery requires a subsequent verified response.
+    if (verifiedSession.current === session) return;
+    verifiedSession.current = session;
+    const socket = transport.current;
+    if (!socket) return;
+    setConnected(socket.readyState === WebSocket.OPEN);
+    if (
+      socket.readyState === WebSocket.CLOSED &&
+      Date.now() - lastVerifiedReconnect.current >= 3000
+    ) {
+      lastVerifiedReconnect.current = Date.now();
+      socket.reconnect();
+    }
+  }, [session]);
   const chat = useAgentChat({
     agent,
     onFinish: ({ message, isAbort, isError }) => {
