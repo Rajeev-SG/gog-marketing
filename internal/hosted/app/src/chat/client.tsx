@@ -493,13 +493,7 @@ function App() {
           </div>
           <h1>Workspace unavailable</h1>
           <p role="alert">{message}</p>
-          <button
-            type="button"
-            onClick={() => {
-              if (!clerk()?.loaded) window.location.reload();
-              else void loadSession();
-            }}
-          >
+          <button type="button" onClick={() => window.location.reload()}>
             Retry connection
           </button>
         </section>

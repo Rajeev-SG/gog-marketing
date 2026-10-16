@@ -173,7 +173,7 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   await page.addInitScript(() => {
     const listeners = new Set<(value: { session: { id: string } | null }) => void>();
     const fixtureClerk = {
-      loaded: true,
+      loaded: !sessionStorage.getItem("fixture:delay-clerk"),
       session: { id: "fixture" },
       addListener: (fn: (value: { session: { id: string } | null }) => void) => {
         listeners.add(fn);
@@ -268,4 +268,22 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
   expect(sockets).toHaveLength(socketsBeforeSwitch);
   await expect(page.getByRole("textbox", { name: "Message" })).toHaveCount(0);
+  // Clerk arriving after the attach timeout still gets a fresh listener on Retry.
+  authorized = true;
+  await page.evaluate(() => sessionStorage.setItem("fixture:delay-clerk", "1"));
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Retry connection" })).toBeVisible({
+    timeout: 15000,
+  });
+  await page.evaluate(() => {
+    Reflect.get(window, "Clerk").loaded = true;
+    sessionStorage.removeItem("fixture:delay-clerk");
+  });
+  await page.getByRole("button", { name: "Retry connection" }).click();
+  await expect(input).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, "__fixtureListeners")())).toBe(1);
+  authorized = false;
+  await page.evaluate(() => Reflect.get(window, "__fixtureSession")("changed-after-retry"));
+  await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
+  await expect(input).toHaveCount(0);
 });
