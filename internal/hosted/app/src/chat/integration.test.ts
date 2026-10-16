@@ -14,6 +14,9 @@ import {
 
 const origin = "https://test.example.com";
 const issuer = "https://oriented-wombat-2813.clerk.accounts.dev";
+const nativeRoute = vi.hoisted(() => vi.fn());
+vi.mock("agents", () => ({ routeAgentRequest: nativeRoute }));
+
 const owner = "user_chat_owner";
 let mf: Miniflare;
 let env: Env;
@@ -60,6 +63,7 @@ beforeAll(async () => {
   repo = new HostedRepository(db as unknown as Database);
 });
 afterEach(() => {
+  nativeRoute.mockReset();
   vi.unstubAllGlobals();
   assets.mockClear();
 });
@@ -327,5 +331,37 @@ describe("integrated chat identity boundary", () => {
     expect(
       (await worker.fetch(new Request(origin + "/about", { method: "POST" }), env)).status,
     ).toBe(405);
+  });
+  it("acknowledges only the SDK's completed destroy signal; unknown purge failures stay pending", async () => {
+    clerkSession();
+    const tenant = await repo.bootstrapTenant(owner);
+    const { ChatThreads } = await import("./threads.js");
+    const registry = new ChatThreads(repo, tenant.id);
+    const thread = (await registry.create("Purge acknowledgement"))!;
+    const del = async () =>
+      worker.fetch(
+        new Request(
+          await signed("/api/chat/threads/" + thread.id, owner, {
+            Origin: origin,
+            "Content-Type": "application/json",
+          }),
+          { method: "DELETE" },
+        ),
+        { ...env, Chat: {} as DurableObjectNamespace },
+      );
+    nativeRoute.mockRejectedValueOnce(new Error("Unexpected cleanup failure"));
+    expect((await del()).status).toBe(503);
+    expect((await registry.get(thread.id, true))?.purged).toBe(0);
+    expect(await registry.get(thread.id)).toBeNull();
+    nativeRoute.mockRejectedValueOnce(new Error("destroyed"));
+    expect((await del()).status).toBe(204);
+    expect((await registry.get(thread.id, true))?.purged).toBe(1);
+    expect(await registry.pendingDeletions()).not.toContainEqual({
+      id: thread.id,
+      draftKey: thread.conversation,
+    });
+    nativeRoute.mockClear();
+    expect((await del()).status).toBe(204);
+    expect(nativeRoute).not.toHaveBeenCalled();
   });
 });

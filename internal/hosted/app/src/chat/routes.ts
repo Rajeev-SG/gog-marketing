@@ -149,14 +149,28 @@ export async function handleChat(
             authenticatedHeaders,
           );
         const { routeAgentRequest } = await import("agents");
-        const purge = await routeAgentRequest(
-          new Request(new URL("/agents/chat/" + record.conversation + "/__thread-delete", url), {
-            method: "DELETE",
-            headers: { "x-gog-thread-tenant": outcome.session.tenant.id },
-          }),
-          env,
-        );
-        if (!purge?.ok)
+        let purged = false;
+        try {
+          const response = await routeAgentRequest(
+            new Request(new URL("/agents/chat/" + record.conversation + "/__thread-delete", url), {
+              method: "DELETE",
+              headers: { "x-gog-thread-tenant": outcome.session.tenant.id },
+            }),
+            env,
+          );
+          purged = response?.ok ?? false;
+        } catch (error) {
+          // agents@0.28 calls ctx.abort("destroyed") ONLY after awaited deleteAll.
+          // Production may deliver that terminal signal instead of the empty HTTP
+          // acknowledgement. It proves completed native teardown, not a failed purge.
+          // All other failures remain pending; never infer completion from generic 5xx.
+          const message =
+            typeof error === "object" && error !== null && "message" in error
+              ? error.message
+              : error;
+          purged = message === "destroyed";
+        }
+        if (!purged)
           return errorResponse(
             503,
             "Deletion is pending. Retry to finish removing this conversation.",
