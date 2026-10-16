@@ -469,6 +469,9 @@ function App() {
   const [signOutFailed, setSignOutFailed] = useState(false);
   const applySession = useCallback(
     (data: ChatSession) => {
+      // A recovered/new thread must not inherit a dialog whose DOM was unmounted.
+      setThreadAction(null);
+      setNavigationOpen(false);
       setSession(data);
       setGate("ready");
       setMessage("");

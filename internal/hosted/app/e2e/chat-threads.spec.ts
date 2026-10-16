@@ -164,9 +164,17 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete conversation", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
+  // Focus-triggered metadata recheck recovers without a document reload. The
+  // surviving thread must get a fresh, operable confirmation dialog.
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page).toHaveURL(new RegExp(createdId));
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   // The failed purge hides data immediately, but cleanup remains discoverable
   // after reload and a stale/deleted deep link, targeting the same immutable ID.
-  await page.reload();
+  await page.goto("/chat?thread=original");
   await expect(page).toHaveURL(new RegExp(createdId));
   await expect(page.getByRole("button", { name: /Finish deletion/ })).toBeVisible();
   await page.getByRole("button", { name: /Finish deletion/ }).click();
