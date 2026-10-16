@@ -50,6 +50,7 @@ import {
   renderCallbackNotice,
   renderHome,
   renderSignIn,
+  renderPublicAbout,
   securityHeaders,
   type HtmlConfig,
 } from "./html.js";
@@ -128,6 +129,17 @@ const GOOGLE_CONNECTION_ACTION =
 async function handleRoute(request: Request, env: Env, repo: HostedRepository): Promise<Response> {
   const url = new URL(request.url);
   const path = url.pathname;
+  if (path === "/about") {
+    if (request.method !== "GET" && request.method !== "HEAD")
+      return new Response("Method not allowed.", { status: 405, headers: { Allow: "GET, HEAD" } });
+    return new Response(request.method === "HEAD" ? null : renderPublicAbout(), {
+      headers: {
+        ...securityHeaders(),
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=300",
+      },
+    });
+  }
   const connectionAction = GOOGLE_CONNECTION_ACTION.exec(path);
 
   const metadataResponse = await handleMcpMetadata(request, env, path);

@@ -1,3 +1,5 @@
+import { PRODUCT_CSS } from "../product-css.generated.js";
+import { renderProductNavigation } from "../product-navigation.js";
 import { createRoot } from "react-dom/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAgent } from "agents/react";
@@ -14,7 +16,9 @@ import {
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import "./style.css";
 
+type ChatThread = { id: string; title: string; createdAt: string; updatedAt: string };
 type ChatSession = {
+  thread?: ChatThread;
   model: string;
   conversation: string;
   draftKey: string;
@@ -31,6 +35,7 @@ type ClerkWindow = typeof window & { Clerk?: ClerkLike };
 
 const SESSION_ENDPOINT = "/api/chat/session";
 const DRAFT_PREFIX = "gog:chat:draft:";
+const deletedDraftKeys = new Set<string>();
 const draftStorageKey = (draftKey: string) => DRAFT_PREFIX + draftKey;
 // Clerk is initialized by a script the server injects into the built HTML.
 const clerk = (): ClerkLike | null => (window as ClerkWindow).Clerk ?? null;
@@ -145,11 +150,17 @@ function AssistantMessage() {
 
 function Chat({
   session,
-  onSignOut,
+  onOpenThreads,
+  navigationOpen,
+  onRename,
+  onDelete,
   onDisconnect,
 }: {
   session: ChatSession;
-  onSignOut: () => void;
+  onOpenThreads: () => void;
+  navigationOpen: boolean;
+  onRename: () => void;
+  onDelete: () => void;
   onDisconnect: () => void;
 }) {
   const [connected, setConnected] = useState(false);
@@ -199,6 +210,7 @@ function Chat({
         .map((p) => p.text)
         .join(" ")
         .trim();
+      onDisconnect();
       setAnnouncement(
         "Gog replied: " +
           text.slice(0, 1200) +
@@ -231,7 +243,8 @@ function Chat({
       const text = composer.getState().text;
       setHasDraft(Boolean(text));
       try {
-        if (text) window.sessionStorage.setItem(draftKey, text);
+        if (deletedDraftKeys.has(draftKey)) window.sessionStorage.removeItem(draftKey);
+        else if (text) window.sessionStorage.setItem(draftKey, text);
         else window.sessionStorage.removeItem(draftKey);
         setDraftSaved(true);
       } catch {
@@ -278,13 +291,28 @@ function Chat({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <div className="app">
-        <header>
-          <a className="brand" href="/">
-            gog-marketing<span> / private assistant</span>
-          </a>
-          <button className="quiet" onClick={onSignOut}>
-            Sign out
-          </button>
+        <header className="chat-thread-bar">
+          <div className="thread-heading">
+            <button
+              type="button"
+              className="nav-toggle quiet"
+              aria-label="Open conversations"
+              aria-expanded={navigationOpen}
+              aria-controls="chat-sidebar"
+              onClick={onOpenThreads}
+            >
+              ☰
+            </button>
+            <h1>{session.thread?.title ?? "Original conversation"}</h1>
+          </div>
+          <div className="thread-actions">
+            <button type="button" className="quiet" onClick={onRename}>
+              Rename
+            </button>
+            <button type="button" className="quiet" onClick={onDelete}>
+              Delete
+            </button>
+          </div>
         </header>
         <div className="notice" role="note">
           Google tools use your enabled permissions. Writes need your approval. Open{" "}
@@ -391,14 +419,50 @@ function App() {
   const authGeneration = useRef(0);
   const clerkSession = useRef<string | null | undefined>(undefined);
   const [session, setSession] = useState<ChatSession | null>(null);
+  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [threadError, setThreadError] = useState("");
+  const [threadBusy, setThreadBusy] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(false);
+  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
+  const [threadAction, setThreadAction] = useState<"rename" | "delete" | null>(null);
+  const [threadName, setThreadName] = useState("");
+  const dialog = useRef<HTMLDialogElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const selectedThread = () => new URL(window.location.href).searchParams.get("thread");
+  const sessionEndpoint = () =>
+    SESSION_ENDPOINT + (selectedThread() ? "?thread=" + encodeURIComponent(selectedThread()!) : "");
+  const refreshThreads = useCallback(async () => {
+    const generation = authGeneration.current;
+    const identity = activeClerkSessionId();
+    try {
+      const r = await fetch("/api/chat/threads", { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) throw new Error("Thread list unavailable");
+      const data = (await r.json()) as { threads: ChatThread[] };
+      if (generation === authGeneration.current && identity === activeClerkSessionId()) {
+        setThreads(data.threads);
+        setThreadError("");
+      }
+    } catch {
+      if (generation === authGeneration.current)
+        setThreadError(
+          "Could not load conversations. Your saved chats are kept. Try refreshing the list.",
+        );
+    }
+  }, []);
   const [gate, setGate] = useState<SessionGate>("loading");
   const [message, setMessage] = useState("");
   const [signOutFailed, setSignOutFailed] = useState(false);
-  const applySession = useCallback((data: ChatSession) => {
-    setSession(data);
-    setGate("ready");
-    setMessage("");
-  }, []);
+  const applySession = useCallback(
+    (data: ChatSession) => {
+      setSession(data);
+      setGate("ready");
+      setMessage("");
+      if (data.thread)
+        window.history.replaceState(null, "", "/chat?thread=" + encodeURIComponent(data.thread.id));
+      void refreshThreads();
+    },
+    [refreshThreads],
+  );
   const signOutView = useCallback((notice = "") => {
     authGeneration.current++;
     setSession(null);
@@ -421,7 +485,7 @@ function App() {
     setGate("loading");
     setMessage("");
     try {
-      const r = await fetch(SESSION_ENDPOINT, { signal: AbortSignal.timeout(10000) });
+      const r = await fetch(sessionEndpoint(), { signal: AbortSignal.timeout(10000) });
       if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
       if (r.ok) {
         const data = (await r.json()) as ChatSession;
@@ -449,7 +513,7 @@ function App() {
       return;
     }
     try {
-      const r = await fetch(SESSION_ENDPOINT, { signal: AbortSignal.timeout(10000) });
+      const r = await fetch(sessionEndpoint(), { signal: AbortSignal.timeout(10000) });
       if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
       if (r.ok) {
         const data = (await r.json()) as ChatSession;
@@ -463,10 +527,21 @@ function App() {
             return current;
           // Same conversation: refresh fields in place, keeping the socket mounted.
           if (current.conversation === data.conversation && current.draftKey === data.draftKey)
-            return { ...current, model: data.model, expiresAt: data.expiresAt };
+            return {
+              ...current,
+              model: data.model,
+              expiresAt: data.expiresAt,
+              thread: data.thread,
+            };
           return data;
         });
         setMessage("");
+        void refreshThreads();
+      } else if (r.status === 404) {
+        authGeneration.current++;
+        window.history.replaceState(null, "", "/chat");
+        setSession(null);
+        void loadSession();
       } else if (r.status === 401) {
         signOutView(
           "Your session expired or was signed out. Sign in again to continue your saved conversation and draft.",
@@ -477,7 +552,7 @@ function App() {
     } catch {
       /* Keep the open conversation; the socket reconnects independently. */
     }
-  }, [signOutView, ownerOnlyView]);
+  }, [signOutView, ownerOnlyView, loadSession, refreshThreads]);
   const signOut = useCallback(async () => {
     // Close the socket first; do not claim the server session was revoked if Clerk fails.
     signOutView();
@@ -557,6 +632,99 @@ function App() {
       window.removeEventListener("focus", onFocus);
     };
   }, [session, recheck]);
+  const openThread = useCallback(
+    (id?: string, replace = false) => {
+      authGeneration.current++;
+      const url = id ? "/chat?thread=" + encodeURIComponent(id) : "/chat";
+      if (replace) window.history.replaceState(null, "", url);
+      else window.history.pushState(null, "", url);
+      setNavigationOpen(false);
+      setSession(null);
+      setThreadAction(null);
+      void loadSession();
+    },
+    [loadSession],
+  );
+  useEffect(() => {
+    const onPop = () =>
+      openThread(new URL(window.location.href).searchParams.get("thread") ?? undefined, true);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [openThread]);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 760px)");
+    const update = () => setMobile(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (!navigationOpen || !mobile) return;
+    sidebar.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setNavigationOpen(false);
+    };
+    window.addEventListener("keydown", escape);
+    return () => {
+      window.removeEventListener("keydown", escape);
+      document.querySelector<HTMLButtonElement>("[aria-label='Open conversations']")?.focus();
+    };
+  }, [navigationOpen, mobile]);
+  useEffect(() => {
+    if (threadAction && dialog.current && !dialog.current.open) dialog.current.showModal();
+    if (!threadAction && dialog.current?.open) dialog.current.close();
+  }, [threadAction]);
+  const mutateThread = async (action: "new" | "rename" | "delete") => {
+    if (threadBusy) return;
+    const generation = authGeneration.current;
+    const identity = activeClerkSessionId();
+    const id = session?.thread?.id ?? "original";
+    setThreadBusy(true);
+    setThreadError("");
+    try {
+      const r = await fetch(
+        "/api/chat/threads" + (action === "new" ? "" : "/" + encodeURIComponent(id)),
+        {
+          method: action === "new" ? "POST" : action === "rename" ? "PATCH" : "DELETE",
+          headers: { "Content-Type": "application/json" },
+          ...(action !== "delete"
+            ? { body: JSON.stringify({ title: action === "new" ? "New chat" : threadName.trim() }) }
+            : {}),
+          signal: AbortSignal.timeout(30000),
+        },
+      );
+      if (!r.ok) throw new Error("Conversation action failed");
+      if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
+      if (action === "delete") {
+        try {
+          if (session) {
+            deletedDraftKeys.add(draftStorageKey(session.draftKey));
+            sessionStorage.removeItem(draftStorageKey(session.draftKey));
+          }
+        } catch {
+          /* Storage can be disabled. */
+        }
+        openThread(undefined, true);
+      } else {
+        const data = (await r.json()) as { thread: ChatThread };
+        if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
+        if (action === "new") openThread(data.thread.id);
+        else {
+          setSession((current) => (current ? { ...current, thread: data.thread } : current));
+          setThreadAction(null);
+          void refreshThreads();
+        }
+      }
+    } catch {
+      if (generation === authGeneration.current)
+        setThreadError(
+          "Could not " +
+            (action === "new" ? "create" : action) +
+            " the conversation. Refresh the list before retrying.",
+        );
+    } finally {
+      setThreadBusy(false);
+    }
+  };
   if (gate === "loading")
     return (
       <div className="login">
@@ -618,7 +786,12 @@ function App() {
               Retry sign out
             </button>
           )}
-          <a className="signin-link" href="/chat">
+          <a
+            className="signin-link"
+            href={
+              selectedThread() ? "/chat?thread=" + encodeURIComponent(selectedThread()!) : "/chat"
+            }
+          >
             Sign in to continue
           </a>
           <small>Access is restricted. Provider credentials stay on the server.</small>
@@ -626,7 +799,179 @@ function App() {
       </main>
     );
   return (
-    <Chat key={session.conversation} session={session} onSignOut={signOut} onDisconnect={recheck} />
+    <>
+      <style>{PRODUCT_CSS}</style>
+      <div className={"app-shell chat-shell" + (navigationOpen ? " nav-open" : "")}>
+        <aside
+          className="sidebar"
+          id="chat-sidebar"
+          ref={sidebar}
+          inert={mobile && !navigationOpen}
+          aria-label="Application navigation and conversations"
+          onKeyDown={(event) => {
+            if (!mobile || !navigationOpen || event.key !== "Tab") return;
+            const elements = Array.from(
+              sidebar.current?.querySelectorAll<HTMLElement>("a,button:not(:disabled)") ?? [],
+            );
+            const first = elements[0],
+              last = elements.at(-1);
+            if (event.shiftKey && document.activeElement === first) {
+              event.preventDefault();
+              last?.focus();
+            }
+            if (!event.shiftKey && document.activeElement === last) {
+              event.preventDefault();
+              first?.focus();
+            }
+          }}
+        >
+          <button
+            className="drawer-close quiet"
+            type="button"
+            aria-label="Close conversations"
+            onClick={() => setNavigationOpen(false)}
+          >
+            Close ×
+          </button>
+          <a className="sidebar-brand" href="/">
+            <span className="brand-mark">g</span>
+            <span>gog-marketing</span>
+          </a>
+          <div className="sidebar-rule" />
+          <nav
+            className="side-nav"
+            aria-label="Application navigation"
+            dangerouslySetInnerHTML={{ __html: renderProductNavigation("chat") }}
+          />
+          <section className="thread-list" aria-label="Saved conversations">
+            <div className="thread-list-heading">
+              <h2>Conversations</h2>
+              <button type="button" onClick={() => void mutateThread("new")} disabled={threadBusy}>
+                New chat
+              </button>
+            </div>
+            <ul>
+              {threads.map((thread) => (
+                <li key={thread.id}>
+                  <a
+                    href={"/chat?thread=" + encodeURIComponent(thread.id)}
+                    aria-current={session.thread?.id === thread.id ? "page" : undefined}
+                    onClick={(event) => {
+                      if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      )
+                        return;
+                      event.preventDefault();
+                      openThread(thread.id);
+                    }}
+                    title={thread.title}
+                  >
+                    {thread.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="quiet" onClick={() => void refreshThreads()}>
+              Refresh conversations
+            </button>
+          </section>
+        </aside>
+        {navigationOpen && mobile && (
+          <button
+            className="nav-overlay"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => setNavigationOpen(false)}
+          />
+        )}
+        <div className="app-frame" inert={navigationOpen && mobile}>
+          <div className="chat-account-bar">
+            <span>Private workspace</span>
+            <button type="button" className="quiet" onClick={() => void signOut()}>
+              Sign out
+            </button>
+          </div>
+          {threadError && (
+            <p role="alert" className="thread-error">
+              {threadError}
+            </p>
+          )}
+          <Chat
+            key={session.conversation}
+            session={session}
+            navigationOpen={navigationOpen}
+            onOpenThreads={() => setNavigationOpen(true)}
+            onRename={() => {
+              setThreadName(session.thread?.title ?? "Original conversation");
+              setThreadAction("rename");
+            }}
+            onDelete={() => setThreadAction("delete")}
+            onDisconnect={recheck}
+          />
+        </div>
+        <nav
+          className="bottom-nav"
+          inert={navigationOpen && mobile}
+          aria-label="Mobile navigation"
+          dangerouslySetInnerHTML={{ __html: renderProductNavigation("chat") }}
+        />
+        <dialog
+          ref={dialog}
+          aria-labelledby="thread-action-heading"
+          onCancel={(event) => {
+            if (threadBusy) event.preventDefault();
+            else setThreadAction(null);
+          }}
+        >
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (threadAction) void mutateThread(threadAction);
+            }}
+          >
+            <h2 id="thread-action-heading">
+              {threadAction === "rename" ? "Rename conversation" : "Delete conversation?"}
+            </h2>
+            {threadAction === "rename" ? (
+              <label>
+                Conversation name
+                <input
+                  value={threadName}
+                  onChange={(event) => setThreadName(event.target.value)}
+                  maxLength={100}
+                  required
+                />
+              </label>
+            ) : (
+              <p>
+                This permanently removes this conversation, saved replies and pending approvals.
+                Other conversations are kept.
+              </p>
+            )}
+            {threadError && <p role="alert">{threadError}</p>}
+            <div className="approval-actions">
+              <button
+                type="submit"
+                disabled={threadBusy || (threadAction === "rename" && !threadName.trim())}
+              >
+                {threadBusy
+                  ? "Saving…"
+                  : threadAction === "rename"
+                    ? "Save name"
+                    : "Delete conversation"}
+              </button>
+              <button type="button" disabled={threadBusy} onClick={() => setThreadAction(null)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </dialog>
+      </div>
+    </>
   );
 }
 

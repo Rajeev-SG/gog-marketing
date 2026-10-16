@@ -1,0 +1,337 @@
+{
+  "checkedAt": "2026-10-16",
+  "project": "gog-marketing-prod",
+  "audience": "External",
+  "publishing": "Testing",
+  "priorityServices": [
+    "calendar",
+    "drive",
+    "drivelabels",
+    "docs",
+    "slides",
+    "tasks",
+    "sheets",
+    "forms",
+    "appscript",
+    "analytics",
+    "searchconsole",
+    "bigquery",
+    "tagmanager"
+  ],
+  "requestedScopes": [
+    {
+      "scope": "https://www.googleapis.com/auth/analytics.edit",
+      "consoleClassification": "sensitive",
+      "services": [
+        "analytics"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/analytics.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "analytics"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/bigquery",
+      "consoleClassification": "sensitive",
+      "services": [
+        "bigquery"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/calendar",
+      "consoleClassification": "sensitive",
+      "services": [
+        "calendar"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/calendar.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "calendar"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/documents",
+      "consoleClassification": "sensitive",
+      "services": [
+        "docs"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/documents.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "docs"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/drive.file",
+      "consoleClassification": "non_sensitive",
+      "services": [
+        "drive",
+        "docs",
+        "slides",
+        "sheets",
+        "forms"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/drive.labels.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "drivelabels"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/forms.body",
+      "consoleClassification": "sensitive",
+      "services": [
+        "forms"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/forms.body.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "forms"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/forms.responses.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "forms"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/presentations",
+      "consoleClassification": "sensitive",
+      "services": [
+        "slides"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/presentations.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "slides"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/script.deployments",
+      "consoleClassification": "sensitive",
+      "services": [
+        "appscript"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/script.deployments.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "appscript"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/script.processes",
+      "consoleClassification": "sensitive",
+      "services": [
+        "appscript"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/script.projects",
+      "consoleClassification": "sensitive",
+      "services": [
+        "appscript"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/script.projects.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "appscript"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/spreadsheets",
+      "consoleClassification": "sensitive",
+      "services": [
+        "sheets"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/spreadsheets.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "sheets"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tagmanager.delete.containers",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tagmanager"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tagmanager.edit.containers",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tagmanager"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tagmanager"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tagmanager.publish",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tagmanager"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tagmanager.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tagmanager"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tasks",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tasks"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/tasks.readonly",
+      "consoleClassification": "sensitive",
+      "services": [
+        "tasks"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/userinfo.email",
+      "consoleClassification": "non_sensitive",
+      "services": [],
+      "use": "Identity and selected-account attribution"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/userinfo.profile",
+      "consoleClassification": "non_sensitive",
+      "services": [],
+      "use": "Identity and selected-account attribution"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/webmasters",
+      "consoleClassification": "non_sensitive",
+      "services": [
+        "searchconsole"
+      ],
+      "use": "Optional explicitly selected write operations"
+    },
+    {
+      "scope": "https://www.googleapis.com/auth/webmasters.readonly",
+      "consoleClassification": "non_sensitive",
+      "services": [
+        "searchconsole"
+      ],
+      "use": "User-requested reads for explicitly enabled accounts/resources"
+    },
+    {
+      "scope": "openid",
+      "consoleClassification": "non_sensitive",
+      "services": [],
+      "use": "Identity and selected-account attribution"
+    }
+  ],
+  "consoleScopesOutsidePriority": [
+    "https://www.googleapis.com/auth/adsense.readonly",
+    "https://www.googleapis.com/auth/chat.memberships",
+    "https://www.googleapis.com/auth/chat.memberships.readonly",
+    "https://www.googleapis.com/auth/chat.messages.create",
+    "https://www.googleapis.com/auth/chat.messages.reactions.create",
+    "https://www.googleapis.com/auth/chat.messages.reactions.readonly",
+    "https://www.googleapis.com/auth/chat.spaces",
+    "https://www.googleapis.com/auth/chat.spaces.readonly",
+    "https://www.googleapis.com/auth/chat.users.readstate.readonly",
+    "https://www.googleapis.com/auth/classroom.announcements",
+    "https://www.googleapis.com/auth/classroom.announcements.readonly",
+    "https://www.googleapis.com/auth/classroom.courses",
+    "https://www.googleapis.com/auth/classroom.courses.readonly",
+    "https://www.googleapis.com/auth/classroom.coursework.me",
+    "https://www.googleapis.com/auth/classroom.coursework.students",
+    "https://www.googleapis.com/auth/classroom.courseworkmaterials",
+    "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly",
+    "https://www.googleapis.com/auth/classroom.guardianlinks.students",
+    "https://www.googleapis.com/auth/classroom.guardianlinks.students.readonly",
+    "https://www.googleapis.com/auth/classroom.profile.emails",
+    "https://www.googleapis.com/auth/classroom.profile.photos",
+    "https://www.googleapis.com/auth/classroom.rosters",
+    "https://www.googleapis.com/auth/classroom.rosters.readonly",
+    "https://www.googleapis.com/auth/classroom.student-submissions.me.readonly",
+    "https://www.googleapis.com/auth/classroom.student-submissions.students.readonly",
+    "https://www.googleapis.com/auth/classroom.topics",
+    "https://www.googleapis.com/auth/classroom.topics.readonly",
+    "https://www.googleapis.com/auth/cloud-identity.groups.readonly",
+    "https://www.googleapis.com/auth/contacts",
+    "https://www.googleapis.com/auth/contacts.other.readonly",
+    "https://www.googleapis.com/auth/contacts.readonly",
+    "https://www.googleapis.com/auth/directory.readonly",
+    "https://www.googleapis.com/auth/meetings.space.created",
+    "https://www.googleapis.com/auth/meetings.space.readonly",
+    "https://www.googleapis.com/auth/meetings.space.settings",
+    "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
+    "https://www.googleapis.com/auth/youtube",
+    "https://www.googleapis.com/auth/youtube.readonly"
+  ],
+  "note": "Matches the current 13-service consent surface and canonical identity scopes; not a Google approval or proof that every scope is the narrowest possible.",
+  "consoleScopeCountsBefore": {
+    "nonSensitive": 22,
+    "sensitive": 49,
+    "restricted": 0
+  },
+  "consoleScopeCounts": {
+    "nonSensitive": 6,
+    "sensitive": 27,
+    "restricted": 0
+  },
+  "configurationStatus": "Saved in Google Auth Platform, then reloaded and verified 16 October 2026. Audience remains External/Testing; verification not submitted."
+}

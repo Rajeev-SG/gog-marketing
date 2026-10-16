@@ -476,3 +476,198 @@ footer {
   opacity: 0.6;
   cursor: wait;
 }
+
+/* Chat uses the same generated product shell/navigation as Google settings. */
+.chat-shell {
+  background: var(--surface-page);
+  color: var(--text);
+}
+.chat-shell .app-frame {
+  height: 100dvh;
+  min-height: 0;
+}
+.chat-shell .app {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0 24px;
+  height: auto;
+  flex: 1;
+  min-height: 0;
+}
+.chat-account-bar {
+  height: 58px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-card);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.chat-shell .chat-thread-bar {
+  padding: 12px 0;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.thread-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.thread-heading h1 {
+  font-size: 18px;
+  line-height: 1.4;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.thread-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+.chat-shell .sidebar {
+  overflow-y: auto;
+}
+.thread-list {
+  margin-top: 24px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.thread-list-heading h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.thread-list-heading button {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-card);
+  color: var(--action);
+}
+.thread-list ul {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  overflow-y: auto;
+}
+.thread-list li {
+  min-width: 0;
+}
+.thread-list a {
+  display: block;
+  min-height: 44px;
+  padding: 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  text-decoration: none;
+}
+.thread-list a:hover {
+  background: var(--surface-sunken);
+}
+.thread-list a[aria-current="page"] {
+  color: var(--action);
+  background: var(--action-soft);
+  font-weight: 600;
+}
+.thread-error {
+  padding: 10px 24px;
+  margin: 0;
+  background: var(--status-warn-soft);
+  color: var(--status-warn);
+  font-size: 13px;
+}
+.drawer-close {
+  display: none;
+}
+.nav-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #15213766;
+  border: 0;
+  width: 100%;
+  height: 100%;
+}
+.chat-shell dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  background: var(--surface-card);
+}
+.chat-shell dialog::backdrop {
+  background: #15213766;
+}
+.chat-shell dialog form {
+  display: grid;
+  gap: 16px;
+}
+.chat-shell dialog h2,
+.chat-shell dialog p {
+  margin: 0;
+}
+.chat-shell dialog label {
+  display: grid;
+  gap: 8px;
+}
+.chat-shell dialog input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 8px;
+}
+@media (max-width: 760px) {
+  .chat-shell {
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+  }
+  .chat-shell .app-frame {
+    height: calc(100dvh - 66px - env(safe-area-inset-bottom, 0px));
+  }
+  .chat-shell .app {
+    padding: 0 12px;
+  }
+  .chat-shell .sidebar {
+    z-index: 60;
+  }
+  .chat-shell .drawer-close {
+    display: block;
+    margin-bottom: 12px;
+    text-align: right;
+  }
+  .chat-shell .chat-thread-bar {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .thread-heading {
+    flex: 1;
+  }
+  .thread-heading h1 {
+    max-width: 48vw;
+    font-size: 16px;
+  }
+  .thread-actions {
+    margin-left: auto;
+  }
+  .chat-account-bar {
+    padding: 0 12px;
+    height: 48px;
+  }
+}

@@ -1,3 +1,4 @@
+import { ChatThreads, publicThread, threadTitle, validThreadId } from "./threads.js";
 /** Same-origin chat routes. Existing product, Google and MCP routes fall through unchanged. */
 import type { HostedRepository } from "../../../state/src/repository.js";
 import {
@@ -7,13 +8,7 @@ import {
   securityHeaders,
   type HtmlConfig,
 } from "../html.js";
-import {
-  authenticateChatOwner,
-  chatConversationDigest,
-  chatDraftKey,
-  chatModelIdentifier,
-  type ChatEnv,
-} from "./access.js";
+import { authenticateChatOwner, chatModelIdentifier, type ChatEnv } from "./access.js";
 
 function privateHeaders(env: ChatEnv, request: Request, initial?: Headers): Headers {
   const domain = deriveClerkDomain(env.CLERK_PUBLISHABLE_KEY ?? "");
@@ -71,14 +66,16 @@ export async function handleChat(
   const page = url.pathname === "/chat" || url.pathname === "/chat/";
   const metadata = url.pathname === "/api/chat/session";
   // Authenticate known chat paths before comparing their caller-supplied name.
+  const collection = url.pathname === "/api/chat/threads";
+  const threadPath = /^\/api\/chat\/threads\/([^/]+)$/.exec(url.pathname);
   const agent = /^\/agents\/chat\/([^/]+)(\/get-messages)?$/.exec(url.pathname);
-  if (!page && !metadata && !agent) {
-    if (url.pathname.startsWith("/agents/"))
+  if (!page && !metadata && !agent && !collection && !threadPath) {
+    if (url.pathname.startsWith("/agents/") || url.pathname.startsWith("/api/chat/"))
       return errorResponse(404, "Not found.", false, privateHeaders(env, request));
     return null;
   }
   const headers = privateHeaders(env, request);
-  if (request.method !== "GET") {
+  if (request.method !== "GET" && !collection && !threadPath) {
     headers.set("Allow", "GET");
     return errorResponse(405, "Method not allowed.", page, headers);
   }
@@ -103,26 +100,121 @@ export async function handleChat(
   if (outcome.kind === "unauthenticated") {
     if (!page) return errorResponse(401, "Sign in to continue.", false, headers);
     headers.set("Content-Type", "text/html; charset=utf-8");
+    const selected = url.searchParams.get("thread");
+    const returnTo = selected && validThreadId(selected) ? "/chat?thread=" + selected : "/chat";
     return new Response(
-      renderSignIn(config(env)).replace("fallbackRedirectUrl: '/'", "fallbackRedirectUrl: '/chat'"),
+      renderSignIn(config(env)).replace(
+        "fallbackRedirectUrl: '/'",
+        "fallbackRedirectUrl: '" + returnTo + "'",
+      ),
       { headers },
     );
   }
   const authenticatedHeaders = privateHeaders(env, request, outcome.headers);
-  const conversation = await chatConversationDigest(outcome.session.tenant.id);
+  const registry = new ChatThreads(repo, outcome.session.tenant.id);
+  if (collection || threadPath) {
+    if (
+      request.method !== "GET" &&
+      (request.headers.get("Origin") !== url.origin ||
+        !config(env).authorizedParties.includes(url.origin))
+    )
+      return errorResponse(403, "This request could not be verified.", false, authenticatedHeaders);
+    if (
+      request.method !== "GET" &&
+      !request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json")
+    )
+      return errorResponse(415, "JSON is required.", false, authenticatedHeaders);
+    const id = threadPath?.[1];
+    if (id && !validThreadId(id))
+      return errorResponse(404, "Conversation not found.", false, authenticatedHeaders);
+    if (collection && request.method === "GET")
+      return Response.json(
+        { threads: (await registry.list()).map(publicThread) },
+        { headers: authenticatedHeaders },
+      );
+    if (id && request.method === "DELETE") {
+      const record = await registry.get(id, true);
+      if (!record)
+        return errorResponse(404, "Conversation not found.", false, authenticatedHeaders);
+      await registry.tombstone(id);
+      if (!record.purged) {
+        if (!env.Chat)
+          return errorResponse(
+            503,
+            "Deletion is pending. Retry to finish removing this conversation.",
+            false,
+            authenticatedHeaders,
+          );
+        const { routeAgentRequest } = await import("agents");
+        const purge = await routeAgentRequest(
+          new Request(new URL("/agents/chat/" + record.conversation + "/__thread-delete", url), {
+            method: "DELETE",
+            headers: { "x-gog-thread-tenant": outcome.session.tenant.id },
+          }),
+          env,
+        );
+        if (!purge?.ok)
+          return errorResponse(
+            503,
+            "Deletion is pending. Retry to finish removing this conversation.",
+            false,
+            authenticatedHeaders,
+          );
+        await registry.markPurged(id);
+      }
+      return new Response(null, { status: 204, headers: authenticatedHeaders });
+    }
+    if ((collection && request.method === "POST") || (id && request.method === "PATCH")) {
+      if (!request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json"))
+        return errorResponse(415, "JSON is required.", false, authenticatedHeaders);
+      let title: string;
+      try {
+        const body = (await request.json()) as Record<string, unknown>;
+        if (!body || Array.isArray(body) || Object.keys(body).some((k) => k !== "title"))
+          throw new Error();
+        title = threadTitle(body.title ?? (collection ? "New chat" : null));
+      } catch {
+        return errorResponse(
+          400,
+          "Use a conversation name of 1–100 characters.",
+          false,
+          authenticatedHeaders,
+        );
+      }
+      const record = collection ? await registry.create(title) : await registry.rename(id!, title);
+      if (!record)
+        return errorResponse(
+          collection ? 429 : 404,
+          collection
+            ? "Conversation limit reached (100). Delete a conversation first."
+            : "Conversation not found.",
+          false,
+          authenticatedHeaders,
+        );
+      return Response.json(
+        { thread: publicThread(record) },
+        { status: collection ? 201 : 200, headers: authenticatedHeaders },
+      );
+    }
+    return errorResponse(405, "Method not allowed.", false, authenticatedHeaders);
+  }
   if (metadata) {
+    const record = await registry.resolve(url.searchParams.get("thread"));
+    if (!record) return errorResponse(404, "Conversation not found.", false, authenticatedHeaders);
     return Response.json(
       {
         model: chatModelIdentifier(env),
-        conversation,
-        draftKey: await chatDraftKey(outcome.session.tenant.id),
+        conversation: record.conversation,
+        draftKey: record.conversation,
+        thread: publicThread(record),
         expiresAt: outcome.session.expiresAt,
       },
       { headers: authenticatedHeaders },
     );
   }
   if (agent) {
-    if (agent[1] !== conversation)
+    await registry.ensureOriginal();
+    if (!(await registry.byConversation(agent[1])))
       return errorResponse(404, "Conversation not found.", false, authenticatedHeaders);
     if (!env.Chat) return errorResponse(503, "Chat is not available.", false, authenticatedHeaders);
     const { routeAgentRequest } = await import("agents");
