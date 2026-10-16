@@ -78,7 +78,10 @@ attention, partial-failure, onboarding, feedback, and mobile states.
 Open **Chat** at `/chat` from the product navigation using the same Clerk
 sign-in. Chat is initially restricted to the configured owner and uses a
 server-side OpenRouter key. It starts a fresh saved conversation; the old
-standalone app and its history are preserved.
+standalone app and its history are preserved. Shared navigation links Chat and
+Google settings on desktop/mobile. Chat includes independent saved conversations,
+New chat, rename/delete and per-thread drafts; the original conversation remains
+available without copying its history.
 
 Chat can use a bounded starter set of the existing Google tools, but only for
 accounts, exact tools and resources you have enabled in **Google settings**.

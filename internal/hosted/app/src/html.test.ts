@@ -2,7 +2,12 @@ import vm from "node:vm";
 
 import { describe, expect, it } from "vitest";
 
-import { consentServiceIds, deferredConsentServiceIds, renderHome } from "./html.js";
+import {
+  consentServiceIds,
+  deferredConsentServiceIds,
+  renderHome,
+  renderPublicAbout,
+} from "./html.js";
 import { HOSTED_SERVICES } from "./scopes.js";
 import { PRODUCT_CSS } from "./product-css.generated.js";
 
@@ -29,7 +34,7 @@ describe("hosted marketer UI reference states (#50)", () => {
     const mobile = html.match(/<nav class="bottom-nav"[^>]*>([\s\S]*?)<\/nav>/)?.[1];
     for (const navigation of [desktop, mobile]) {
       expect(navigation).toContain('href="/chat"');
-      expect(navigation).toContain('href="#google-data"');
+      expect(navigation).toContain('href="/#google-data"');
     }
     expect(PRODUCT_CSS).toContain("grid-auto-flow: column; grid-auto-columns: 1fr");
   });
@@ -387,4 +392,12 @@ describe("startConnection error handling (executed script)", () => {
     expect(run.calls).toHaveLength(2);
     expect(run.assigned).toEqual(["https://x.test", "https://again.test"]);
   });
+});
+
+it("provides a factual public homepage without presenting draft legal policy as approved", () => {
+  const page = renderPublicAbout();
+  expect(page).toContain("Google tools and private chat");
+  expect(page).toContain("not a claim of Google approval");
+  expect(page).not.toContain("clerk.browser.js");
+  expect(page).toContain('href="/"');
 });

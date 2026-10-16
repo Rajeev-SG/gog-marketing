@@ -14,6 +14,9 @@ import {
 
 const origin = "https://test.example.com";
 const issuer = "https://oriented-wombat-2813.clerk.accounts.dev";
+const nativeRoute = vi.hoisted(() => vi.fn());
+vi.mock("agents", () => ({ routeAgentRequest: nativeRoute }));
+
 const owner = "user_chat_owner";
 let mf: Miniflare;
 let env: Env;
@@ -44,9 +47,9 @@ beforeAll(async () => {
     }),
   );
   const db = await mf.getD1Database("DB");
-  for (const statement of splitMigrationStatements(loadMigrationSql("0001_initial_schema.sql"))) {
-    await db.prepare(statement).run();
-  }
+  for (const file of ["0001_initial_schema.sql", "0007_chat_threads.sql"])
+    for (const statement of splitMigrationStatements(loadMigrationSql(file)))
+      await db.prepare(statement).run();
   env = {
     DB: db as unknown as D1Database,
     CLERK_SECRET_KEY: "sk_test_chat_fixture_only",
@@ -60,6 +63,7 @@ beforeAll(async () => {
   repo = new HostedRepository(db as unknown as Database);
 });
 afterEach(() => {
+  nativeRoute.mockReset();
   vi.unstubAllGlobals();
   assets.mockClear();
 });
@@ -235,5 +239,129 @@ describe("integrated chat identity boundary", () => {
     expect(assets).toHaveBeenCalledTimes(1);
     expect(new URL(assets.mock.calls[0]![0].url).pathname).toBe("/chat.html");
     expect((await worker.fetch(new Request(origin + "/chat.html"), env)).status).toBe(404);
+  });
+  it("authenticates thread CRUD, blocks CSRF/forged ownership and keeps failed purge fail-closed", async () => {
+    clerkSession();
+    const mutate = async (path: string, method: string, body: unknown, originHeader = origin) => {
+      const base = await signed(path, owner, {
+        Origin: originHeader,
+        "Content-Type": "application/json",
+      });
+      return worker.fetch(
+        new Request(base, {
+          method,
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        }),
+        env,
+      );
+    };
+    expect((await worker.fetch(new Request(origin + "/api/chat/threads"), env)).status).toBe(401);
+    expect((await worker.fetch(await signed("/api/chat/threads", "other-user"), env)).status).toBe(
+      403,
+    );
+    expect(
+      (await mutate("/api/chat/threads", "POST", { title: "bad" }, "https://evil.example")).status,
+    ).toBe(403);
+    expect(
+      (await mutate("/api/chat/threads", "POST", { title: "bad", tenantId: "forged" })).status,
+    ).toBe(400);
+    const response = await mutate("/api/chat/threads", "POST", { title: "Thread API test" });
+    expect(response.status).toBe(201);
+    const { thread } = (await response.json()) as { thread: { id: string } };
+    const meta = await worker.fetch(await signed("/api/chat/session?thread=" + thread.id), env);
+    expect(meta.status).toBe(200);
+    const value = (await meta.json()) as {
+      conversation: string;
+      draftKey: string;
+      thread: { title: string };
+    };
+    expect(value.thread.title).toBe("Thread API test");
+    expect(value.draftKey).toBe(value.conversation);
+    const rename = await mutate("/api/chat/threads/" + thread.id, "PATCH", {
+      title: "Renamed API test",
+    });
+    expect(rename.status).toBe(200);
+    const { ChatThreads } = await import("./threads.js");
+    const other = await repo.bootstrapTenant("other-thread-owner");
+    const foreign = (await new ChatThreads(repo, other.id).create())!;
+    expect(
+      (await worker.fetch(await signed("/api/chat/session?thread=" + foreign.id), env)).status,
+    ).toBe(404);
+    expect(
+      (
+        await worker.fetch(
+          await signed("/agents/chat/" + foreign.conversation + "/get-messages"),
+          env,
+        )
+      ).status,
+    ).toBe(404);
+    // This fixture deliberately has no DO namespace: cleanup must report pending,
+    // yet the index must already deny history/upgrades/inference and permit retry.
+    expect((await mutate("/api/chat/threads/" + thread.id, "DELETE", undefined)).status).toBe(503);
+    const listing = (await (await worker.fetch(await signed("/api/chat/threads"), env)).json()) as {
+      pendingDeletions: { id: string; draftKey: string }[];
+    };
+    expect(listing.pendingDeletions).toContainEqual({
+      id: thread.id,
+      draftKey: value.conversation,
+    });
+    expect(
+      (await worker.fetch(await signed("/api/chat/session?thread=" + thread.id), env)).status,
+    ).toBe(404);
+    expect((await mutate("/api/chat/threads/" + thread.id, "DELETE", undefined)).status).toBe(503);
+  });
+  it("preserves a valid thread deep link through sign-in without reflecting unsafe input", async () => {
+    const id = "00000000-0000-4000-8000-000000000001";
+    const response = await worker.fetch(new Request(origin + "/chat?thread=" + id), env);
+    expect(await response.text()).toContain("fallbackRedirectUrl: '/chat?thread=" + id + "'");
+    const invalid = await worker.fetch(
+      new Request(origin + "/chat?thread=" + encodeURIComponent("');alert(1)//")),
+      env,
+    );
+    expect(await invalid.text()).not.toContain("alert(1)");
+  });
+  it("serves the descriptive public homepage without authentication or credential bootstrap", async () => {
+    const response = await worker.fetch(new Request(origin + "/about"), env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/html");
+    const text = await response.text();
+    expect(text).toContain("Your accounts, your permissions");
+    expect(text).not.toContain("clerk.browser.js");
+    expect(text).not.toContain(env.CLERK_SECRET_KEY);
+    expect(
+      (await worker.fetch(new Request(origin + "/about", { method: "POST" }), env)).status,
+    ).toBe(405);
+  });
+  it("acknowledges only the SDK's completed destroy signal; unknown purge failures stay pending", async () => {
+    clerkSession();
+    const tenant = await repo.bootstrapTenant(owner);
+    const { ChatThreads } = await import("./threads.js");
+    const registry = new ChatThreads(repo, tenant.id);
+    const thread = (await registry.create("Purge acknowledgement"))!;
+    const del = async () =>
+      worker.fetch(
+        new Request(
+          await signed("/api/chat/threads/" + thread.id, owner, {
+            Origin: origin,
+            "Content-Type": "application/json",
+          }),
+          { method: "DELETE" },
+        ),
+        { ...env, Chat: {} as DurableObjectNamespace },
+      );
+    nativeRoute.mockRejectedValueOnce(new Error("Unexpected cleanup failure"));
+    expect((await del()).status).toBe(503);
+    expect((await registry.get(thread.id, true))?.purged).toBe(0);
+    expect(await registry.get(thread.id)).toBeNull();
+    nativeRoute.mockRejectedValueOnce(new Error("destroyed"));
+    expect((await del()).status).toBe(204);
+    expect((await registry.get(thread.id, true))?.purged).toBe(1);
+    expect(await registry.pendingDeletions()).not.toContainEqual({
+      id: thread.id,
+      draftKey: thread.conversation,
+    });
+    nativeRoute.mockClear();
+    expect((await del()).status).toBe(204);
+    expect(nativeRoute).not.toHaveBeenCalled();
   });
 });

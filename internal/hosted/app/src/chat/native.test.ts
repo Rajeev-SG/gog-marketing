@@ -78,6 +78,9 @@ beforeAll(async () => {
               url.pathname === "/api/v1/chat/completions"
             ) {
               providerCalls++;
+              expect(
+                ((await request.clone().json()) as { provider: unknown }).provider,
+              ).toMatchObject({ data_collection: "deny", zdr: true });
               const chunk = {
                 id: "fixture-reply",
                 object: "chat.completion.chunk",
@@ -188,6 +191,7 @@ beforeAll(async () => {
     "0003_rate_limit_counters.sql",
     "0004_mcp_signal_counters.sql",
     "0005_tool_grants.sql",
+    "0007_chat_threads.sql",
   ])
     for (const sql of splitMigrationStatements(loadMigrationSql(file))) await db.prepare(sql).run();
 }, 20000);
@@ -497,4 +501,79 @@ it("persists native write approval over reconnect and never dispatches an unappr
     }),
   );
   expect(await close).toBe(4400);
+});
+
+it("isolates native transcripts/approvals across threads and purges a deleted thread", async () => {
+  const sessionCookie = await cookieFor("session-native-threads");
+  const headers = { Cookie: sessionCookie, Origin: origin, "Content-Type": "application/json" };
+  const paths: string[] = [];
+  const ids: string[] = [];
+  for (const title of ["Native thread A", "Native thread B"]) {
+    const created = await mf.dispatchFetch(origin + "/api/chat/threads", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title }),
+    });
+    expect(created.status).toBe(201);
+    const { thread } = (await created.json()) as { thread: { id: string } };
+    ids.push(thread.id);
+    const meta = await mf.dispatchFetch(origin + "/api/chat/session?thread=" + thread.id, {
+      headers,
+    });
+    const data = (await meta.json()) as { conversation: string; draftKey: string };
+    expect(data.draftKey).toBe(data.conversation);
+    paths.push(origin + "/agents/chat/" + data.conversation);
+    expect(await history(paths.at(-1)!, sessionCookie)).toEqual([]);
+  }
+  expect(paths[0]).not.toBe(paths[1]);
+  const a = await open(paths[0], sessionCookie),
+    b = await open(paths[1], sessionCookie);
+  await turn(a, "thread-a-message", [
+    { id: "thread-a-user", role: "user", parts: [{ type: "text", text: "Only in thread A" }] },
+  ]);
+  expect(JSON.stringify(await history(paths[0], sessionCookie))).toContain("Only in thread A");
+  expect(await history(paths[1], sessionCookie)).toEqual([]);
+  const db = await mf.getD1Database("DB");
+  const repo = new HostedRepository(db as unknown as D1Database);
+  const tenant = await repo.bootstrapTenant(owner);
+  const connection = (await repo.listConnections(tenant.id))[0]!;
+  nextToolCall = { id: "thread-a-only-approval", connectionId: connection.id };
+  await turn(a, "thread-a-proposal", [
+    {
+      id: "thread-a-write",
+      role: "user",
+      parts: [{ type: "text", text: "Propose the fixture action in thread A" }],
+    },
+  ]);
+  expect(JSON.stringify(await history(paths[0], sessionCookie))).toContain("approval-requested");
+  const bClosed = closed(b);
+  b.send(
+    JSON.stringify({
+      type: "cf_agent_tool_approval",
+      toolCallId: "thread-a-only-approval",
+      approved: true,
+      autoContinue: true,
+    }),
+  );
+  expect(await bClosed).toBe(4400);
+  expect(JSON.stringify(await history(paths[0], sessionCookie))).toContain("approval-requested");
+  const deleted = await mf.dispatchFetch(origin + "/api/chat/threads/" + ids[0], {
+    method: "DELETE",
+    headers,
+  });
+  expect(deleted.status).toBe(204);
+  expect((await mf.dispatchFetch(paths[0] + "/get-messages", { headers })).status).toBe(404);
+  expect(
+    (await mf.dispatchFetch(origin + "/api/chat/session?thread=" + ids[0], { headers })).status,
+  ).toBe(404);
+  expect(
+    (await mf.dispatchFetch(paths[1] + "/__thread-delete", { method: "DELETE", headers })).status,
+  ).toBe(404);
+  expect((await mf.dispatchFetch(paths[1] + "/__legacy-budget", { headers })).status).toBe(404);
+  expect(await history(paths[1], sessionCookie)).toEqual([]);
+  const legacy = await mf.dispatchFetch(origin + "/api/chat/session?thread=original", { headers });
+  const data = (await legacy.json()) as { conversation: string };
+  expect(
+    JSON.stringify(await history(origin + "/agents/chat/" + data.conversation, sessionCookie)),
+  ).toContain("B-only native fixture message");
 });

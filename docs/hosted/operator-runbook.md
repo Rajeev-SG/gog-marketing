@@ -134,7 +134,9 @@ Set `OPENROUTER_MODEL` to the tested model if overriding the default.
 
 For this additive integration, use `wrangler deploy --keep-vars` plus the new
 owner/model variables so existing Google, Clerk, Picker, runner and MCP variables
-are retained. Do not replace existing secrets or apply D1 migrations for chat.
+are retained. Do not replace existing secrets. Before deploying threaded chat,
+apply the pending additive `0007_chat_threads.sql` through the migration-tracking
+commands below. Existing native transcripts are not migrated.
 The new `integrated-chat-v1` Durable Object migration creates a fresh namespace
 inside `gog-marketing`; it does not transfer or delete the standalone namespace.
 Record the deployed version and verify shared sign-in, streaming and Google-settings
@@ -157,9 +159,27 @@ Verify a real permitted read, denial after disabling access, and a human-approve
 write followed by read-back before claiming full live write acceptance. Keep
 fixture and real-provider evidence separate in #92. See [chat.md](chat.md).
 
+### Workspace/thread and verification rollout
+
+Apply only reviewed pending migrations; confirm that the intended remote database
+is the existing `gog-marketing`. Deploy with `--keep-vars`. Verify desktop/mobile
+round-trip navigation, old original history/draft, two isolated new threads,
+reload/rename/delete, pending approvals and foreign/deleted denials. A rollback
+may make new threads temporarily unavailable in the old UI; never drop the D1
+index or delete native objects to make a rollback look clean.
+
+Chat routing requests OpenRouter provider data-collection opt-out and zero-data-
+retention endpoints. Do not relax privacy routing silently if a model has no
+eligible endpoint. Verify the actual provider response before claiming it works.
+
+See [Google verification preparation](google-verification/README.md) for the
+current checked console state, exact scope packet, legal drafts and demo script.
+Legal drafts are not public policy/terms or owner attestations. Testing remains
+Testing until the proper production publishing/verification process is completed.
+
 ## Apply D1 migrations
 
-The six migrations are additive, but they are not all safe to re-run:
+The seven migrations are additive, but they are not all safe to re-run:
 `0002` includes unconditional `ALTER TABLE ADD COLUMN` statements. Apply each
 migration at most once to the existing `gog-marketing` database; do not create
 another database or execute migration files directly with

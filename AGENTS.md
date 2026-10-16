@@ -75,3 +75,11 @@ model text and browser-supplied history are not authorization. The standalone ap
 remain separate. `make hosted-app-ci` covers chat assets, types and tests;
 real provider calls and authenticated browser acceptance are deliberate,
 not part of unattended CI.
+
+
+Threaded chat (#94) uses a tenant-scoped D1 index plus one native Chat DO per
+conversation. Preserve the original digest/draft key; never accept browser tenant
+identity. Deleted threads must fail closed before native purge; internal purge/
+budget URLs must never be publicly routed. Model-start budgets remain account-
+wide, not per thread. Google verification drafts are not approved legal policy or
+production verification; see docs/hosted/google-verification/README.md.

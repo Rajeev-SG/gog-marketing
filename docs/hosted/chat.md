@@ -16,9 +16,15 @@ agent framework, or model-provider browser credential is added.
 
 The existing `gog-marketing` Worker serves the product, `/chat`, the chat
 asset bundle, and protected agent history/WebSocket routes on the same origin.
-A new SQLite-backed `Chat` Durable Object owns the fresh conversation.
+The existing `Chat` Durable Object namespace now stores one independent native
+conversation per thread. The original tenant-derived object and draft key remain
+unchanged as “Original conversation”; no transcript is copied or migrated.
+A tenant-scoped D1 index (`0007_chat_threads.sql`) stores only thread identity,
+title and timestamps. Separate DOs isolate messages, streams and approvals.
 The existing D1 database remains authoritative for Clerk-to-tenant identity
-and Google connections. Chat transcripts are not duplicated into D1.
+and Google connections. Chat transcripts are not duplicated into D1. Shared
+model-start quotas are account-wide in D1; creating/deleting a thread cannot
+multiply allowances, and existing legacy counters are carried forward.
 
 `CHAT_OWNER_USER_ID` must name the verified Clerk owner in the deployed Clerk
 instance. Missing configuration fails closed. Other users, anonymous requests,
@@ -29,8 +35,8 @@ can select another conversation. Drafts are tab-local and account-scoped.
 
 The model defaults to `openai/gpt-4.1-mini`. Limits remain 10 model starts per
 minute, 100 per UTC day, 100 KB conversation, 8,000 characters per user message,
-2,048 output tokens, and a 90-second response timeout. Limits are enforced in
-the integrated conversation store, not shared with the legacy standalone app.
+2,048 output tokens, and a 90-second response timeout. Text limits are enforced per native conversation; model-start limits are enforced
+account-wide in D1, separate from the legacy standalone app.
 Provider failures are redacted. Native streaming, stop, reconnect and saved
 messages are retained. Recipient sessions are rechecked before native outbound
 batches, including idle sockets; expired/revoked recipients are closed before
@@ -133,3 +139,41 @@ changed as a testing shortcut.
 
 Self-service provider keys, billing, memory, broader task management and additional
 command coverage remain later work.
+
+
+## Workspace navigation and threads (#94)
+
+Settings and Chat use the same canonical navigation destinations and generated
+product-shell stylesheet. Desktop navigation includes Home, Google data, Chat,
+Activity and Settings; mobile navigation retains those destinations and a
+keyboard-accessible conversations drawer. Links back to settings use absolute
+product paths, not chat-local hash fragments.
+
+`GET/POST /api/chat/threads`, `PATCH/DELETE /api/chat/threads/:id` and
+`GET /api/chat/session?thread=:id` derive ownership from the verified live Clerk
+owner. Mutation requests require the trusted same-origin Origin and JSON content
+type. Titles are plain text, 1–100 characters. Up to100 active threads are allowed.
+New threads get server UUIDs and opaque server-derived conversation/draft keys;
+clients cannot choose another owner's namespace. The original conversation is
+registered lazily without changing its historical native object or draft key.
+
+New chat, thread links/back-forward/reload, automatic first-message titles,
+rename and confirmed deletion are supported. Drafts are tab-local and independent
+per account/thread. Deletion tombstones the owner index before native destruction,
+blocks subsequent history/upgrades/messages/model/tools immediately, cancels native
+work and removes transcript/approval storage. A failed purge returns a retryable
+error, not a false success. Pending cleanup stays discoverable in the owner sidebar
+across rechecks/reloads; Finish deletion retries that same immutable ID. Deleted
+bookmarks recover to surviving/new owner threads instead of trapping the workspace.
+The pending list is served in batches of100; remaining items appear as cleanup
+completes. Minimal opaque tombstones remain to prevent resurrection;
+deleted titles are removed. Other threads and standalone storage are untouched.
+An already-executed Google operation cannot be rolled back by deleting its chat.
+
+Thread deletion is reached only through the authenticated product API. Native
+budget/purge suffixes are internal namespace requests and are never routed from
+public `/agents` URLs or exposed as browser-callable methods.
+
+Google verification preparation is in [google-verification/README.md](google-verification/README.md).
+It distinguishes checked console facts, prepared drafts and genuine owner/external
+gates. Do not call Testing status or draft legal text Google production approval.

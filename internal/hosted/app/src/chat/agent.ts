@@ -1,3 +1,9 @@
+import {
+  ChatThreads,
+  reserveChatBudget,
+  seedLegacyChatBudget,
+  type LegacyBudget,
+} from "./threads.js";
 /**
  * Chat Durable Object.
  *
@@ -7,8 +13,8 @@
  * - only the configured CHAT_OWNER_USER_ID may connect or send a frame;
  * - every Clerk UI message frame and chat inference invocation re-validates the
  *   live Clerk session, the active internal tenant, and connection state;
- * - inference budget/text limits live in ctx.storage so reconnect cannot reset
- *   them.
+ * - text limits are per thread; model budgets are account-wide in D1, with
+ *   legacy counters carried forward so new threads cannot multiply allowances.
  *
  * Native /get-messages is additionally gated by the Worker routes. No raw
  * provider exception is ever surfaced; inference errors use a fixed message.
@@ -32,6 +38,7 @@ import {
   type Connection,
   type ConnectionContext,
   type AgentContext,
+  routeAgentRequest,
 } from "agents";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import {
@@ -49,6 +56,7 @@ interface ChatConnectionState {
   sessionId: string;
   userId: string;
   tenantId: string;
+  threadId: string;
   expiresAt: number;
 }
 
@@ -65,8 +73,6 @@ const SYSTEM_PROMPT =
 const MAX_INFERENCE_TOKENS = 2048;
 const INFERENCE_TIMEOUT_MS = 90_000;
 const INFERENCE_MAX_RETRIES = 1;
-const BUDGET_PER_MINUTE = 10;
-const BUDGET_PER_DAY = 100;
 const MAX_CONVERSATION_BYTES = 100_000;
 const MAX_USER_MESSAGE_CHARS = 8_000;
 
@@ -259,6 +265,9 @@ export class Chat extends AIChatAgent<ChatEnv> {
     try {
       const tenant = await new HostedRepository(this.env.DB).getTenant(state.tenantId);
       if (!tenant || tenant.status !== "active") return "unauthenticated";
+      const registry = new ChatThreads(new HostedRepository(this.env.DB), state.tenantId);
+      const thread = await registry.byConversation(this.name);
+      if (!thread || (state.threadId && thread.id !== state.threadId)) return "unauthenticated";
       const session = await verifyActiveClerkSession(this.env, state.sessionId, state.userId);
       return session.kind === "error"
         ? "unavailable"
@@ -293,8 +302,10 @@ export class Chat extends AIChatAgent<ChatEnv> {
       );
       return;
     }
-    const digest = await chatConversationDigest(outcome.session.tenant.id);
-    if (this.name !== digest) {
+    const registry = new ChatThreads(new HostedRepository(this.env.DB), outcome.session.tenant.id);
+    await registry.ensureOriginal();
+    const thread = await registry.byConversation(this.name);
+    if (!thread) {
       connection.close(4403, "Not authorized");
       return;
     }
@@ -306,6 +317,7 @@ export class Chat extends AIChatAgent<ChatEnv> {
       sessionId: outcome.session.sessionId,
       userId: outcome.session.userId,
       tenantId: outcome.session.tenant.id,
+      threadId: thread.id,
       expiresAt: outcome.session.expiresAt,
     });
   }
@@ -326,20 +338,6 @@ export class Chat extends AIChatAgent<ChatEnv> {
         authorization === "unavailable" ? UNAVAILABLE_MESSAGE : UNAUTHORIZED_MESSAGE,
       );
     }
-    // Persist the budget in the same owner Durable Object so reconnects cannot reset it.
-    const now = Date.now();
-    const minute = Math.floor(now / 60_000);
-    const day = Math.floor(now / 86_400_000);
-    const budget = await this.ctx.storage.get<{
-      minute: number;
-      minuteCount: number;
-      day: number;
-      dayCount: number;
-    }>("inference-budget");
-    const minuteCount = budget?.minute === minute ? (budget.minuteCount ?? 0) : 0;
-    const dayCount = budget?.day === day ? (budget.dayCount ?? 0) : 0;
-    if (minuteCount >= BUDGET_PER_MINUTE || dayCount >= BUDGET_PER_DAY)
-      return chatError(BUDGET_MESSAGE);
     if (new TextEncoder().encode(JSON.stringify(this.messages)).byteLength > MAX_CONVERSATION_BYTES)
       return chatError(TEXT_ONLY_MESSAGE);
     for (const message of this.messages) {
@@ -354,12 +352,6 @@ export class Chat extends AIChatAgent<ChatEnv> {
         return chatError(TEXT_ONLY_MESSAGE);
       }
     }
-    await this.ctx.storage.put("inference-budget", {
-      minute,
-      minuteCount: minuteCount + 1,
-      day,
-      dayCount: dayCount + 1,
-    });
     if (!this.env.OPENROUTER_API_KEY) return chatError(MODEL_ERROR);
     const provider = createOpenRouter({ apiKey: this.env.OPENROUTER_API_KEY });
     try {
@@ -368,6 +360,28 @@ export class Chat extends AIChatAgent<ChatEnv> {
       const repo = new HostedRepository(this.env.DB);
       const tenant = await repo.getTenant(state.tenantId);
       if (!tenant) return chatError(UNAUTHORIZED_MESSAGE);
+      let legacy = await this.ctx.storage.get<LegacyBudget>("inference-budget");
+      const original = await chatConversationDigest(state.tenantId);
+      if (this.name !== original && this.env.Chat) {
+        const response = await routeAgentRequest(
+          new Request("https://chat.internal/agents/chat/" + original + "/__legacy-budget"),
+          this.env,
+        );
+        if (!response?.ok) return chatError(UNAVAILABLE_MESSAGE);
+        legacy = (await response.json()) as LegacyBudget | undefined;
+      }
+      if (!(await reserveChatBudget(repo, state.tenantId, legacy)))
+        return chatError(BUDGET_MESSAGE);
+      const firstText =
+        this.messages
+          .find((message) => message.role === "user")
+          ?.parts.filter((part) => part.type === "text")
+          .map((part) => part.text)
+          .join(" ") ?? "";
+      const registry = new ChatThreads(repo, state.tenantId);
+      const thread = await registry.byConversation(this.name);
+      if (!thread) return chatError(UNAUTHORIZED_MESSAGE);
+      await registry.touch(thread.id, firstText);
       const session = { userId: state.userId, sessionId: state.sessionId, tenant };
       const authorize = async () => {
         if (
@@ -379,7 +393,9 @@ export class Chat extends AIChatAgent<ChatEnv> {
       const approvals = new GoogleApprovals(this.ctx.storage);
       const tools = await googleTools(this.env, repo, session, approvals, authorize);
       const result = streamText({
-        model: provider(chatModelIdentifier(this.env)),
+        model: provider.chat(chatModelIdentifier(this.env), {
+          provider: { data_collection: "deny", zdr: true },
+        }),
         system: SYSTEM_PROMPT,
         tools,
         stopWhen: stepCountIs(6),
@@ -402,6 +418,29 @@ export class Chat extends AIChatAgent<ChatEnv> {
     } catch {
       return chatError(MODEL_ERROR);
     }
+  }
+
+  async onRequest(request: Request): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (path.endsWith("/__legacy-budget") && request.method === "GET")
+      return Response.json((await this.ctx.storage.get<LegacyBudget>("inference-budget")) ?? null);
+    if (path.endsWith("/__thread-delete") && request.method === "DELETE") {
+      const tenantId = request.headers.get("x-gog-thread-tenant") ?? "";
+      const registry = new ChatThreads(new HostedRepository(this.env.DB), tenantId);
+      const thread = await registry.byConversation(this.name, true);
+      if (!thread?.deletedAt) return new Response(null, { status: 403 });
+      await seedLegacyChatBudget(
+        new HostedRepository(this.env.DB),
+        tenantId,
+        await this.ctx.storage.get<LegacyBudget>("inference-budget"),
+      );
+      this.outboundFrames = [];
+      this.outboundBytes = 0;
+      this.resetTurnState();
+      await this.destroy();
+      return new Response(null, { status: 204 });
+    }
+    return super.onRequest(request);
   }
 
   async markStopped(messageIds: string[]): Promise<void> {
