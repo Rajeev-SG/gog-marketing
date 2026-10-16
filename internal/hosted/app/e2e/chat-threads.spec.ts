@@ -46,7 +46,10 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
       },
     });
   });
-  await page.routeWebSocket("**/agents/**", () => {});
+  let activeSocket: import("@playwright/test").WebSocketRoute | undefined;
+  await page.routeWebSocket("**/agents/**", (socket) => {
+    activeSocket = socket;
+  });
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const method = route.request().method();
@@ -97,14 +100,30 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
           return route.fulfill({ status: 503, json: { error: "Deletion pending" } });
         }
         pending.delete(id);
+        if (id === createdId) {
+          // Real native destroy closes the socket before the HTTP ack; metadata
+          // recovery must not prevent clearing the already-deleted draft.
+          activeSocket?.close({ code: 4401, reason: "Deleted fixture thread" });
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
         return route.fulfill({ status: 204 });
       }
     }
     if (url.pathname === "/api/chat/session") {
       if (url.searchParams.has("thread") && !threads.has(url.searchParams.get("thread")!))
         return route.fulfill({ status: 404, json: { error: "Conversation not found" } });
-      const thread =
+      let thread =
         threads.get(url.searchParams.get("thread") ?? "original") ?? [...threads.values()][0];
+      if (!thread) {
+        thread = {
+          id: "00000000-0000-4000-8000-000000000003",
+          title: "Recovered empty chat",
+          conversation: "3".repeat(64),
+          createdAt: now,
+          updatedAt: now,
+        };
+        threads.set(thread.id, thread);
+      }
       return route.fulfill({
         json: {
           thread,
@@ -206,4 +225,11 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
     const box = await input.boundingBox();
     expect(box!.y + box!.height).toBeLessThanOrEqual(844 - 66);
   }
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete conversation", exact: true }).click();
+  await expect(page).toHaveURL(/00000000-0000-4000-8000-000000000003/);
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem("gog:chat:draft:" + "2".repeat(64))))
+    .toBeNull();
+  await expect(input).toHaveValue("");
 });

@@ -721,17 +721,22 @@ function App() {
           signal: AbortSignal.timeout(30000),
         },
       );
-      if (!r.ok) throw new Error("Conversation action failed");
-      if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
-      if (action === "delete") {
+      if (!r.ok || (action === "delete" && r.status !== 204))
+        throw new Error("Conversation action failed");
+      // Native destruction can close the socket and recover to another thread
+      // before this HTTP acknowledgement arrives. Clear ONLY the captured,
+      // successfully deleted thread's draft even when that recovery changed the
+      // generation; stale responses must still never remount/navigate the UI.
+      if (action === "delete" && session) {
+        deletedDraftKeys.add(draftStorageKey(session.draftKey));
         try {
-          if (session) {
-            deletedDraftKeys.add(draftStorageKey(session.draftKey));
-            sessionStorage.removeItem(draftStorageKey(session.draftKey));
-          }
+          sessionStorage.removeItem(draftStorageKey(session.draftKey));
         } catch {
           /* Storage can be disabled. */
         }
+      }
+      if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
+      if (action === "delete") {
         openThread(undefined, true);
       } else {
         const data = (await r.json()) as { thread: ChatThread };
@@ -771,7 +776,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         signal: AbortSignal.timeout(30000),
       });
-      if (!response.ok) throw new Error("Cleanup pending");
+      if (response.status !== 204) throw new Error("Cleanup pending");
       if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
       deletedDraftKeys.add(draftStorageKey(pending.draftKey));
       try {
