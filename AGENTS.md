@@ -60,3 +60,16 @@ For `gog-marketing` acceptance work, use `make acceptance-local`, `make acceptan
 Follow `docs/bounded-review-policy.md`. Use one bounded parallel GPT-6.1-Sol/high
 Standards + Spec review round, one consolidated repair and focused recheck.
 OpenReview is disabled; CI and real acceptance are not. Preserve native blockers.
+
+## Integrated owner chat
+
+The existing hosted Worker also serves `/chat`; see `docs/hosted/chat.md`.
+Clerk is the only integrated chat login, and `CHAT_OWNER_USER_ID` restricts
+history and inference to the configured owner. `src/worker.ts` exports the
+native Chat Durable Object; `src/index.ts` retains the testable product router.
+Chat uses the existing server-side OpenRouter key and a new conversation
+namespace. No Google tools are connected yet: do not bypass the existing
+Google/MCP permissions or advertise tool access. The standalone app/history
+remain separate. `make hosted-app-ci` covers chat assets, types and tests;
+real provider calls and authenticated browser acceptance are deliberate,
+not part of unattended CI.

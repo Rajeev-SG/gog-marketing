@@ -17,6 +17,8 @@ const clerkPublishableKey = "pk_test_b3JpZW50ZWQtd29tYmF0LTI4MTMuY2xlcmsuYWNjb3V
 const bundle = await build({
   entryPoints: [join(appRoot, "src", "index.ts")],
   bundle: true,
+  // Native Agent routing is only loaded for chat; this legacy UI fixture runs in Node.
+  external: ["agents"],
   format: "esm",
   platform: "browser",
   target: "es2022",

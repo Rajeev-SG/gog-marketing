@@ -194,6 +194,7 @@ hosted-app-ci:
 	@pnpm -C internal/hosted/app design:check
 	@pnpm -C internal/hosted/app lint
 	@pnpm -C internal/hosted/app typecheck
+	@pnpm -C internal/hosted/app build
 	@pnpm -C internal/hosted/app test
 
 provider-preflight:

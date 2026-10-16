@@ -551,7 +551,7 @@ button:disabled { cursor: default; opacity: .7; }
   .overview-grid { grid-template-columns: 1fr; }
   .service-row { grid-template-columns: minmax(180px, 1.4fr) minmax(100px, .8fr) 95px 18px; }
   .service-row .service-cell.selected-cell { display: none; }
-  .bottom-nav { position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; min-height: 66px; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface-card); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0); }
+  .bottom-nav { position: fixed; z-index: 25; left: 0; right: 0; bottom: 0; min-height: 66px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-card); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom, 0); }
   .bottom-nav a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: var(--text-muted); font-size: 10.5px; }
   .bottom-nav a[aria-current="page"] { color: var(--action); }
   .bottom-nav svg { width: 22px; height: 22px; }

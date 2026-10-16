@@ -154,3 +154,136 @@ test.describe("@owner Clerk sign-in, connect account, asset toggles, and MCP URL
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(mcpURL);
   });
 });
+
+// This test exercises the built React/native-SDK client only. Identity and sockets
+// are explicit fixtures; it does not claim real Clerk/OpenRouter acceptance.
+test("@deterministic chat rechecks identity before recovering a terminal socket", async ({
+  page,
+}) => {
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const { join } = await import("node:path");
+  const dist = fileURLToPath(new URL("../dist/client/", import.meta.url));
+  const conversation = "1".repeat(64);
+  let authorized = true;
+  let sessionChecks = 0;
+  const sockets: import("@playwright/test").WebSocketRoute[] = [];
+  const heldMetadata: import("@playwright/test").Route[] = [];
+  let holdNextMetadata = false;
+  await page.addInitScript(() => {
+    const listeners = new Set<(value: { session: { id: string } | null }) => void>();
+    const fixtureClerk = {
+      loaded: !sessionStorage.getItem("fixture:delay-clerk"),
+      session: { id: "fixture" },
+      addListener: (fn: (value: { session: { id: string } | null }) => void) => {
+        listeners.add(fn);
+        fn({ session: fixtureClerk.session });
+        return () => listeners.delete(fn);
+      },
+      signOut: async () => {},
+    };
+    Object.assign(window, {
+      Clerk: fixtureClerk,
+      __fixtureSession: (id: string) => {
+        fixtureClerk.session = { id };
+        for (const fn of listeners) fn({ session: fixtureClerk.session });
+      },
+      __fixtureListeners: () => listeners.size,
+    });
+  });
+  await page.routeWebSocket("**/agents/**", (socket) => {
+    sockets.push(socket);
+  });
+  await page.route("**/*", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname === "/chat") {
+      await route.fulfill({
+        contentType: "text/html",
+        body: readFileSync(join(dist, "chat.html")),
+      });
+    } else if (url.pathname.startsWith("/assets/")) {
+      await route.fulfill({
+        contentType: url.pathname.endsWith(".css") ? "text/css" : "application/javascript",
+        body: readFileSync(join(dist, url.pathname.slice(1))),
+      });
+    } else if (url.pathname === "/api/chat/session") {
+      sessionChecks++;
+      if (holdNextMetadata) {
+        holdNextMetadata = false;
+        heldMetadata.push(route);
+        return;
+      }
+      await route.fulfill({
+        status: authorized ? 200 : 401,
+        json: authorized
+          ? {
+              model: "openai/gpt-4.1-mini",
+              conversation,
+              draftKey: "fixture-reconnect",
+              expiresAt: Date.now() + 3600000,
+            }
+          : { error: "Sign in to continue." },
+      });
+    } else if (url.pathname.endsWith("/get-messages")) {
+      await route.fulfill({ json: [] });
+    } else await route.abort();
+  });
+  await page.goto("/chat");
+  const input = page.getByRole("textbox", { name: "Message" });
+  await expect(input).toBeEnabled();
+  await input.fill("draft retained through reconnect");
+  await expect.poll(() => sockets.length).toBe(1);
+  const before = sessionChecks;
+  await sockets[0].close({ code: 4401, reason: "Fixture stale upgrade" });
+  await expect.poll(() => sessionChecks).toBeGreaterThan(before);
+  await expect.poll(() => sockets.length).toBe(2);
+  expect(sessionChecks).toBeGreaterThan(before);
+  await expect(input).toBeEnabled();
+  await expect(input).toHaveValue("draft retained through reconnect");
+  // The same terminal close must not reconnect if the authoritative API rejects identity.
+  authorized = false;
+  await sockets[1].close({ code: 4401, reason: "Fixture revoked session" });
+  await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
+  expect(sockets).toHaveLength(2);
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem("gog:chat:draft:fixture-reconnect")))
+    .toBe("draft retained through reconnect");
+  // A stale owner-200 response must not remount its draft after Clerk changes identity.
+  authorized = true;
+  holdNextMetadata = true;
+  const socketsBeforeSwitch = sockets.length;
+  await page.reload();
+  await expect.poll(() => heldMetadata.length).toBe(1);
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, "__fixtureListeners")())).toBe(1);
+  authorized = false;
+  await page.evaluate(() => Reflect.get(window, "__fixtureSession")("different-fixture-session"));
+  await heldMetadata[0].fulfill({
+    json: {
+      model: "openai/gpt-4.1-mini",
+      conversation,
+      draftKey: "fixture-reconnect",
+      expiresAt: Date.now() + 3600000,
+    },
+  });
+  await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
+  expect(sockets).toHaveLength(socketsBeforeSwitch);
+  await expect(page.getByRole("textbox", { name: "Message" })).toHaveCount(0);
+  // Clerk arriving after the attach timeout still gets a fresh listener on Retry.
+  authorized = true;
+  await page.evaluate(() => sessionStorage.setItem("fixture:delay-clerk", "1"));
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Retry connection" })).toBeVisible({
+    timeout: 15000,
+  });
+  await page.evaluate(() => {
+    Reflect.get(window, "Clerk").loaded = true;
+    sessionStorage.removeItem("fixture:delay-clerk");
+  });
+  await page.getByRole("button", { name: "Retry connection" }).click();
+  await expect(input).toBeEnabled();
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, "__fixtureListeners")())).toBe(1);
+  authorized = false;
+  await page.evaluate(() => Reflect.get(window, "__fixtureSession")("changed-after-retry"));
+  await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
+  await expect(input).toHaveCount(0);
+});

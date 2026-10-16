@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted chat: integrate the existing React/assistant-ui OpenRouter chatbot at `/chat` with shared Clerk sign-in, owner-only access and a fresh native conversation store; preserve standalone history and keep Google tools explicitly disconnected. (#90; imported from gog-marketing-chat PR #3, thanks @Rajeev-SG)
+
 - Hosted onboarding: group the 13 priority service choices into readable Workspace/Marketing rows with labelled read/write controls, select-all services and clear-selection actions; keep deferred services out of new choices and writes separate. (#69, #79)
 
 - Hosted: expose native Sheets spreadsheet metadata reads plus value-range appends and clears for a Picker-selected file under explicit tool grants; require USER_ENTERED import-source admission and destructive clear permission, with bounded inline values and no batch or validation-copy proxy. Fixture append/read/clear/metadata and denials verified; live acceptance pending. (#52, #79)

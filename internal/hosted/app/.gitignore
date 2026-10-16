@@ -1,2 +1,6 @@
 node_modules/
 .wrangler/
+
+# Local model/provider credentials must never enter source or static assets.
+.dev.vars
+.dev.vars.*
