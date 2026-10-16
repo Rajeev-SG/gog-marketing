@@ -483,7 +483,9 @@ it("persists native write approval over reconnect and never dispatches an unappr
           .first<{ count: number }>())!.count,
     )
     .toBe(before!.count + 1);
-  expect(JSON.stringify(await history(path, sessionCookie))).toContain("isError");
+  await expect
+    .poll(async () => JSON.stringify(await history(path, sessionCookie)))
+    .toContain("isError");
   // A made-up browser approval has no durable server-originated call to authorize.
   const close = closed(socket);
   socket.send(

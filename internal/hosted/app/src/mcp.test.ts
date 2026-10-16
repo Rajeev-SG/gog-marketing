@@ -2017,6 +2017,23 @@ describe("chat Google tools and durable write approvals", () => {
     const f = await chatFixture();
     expect(f.tools).toHaveProperty("analytics_properties_get");
     expect(f.tools).not.toHaveProperty("gmail_send");
+    const other = await f.repo.createConnection(
+      f.tenantId,
+      "second-google",
+      "second@example.test",
+      "Second account",
+      "[]",
+    );
+    await f.repo.saveToolGrants(f.tenantId, other.id, [
+      {
+        service: "analytics",
+        toolName: "analytics_properties_get",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    // A tool-grant alone on B cannot borrow A's selected resource availability.
     const access = (await f.run("google_access", {})) as { accounts: { connectionId: string }[] };
     expect(access.accounts.map((a) => a.connectionId)).toEqual([f.connectionId]);
     const read = await f.run("analytics_properties_get", {
@@ -2039,6 +2056,8 @@ describe("chat Google tools and durable write approvals", () => {
       false,
     );
     expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    expect(await f.approvals.respond("call-1", false, f.session)).toBe(false);
     await expect(
       f.run("tasks_lists_create", { ...input, title: "Changed by model" }),
     ).rejects.toThrow("fresh approval");

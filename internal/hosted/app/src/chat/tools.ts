@@ -150,12 +150,15 @@ export class GoogleApprovals {
       const record = await tx.get<Approval>(PREFIX + id);
       if (
         !record ||
-        record.state !== "pending" ||
         record.expiresAt <= Date.now() ||
         record.userId !== session.userId ||
         record.tenantId !== session.tenant.id
       )
         return false;
+      // A connection can disappear between durable decision and native apply.
+      // Repeat delivery of the same decision is safe; reversal/re-execution is not.
+      if (record.state === (approved ? "approved" : "denied")) return true;
+      if (record.state !== "pending") return false;
       await tx.put(PREFIX + id, { ...record, state: approved ? "approved" : "denied" });
       return true;
     });
@@ -207,10 +210,12 @@ export async function googleTools(
         const accounts = [];
         for (const connection of await repo.listConnections(session.tenant.id)) {
           if (connection.status !== "active") continue;
-          const grants = await repo.listToolGrants(session.tenant.id, connection.id);
-          const names = grants
-            .filter((g) => g.enabled && current.some((t) => t.name === g.toolName))
-            .map((g) => g.toolName);
+          const names = current
+            .filter((t) => {
+              const properties = t.inputSchema.properties as Record<string, { enum?: string[] }>;
+              return properties.connectionId?.enum?.includes(connection.id);
+            })
+            .map((t) => t.name);
           if (!names.length) continue;
           const resources = (await repo.listResourceGrants(session.tenant.id, connection.id))
             .filter(
