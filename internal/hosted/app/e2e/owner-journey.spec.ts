@@ -168,16 +168,27 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   let authorized = true;
   let sessionChecks = 0;
   const sockets: import("@playwright/test").WebSocketRoute[] = [];
+  const heldMetadata: import("@playwright/test").Route[] = [];
+  let holdNextMetadata = false;
   await page.addInitScript(() => {
-    Object.assign(window, {
-      Clerk: {
-        loaded: true,
-        addListener: (fn: (value: unknown) => void) => {
-          fn({ session: { id: "fixture" } });
-          return () => {};
-        },
-        signOut: async () => {},
+    const listeners = new Set<(value: { session: { id: string } | null }) => void>();
+    const fixtureClerk = {
+      loaded: true,
+      session: { id: "fixture" },
+      addListener: (fn: (value: { session: { id: string } | null }) => void) => {
+        listeners.add(fn);
+        fn({ session: fixtureClerk.session });
+        return () => listeners.delete(fn);
       },
+      signOut: async () => {},
+    };
+    Object.assign(window, {
+      Clerk: fixtureClerk,
+      __fixtureSession: (id: string) => {
+        fixtureClerk.session = { id };
+        for (const fn of listeners) fn({ session: fixtureClerk.session });
+      },
+      __fixtureListeners: () => listeners.size,
     });
   });
   await page.routeWebSocket("**/agents/**", (socket) => {
@@ -197,6 +208,11 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
       });
     } else if (url.pathname === "/api/chat/session") {
       sessionChecks++;
+      if (holdNextMetadata) {
+        holdNextMetadata = false;
+        heldMetadata.push(route);
+        return;
+      }
       await route.fulfill({
         status: authorized ? 200 : 401,
         json: authorized
@@ -232,4 +248,24 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   await expect
     .poll(() => page.evaluate(() => sessionStorage.getItem("gog:chat:draft:fixture-reconnect")))
     .toBe("draft retained through reconnect");
+  // A stale owner-200 response must not remount its draft after Clerk changes identity.
+  authorized = true;
+  holdNextMetadata = true;
+  const socketsBeforeSwitch = sockets.length;
+  await page.reload();
+  await expect.poll(() => heldMetadata.length).toBe(1);
+  await expect.poll(() => page.evaluate(() => Reflect.get(window, "__fixtureListeners")())).toBe(1);
+  authorized = false;
+  await page.evaluate(() => Reflect.get(window, "__fixtureSession")("different-fixture-session"));
+  await heldMetadata[0].fulfill({
+    json: {
+      model: "openai/gpt-4.1-mini",
+      conversation,
+      draftKey: "fixture-reconnect",
+      expiresAt: Date.now() + 3600000,
+    },
+  });
+  await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
+  expect(sockets).toHaveLength(socketsBeforeSwitch);
+  await expect(page.getByRole("textbox", { name: "Message" })).toHaveCount(0);
 });

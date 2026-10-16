@@ -21,6 +21,7 @@ type ChatSession = {
 };
 type SessionGate = "loading" | "unauthenticated" | "owner-only" | "unavailable" | "ready";
 type ClerkLike = {
+  session?: { id: string } | null;
   loaded?: boolean;
   addListener(listener: (payload: { session?: { id?: string } | null }) => void): () => void;
   signOut(options?: { redirectUrl?: string }): void | Promise<void>;
@@ -32,6 +33,10 @@ const DRAFT_PREFIX = "gog:chat:draft:";
 const draftStorageKey = (draftKey: string) => DRAFT_PREFIX + draftKey;
 // Clerk is initialized by a script the server injects into the built HTML.
 const clerk = (): ClerkLike | null => (window as ClerkWindow).Clerk ?? null;
+const activeClerkSessionId = () => {
+  const c = clerk();
+  return c?.loaded ? (c.session?.id ?? null) : null;
+};
 
 function UserMessage() {
   const stopped = useAuiState((s) => s.message.metadata.custom.gogStopped === true);
@@ -304,6 +309,8 @@ function Chat({
 }
 
 function App() {
+  const authGeneration = useRef(0);
+  const clerkSession = useRef<string | null | undefined>(undefined);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [gate, setGate] = useState<SessionGate>("loading");
   const [message, setMessage] = useState("");
@@ -314,25 +321,38 @@ function App() {
     setMessage("");
   }, []);
   const signOutView = useCallback((notice = "") => {
+    authGeneration.current++;
     setSession(null);
     setGate("unauthenticated");
     setMessage(notice);
   }, []);
   const ownerOnlyView = useCallback((notice = "") => {
+    authGeneration.current++;
     setSession(null);
     setGate("owner-only");
     setMessage(notice);
   }, []);
   const loadSession = useCallback(async () => {
+    const generation = authGeneration.current;
+    const identity = activeClerkSessionId();
+    if (!identity) {
+      signOutView();
+      return;
+    }
     setGate("loading");
     setMessage("");
     try {
       const r = await fetch(SESSION_ENDPOINT, { signal: AbortSignal.timeout(10000) });
-      if (r.ok) applySession((await r.json()) as ChatSession);
-      else if (r.status === 401) signOutView();
+      if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
+      if (r.ok) {
+        const data = (await r.json()) as ChatSession;
+        if (generation === authGeneration.current && activeClerkSessionId() === identity)
+          applySession(data);
+      } else if (r.status === 401) signOutView();
       else if (r.status === 403) ownerOnlyView();
       else throw new Error("Session check failed");
     } catch {
+      if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
       setSession(null);
       setGate("unavailable");
       setMessage(
@@ -343,12 +363,25 @@ function App() {
   // Session recheck while the conversation is open. Transient failures are quiet:
   // the native socket reconnects on its own and the draft stays in this tab.
   const recheck = useCallback(async () => {
+    const generation = authGeneration.current;
+    const identity = activeClerkSessionId();
+    if (!identity) {
+      signOutView();
+      return;
+    }
     try {
       const r = await fetch(SESSION_ENDPOINT, { signal: AbortSignal.timeout(10000) });
+      if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
       if (r.ok) {
         const data = (await r.json()) as ChatSession;
+        if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
         setSession((current) => {
-          if (!current) return null;
+          if (
+            generation !== authGeneration.current ||
+            activeClerkSessionId() !== identity ||
+            !current
+          )
+            return current;
           // Same conversation: refresh fields in place, keeping the socket mounted.
           if (current.conversation === data.conversation && current.draftKey === data.draftKey)
             return { ...current, model: data.model, expiresAt: data.expiresAt };
@@ -379,9 +412,6 @@ function App() {
       setMessage("Could not complete sign-out. Please try again. Your draft is kept in this tab.");
     }
   }, [signOutView]);
-  useEffect(() => {
-    void loadSession();
-  }, [loadSession]);
   // Clerk session changes (sign-out elsewhere, session expiry) close the live socket
   // by dropping the mounted conversation until the user signs back in.
   useEffect(() => {
@@ -391,19 +421,35 @@ function App() {
       const c = clerk();
       if (c?.loaded && !unlisten) {
         unlisten = c.addListener((payload) => {
-          if (!payload.session)
+          const next = payload.session?.id ?? null;
+          const previous = clerkSession.current;
+          clerkSession.current = next;
+          if (!next) {
             signOutView(
               "Your session expired or was signed out. Sign in again to continue your saved conversation and draft.",
             );
+          } else if (previous !== next) {
+            // Drop the prior identity before re-verifying; stale metadata cannot revive its draft.
+            signOutView();
+            void loadSession();
+          }
         });
       }
-      if (c?.loaded || ++attempts > 20) window.clearInterval(attach);
+      if (c?.loaded || ++attempts > 20) {
+        window.clearInterval(attach);
+        if (!c?.loaded) {
+          setGate("unavailable");
+          setMessage(
+            "Could not load sign-in. Check your connection, then reload this page. Your draft is kept in this tab.",
+          );
+        }
+      }
     }, 500);
     return () => {
       window.clearInterval(attach);
       unlisten?.();
     };
-  }, [signOutView]);
+  }, [signOutView, loadSession]);
   // Clerk's real session expiry is authoritative: when it lapses, unmount the
   // conversation (closing the socket) and re-check before remounting.
   useEffect(() => {
@@ -447,7 +493,13 @@ function App() {
           </div>
           <h1>Workspace unavailable</h1>
           <p role="alert">{message}</p>
-          <button type="button" onClick={() => void loadSession()}>
+          <button
+            type="button"
+            onClick={() => {
+              if (!clerk()?.loaded) window.location.reload();
+              else void loadSession();
+            }}
+          >
             Retry connection
           </button>
         </section>

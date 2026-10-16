@@ -47,7 +47,9 @@ A failed Clerk sign-out closes the local chat but shows an explicit retry rather
 than claiming the server session was revoked. If the SDK stops reconnection after
 a terminal close, a new successful owner-session check may restart its native
 transport. This retry is throttled; a 401/403 instead unmounts chat, and no retry
-uses a stale cached permission result.
+uses a stale cached permission result. Clerk identity changes invalidate in-flight
+metadata responses before rechecking, so a late response cannot revive the prior
+account's chat or unsent draft.
 
 ## Build and operate
 
