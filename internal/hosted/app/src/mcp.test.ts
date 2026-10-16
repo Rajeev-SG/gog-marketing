@@ -1922,3 +1922,218 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
     expect(serialized).not.toContain(token);
   });
 });
+
+// The in-product chat uses the very same MCP authorization/runner path, not an OAuth client.
+describe("chat Google tools and durable write approvals", () => {
+  async function chatFixture() {
+    const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { id: "fixture-result" } };
+        },
+      },
+    });
+    const { repo, tenantId, connectionId } = await createToolFixture(env, "chat-tools-owner");
+    const tenant = (await repo.getTenant(tenantId))!;
+    const session = { userId: "chat-tools-owner", sessionId: "session-owner", tenant };
+    const values = new Map<string, unknown>();
+    let tail: Promise<unknown> = Promise.resolve();
+    const storage = {
+      get: async (key: string) => structuredClone(values.get(key)),
+      put: async (key: string, value: unknown) => {
+        values.set(key, structuredClone(value));
+      },
+      list: async ({ prefix }: { prefix: string }) =>
+        new Map([...values].filter(([key]) => key.startsWith(prefix))),
+      delete: async (keys: string[]) => {
+        for (const key of keys) values.delete(key);
+      },
+      transaction: (fn: (tx: unknown) => Promise<unknown>) => {
+        const result = tail.then(() => fn(storage));
+        tail = result.catch(() => {});
+        return result;
+      },
+    } as unknown as DurableObjectStorage;
+    const approvals = new GoogleApprovals(storage);
+    let active = true;
+    const authorize = async () => {
+      if (!active) throw new Error("Session revoked");
+    };
+    await repo.saveToolGrants(tenantId, connectionId, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenantId, connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: [
+        "https://www.googleapis.com/auth/tasks",
+        "https://www.googleapis.com/auth/analytics.readonly",
+      ],
+    });
+    await repo.upsertCredential({
+      tenantId,
+      connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const tools = await googleTools(env, repo, session, approvals, authorize);
+    const run = async (name: string, input: Record<string, unknown>, id = "call-1") =>
+      tools[name]!.execute!(input, {
+        toolCallId: id,
+        messages: [],
+        abortSignal: new AbortController().signal,
+        context: undefined,
+      });
+    return {
+      repo,
+      tenantId,
+      connectionId,
+      session,
+      approvals,
+      values,
+      tools,
+      run,
+      requests,
+      revoke: () => {
+        active = false;
+      },
+    };
+  }
+
+  it("lists only enabled account tools/resources and executes real shared-MCP reads", async () => {
+    const f = await chatFixture();
+    expect(f.tools).toHaveProperty("analytics_properties_get");
+    expect(f.tools).not.toHaveProperty("gmail_send");
+    const other = await f.repo.createConnection(
+      f.tenantId,
+      "second-google",
+      "second@example.test",
+      "Second account",
+      "[]",
+    );
+    await f.repo.saveToolGrants(f.tenantId, other.id, [
+      {
+        service: "analytics",
+        toolName: "analytics_properties_get",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    // A tool-grant alone on B cannot borrow A's selected resource availability.
+    const access = (await f.run("google_access", {})) as { accounts: { connectionId: string }[] };
+    expect(access.accounts.map((a) => a.connectionId)).toEqual([f.connectionId]);
+    const read = await f.run("analytics_properties_get", {
+      property: "properties/123",
+      connectionId: f.connectionId,
+    });
+    expect(read).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.tenantId).toBe(f.tenantId);
+    expect(JSON.stringify(read)).not.toContain(ACCESS_TOKEN);
+  });
+
+  it("requires exact one-use approval, rejects changed arguments and concurrent replay", async () => {
+    const f = await chatFixture();
+    const input = { title: "Approved test list", connectionId: f.connectionId };
+    await expect(f.run("tasks_lists_create", input)).rejects.toThrow("fresh approval");
+    expect(await f.approvals.respond("forged", true, f.session)).toBe(false);
+    await f.approvals.request("call-1", "tasks_lists_create", input, f.session);
+    expect(await f.approvals.respond("call-1", true, { ...f.session, userId: "other-user" })).toBe(
+      false,
+    );
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    expect(await f.approvals.respond("call-1", false, f.session)).toBe(false);
+    await expect(
+      f.run("tasks_lists_create", { ...input, title: "Changed by model" }),
+    ).rejects.toThrow("fresh approval");
+    const outcomes = await Promise.allSettled([
+      f.run("tasks_lists_create", input),
+      f.run("tasks_lists_create", input),
+    ]);
+    expect(outcomes.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool).toMatchObject({
+      name: "tasks_lists_create",
+      allowWrite: true,
+      arguments: { title: input.title },
+    });
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(false);
+  });
+
+  it("rechecks tool/resource permissions after approval and rejects foreign accounts", async () => {
+    const f = await chatFixture();
+    const input = { title: "Never create", connectionId: f.connectionId };
+    await f.approvals.request("call-1", "tasks_lists_create", input, f.session);
+    await f.approvals.respond("call-1", true, f.session);
+    await f.repo.saveToolGrants(f.tenantId, f.connectionId, [
+      {
+        service: "tasks",
+        toolName: "tasks_lists_create",
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    expect(await f.run("tasks_lists_create", input)).toHaveProperty("isError", true);
+    expect(
+      await f.run("analytics_properties_get", {
+        property: "properties/123",
+        connectionId: "foreign-account",
+      }),
+    ).toHaveProperty("isError", true);
+    await f.repo.upsertResourceGrant(
+      f.tenantId,
+      f.connectionId,
+      "analytics",
+      "properties/123",
+      "property",
+      "Property",
+      false,
+      "{}",
+    );
+    expect(
+      await f.run("analytics_properties_get", {
+        property: "properties/123",
+        connectionId: f.connectionId,
+      }),
+    ).toHaveProperty("isError", true);
+    expect(f.requests).toHaveLength(0);
+  });
+
+  it("rejects denied, expired and revoked-session approvals without a Google call", async () => {
+    const f = await chatFixture();
+    const input = { title: "Never create", connectionId: f.connectionId };
+    await f.approvals.request("denied", "tasks_lists_create", input, f.session);
+    await f.approvals.respond("denied", false, f.session);
+    await expect(f.run("tasks_lists_create", input, "denied")).rejects.toThrow("fresh approval");
+    await f.approvals.request("expired", "tasks_lists_create", input, f.session);
+    const record = f.values.get("google-approval:expired") as { expiresAt: number };
+    record.expiresAt = Date.now() - 1;
+    f.values.set("google-approval:expired", record);
+    expect(await f.approvals.respond("expired", true, f.session)).toBe(false);
+    expect(await f.approvals.request("expired", "tasks_lists_create", input, f.session)).toBe(
+      "denied",
+    );
+    await expect(f.run("tasks_lists_create", input, "expired")).rejects.toThrow("fresh approval");
+    await f.approvals.request("revoked", "tasks_lists_create", input, f.session);
+    await f.approvals.respond("revoked", true, f.session);
+    f.revoke();
+    await expect(f.run("tasks_lists_create", input, "revoked")).rejects.toThrow("Session revoked");
+    expect(f.requests).toHaveLength(0);
+  });
+});

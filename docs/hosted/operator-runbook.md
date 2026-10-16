@@ -140,6 +140,23 @@ inside `gog-marketing`; it does not transfer or delete the standalone namespace.
 Record the deployed version and verify shared sign-in, streaming and Google-settings
 regressions before calling the delivery complete. Follow [the chat record](chat.md).
 
+### Chat Google tools
+
+No new secret, OAuth client, infrastructure or D1 migration is needed. The same
+Worker imports the existing MCP policy/execution functions directly. Google
+credentials remain encrypted in D1 and pass only to the existing private runner,
+not to OpenRouter or the browser. Existing runner identity/configuration must work.
+
+Only the bounded `CHAT_GOOGLE_TOOLS` starter set is available to chat, further
+filtered by saved tool/resource grants. Nothing is automatically enabled. Each
+write shows native approval controls; its exact arguments and one-use approval
+live in the existing Chat Durable Object with a 10-minute expiry. A failed or
+interrupted write must not be blindly retried. Google settings remain authoritative.
+
+Verify a real permitted read, denial after disabling access, and a human-approved
+write followed by read-back before claiming full live write acceptance. Keep
+fixture and real-provider evidence separate in #92. See [chat.md](chat.md).
+
 ## Apply D1 migrations
 
 The six migrations are additive, but they are not all safe to re-run:

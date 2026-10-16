@@ -9,6 +9,7 @@ import {
   MessagePrimitive,
   ComposerPrimitive,
   useAuiState,
+  type ToolCallMessagePartProps,
 } from "@assistant-ui/react";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import "./style.css";
@@ -57,11 +58,87 @@ function Markdown() {
   return <MarkdownTextPrimitive />;
 }
 
+function GoogleToolCard({
+  toolName,
+  args,
+  result,
+  isError,
+  approval,
+  respondToApproval,
+}: ToolCallMessagePartProps) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const pending = approval && approval.approved === undefined && !approval.resolution;
+  const decide = async (approved: boolean) => {
+    setSending(true);
+    setError("");
+    try {
+      await respondToApproval({ approved });
+    } catch {
+      setError("Could not record your decision. Check your connection and try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+  const failed =
+    isError || (result && typeof result === "object" && "isError" in result && result.isError);
+  return (
+    <section
+      className="google-tool"
+      aria-label={pending ? "Approve Google action" : "Google tool activity"}
+    >
+      <h3>{pending ? "Review before changing Google data" : "Google tool"}</h3>
+      <p>
+        <strong>{toolName}</strong>
+      </p>
+      <details open={!!pending}>
+        <summary>Account, resource and exact arguments</summary>
+        <pre>{JSON.stringify(args, null, 2)}</pre>
+      </details>
+      {pending ? (
+        <>
+          <p>
+            This changes Google data. Approve only if these exact details are right. Approval
+            expires after 10 minutes.
+          </p>
+          <div className="approval-actions">
+            <button type="button" disabled={sending} onClick={() => void decide(true)}>
+              Approve Google action
+            </button>
+            <button type="button" disabled={sending} onClick={() => void decide(false)}>
+              Don't run
+            </button>
+          </div>
+        </>
+      ) : (
+        <p role="status">
+          {approval?.approved === false
+            ? "Denied — nothing was executed."
+            : failed
+              ? "Google action failed or was denied."
+              : result !== undefined
+                ? "Google result received."
+                : "Waiting for Google…"}
+        </p>
+      )}
+      {result !== undefined && (
+        <details>
+          <summary>Tool result</summary>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </details>
+      )}
+      {error && <p role="alert">{error}</p>}
+    </section>
+  );
+}
+
 function AssistantMessage() {
   return (
     <MessagePrimitive.Root className="message assistant">
       <span className="speaker">Gog</span>
-      <MessagePrimitive.Parts components={{ Text: Markdown }} />
+      <MessagePrimitive.Parts
+        components={{ Text: Markdown, tools: { Fallback: GoogleToolCard } }}
+      />
     </MessagePrimitive.Root>
   );
 }
@@ -210,8 +287,8 @@ function Chat({
           </button>
         </header>
         <div className="notice" role="note">
-          Google tools are not connected yet. Open <a href="/#google-data">Google settings</a> or
-          return to <a href="/">Home</a>.
+          Google tools use your enabled permissions. Writes need your approval. Open{" "}
+          <a href="/#google-data">Google settings</a> or return to <a href="/">Home</a>.
         </div>
         <main aria-label="Chat">
           <ThreadPrimitive.Root className="thread">
@@ -302,7 +379,9 @@ function Chat({
             </div>
           </ThreadPrimitive.Root>
         </main>
-        <footer>Your conversation is private. Google tools are not connected yet.</footer>
+        <footer>
+          Google access follows your saved permissions. Review every write before approving.
+        </footer>
       </div>
     </AssistantRuntimeProvider>
   );

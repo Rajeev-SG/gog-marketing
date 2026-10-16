@@ -438,3 +438,41 @@ footer {
   background: #b7c1b2;
   border-radius: 8px;
 }
+
+.google-tool {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--line, #d8d4ca);
+  border-radius: 12px;
+  margin-block: 0.75rem;
+  background: var(--panel, #faf8f3);
+}
+.google-tool h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+.google-tool pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 20rem;
+  overflow: auto;
+  font-size: 0.8rem;
+}
+.google-tool summary {
+  cursor: pointer;
+}
+.approval-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.approval-actions button {
+  padding: 0.65rem 0.8rem;
+  cursor: pointer;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+}
+.approval-actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}

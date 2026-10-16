@@ -167,6 +167,8 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   const conversation = "1".repeat(64);
   let authorized = true;
   let sessionChecks = 0;
+  let fixtureHistory: unknown[] = [];
+  const clientFrames: { type?: string; toolCallId?: string; approved?: boolean }[] = [];
   const sockets: import("@playwright/test").WebSocketRoute[] = [];
   const heldMetadata: import("@playwright/test").Route[] = [];
   let holdNextMetadata = false;
@@ -193,6 +195,9 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   });
   await page.routeWebSocket("**/agents/**", (socket) => {
     sockets.push(socket);
+    socket.onMessage((data) => {
+      clientFrames.push(JSON.parse(String(data)));
+    });
   });
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
@@ -225,7 +230,7 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
           : { error: "Sign in to continue." },
       });
     } else if (url.pathname.endsWith("/get-messages")) {
-      await route.fulfill({ json: [] });
+      await route.fulfill({ json: fixtureHistory });
     } else await route.abort();
   });
   await page.goto("/chat");
@@ -286,4 +291,45 @@ test("@deterministic chat rechecks identity before recovering a terminal socket"
   await page.evaluate(() => Reflect.get(window, "__fixtureSession")("changed-after-retry"));
   await expect(page.getByRole("link", { name: "Sign in to continue" })).toBeVisible();
   await expect(input).toHaveCount(0);
+  // Render the actual native approval part, including after reload; decisions
+  // must travel over the native approval protocol, not be appended as user text.
+  authorized = true;
+  fixtureHistory = [
+    {
+      id: "approval-message",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-tasks_add",
+          toolName: "tasks_add",
+          toolCallId: "fixture-write",
+          state: "approval-requested",
+          input: {
+            connectionId: "fixture-account",
+            tasklist: "fixture-list",
+            title: "Fixture-only task",
+          },
+          approval: { id: "approval-fixture" },
+        },
+      ],
+    },
+  ];
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(page.getByText("Review before changing Google data")).toBeVisible();
+  await expect(page.locator(".google-tool pre").first()).toContainText("fixture-account");
+  await expect(page.locator(".google-tool pre").first()).toContainText("Fixture-only task");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("button", { name: "Don't run" }).click();
+  await expect
+    .poll(() => clientFrames.filter((f) => f.type === "cf_agent_tool_approval"))
+    .toEqual([expect.objectContaining({ toolCallId: "fixture-write", approved: false })]);
+  await page.reload();
+  await page.getByRole("button", { name: "Approve Google action", exact: true }).click();
+  await expect
+    .poll(() => clientFrames.filter((f) => f.type === "cf_agent_tool_approval"))
+    .toEqual([
+      expect.objectContaining({ toolCallId: "fixture-write", approved: false }),
+      expect.objectContaining({ toolCallId: "fixture-write", approved: true }),
+    ]);
 });

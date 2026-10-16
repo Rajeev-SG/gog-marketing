@@ -1,10 +1,10 @@
 # Integrated owner chat
 
 Chat is part of gog-marketing at `/chat`, using the same Clerk sign-in as
-Google account settings. This milestone is an owner-only chatbot, **not a
-Google-connected agent**. The interface says “Google tools are not connected
-yet.” Existing Google connections and permissions remain managed in the
-original product interface.
+Google account settings. Chat remains owner-only and can now invoke a bounded
+starter set of existing Google tools, only when the account, exact tool and
+resource are enabled in the original Google settings. Nothing is enabled merely
+by signing in. Every write requires a separate approval card.
 
 ## Implementation and boundaries
 
@@ -88,15 +88,48 @@ no private issue discussion is published as a workaround without approval.
 The source app and its original saved conversation remain privately available.
 No Durable Object transfer or deletion is part of this integration.
 
-## Next milestone — Google tools
+## Google tools and approvals (#92)
 
-Connect chat to gog-marketing's existing authenticated hosted MCP surface.
-Use the signed-in user's current service/tool/resource permissions, not a
-separate Google login or a generic CLI/HTTP proxy. Prove a useful read workflow
-and an explicitly approved write followed by read-back. Disabled access must
-remain denied. Recheck the imported MCP dependency advisory before enabling
-any MCP/OAuth client functionality.
+`src/chat/tools.ts` selects a bounded starter surface (`CHAT_GOOGLE_TOOLS`), not
+full CLI parity. The model first calls `google_access` to see enabled accounts,
+exact tools and selected resource IDs. Unavailable services are not advertised.
+The same `policyTools` and `handleToolCall` functions used by external `/mcp`
+resolve current grants, enforce quotas, acquire ephemeral Google credentials,
+audit and invoke the existing fixed private runner mappings. No parallel Google
+client, generic HTTP/CLI proxy, new bearer token or duplicate permissions UI exists.
+Every execution rechecks the live Clerk session, then the existing MCP path
+rechecks account/tool/resource authority, including changes made after approval.
 
-The broader agent epic remains future work: self-service provider keys,
-billing, memory, task management and execution receipts do not block this
-owner-chat integration. No full CLI command parity is required for this step.
+AI SDK 7's native `toolApproval` flow and assistant-ui tool cards provide inline
+**Approve Google action / Don't run** controls, showing exact account/resource
+arguments. A separate server-side Durable Object approval binds the generated
+call ID, owner, tenant, tool and canonical arguments. It expires after 10 minutes;
+authenticated approval is one-use and is consumed before dispatch. Denied,
+expired, changed or replayed approvals cannot execute. Browser-invented approvals
+or tool results cannot authorize Google actions. Approved calls may resume through
+the native SDK after reload without losing the gate. If a write's outcome is
+uncertain, it must not be automatically retried. After success the model uses an
+available read tool to verify, otherwise it explicitly reports that verification
+is unavailable. Stop cancels further dispatch, but cannot roll back a write that
+has already reached Google.
+
+The existing 10/minute and 100/day model-start budgets, 100 KB conversation cap,
+2,048-token per-step output limit and 90-second run timeout remain. A run is bounded
+to six model/tool steps; each approval continuation is authenticated and budgeted.
+Saved transcripts include tool arguments/results: use only accounts/data you are
+comfortable passing to the configured OpenRouter model.
+
+The installed production dependency audit was rechecked: the MCP client/SDK
+OAuth credential-forwarding advisory remains in transitive dependencies. This
+bridge does **not** instantiate an MCP/OAuth client or connect to a remote MCP
+server; no OAuth client credentials are handed to an MCP-selected issuer. Do not
+enable remote MCP/OAuth client functionality without resolving that advisory.
+Other existing dependency advisories were not silently upgraded in this change.
+
+Implementation/fixture proof and real Google acceptance are recorded separately
+in [issue #92](https://github.com/Rajeev-SG/gog-marketing/issues/92). A passing fixture
+is not a claim of a real approved write. Existing Google permissions are never
+changed as a testing shortcut.
+
+Self-service provider keys, billing, memory, broader task management and additional
+command coverage remain later work.

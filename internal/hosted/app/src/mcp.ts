@@ -798,7 +798,7 @@ async function enforceTenantRequestRateLimit(
   }
 }
 
-async function handleToolCall(
+export async function handleToolCall(
   id: JsonRpcId,
   params: Record<string, unknown>,
   env: McpEnv,

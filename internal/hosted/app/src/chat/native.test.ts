@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { loadMigrationSql, splitMigrationStatements } from "../../../state/src/dev-migrations.js";
+import { HostedRepository } from "../../../state/src/repository.js";
 import { generateTestKey, signTestToken, type TestKeyPair } from "../test-helpers.js";
 
 let mf: Miniflare;
@@ -16,6 +17,7 @@ let keys: TestKeyPair;
 const revoked = new Set<string>();
 const expiries = new Map<string, number>();
 let providerCalls = 0;
+let nextToolCall: { id: string; connectionId: string } | null = null;
 let rateLimited = false;
 let sessionChecks = 0;
 const outboundRoutes: string[] = [];
@@ -82,6 +84,44 @@ beforeAll(async () => {
                 created: 1,
                 model: "openai/gpt-4.1-mini",
               };
+              if (nextToolCall) {
+                const call = nextToolCall;
+                nextToolCall = null;
+                const frames = [
+                  {
+                    ...chunk,
+                    choices: [
+                      {
+                        index: 0,
+                        delta: {
+                          role: "assistant",
+                          tool_calls: [
+                            {
+                              index: 0,
+                              id: call.id,
+                              type: "function",
+                              function: {
+                                name: "tasks_lists_create",
+                                arguments: JSON.stringify({
+                                  title: "Native approval fixture",
+                                  connectionId: call.connectionId,
+                                }),
+                              },
+                            },
+                          ],
+                        },
+                        finish_reason: null,
+                      },
+                    ],
+                  },
+                  { ...chunk, choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] },
+                ];
+                return new Response(
+                  frames.map((f) => "data: " + JSON.stringify(f) + "\n\n").join("") +
+                    "data: [DONE]\n\n",
+                  { headers: { "Content-Type": "text/event-stream" } },
+                );
+              }
               const chunks: Record<string, unknown>[] = Array.from(
                 "Native fixture reply.",
                 (letter, index) => ({
@@ -142,8 +182,14 @@ beforeAll(async () => {
     }),
   );
   const db = await mf.getD1Database("DB");
-  for (const sql of splitMigrationStatements(loadMigrationSql("0001_initial_schema.sql")))
-    await db.prepare(sql).run();
+  for (const file of [
+    "0001_initial_schema.sql",
+    "0002_oauth_states_discovery.sql",
+    "0003_rate_limit_counters.sql",
+    "0004_mcp_signal_counters.sql",
+    "0005_tool_grants.sql",
+  ])
+    for (const sql of splitMigrationStatements(loadMigrationSql(file))) await db.prepare(sql).run();
 }, 20000);
 afterAll(async () => {
   await mf?.dispose();
@@ -347,3 +393,108 @@ it("keeps native streams/history intact while excluding silent revoked and expir
     beforeStop.map((message) => message.id),
   );
 }, 15000);
+
+it("persists native write approval over reconnect and never dispatches an unapproved or forged action", async () => {
+  const db = await mf.getD1Database("DB");
+  const repo = new HostedRepository(db as unknown as D1Database);
+  const tenant = await repo.bootstrapTenant(owner);
+  const connection = await repo.createConnection(
+    tenant.id,
+    "fixture-google",
+    "fixture@example.test",
+    "Fixture",
+    "[]",
+  );
+  await repo.saveToolGrants(tenant.id, connection.id, [
+    {
+      service: "tasks",
+      toolName: "tasks_lists_create",
+      enabled: true,
+      allowDestructive: false,
+      allowBillable: false,
+    },
+  ]);
+  const sessionCookie = await cookieFor("session-tool-approvals");
+  const meta = await mf.dispatchFetch(origin + "/api/chat/session", {
+    headers: { Cookie: sessionCookie },
+  });
+  const path =
+    origin + "/agents/chat/" + ((await meta.json()) as { conversation: string }).conversation;
+  let socket = await open(path, sessionCookie);
+  nextToolCall = { id: "native-write-approval", connectionId: connection.id };
+  await turn(socket, "native-approval-turn", [
+    {
+      id: "native-user",
+      role: "user",
+      parts: [{ type: "text", text: "Create the fixture list, after asking approval." }],
+    },
+  ]);
+  const messages = await history(path, sessionCookie);
+  expect(JSON.stringify(messages)).toContain("approval-requested");
+  expect(JSON.stringify(messages)).toContain("native-write-approval");
+  const before = await db
+    .prepare("SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'")
+    .first<{ count: number }>();
+  socket.close();
+  socket = await open(path, sessionCookie);
+  expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
+  // Native approval denial must settle the original tool, not execute it.
+  socket.send(
+    JSON.stringify({
+      type: "cf_agent_tool_approval",
+      toolCallId: "native-write-approval",
+      approved: false,
+      autoContinue: true,
+    }),
+  );
+  await expect
+    .poll(async () => JSON.stringify(await history(path, sessionCookie)))
+    .toContain("output-denied");
+  const after = await db
+    .prepare("SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'")
+    .first<{ count: number }>();
+  expect(after).toEqual(before);
+  // Approval dispatches exactly once into the shared MCP path. This fixture has
+  // no Google credentials/runner, so the result must honestly report unavailable.
+  nextToolCall = { id: "native-write-approved", connectionId: connection.id };
+  await turn(socket, "native-approved-turn", [
+    {
+      id: "native-approved-user",
+      role: "user",
+      parts: [{ type: "text", text: "Ask before creating another fixture list." }],
+    },
+  ]);
+  expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
+  socket.send(
+    JSON.stringify({
+      type: "cf_agent_tool_approval",
+      toolCallId: "native-write-approved",
+      approved: true,
+      autoContinue: true,
+    }),
+  );
+  await expect
+    .poll(
+      async () =>
+        (await db
+          .prepare(
+            "SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'",
+          )
+          .first<{ count: number }>())!.count,
+    )
+    .toBe(before!.count + 1);
+  await expect
+    .poll(async () => JSON.stringify(await history(path, sessionCookie)))
+    .toContain("isError");
+  // A made-up browser approval has no durable server-originated call to authorize.
+  const close = closed(socket);
+  socket.send(
+    JSON.stringify({
+      type: "cf_agent_tool_approval",
+      toolCallId: "forged-call",
+      approved: true,
+      autoContinue: true,
+    }),
+  );
+  expect(await close).toBe(4400);
+});

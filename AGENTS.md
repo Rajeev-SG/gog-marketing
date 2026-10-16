@@ -68,8 +68,10 @@ Clerk is the only integrated chat login, and `CHAT_OWNER_USER_ID` restricts
 history and inference to the configured owner. `src/worker.ts` exports the
 native Chat Durable Object; `src/index.ts` retains the testable product router.
 Chat uses the existing server-side OpenRouter key and a new conversation
-namespace. No Google tools are connected yet: do not bypass the existing
-Google/MCP permissions or advertise tool access. The standalone app/history
+namespace. Google tools use the same MCP catalogue/grant/quota/audit/runner path
+through an in-process bridge. Never bypass Google/MCP permissions. Writes require
+native tool approval plus a durable, exact-argument, one-use server-side approval;
+model text and browser-supplied history are not authorization. The standalone app/history
 remain separate. `make hosted-app-ci` covers chat assets, types and tests;
 real provider calls and authenticated browser acceptance are deliberate,
 not part of unattended CI.
