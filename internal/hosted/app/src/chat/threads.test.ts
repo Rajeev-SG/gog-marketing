@@ -52,9 +52,12 @@ it("preserves the legacy conversation/draft digest and isolates owner/thread met
   expect(await ra.get(t.id)).toBeNull();
   expect(await ra.byConversation(t.conversation)).toBeNull();
   expect((await ra.get(t.id, true))?.purged).toBe(0);
+  expect(await ra.pendingDeletions()).toContainEqual({ id: t.id, draftKey: t.conversation });
+  expect(await rb.pendingDeletions()).toEqual([]);
   expect((await ra.get(t.id, true))?.title).toBe("Deleted conversation");
   await ra.markPurged(t.id);
   expect((await ra.get(t.id, true))?.purged).toBe(1);
+  expect(await ra.pendingDeletions()).toEqual([]);
   await ra.tombstone("original");
   expect(await ra.list()).toHaveLength(0);
   const fresh = (await ra.resolve(null))!;

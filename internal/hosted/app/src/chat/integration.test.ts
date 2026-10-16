@@ -294,6 +294,13 @@ describe("integrated chat identity boundary", () => {
     // This fixture deliberately has no DO namespace: cleanup must report pending,
     // yet the index must already deny history/upgrades/inference and permit retry.
     expect((await mutate("/api/chat/threads/" + thread.id, "DELETE", undefined)).status).toBe(503);
+    const listing = (await (await worker.fetch(await signed("/api/chat/threads"), env)).json()) as {
+      pendingDeletions: { id: string; draftKey: string }[];
+    };
+    expect(listing.pendingDeletions).toContainEqual({
+      id: thread.id,
+      draftKey: value.conversation,
+    });
     expect(
       (await worker.fetch(await signed("/api/chat/session?thread=" + thread.id), env)).status,
     ).toBe(404);

@@ -420,10 +420,11 @@ function App() {
   const clerkSession = useRef<string | null | undefined>(undefined);
   const [session, setSession] = useState<ChatSession | null>(null);
   const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [pendingDeletions, setPendingDeletions] = useState<{ id: string; draftKey: string }[]>([]);
   const [threadError, setThreadError] = useState("");
   const [threadBusy, setThreadBusy] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(false);
-  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 760px)").matches);
+  const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 900px)").matches);
   const [threadAction, setThreadAction] = useState<"rename" | "delete" | null>(null);
   const [threadName, setThreadName] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
@@ -437,10 +438,24 @@ function App() {
     try {
       const r = await fetch("/api/chat/threads", { signal: AbortSignal.timeout(10000) });
       if (!r.ok) throw new Error("Thread list unavailable");
-      const data = (await r.json()) as { threads: ChatThread[] };
+      const data = (await r.json()) as {
+        threads: ChatThread[];
+        pendingDeletions?: { id: string; draftKey: string }[];
+      };
       if (generation === authGeneration.current && identity === activeClerkSessionId()) {
         setThreads(data.threads);
-        setThreadError("");
+        setPendingDeletions(data.pendingDeletions ?? []);
+        for (const pending of data.pendingDeletions ?? []) {
+          deletedDraftKeys.add(draftStorageKey(pending.draftKey));
+          try {
+            sessionStorage.removeItem(draftStorageKey(pending.draftKey));
+          } catch {
+            /* Storage can be disabled. */
+          }
+        }
+        setThreadError((current) =>
+          current.startsWith("Could not load conversations") ? "" : current,
+        );
       }
     } catch {
       if (generation === authGeneration.current)
@@ -485,7 +500,13 @@ function App() {
     setGate("loading");
     setMessage("");
     try {
-      const r = await fetch(sessionEndpoint(), { signal: AbortSignal.timeout(10000) });
+      let r = await fetch(sessionEndpoint(), { signal: AbortSignal.timeout(10000) });
+      if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
+      if (r.status === 404 && selectedThread()) {
+        // A deleted/stale bookmark must not strand the entire workspace.
+        window.history.replaceState(null, "", "/chat");
+        r = await fetch(SESSION_ENDPOINT, { signal: AbortSignal.timeout(10000) });
+      }
       if (generation !== authGeneration.current || activeClerkSessionId() !== identity) return;
       if (r.ok) {
         const data = (await r.json()) as ChatSession;
@@ -652,7 +673,7 @@ function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [openThread]);
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 760px)");
+    const media = window.matchMedia("(max-width: 900px)");
     const update = () => setMobile(media.matches);
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
@@ -715,11 +736,42 @@ function App() {
         }
       }
     } catch {
+      if (generation === authGeneration.current) void refreshThreads();
+      setThreadError(
+        "Could not " +
+          (action === "new" ? "create" : action) +
+          " the conversation. Refresh the list before retrying.",
+      );
+    } finally {
+      setThreadBusy(false);
+    }
+  };
+  const retryDeletion = async (pending: { id: string; draftKey: string }) => {
+    if (threadBusy) return;
+    const generation = authGeneration.current;
+    const identity = activeClerkSessionId();
+    setThreadBusy(true);
+    try {
+      const response = await fetch("/api/chat/threads/" + encodeURIComponent(pending.id), {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!response.ok) throw new Error("Cleanup pending");
+      if (generation !== authGeneration.current || identity !== activeClerkSessionId()) return;
+      deletedDraftKeys.add(draftStorageKey(pending.draftKey));
+      try {
+        sessionStorage.removeItem(draftStorageKey(pending.draftKey));
+      } catch {
+        /* Storage can be disabled. */
+      }
+      setThreadError("");
+      await refreshThreads();
+      if (session?.thread?.id === pending.id) openThread(undefined, true);
+    } catch {
       if (generation === authGeneration.current)
         setThreadError(
-          "Could not " +
-            (action === "new" ? "create" : action) +
-            " the conversation. Refresh the list before retrying.",
+          "Deletion cleanup is still pending. Your other conversations are available; retry when the connection recovers.",
         );
     } finally {
       setThreadBusy(false);
@@ -875,6 +927,25 @@ function App() {
                 </li>
               ))}
             </ul>
+            {pendingDeletions.length > 0 && (
+              <section className="pending-deletions" aria-label="Pending conversation cleanup">
+                <h3>Deletion cleanup pending</h3>
+                <p>
+                  These conversations are inaccessible. Finish removing their stored data. More
+                  pending items appear as cleanup completes.
+                </p>
+                {pendingDeletions.map((pending) => (
+                  <button
+                    key={pending.id}
+                    type="button"
+                    disabled={threadBusy}
+                    onClick={() => void retryDeletion(pending)}
+                  >
+                    Finish deletion <span className="sr-only">{pending.id}</span>
+                  </button>
+                ))}
+              </section>
+            )}
             <button type="button" className="quiet" onClick={() => void refreshThreads()}>
               Refresh conversations
             </button>

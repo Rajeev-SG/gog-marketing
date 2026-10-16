@@ -129,7 +129,10 @@ export async function handleChat(
       return errorResponse(404, "Conversation not found.", false, authenticatedHeaders);
     if (collection && request.method === "GET")
       return Response.json(
-        { threads: (await registry.list()).map(publicThread) },
+        {
+          threads: (await registry.list()).map(publicThread),
+          pendingDeletions: await registry.pendingDeletions(),
+        },
         { headers: authenticatedHeaders },
       );
     if (id && request.method === "DELETE") {

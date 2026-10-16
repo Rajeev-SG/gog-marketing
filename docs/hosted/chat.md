@@ -162,7 +162,11 @@ rename and confirmed deletion are supported. Drafts are tab-local and independen
 per account/thread. Deletion tombstones the owner index before native destruction,
 blocks subsequent history/upgrades/messages/model/tools immediately, cancels native
 work and removes transcript/approval storage. A failed purge returns a retryable
-error, not a false success. Minimal opaque tombstones remain to prevent resurrection;
+error, not a false success. Pending cleanup stays discoverable in the owner sidebar
+across rechecks/reloads; Finish deletion retries that same immutable ID. Deleted
+bookmarks recover to surviving/new owner threads instead of trapping the workspace.
+The pending list is served in batches of100; remaining items appear as cleanup
+completes. Minimal opaque tombstones remain to prevent resurrection;
 deleted titles are removed. Other threads and standalone storage are untouched.
 An already-executed Google operation cannot be rolled back by deleting its chat.
 

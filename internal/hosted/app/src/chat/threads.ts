@@ -56,6 +56,15 @@ export class ChatThreads {
       .all<ThreadRecord>();
     return rows.results ?? [];
   }
+  async pendingDeletions(): Promise<{ id: string; draftKey: string }[]> {
+    const rows = await this.repo.db
+      .prepare(
+        "SELECT id,conversation AS draftKey FROM hosted_chat_threads WHERE tenant_id=?1 AND deleted_at IS NOT NULL AND purged=0 ORDER BY deleted_at,id LIMIT 100",
+      )
+      .bind(this.tenantId)
+      .all<{ id: string; draftKey: string }>();
+    return rows.results ?? [];
+  }
   async get(id: string, includeDeleted = false): Promise<ThreadRecord | null> {
     if (!validThreadId(id)) return null;
     return this.repo.db

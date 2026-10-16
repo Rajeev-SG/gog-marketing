@@ -28,6 +28,9 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
       },
     ],
   ]);
+  const pending = new Map<string, { id: string; draftKey: string }>();
+  let firstPurgeFails = true;
+  const deleteAttempts: string[] = [];
   const createdId = "00000000-0000-4000-8000-000000000002";
   await page.addInitScript(() => {
     Object.assign(window, {
@@ -68,7 +71,9 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
         threads.set(createdId, thread);
         return route.fulfill({ status: 201, json: { thread } });
       }
-      return route.fulfill({ json: { threads: [...threads.values()] } });
+      return route.fulfill({
+        json: { threads: [...threads.values()], pendingDeletions: [...pending.values()] },
+      });
     }
     if (url.pathname.startsWith("/api/chat/threads/")) {
       const id = url.pathname.split("/").at(-1)!;
@@ -78,11 +83,20 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
         return route.fulfill({ json: { thread } });
       }
       if (method === "DELETE") {
+        deleteAttempts.push(id);
+        if (thread) pending.set(id, { id, draftKey: thread.conversation });
         threads.delete(id);
+        if (firstPurgeFails) {
+          firstPurgeFails = false;
+          return route.fulfill({ status: 503, json: { error: "Deletion pending" } });
+        }
+        pending.delete(id);
         return route.fulfill({ status: 204 });
       }
     }
     if (url.pathname === "/api/chat/session") {
+      if (url.searchParams.has("thread") && !threads.has(url.searchParams.get("thread")!))
+        return route.fulfill({ status: 404, json: { error: "Conversation not found" } });
       const thread =
         threads.get(url.searchParams.get("thread") ?? "original") ?? [...threads.values()][0];
       return route.fulfill({
@@ -138,21 +152,39 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   await expect(page.getByText("Legacy saved answer")).toBeVisible();
   await page.getByRole("button", { name: "Delete", exact: true }).click();
   await page.getByRole("button", { name: "Delete conversation", exact: true }).click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
+  // The failed purge hides data immediately, but cleanup remains discoverable
+  // after reload and a stale/deleted deep link, targeting the same immutable ID.
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(createdId));
+  await expect(page.getByRole("button", { name: /Finish deletion/ })).toBeVisible();
+  await page.getByRole("button", { name: /Finish deletion/ }).click();
+  await expect(page.getByRole("region", { name: "Pending conversation cleanup" })).toHaveCount(0);
+  expect(deleteAttempts).toEqual(["original", "original"]);
+  await page.goto("/chat?thread=original");
+  await expect(page).toHaveURL(new RegExp(createdId));
   await expect(page.getByRole("link", { name: "Renamed original", exact: true })).toHaveCount(0);
   await expect(input).toHaveValue("new private draft");
   await expect(page.getByText("Other conversation answer")).toBeVisible();
   expect(
     await page.evaluate(() => sessionStorage.getItem("gog:chat:draft:" + "1".repeat(64))),
   ).toBeNull();
-  await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    page
-      .getByRole("navigation", { name: "Mobile navigation", exact: true })
-      .getByRole("link", { name: "Google data" }),
-  ).toHaveAttribute("href", "/#google-data");
-  await page.getByRole("button", { name: "Open conversations" }).click();
-  await expect(page.getByRole("button", { name: "New chat", exact: true })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("button", { name: "Open conversations" })).toBeFocused();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  for (const width of [390, 820]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(
+      page
+        .getByRole("navigation", { name: "Mobile navigation", exact: true })
+        .getByRole("link", { name: "Google data" }),
+    ).toHaveAttribute("href", "/#google-data");
+    await page.getByRole("button", { name: "Open conversations" }).click();
+    await expect(page.getByRole("button", { name: "New chat", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Close conversations" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Open conversations" })).toBeFocused();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+    const box = await input.boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(844 - 66);
+  }
 });
