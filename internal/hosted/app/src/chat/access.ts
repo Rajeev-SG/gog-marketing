@@ -16,12 +16,13 @@
  * Conversation names are server-derived opaque SHA-256 digests of the
  * internal tenant id, so clients never learn the raw tenant identifier.
  */
+import type { McpEnv } from "../mcp.js";
 import { createClerkClient } from "@clerk/backend";
 import { HostedRepository } from "../../../state/src/repository.js";
 import type { Tenant } from "../../../state/src/types.js";
 import { authenticate, type AuthOutcome, type ClerkEnv } from "../auth.js";
 
-export interface ChatEnv extends ClerkEnv {
+export interface ChatEnv extends ClerkEnv, McpEnv {
   /** Exact Clerk user id of the single permitted chat owner. Required. */
   CHAT_OWNER_USER_ID?: string;
   /** OpenRouter secret key; model calls fail closed without it. */

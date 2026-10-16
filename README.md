@@ -80,9 +80,10 @@ sign-in. Chat is initially restricted to the configured owner and uses a
 server-side OpenRouter key. It starts a fresh saved conversation; the old
 standalone app and its history are preserved.
 
-**Google tools are not connected to chat yet.** Connecting them through the
-existing Google permissions is the next milestone, not an implied capability
-of shared sign-in. See the [chat implementation and verification record](docs/hosted/chat.md)
+Chat can use a bounded starter set of the existing Google tools, but only for
+accounts, exact tools and resources you have enabled in **Google settings**.
+Every write needs a separate approval of its exact arguments. Shared sign-in
+does not grant Google access or enable every CLI command. See the [chat implementation and verification record](docs/hosted/chat.md)
 and [integration issue #90](https://github.com/Rajeev-SG/gog-marketing/issues/90).
 
 ## Getting started

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted chat: connect a bounded starter set of existing Google tools under saved account/tool/resource permissions; add exact-argument write approval, expiry/replay protection and visible tool results. Preserve owner-only Clerk access and the existing MCP execution/audit path. (#92, thanks @Rajeev-SG)
+
 - Hosted chat: integrate the existing React/assistant-ui OpenRouter chatbot at `/chat` with shared Clerk sign-in, owner-only access and a fresh native conversation store; preserve standalone history and keep Google tools explicitly disconnected. (#90; imported from gog-marketing-chat PR #3, thanks @Rajeev-SG)
 
 - Hosted onboarding: group the 13 priority service choices into readable Workspace/Marketing rows with labelled read/write controls, select-all services and clear-selection actions; keep deferred services out of new choices and writes separate. (#69, #79)
