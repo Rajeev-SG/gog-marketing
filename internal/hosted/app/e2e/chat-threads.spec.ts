@@ -30,6 +30,7 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   ]);
   const pending = new Map<string, { id: string; draftKey: string }>();
   let firstPurgeFails = true;
+  let firstCreateFails = true;
   const deleteAttempts: string[] = [];
   const createdId = "00000000-0000-4000-8000-000000000002";
   await page.addInitScript(() => {
@@ -61,6 +62,11 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
       });
     if (url.pathname === "/api/chat/threads") {
       if (method === "POST") {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        if (firstCreateFails) {
+          firstCreateFails = false;
+          return route.fulfill({ status: 503, json: { error: "Temporary create failure" } });
+        }
         const thread = {
           id: createdId,
           title: "New chat",
@@ -133,6 +139,11 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   await expect(page.getByText("Legacy saved answer")).toBeVisible();
   await input.fill("original private draft");
   await page.getByRole("button", { name: "New chat", exact: true }).click();
+  await expect(input).toHaveCount(0);
+  await expect(page.getByRole("alert")).toContainText("Could not create");
+  await expect(input).toHaveValue("original private draft");
+  await page.getByRole("button", { name: "New chat", exact: true }).click();
+  await expect(input).toHaveCount(0);
   await expect(page).toHaveURL(new RegExp(createdId));
   await expect(input).toHaveValue("");
   await expect(page.getByText("Legacy saved answer")).toHaveCount(0);

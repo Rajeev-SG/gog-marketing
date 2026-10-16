@@ -701,6 +701,11 @@ function App() {
     const id = session?.thread?.id ?? "original";
     setThreadBusy(true);
     setThreadError("");
+    // Do not let typing/sending land in the previous thread while creation is pending.
+    if (action === "new") {
+      setSession(null);
+      setGate("loading");
+    }
     try {
       const r = await fetch(
         "/api/chat/threads" + (action === "new" ? "" : "/" + encodeURIComponent(id)),
@@ -736,12 +741,18 @@ function App() {
         }
       }
     } catch {
-      if (generation === authGeneration.current) void refreshThreads();
-      setThreadError(
-        "Could not " +
-          (action === "new" ? "create" : action) +
-          " the conversation. Refresh the list before retrying.",
-      );
+      if (generation === authGeneration.current && identity === activeClerkSessionId()) {
+        if (action === "new") {
+          setSession(session);
+          setGate("ready");
+        }
+        void refreshThreads();
+        setThreadError(
+          "Could not " +
+            (action === "new" ? "create" : action) +
+            " the conversation. Refresh the list before retrying.",
+        );
+      }
     } finally {
       setThreadBusy(false);
     }
