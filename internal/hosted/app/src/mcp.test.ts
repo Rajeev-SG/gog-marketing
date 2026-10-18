@@ -2308,3 +2308,175 @@ for (const entry of [
     expect(requests).toHaveLength(1);
   });
 }
+
+it("routes GA4 account inventory and gated property listing without granting returned properties", async () => {
+  const requests: ToolExecutionRequest[] = [];
+  const env = await createEnv({
+    __testToolRunner: {
+      async execute(request) {
+        requests.push(request);
+        if (request.nativeTool!.name === "analytics_accounts") {
+          return {
+            status: "ok",
+            result: {
+              accountSummaries: [
+                { account: "accounts/111", propertySummaries: [{ property: "properties/777" }] },
+              ],
+            },
+          };
+        }
+        return {
+          status: "ok",
+          result: { properties: [{ name: "properties/777", parent: "accounts/111" }] },
+        };
+      },
+    },
+  });
+  const fixture = await createToolFixture(env, "analytics-inv-owner", true);
+  const foreign = await createToolFixture(env, "analytics-inv-foreign", true);
+  const token = await tokenFor("analytics-inv-owner");
+  const accountsParams = {
+    name: "analytics_accounts",
+    arguments: {},
+    connectionId: fixture.connectionId,
+  };
+  const propertiesParams = {
+    name: "analytics_properties_list",
+    arguments: { account: "accounts/111" },
+    connectionId: fixture.connectionId,
+  };
+
+  const accountsDenied = await rpcJson(await rpc(env, "tools/call", accountsParams, { token }));
+  expect(accountsDenied.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(0);
+
+  await fixture.repo.saveToolGrants(fixture.tenantId, fixture.connectionId, [
+    {
+      service: "analytics",
+      toolName: "analytics_accounts",
+      enabled: true,
+      allowDestructive: false,
+      allowBillable: false,
+    },
+    {
+      service: "analytics",
+      toolName: "analytics_properties_list",
+      enabled: true,
+      allowDestructive: false,
+      allowBillable: false,
+    },
+    {
+      service: "analytics",
+      toolName: "analytics_properties_get",
+      enabled: true,
+      allowDestructive: false,
+      allowBillable: false,
+    },
+  ]);
+
+  const accounts = await rpcJson(await rpc(env, "tools/call", accountsParams, { token }));
+  expect(accounts.result.structuredContent).toEqual({
+    accountSummaries: [
+      { account: "accounts/111", propertySummaries: [{ property: "properties/777" }] },
+    ],
+  });
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toMatchObject({
+    connectionId: fixture.connectionId,
+    service: "analytics",
+    resourceType: "",
+    resourceId: "",
+  });
+  expect(requests[0]!.nativeTool!.name).toBe("analytics_accounts");
+  expect(requests[0]!.nativeTool!.arguments).toEqual({});
+
+  const propertiesDenied = await rpcJson(await rpc(env, "tools/call", propertiesParams, { token }));
+  expect(propertiesDenied.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(1);
+
+  await fixture.repo.upsertResourceGrant(
+    fixture.tenantId,
+    fixture.connectionId,
+    "analytics",
+    "accounts/111",
+    "account",
+    "Test account",
+    true,
+    "{}",
+  );
+
+  const properties = await rpcJson(await rpc(env, "tools/call", propertiesParams, { token }));
+  expect(properties.result.structuredContent).toEqual({
+    properties: [{ name: "properties/777", parent: "accounts/111" }],
+  });
+  expect(requests).toHaveLength(2);
+  expect(requests[1]).toMatchObject({
+    connectionId: fixture.connectionId,
+    service: "analytics",
+    resourceType: "account",
+    resourceId: "accounts/111",
+  });
+  expect(requests[1]!.nativeTool!.name).toBe("analytics_properties_list");
+  expect(requests[1]!.nativeTool!.arguments).toEqual({ account: "accounts/111" });
+
+  const foreignAccount = await rpcJson(
+    await rpc(
+      env,
+      "tools/call",
+      { ...propertiesParams, arguments: { account: "accounts/222" } },
+      { token },
+    ),
+  );
+  expect(foreignAccount.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(2);
+
+  const foreignConnection = await rpcJson(
+    await rpc(
+      env,
+      "tools/call",
+      { ...propertiesParams, connectionId: foreign.connectionId },
+      { token },
+    ),
+  );
+  expect(foreignConnection.error.data.detail).toBe("connection_not_found");
+  expect(requests).toHaveLength(2);
+
+  await fixture.repo.upsertResourceGrant(
+    fixture.tenantId,
+    fixture.connectionId,
+    "analytics",
+    "accounts/111",
+    "account",
+    "Test account",
+    false,
+    "{}",
+  );
+  const disabledResource = await rpcJson(await rpc(env, "tools/call", propertiesParams, { token }));
+  expect(disabledResource.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(2);
+
+  await fixture.repo.upsertResourceGrant(
+    fixture.tenantId,
+    fixture.connectionId,
+    "analytics",
+    "accounts/111",
+    "account",
+    "Test account",
+    true,
+    "{}",
+  );
+  const returnedProperty = await rpcJson(
+    await rpc(
+      env,
+      "tools/call",
+      {
+        name: "analytics_properties_get",
+        arguments: { property: "properties/777" },
+        connectionId: fixture.connectionId,
+      },
+      { token },
+    ),
+  );
+  expect(returnedProperty.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(2);
+});
