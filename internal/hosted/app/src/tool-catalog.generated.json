@@ -3838,6 +3838,93 @@
     }
   },
   {
+    "name": "drive_rename",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Rename a Picker-selected Drive file. Requires drive.file and an explicit selected-file grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "new_name"],
+        "type": "object"
+      },
+      "name": "drive_rename"
+    }
+  },
+  {
+    "name": "drive_copy",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Copy a Picker-selected Drive file. Requires drive.file and an explicit selected-file grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "new_name"],
+        "type": "object"
+      },
+      "name": "drive_copy"
+    }
+  },
+  {
+    "name": "drive_trash",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Trash a freshly verified non-folder Picker-selected Drive file. Requires drive.file, the exact write/file grant and destructive permission. Folders, shortcuts, unknown kinds and permanent deletion are not supported.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_trash"
+    }
+  },
+  {
     "name": "groups_list",
     "service": "groups",
     "resource_type": "",
