@@ -173,6 +173,22 @@ export async function reserveChatBudget(
 ): Promise<boolean> {
   await seedLegacyChatBudget(repo, tenantId, legacy);
   const now = Date.now();
+  const nowIso = new Date(now).toISOString();
+  const day = "chat-day:" + Math.floor(now / 86400000);
+  // Carry the already-seeded legacy day into monthly accounting. MAX makes
+  // repeated snapshots and concurrent seeding conservative rather than
+  // additive, while existing monthly usage is never rolled back.
+  await repo.db
+    .prepare(
+      `INSERT INTO hosted_quota_counters(tenant_id,period,counter,value,updated_at)
+       SELECT ?1,?2,'chat_model_starts',COALESCE(MAX(value),0),?3
+       FROM hosted_quota_counters
+       WHERE tenant_id=?1 AND period=?4 AND counter='chat_model_starts'
+       ON CONFLICT(tenant_id,period,counter) DO UPDATE SET
+         value=MAX(value,excluded.value),updated_at=excluded.updated_at`,
+    )
+    .bind(tenantId, "chat-month:" + new Date(now).toISOString().slice(0, 7), nowIso, day)
+    .run();
   if (
     (await repo.incrementQuotaWithinLimit(
       tenantId,
@@ -183,11 +199,12 @@ export async function reserveChatBudget(
   )
     return false;
   return (
+    (await repo.incrementQuotaWithinLimit(tenantId, day, "chat_model_starts", 100)) !== null &&
     (await repo.incrementQuotaWithinLimit(
       tenantId,
-      "chat-day:" + Math.floor(now / 86400000),
+      "chat-month:" + new Date(now).toISOString().slice(0, 7),
       "chat_model_starts",
-      100,
+      1000,
     )) !== null
   );
 }

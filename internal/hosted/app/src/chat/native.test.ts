@@ -22,6 +22,9 @@ let rateLimited = false;
 let sessionChecks = 0;
 const outboundRoutes: string[] = [];
 const owner = "user_native_chat_owner";
+const cohortA = "user_NativeCohortA";
+const cohortB = "user_NativeCohortB";
+const sessionUsers = new Map<string, string>();
 const origin = "https://test.example.com";
 
 beforeAll(async () => {
@@ -68,6 +71,7 @@ beforeAll(async () => {
             CLERK_AUTHORIZED_PARTIES: origin,
             CLERK_JWT_KEY: keys.publicPem,
             CHAT_OWNER_USER_ID: owner,
+            CHAT_COHORT_USER_IDS: cohortA + "," + cohortB,
             OPENROUTER_API_KEY: "fixture-only-not-a-real-provider-key",
           },
           outboundService: async (request: Request) => {
@@ -170,7 +174,7 @@ beforeAll(async () => {
               object: "session",
               id: sessionId,
               client_id: "client_native",
-              user_id: owner,
+              user_id: sessionUsers.get(sessionId) ?? owner,
               status: revoked.has(sessionId) ? "revoked" : "active",
               expire_at: expiries.get(sessionId) ?? Date.now() + 3600000,
               abandon_at: Date.now() + 3600000,
@@ -236,10 +240,10 @@ function closed(socket: Socket): Promise<number> {
     });
   });
 }
-async function cookieFor(sessionId: string) {
+async function cookieFor(sessionId: string, user = owner) {
   const jwt = await signTestToken(
     {
-      sub: owner,
+      sub: user,
       sid: sessionId,
       azp: origin,
       iss: "https://oriented-wombat-2813.clerk.accounts.dev",
@@ -576,4 +580,96 @@ it("isolates native transcripts/approvals across threads and purges a deleted th
   expect(
     JSON.stringify(await history(origin + "/agents/chat/" + data.conversation, sessionCookie)),
   ).toContain("B-only native fixture message");
+});
+
+it("admits two independent native cohort tenants and rejects foreign or revoked live sessions", async () => {
+  const tenantA = await new HostedRepository(
+    (await mf.getD1Database("DB")) as unknown as D1Database,
+  ).bootstrapTenant(cohortA);
+  const tenantB = await new HostedRepository(
+    (await mf.getD1Database("DB")) as unknown as D1Database,
+  ).bootstrapTenant(cohortB);
+  sessionUsers.set("sess_native_cohort_a", cohortA);
+  sessionUsers.set("sess_native_cohort_b", cohortB);
+
+  const cookieA = await cookieFor("sess_native_cohort_a", cohortA);
+  const cookieB = await cookieFor("sess_native_cohort_b", cohortB);
+  const metaA = await mf.dispatchFetch(origin + "/api/chat/session?thread=original", {
+    headers: { Cookie: cookieA },
+  });
+  const metaB = await mf.dispatchFetch(origin + "/api/chat/session?thread=original", {
+    headers: { Cookie: cookieB },
+  });
+  expect(metaA.status).toBe(200);
+  expect(metaB.status).toBe(200);
+  const pathA =
+    origin + "/agents/chat/" + ((await metaA.json()) as { conversation: string }).conversation;
+  const pathB =
+    origin + "/agents/chat/" + ((await metaB.json()) as { conversation: string }).conversation;
+  expect(pathA).not.toBe(pathB);
+  expect(await history(pathA, cookieA)).toEqual([]);
+  expect(await history(pathB, cookieB)).toEqual([]);
+
+  const socketA = await open(pathA, cookieA);
+  const socketB = await open(pathB, cookieB);
+  await turn(socketA, "cohort-a-turn", [
+    { id: "cohort-a-user", role: "user", parts: [{ type: "text", text: "Only cohort A" }] },
+  ]);
+  await turn(socketB, "cohort-b-turn", [
+    { id: "cohort-b-user", role: "user", parts: [{ type: "text", text: "Only cohort B" }] },
+  ]);
+  expect(JSON.stringify(await history(pathA, cookieA))).toContain("Only cohort A");
+  expect(
+    (await mf.dispatchFetch(pathA + "/get-messages", { headers: { Cookie: cookieB } })).status,
+  ).toBe(404);
+  expect(JSON.stringify(await history(pathB, cookieB))).toContain("Only cohort B");
+  expect(
+    (await mf.dispatchFetch(pathB + "/get-messages", { headers: { Cookie: cookieA } })).status,
+  ).toBe(404);
+  expect(
+    (await mf.dispatchFetch(pathB + "/get-messages", { headers: { Cookie: cookieA } })).status,
+  ).toBe(404);
+  expect(
+    (
+      await mf.dispatchFetch(origin + "/api/chat/session?thread=" + tenantB.id, {
+        headers: { Cookie: cookieA },
+      })
+    ).status,
+  ).toBe(404);
+
+  const checksBeforeForeign = sessionChecks;
+  const foreignCookie = await cookieFor("sess_native_foreign", "user_not_invited");
+  expect(
+    (
+      await mf.dispatchFetch(origin + "/api/chat/session", {
+        headers: { Cookie: foreignCookie },
+      })
+    ).status,
+  ).toBe(403);
+  expect(sessionChecks).toBe(checksBeforeForeign);
+
+  revoked.add("sess_native_cohort_a");
+  const closedA = closed(socketA);
+  socketA.send(
+    JSON.stringify({
+      type: "cf_agent_use_chat_request",
+      id: "revoked-a-turn",
+      init: {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [{ id: "revoked-a-user", role: "user", parts: [{ type: "text", text: "No" }] }],
+          trigger: "submit-message",
+        }),
+      },
+    }),
+  );
+  expect(await closedA).toBe(4401);
+  revoked.delete("sess_native_cohort_a");
+  expect(
+    (await mf.dispatchFetch(pathA + "/get-messages", { headers: { Cookie: cookieA } })).status,
+  ).toBe(200);
+  await open(pathA, cookieA).then((socket) => socket.close());
+
+  sessionUsers.delete("sess_native_cohort_a");
+  sessionUsers.delete("sess_native_cohort_b");
 });

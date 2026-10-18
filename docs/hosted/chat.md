@@ -1,8 +1,9 @@
-# Integrated owner chat
+# Integrated private chat
 
 Chat is part of gog-marketing at `/chat`, using the same Clerk sign-in as
-Google account settings. Chat remains owner-only and can now invoke a bounded
-starter set of existing Google tools, only when the account, exact tool and
+Google account settings. Chat remains owner-only unless the operator explicitly
+configures the first verified cohort. It can now invoke a bounded starter set of
+existing Google tools, only when the account, exact tool and
 resource are enabled in the original Google settings. Nothing is enabled merely
 by signing in. Every write requires a separate approval card.
 
@@ -27,14 +28,26 @@ model-start quotas are account-wide in D1; creating/deleting a thread cannot
 multiply allowances, and existing legacy counters are carried forward.
 
 `CHAT_OWNER_USER_ID` must name the verified Clerk owner in the deployed Clerk
-instance. Missing configuration fails closed. Other users, anonymous requests,
-foreign conversations, inactive tenants, expired/revoked sessions and untrusted
-origins cannot access the conversation or start inference. Clerk authentication
-and live session status checks happen server-side. No browser-supplied identity
-can select another conversation. Drafts are tab-local and account-scoped.
+instance. Missing owner configuration fails closed. For the first cohort only,
+operators may set `CHAT_COHORT_USER_IDS` to a comma-separated list of exact
+Clerk user ids; omit or leave it empty for owner-only chat. A non-empty list must
+contain only valid, duplicate-free `user_*` Clerk ids. A malformed list is a hard
+chat outage, never an implicit fallback. Allowlisting only admits the user: each
+request still needs a server-derived active D1 tenant, a live Clerk session, and
+a tenant-owned conversation before HTML, metadata, threads, history, sockets,
+inference or tools. There is no open-signup inference. Other users, anonymous
+requests, foreign conversations, inactive tenants, expired/revoked sessions and
+untrusted origins cannot access the conversation or start inference. Clerk
+authentication and live session status checks happen server-side. No
+browser-supplied identity can select another conversation. Drafts are tab-local
+and account-scoped.
 
 The model defaults to `openai/gpt-4.1-mini`. Limits remain 10 model starts per
-minute, 100 per UTC day, 100 KB conversation, 8,000 characters per user message,
+minute, 100 per UTC day, and 1,000 per UTC calendar month per tenant; creating
+threads or changing sessions cannot multiply those allowances. Current legacy
+daily usage is conservatively carried into the new monthly counter. Requests
+denied by a later budget may still consume earlier budget reservations; denial
+never authorizes inference. Other limits remain 100 KB conversation, 8,000 characters per user message,
 2,048 output tokens, and a 90-second response timeout. Text limits are enforced per native conversation; model-start limits are enforced
 account-wide in D1, separate from the legacy standalone app.
 Provider failures are redacted. Native streaming, stop, reconnect and saved
@@ -75,8 +88,9 @@ must never fall back to the frontend's HTML. Existing Google OAuth callback,
 connection, grant and external `/mcp` routes retain their original behaviour.
 
 See the operator runbook for provisioning `OPENROUTER_API_KEY`, setting
-`CHAT_OWNER_USER_ID`/`OPENROUTER_MODEL`, preserving existing Worker variables,
-and deploying. Never copy `.dev.vars`, `.owner-access.txt`, credentials or
+`CHAT_OWNER_USER_ID`/`OPENROUTER_MODEL`, optionally setting
+`CHAT_COHORT_USER_IDS`, preserving existing Worker variables, and deploying.
+Never copy `.dev.vars`, `.owner-access.txt`, credentials or
 standalone conversation data into this repository or its public assets.
 
 ## Verification and work tracking
@@ -119,7 +133,7 @@ available read tool to verify, otherwise it explicitly reports that verification
 is unavailable. Stop cancels further dispatch, but cannot roll back a write that
 has already reached Google.
 
-The existing 10/minute and 100/day model-start budgets, 100 KB conversation cap,
+The 10/minute, 100/UTC-day and 1,000/UTC-month model-start budgets, 100 KB conversation cap,
 2,048-token per-step output limit and 90-second run timeout remain. A run is bounded
 to six model/tool steps; each approval continuation is authenticated and budgeted.
 Saved transcripts include tool arguments/results: use only accounts/data you are

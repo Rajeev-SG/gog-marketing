@@ -18,6 +18,8 @@ const nativeRoute = vi.hoisted(() => vi.fn());
 vi.mock("agents", () => ({ routeAgentRequest: nativeRoute }));
 
 const owner = "user_chat_owner";
+const cohortA = "user_CohortA";
+const cohortB = "user_CohortB";
 let mf: Miniflare;
 let env: Env;
 let keys: TestKeyPair;
@@ -71,12 +73,47 @@ afterAll(async () => {
   await mf?.dispose();
 });
 
-async function signed(path: string, user = owner, extraHeaders: Record<string, string> = {}) {
-  const token = await signTestToken({ sub: user, azp: origin, iss: issuer }, keys.privateJwk);
+async function signed(
+  path: string,
+  user = owner,
+  extraHeaders: Record<string, string> = {},
+  sessionId = "sess_test_123",
+) {
+  const token = await signTestToken(
+    { sub: user, azp: origin, iss: issuer, sid: sessionId },
+    keys.privateJwk,
+  );
   const cookie = buildCookieRequest(origin + path, token);
   const headers = new Headers(cookie.headers);
   for (const [name, value] of Object.entries(extraHeaders)) headers.set(name, value);
   return new Request(cookie, { headers });
+}
+
+function clerkSessionFixture(sessions: Record<string, { user: string; status?: string }>) {
+  const network = vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(
+      typeof input === "string" ? input : input instanceof URL ? input : input.url,
+    );
+    if (url.origin !== "https://api.clerk.com" || !url.pathname.startsWith("/v1/sessions/"))
+      throw new Error("Unexpected fixture network request");
+    const fixture = sessions[url.pathname.split("/").at(-1)!];
+    if (!fixture) throw new Error("Unexpected fixture session");
+    return Response.json({
+      object: "session",
+      id: url.pathname.split("/").at(-1)!,
+      client_id: "client_test",
+      user_id: fixture.user,
+      status: fixture.status ?? "active",
+      expire_at: Date.now() + 3600000,
+      abandon_at: Date.now() + 3600000,
+      created_at: Date.now() - 60000,
+      updated_at: Date.now(),
+      last_active_at: Date.now(),
+      actor: null,
+    });
+  });
+  vi.stubGlobal("fetch", network);
+  return network;
 }
 function clerkSession(status = "active", userId = owner, expiry = Date.now() + 3600000) {
   expiresAt = expiry;
@@ -106,6 +143,110 @@ function clerkSession(status = "active", userId = owner, expiry = Date.now() + 3
 }
 
 describe("integrated chat identity boundary", () => {
+  it("admits exactly two cohort tenants while preserving the owner digest and isolating threads", async () => {
+    const tenantA = await repo.bootstrapTenant(cohortA);
+    const tenantB = await repo.bootstrapTenant(cohortB);
+    const cohortEnv = {
+      ...env,
+      CHAT_COHORT_USER_IDS: ` ${cohortA} , ${cohortB} `,
+    };
+    clerkSessionFixture({
+      sess_test_123: { user: owner },
+      sess_cohort_a: { user: cohortA },
+      sess_cohort_b: { user: cohortB },
+    });
+    const { ChatThreads } = await import("./threads.js");
+    const { chatConversationDigest } = await import("./access.js");
+    const registryA = new ChatThreads(repo, tenantA.id);
+    const registryB = new ChatThreads(repo, tenantB.id);
+    const threadA = (await registryA.create("Cohort A"))!;
+    const threadB = (await registryB.create("Cohort B"))!;
+    const ownerTenant = await repo.bootstrapTenant(owner);
+    const ownerMeta = await worker.fetch(await signed("/api/chat/session?thread=original"), env);
+    const ownerData = (await ownerMeta.json()) as { conversation: string };
+    expect(ownerData.conversation).toBe(await chatConversationDigest(ownerTenant!.id));
+
+    const metaA = await worker.fetch(
+      await signed("/api/chat/session?thread=" + threadA.id, cohortA, {}, "sess_cohort_a"),
+      cohortEnv,
+    );
+    const metaB = await worker.fetch(
+      await signed("/api/chat/session?thread=" + threadB.id, cohortB, {}, "sess_cohort_b"),
+      cohortEnv,
+    );
+    expect(metaA.status).toBe(200);
+    expect(metaB.status).toBe(200);
+    const dataA = (await metaA.json()) as { conversation: string; draftKey: string };
+    const dataB = (await metaB.json()) as { conversation: string; draftKey: string };
+    expect(dataA.conversation).not.toBe(dataB.conversation);
+    expect(dataA.draftKey).toBe(dataA.conversation);
+    expect(
+      (
+        await worker.fetch(
+          await signed("/api/chat/session?thread=" + threadB.id, cohortA, {}, "sess_cohort_a"),
+          cohortEnv,
+        )
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await worker.fetch(
+          await signed(
+            "/agents/chat/" + dataB.conversation + "/get-messages",
+            cohortA,
+            {},
+            "sess_cohort_a",
+          ),
+          cohortEnv,
+        )
+      ).status,
+    ).toBe(404);
+  });
+
+  it("fails closed on malformed cohort configuration and remains owner-only when absent", async () => {
+    const foreign = await repo.bootstrapTenant("user_not_invited");
+    const malformed = { ...env, CHAT_COHORT_USER_IDS: cohortA + ",not-a-user-id" };
+    clerkSession();
+    expect(await worker.fetch(await signed("/api/chat/session"), env)).toHaveProperty(
+      "status",
+      200,
+    );
+    const invited = await worker.fetch(await signed("/api/chat/session", "user_not_invited"), {
+      ...env,
+      CHAT_COHORT_USER_IDS: cohortA,
+    });
+    expect(invited.status).toBe(403);
+    expect(foreign.id).toBeTruthy();
+    const malformedOwner = await worker.fetch(await signed("/api/chat/session"), malformed);
+    expect(malformedOwner.status).toBe(503);
+    expect(await malformedOwner.json()).toEqual({ error: "Chat is not available." });
+  });
+
+  it("rejects a cohort member whose live Clerk session belongs to a different user or is revoked", async () => {
+    const cohortEnv = { ...env, CHAT_COHORT_USER_IDS: `${cohortA},${cohortB}` };
+    clerkSessionFixture({
+      sess_test_123: { user: owner },
+      sess_cohort_a: { user: "user_session_foreign", status: "active" },
+      sess_cohort_b: { user: cohortB, status: "revoked" },
+    });
+    expect(
+      (
+        await worker.fetch(
+          await signed("/api/chat/session", cohortA, {}, "sess_cohort_a"),
+          cohortEnv,
+        )
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await worker.fetch(
+          await signed("/api/chat/session", cohortB, {}, "sess_cohort_b"),
+          cohortEnv,
+        )
+      ).status,
+    ).toBe(401);
+  });
+
   it("rejects a suspended tenant even with a valid owner session", async () => {
     const tenant = await repo.bootstrapTenant(owner);
     const network = clerkSession();

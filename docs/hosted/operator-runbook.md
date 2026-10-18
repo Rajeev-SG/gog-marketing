@@ -132,6 +132,21 @@ without printing the value. Set `CHAT_OWNER_USER_ID` to the existing owner's ver
 user ID **in the deployed Clerk instance**, not an email or a different instance's ID.
 Set `OPENROUTER_MODEL` to the tested model if overriding the default.
 
+Chat stays owner-only unless `CHAT_COHORT_USER_IDS` explicitly lists additional
+verified Clerk user IDs, separated by commas. Use exact `user_*` IDs from this
+Clerk instance, without duplicates or empty entries. Missing owner configuration
+or a malformed non-empty cohort list disables chat; an omitted/empty cohort list
+admits only the owner. Admission does not share Google connections or grants.
+All model-start limits are per tenant across threads: 10/minute, 100/UTC day and
+1,000/UTC calendar month, with bounded output and tool steps. Keep the cohort
+small; this is not public signup or a monetary billing guarantee.
+
+To stop cohort admission, remove/empty that variable while preserving the owner
+and all existing deployment variables. Do not delete transcripts, reset budget
+counters or change Google permissions as a rollout/rollback shortcut. Perform
+two-user deployed Clerk acceptance separately before claiming live multi-user
+readiness; fixture tests alone do not prove it. This change adds no migration.
+
 For this additive integration, use `wrangler deploy --keep-vars` plus the new
 owner/model variables so existing Google, Clerk, Picker, runner and MCP variables
 are retained. Do not replace existing secrets. Before deploying threaded chat,

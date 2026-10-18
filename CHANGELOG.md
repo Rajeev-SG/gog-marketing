@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted chat: add an explicit verified-user cohort while preserving owner history and live Clerk/tenant checks; isolate sidebar/history/drafts on account switches and cap model starts per tenant at 1,000 per UTC month. Malformed cohort configuration fails closed. Deterministic two-user/browser coverage is not live non-owner acceptance. (#98, thanks @Rajeev-SG)
+
 - Hosted workspace: share desktop/mobile navigation with Chat; add independent saved chat threads, per-thread drafts, rename/delete and account-wide model budgets while preserving the original conversation. Prepare the Google verification scope packet/legal drafts and require privacy-preserving model routing. (#94, thanks @Rajeev-SG)
 
 - Hosted chat: connect a bounded starter set of existing Google tools under saved account/tool/resource permissions; add exact-argument write approval, expiry/replay protection and visible tool results. Preserve owner-only Clerk access and the existing MCP execution/audit path. (#92, thanks @Rajeev-SG)
