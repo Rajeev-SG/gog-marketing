@@ -5413,6 +5413,60 @@
     }
   },
   {
+    "name": "docs_info",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read metadata (documentId, title, revisionId) for one explicitly granted Google document under an exact account/tool/file read grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_info"
+    }
+  },
+  {
+    "name": "docs_list_tabs",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List tab identifiers, titles, indexes and hierarchy for one explicitly granted Google document under an exact account/tool/file read grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_list_tabs"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",
