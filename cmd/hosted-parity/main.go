@@ -45,6 +45,7 @@ var commandToHosted = map[string]string{
 	"sheets delete-tab":                   "sheets_delete_tab",
 	"sheets number-format":                "sheets_number_format_range",
 	"docs list-tabs":                      "docs_list_tabs",
+	"sheets reorder-tab":                  "sheets_reorder_tab",
 	"sheets named-ranges list":            "sheets_named_ranges_list",
 	"sheets conditional-format list":      "sheets_conditional_format_list",
 	"docs tabs list":                      "docs_list_tabs",
