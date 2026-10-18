@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 111,
-  "total_hosted_catalog_count": 149,
+  "hosted_tool_count": 114,
+  "total_hosted_catalog_count": 152,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 112,
-  "mapped_hosted_tool_count": 111,
+  "mapped_native_leaf_count": 115,
+  "mapped_hosted_tool_count": 114,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 112,
-    "missing_requires_audit": 189,
+    "implemented_hosted_unverified": 115,
+    "missing_requires_audit": 186,
     "product_limited": 20
   },
   "by_service": [
@@ -80,13 +80,13 @@
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 1,
-      "mapped_native_leaves": 1,
+      "hosted_tools": 4,
+      "mapped_native_leaves": 4,
       "classifications": {
         "deferred": 5,
         "excluded": 18,
-        "implemented_hosted_unverified": 1,
-        "missing_requires_audit": 20,
+        "implemented_hosted_unverified": 4,
+        "missing_requires_audit": 17,
         "product_limited": 3
       }
     },
@@ -1923,19 +1923,49 @@
       "service": "drive",
       "command": "copy",
       "native_command": "gog drive copy",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_copy",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
       "command": "delete",
       "native_command": "gog drive delete",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_trash",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
@@ -2088,10 +2118,24 @@
       "service": "drive",
       "command": "rename",
       "native_command": "gog drive rename",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_rename",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",

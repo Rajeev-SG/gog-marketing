@@ -1,5 +1,44 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Next bounded parity and evidence candidate (18 October 2026)
+
+This candidate adds six tools beyond merged PR #100: **152 total tools across
+23 services, 114 in the active 11-service priority set**. New tools are disabled
+until their exact account/tool grants are saved. No Google consent, production
+configuration, credentials or grants were changed, and no deployment occurred.
+
+| Tool | Native command and actual Google methods | Authority / boundary | Live status |
+| --- | --- | --- | --- |
+| `drive_rename` | `drive rename`; selected-file PATCH | `drive.file`, explicit account/tool/file write permission | Fixture-tested, unverified live |
+| `drive_copy` | `drive copy`; selected-source GET then POST `/copy` | `drive.file`; no destination parameter, returned file remains ungranted | Fixture-tested, unverified live |
+| `drive_trash` | `drive delete` without permanent flag; fresh selected-file GET then PATCH `trashed:true` | `drive.file`, file/tool/write/destructive grants; reject folders, shortcuts, missing kind, failed verification and already-trashed resources before mutation | Fixture-tested, unverified live |
+| `appscript_deployments` | `appscript deployments`; GET project deployments | Account-level exact tool grant; `script.deployments.readonly` or `script.deployments`, no project asset grant implied | Fixture-tested, unverified live |
+| `appscript_versions` | `appscript versions`; GET project versions | Account-level exact tool grant; `script.projects.readonly` or `script.projects` | Fixture-tested, unverified live |
+| `sheets_create_blank` | `sheets create`; POST `/v4/spreadsheets` | Account-level exact write-tool grant; `spreadsheets` or `drive.file`; bounded literal title only; no parent/template/source/custom tabs or automatic file grant | Fixture-tested, unverified live |
+
+The 18 October official Drive, Apps Script and Sheets discovery documents
+confirm these method scopes. Existing typed clients/handlers and request guards
+are reused. Ordinary CLI behavior remains unchanged. The signed trash preflight
+reuses the typed Picker verifier, retains the original caller/credential context,
+and cannot turn a folder selection into authority over its unselected children.
+
+`cli-hosted-matrix.json` now maps 114 hosted tools to 115 native leaves (one
+Search Console alias). Tasks' 11 and GTM's 34 native leaves are already bound;
+do not duplicate them. Another 186 native leaves require per-method/scope/resource
+audit before eligibility is asserted; 21 are excluded, 20 product-limited and five
+Drive-label leaves deferred. A mapped leaf is a fixed-schema subset, not blanket
+native option parity. See [matrix generation](cli-hosted-matrix.md).
+
+`live-tool-matrix.json` has one row per active candidate tool. Every candidate
+row remains unverified live. Exactly two GA4 representative read variants have
+attributable allow/deny evidence on the older deployed Worker version; unknown
+source SHA remains null. Historical proof is not evidence that this candidate
+was deployed or that a whole tool/service/variant family was exhaustively tested.
+
+The infrastructure free-tier envelope does not include paid chat inference;
+see [the cost boundary](free-tier-envelope.md). #96/#97/#69 remain open for their
+respective missing implementation, live proof and external launch requirements.
+
 ## Current scope and Sheets engineering checkpoint (18 October 2026)
 
 The active priority is **11 services**: Drive, Docs, Slides, Tasks, Sheets,
