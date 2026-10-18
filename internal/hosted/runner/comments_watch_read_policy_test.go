@@ -142,6 +142,7 @@ func TestNativeDriveCommentsAndFormsWatchesSignedExecution(t *testing.T) {
 					if account != "owner@example.com" || !googleapi.NoInputFromContext(ctx) || authclient.AccessTokenFromContext(ctx) != "synthetic-ephemeral-token" {
 						t.Error("trusted forms execution identity was lost")
 					}
+
 					return formsapi.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, transport)}))
 				}
 			})
