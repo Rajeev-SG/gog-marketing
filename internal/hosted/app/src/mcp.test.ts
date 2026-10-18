@@ -2137,3 +2137,83 @@ describe("chat Google tools and durable write approvals", () => {
     expect(f.requests).toHaveLength(0);
   });
 });
+
+it("blank spreadsheet creation never seeds file authority and remains tenant/account bound", async () => {
+  const requests: ToolExecutionRequest[] = [];
+  const env = await createEnv({
+    __testToolRunner: {
+      async execute(request) {
+        requests.push(request);
+        return { status: "ok", result: { spreadsheetId: "new-ungranted-sheet" } };
+      },
+    },
+  });
+  const owner = await createToolFixture(env, "blank-sheet-owner", true);
+  const foreign = await createToolFixture(env, "blank-sheet-foreign", true);
+  const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+  const encrypted = await cipher.encrypt(owner.tenantId, owner.connectionId, {
+    access_token: ACCESS_TOKEN,
+    refresh_token: REFRESH_TOKEN,
+    token_type: "Bearer",
+    expiry: new Date(Date.now() + 3600000).toISOString(),
+    granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+  });
+  await owner.repo.upsertCredential({
+    tenantId: owner.tenantId,
+    connectionId: owner.connectionId,
+    ciphertext: encrypted.ciphertext,
+    nonce: encrypted.nonce,
+    keyVersion: Number(encrypted.keyVersion),
+  });
+  const token = await tokenFor("blank-sheet-owner");
+  const params = {
+    name: "sheets_create_blank",
+    arguments: { title: "Blank fixture" },
+    connectionId: owner.connectionId,
+  };
+  const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+  expect(denied.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(0);
+  await owner.repo.saveToolGrants(
+    owner.tenantId,
+    owner.connectionId,
+    ["sheets_create_blank", "sheets_metadata"].map((toolName) => ({
+      service: "sheets",
+      toolName,
+      enabled: true,
+      allowDestructive: false,
+      allowBillable: false,
+    })),
+  );
+  const grantsBefore = await owner.repo.listResourceGrants(owner.tenantId, owner.connectionId);
+  const created = await rpcJson(await rpc(env, "tools/call", params, { token }));
+  expect(created.result.structuredContent).toEqual({ spreadsheetId: "new-ungranted-sheet" });
+  expect(requests).toHaveLength(1);
+  expect(requests[0]).toMatchObject({
+    connectionId: owner.connectionId,
+    service: "sheets",
+    resourceType: "",
+    resourceId: "",
+  });
+  expect(await owner.repo.listResourceGrants(owner.tenantId, owner.connectionId)).toEqual(
+    grantsBefore,
+  );
+  const read = await rpcJson(
+    await rpc(
+      env,
+      "tools/call",
+      {
+        name: "sheets_metadata",
+        arguments: { spreadsheet_id: "new-ungranted-sheet" },
+        connectionId: owner.connectionId,
+      },
+      { token },
+    ),
+  );
+  expect(read.error.data.detail).toBe("grant_denied");
+  const guessed = await rpcJson(
+    await rpc(env, "tools/call", { ...params, connectionId: foreign.connectionId }, { token }),
+  );
+  expect(guessed.error.data.detail).toBe("grant_denied");
+  expect(requests).toHaveLength(1);
+});
