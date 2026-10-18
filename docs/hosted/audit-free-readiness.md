@@ -1,5 +1,33 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Additional blank Workspace creation candidate (18 October 2026)
+
+Three further fixed adapters bring this candidate to **155 total tools / 117
+active-priority tools**. They reuse native creation handlers and require an
+explicit account-level exact tool/write grant; the caller cannot supply an
+existing file, parent, template, import, image or publishing option.
+
+| Tool | Native handler / actual Google call | Admitted scope | Live state |
+| --- | --- | --- | --- |
+| `docs_create_blank` | `DocsCreateCmd`; POST Drive `/drive/v3/files`, fixed document MIME type and name | `drive.file` only; `documents` alone does not authorize this Drive method | Fixture-tested, unverified live |
+| `slides_create_blank` | `SlidesCreateCmd`; POST Drive `/drive/v3/files`, fixed presentation MIME type and name | `drive.file` only; `presentations` alone does not authorize this Drive method | Fixture-tested, unverified live |
+| `forms_create_blank` | `FormsCreateCmd`; POST Forms `/v1/forms`, `info.title` only | `forms.body` or `drive.file` | Fixture-tested, unverified live |
+
+Titles are bounded literal strings with Unicode control characters rejected.
+Signed typed-HTTP fixtures check exact bodies, methods, endpoints, credentials,
+scope alternatives and permission/input/tenant denials. D1-backed MCP fixtures
+prove each creation leaves resource grants unchanged, rejects immediate reads
+of returned IDs, and refuses foreign connections before dispatch. There is no
+automatic grant, description update, publication action or ordinary CLI change.
+No claim is made about a Google publication default beyond the actual API call.
+
+The implementation matrix now maps **117 tools to 118 native leaves**, with
+**183 leaves requiring actual method/scope/resource audit**; known exclusions,
+product limitations and deferrals remain separate. All 117 candidate live rows
+remain unverified; the two historical GA4 representative proofs are unchanged.
+No Google consent, production permission, credentials, infrastructure or
+deployment was changed for this candidate. #96/#97 remain open.
+
 ## Next bounded parity and evidence candidate (18 October 2026)
 
 This candidate adds six tools beyond merged PR #100: **152 total tools across

@@ -35,6 +35,9 @@ var activeServices = []string{
 // commandToHosted contains only reviewed naming bridges that are not produced
 // by the exact-name rule below. The canonical catalog remains authoritative.
 var commandToHosted = map[string]string{
+	"forms create":                        "forms_create_blank",
+	"docs create":                         "docs_create_blank",
+	"slides create":                       "slides_create_blank",
 	"drive delete":                        "drive_trash",
 	"sheets create":                       "sheets_create_blank",
 	"sheets add-tab":                      "sheets_add_tab",
@@ -229,7 +232,15 @@ func BuildMatrix(root *schemaNode, hosted []runner.NativeToolDescription, bindin
 		hostedByService[tool.Service][tool.Name] = true
 	}
 
+	nativeCommands := make(map[string]bool, len(leaves))
+	for _, leaf := range leaves {
+		nativeCommands[leaf.service+" "+leaf.command] = true
+	}
+
 	for command, tool := range commandToHosted {
+		if !nativeCommands[command] {
+			continue
+		}
 		service, _, found := strings.Cut(command, " ")
 		if !found {
 			return parityMatrix{}, fmt.Errorf("%w: %s -> %s", errMissingServiceTool, command, tool)

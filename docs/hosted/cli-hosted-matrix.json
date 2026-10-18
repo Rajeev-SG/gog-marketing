@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 114,
-  "total_hosted_catalog_count": 152,
+  "hosted_tool_count": 117,
+  "total_hosted_catalog_count": 155,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 115,
-  "mapped_hosted_tool_count": 114,
+  "mapped_native_leaf_count": 118,
+  "mapped_hosted_tool_count": 117,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 115,
-    "missing_requires_audit": 186,
+    "implemented_hosted_unverified": 118,
+    "missing_requires_audit": 183,
     "product_limited": 20
   },
   "by_service": [
@@ -69,11 +69,11 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 2,
-      "mapped_native_leaves": 2,
+      "hosted_tools": 3,
+      "mapped_native_leaves": 3,
       "classifications": {
-        "implemented_hosted_unverified": 2,
-        "missing_requires_audit": 68,
+        "implemented_hosted_unverified": 3,
+        "missing_requires_audit": 67,
         "product_limited": 2
       }
     },
@@ -93,12 +93,12 @@
     {
       "service": "forms",
       "native_leaves": 17,
-      "hosted_tools": 5,
-      "mapped_native_leaves": 5,
+      "hosted_tools": 6,
+      "mapped_native_leaves": 6,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 5,
-        "missing_requires_audit": 11
+        "implemented_hosted_unverified": 6,
+        "missing_requires_audit": 10
       }
     },
     {
@@ -125,11 +125,11 @@
     {
       "service": "slides",
       "native_leaves": 47,
-      "hosted_tools": 2,
-      "mapped_native_leaves": 2,
+      "hosted_tools": 3,
+      "mapped_native_leaves": 3,
       "classifications": {
-        "implemented_hosted_unverified": 2,
-        "missing_requires_audit": 42,
+        "implemented_hosted_unverified": 3,
+        "missing_requires_audit": 41,
         "product_limited": 3
       }
     },
@@ -1226,10 +1226,22 @@
       "service": "docs",
       "command": "create",
       "native_command": "gog docs create",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_create_blank",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -2240,10 +2252,23 @@
       "service": "forms",
       "command": "create",
       "native_command": "gog forms create",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_create_blank",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
@@ -3443,10 +3468,22 @@
       "service": "slides",
       "command": "create",
       "native_command": "gog slides create",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "slides_create_blank",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
