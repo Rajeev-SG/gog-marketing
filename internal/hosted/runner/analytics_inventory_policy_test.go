@@ -2,6 +2,7 @@ package runner
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -136,12 +137,34 @@ func TestNativeAnalyticsInventoryListsExactPagedEndpoints(t *testing.T) {
 			for key, value := range test.args {
 				secondArgs[key] = value
 			}
-			secondArgs["page"] = test.firstToken
+			var firstPage struct {
+				NextPageToken string `json:"nextPageToken"`
+			}
+			if err := json.Unmarshal(first.Result, &firstPage); err != nil || firstPage.NextPageToken != test.firstToken {
+				t.Fatalf("first page cursor missing or wrong: %s (%v)", first.Result, err)
+			}
+			secondArgs["page"] = firstPage.NextPageToken
 			secondArgs["fail_empty"] = true
 
 			second := call(test.tool, "analytics.edit", secondArgs, test.resource)
 			if !second.OK || !strings.Contains(string(second.Result), test.secondNeedle) {
 				t.Fatalf("second %s page failed: %s", test.name, second.Body)
+			}
+
+			allArgs := map[string]any{}
+			for key, value := range test.args {
+				allArgs[key] = value
+			}
+			allArgs["all"] = true
+			all := call(test.tool, "analytics.readonly", allArgs, test.resource)
+			if !all.OK || !strings.Contains(string(all.Result), test.firstNeedle) || !strings.Contains(string(all.Result), test.secondNeedle) || calls.Load() != 4 {
+				t.Fatalf("all-pages traversal failed: calls=%d response=%s", calls.Load(), all.Body)
+			}
+			var allPages struct {
+				NextPageToken string `json:"nextPageToken"`
+			}
+			if err := json.Unmarshal(all.Result, &allPages); err != nil || allPages.NextPageToken != "" {
+				t.Fatalf("completed traversal retained a cursor: %s (%v)", all.Result, err)
 			}
 
 			before := calls.Load()
