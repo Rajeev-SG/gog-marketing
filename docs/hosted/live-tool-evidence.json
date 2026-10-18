@@ -1,0 +1,24 @@
+[
+  {
+    "tool": "analytics_report",
+    "date": "2026-10-18",
+    "deployment_version": "df267a46-504b-411e-88af-61a45eaff8b9",
+    "source_sha": null,
+    "variant": "Bounded activeUsers report, 7daysAgo through yesterday, max=1; not exhaustive report-option coverage",
+    "allow_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+    "deny_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+    "deny_variant": "Ungranted property rejected with policy_denied / grant_denied",
+    "state": "representative_variant_verified_existing_deployment"
+  },
+  {
+    "tool": "analytics_datastreams_list",
+    "date": "2026-10-18",
+    "deployment_version": "df267a46-504b-411e-88af-61a45eaff8b9",
+    "source_sha": null,
+    "variant": "Existing enabled property stream listing, max=5, two streams returned; no live pagination claim",
+    "allow_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+    "deny_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6252385397",
+    "deny_variant": "Ungranted property rejected with policy_denied / grant_denied",
+    "state": "representative_variant_verified_existing_deployment"
+  }
+]

@@ -6,10 +6,10 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 347 visible native leaves in the 11 active services
-and 104 active hosted tools (142 total). It maps 104 hosted tools across 105
+and 110 active hosted tools (148 total). It maps 110 hosted tools across 111
 native leaves because Search Console exposes `query` and the equivalent
-`searchanalytics query` leaf. Counts are: 105 implemented/unverified hosted
-leaves, 6 explicitly reviewed eligible missing, 190 missing requiring per-method/scope/resource audit, 21 excluded, 20 product-limited, and 5 deferred.
+`searchanalytics query` leaf. Counts are: 111 implemented/unverified hosted
+leaves, 0 reviewed eligible missing (the six reviewed commands are now implemented), 190 missing requiring per-method/scope/resource audit, 21 excluded, 20 product-limited, and 5 deferred.
 
 `implemented_hosted_unverified` means only that an executable fixed-schema
 hosted binding exists. Every `live_verified` value is false; fixture success and
@@ -18,9 +18,29 @@ the exact reviewed classification sets are explicitly `missing_requires_audit`,
 never assumed eligible merely because their service uses audit-free OAuth. Empty binding methods have `http_methods_known: false`.
 
 Calendar and Drive Labels are deferred and are excluded from active gap counts.
-The matrix records this baseline independently of the separate Sheets runtime
-work; the parent integration must regenerate after that catalog lands.
+The matrix includes the integrated Sheets and Apps Script runtime batches;
+regenerate it whenever executable bindings change.
 
 A mapped command means an executable fixed-schema binding exists; it does not
 claim full native CLI flag/variant parity. Missing methods, resource models or
 transitive-scope/billing checks must still be audited before adding an adapter.
+
+## Per-tool live-verification inventory (#97)
+
+Generate `live-tool-matrix.json` with:
+
+```sh
+go run ./cmd/hosted-parity --live-matrix --evidence docs/hosted/live-tool-evidence.json > docs/hosted/live-tool-matrix.json
+go run ./cmd/hosted-parity --live-matrix --evidence docs/hosted/live-tool-evidence.json --check docs/hosted/live-tool-matrix.json
+```
+
+This mode reads the executable catalogue, read-only binding metadata and curated
+`live-tool-evidence.json`; it does not run a native schema subprocess, contact
+Google/providers, or access credentials. Every candidate remains
+`implemented_unverified_live`. Exactly two existing-deployment GA4 representative
+variants currently have attributable allow/deny evidence; neither whole-service
+coverage nor deployed-candidate acceptance is inferred. Unknown source SHA stays
+`null`. Add proof only after genuine exact-operation acceptance, never from a
+fixture pass or another tool. Scope alternatives and destructive flags are static
+binding metadata; absent method declarations and argument-specific destructive
+behavior are explicitly not invented.

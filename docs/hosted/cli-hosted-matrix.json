@@ -22,16 +22,15 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 104,
-  "total_hosted_catalog_count": 142,
+  "hosted_tool_count": 110,
+  "total_hosted_catalog_count": 148,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 105,
-  "mapped_hosted_tool_count": 104,
+  "mapped_native_leaf_count": 111,
+  "mapped_hosted_tool_count": 110,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 6,
     "excluded": 21,
-    "implemented_hosted_unverified": 105,
+    "implemented_hosted_unverified": 111,
     "missing_requires_audit": 190,
     "product_limited": 20
   },
@@ -49,12 +48,11 @@
     {
       "service": "appscript",
       "native_leaves": 7,
-      "hosted_tools": 3,
-      "mapped_native_leaves": 3,
+      "hosted_tools": 5,
+      "mapped_native_leaves": 5,
       "classifications": {
-        "eligible_missing": 2,
         "excluded": 1,
-        "implemented_hosted_unverified": 3,
+        "implemented_hosted_unverified": 5,
         "product_limited": 1
       }
     },
@@ -115,12 +113,11 @@
     {
       "service": "sheets",
       "native_leaves": 67,
-      "hosted_tools": 5,
-      "mapped_native_leaves": 5,
+      "hosted_tools": 9,
+      "mapped_native_leaves": 9,
       "classifications": {
-        "eligible_missing": 4,
         "excluded": 1,
-        "implemented_hosted_unverified": 5,
+        "implemented_hosted_unverified": 9,
         "missing_requires_audit": 47,
         "product_limited": 10
       }
@@ -849,10 +846,23 @@
       "service": "appscript",
       "command": "deployments",
       "native_command": "gog appscript deployments",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "appscript_deployments",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed GET projects/{scriptId}/deployments; script.deployments.readonly or script.deployments and an account-level exact tool grant"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.deployments",
+          "script.deployments.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "appscript",
@@ -898,10 +908,23 @@
       "service": "appscript",
       "command": "versions",
       "native_command": "gog appscript versions",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "appscript_versions",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed GET projects/{scriptId}/versions; script.projects.readonly or script.projects and an account-level exact tool grant"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects",
+          "script.projects.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "bigquery",
@@ -2606,10 +2629,25 @@
       "service": "sheets",
       "command": "add-tab",
       "native_command": "gog sheets add-tab",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_add_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed selected-spreadsheet POST batchUpdate/addSheet; spreadsheets or drive.file and exact file/tool write grants"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -2897,10 +2935,23 @@
       "service": "sheets",
       "command": "delete-tab",
       "native_command": "gog sheets delete-tab",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_delete_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed selected-spreadsheet GET plus POST batchUpdate/deleteSheet; spreadsheets or drive.file and destructive file/tool permission"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
     },
     {
       "service": "sheets",
@@ -3098,10 +3149,23 @@
       "service": "sheets",
       "command": "number-format",
       "native_command": "gog sheets number-format",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_number_format_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed selected-spreadsheet GET plus fixed number-format POST batchUpdate; spreadsheets or drive.file and file/tool write grants"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
     },
     {
       "service": "sheets",
@@ -3125,10 +3189,23 @@
       "service": "sheets",
       "command": "rename-tab",
       "native_command": "gog sheets rename-tab",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_rename_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reviewed selected-spreadsheet GET plus POST batchUpdate/updateSheetProperties; spreadsheets or drive.file and file/tool write grants"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
     },
     {
       "service": "sheets",

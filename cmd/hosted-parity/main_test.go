@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 347 {
 		t.Fatalf("native leaf count = %d, want 347", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 104 || matrix.TotalHostedCatalogCount != 142 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 104/142/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 110 || matrix.TotalHostedCatalogCount != 148 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 110/148/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 105 || matrix.MappedHostedToolCount != 104 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 105/104", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 111 || matrix.MappedHostedToolCount != 110 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 111/110", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 27, "appscript": 3, "bigquery": 6, "docs": 2, "drive": 1, "forms": 5, "searchconsole": 8, "sheets": 5, "slides": 2, "tagmanager": 34, "tasks": 11} {
+	for service, count := range map[string]int{"analytics": 27, "appscript": 5, "bigquery": 6, "docs": 2, "drive": 1, "forms": 5, "searchconsole": 8, "sheets": 9, "slides": 2, "tagmanager": 34, "tasks": 11} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {

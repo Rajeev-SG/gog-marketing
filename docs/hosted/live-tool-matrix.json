@@ -1,0 +1,1839 @@
+{
+  "schema_version": 1,
+  "scope": {
+    "active_services": [
+      "analytics",
+      "appscript",
+      "bigquery",
+      "docs",
+      "drive",
+      "forms",
+      "searchconsole",
+      "sheets",
+      "slides",
+      "tagmanager",
+      "tasks"
+    ],
+    "candidate_live_state": "implemented_unverified_live",
+    "deferred_services": [
+      "calendar",
+      "drivelabels"
+    ],
+    "expected_evidence_state": "representative_variant_verified_existing_deployment"
+  },
+  "total_catalog_count": 148,
+  "active_tool_count": 110,
+  "historical_evidence_rows": 2,
+  "rows": [
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-dimensions_archive",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-dimensions_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-dimensions_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-dimensions_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-dimensions_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-metrics_archive",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-metrics_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-metrics_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-metrics_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_custom-metrics_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_datastreams_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_datastreams_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_datastreams_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_datastreams_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live",
+      "historical_evidence": {
+        "tool": "analytics_datastreams_list",
+        "date": "2026-10-18",
+        "deployment_version": "df267a46-504b-411e-88af-61a45eaff8b9",
+        "source_sha": null,
+        "variant": "Existing enabled property stream listing, max=5, two streams returned; no live pagination claim",
+        "allow_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+        "deny_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6252385397",
+        "deny_variant": "Ungranted property rejected with policy_denied / grant_denied",
+        "state": "representative_variant_verified_existing_deployment"
+      }
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_datastreams_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_googleads-links_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_googleads-links_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_googleads-links_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_googleads-links_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_googleads-links_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_keyevents_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_keyevents_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_keyevents_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_keyevents_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_keyevents_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_properties_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_report",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.readonly"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live",
+      "historical_evidence": {
+        "tool": "analytics_report",
+        "date": "2026-10-18",
+        "deployment_version": "df267a46-504b-411e-88af-61a45eaff8b9",
+        "source_sha": null,
+        "variant": "Bounded activeUsers report, 7daysAgo through yesterday, max=1; not exhaustive report-option coverage",
+        "allow_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+        "deny_evidence": "https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114",
+        "deny_variant": "Ungranted property rejected with policy_denied / grant_denied",
+        "state": "representative_variant_verified_existing_deployment"
+      }
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_content",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects",
+        "script.projects.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_deployments",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.deployments",
+        "script.deployments.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects",
+        "script.projects.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_versions",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects",
+        "script.projects.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_dataset_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_datasets_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_table_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_table_rows",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_table_schema",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "bigquery",
+      "tool": "bigquery_tables_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "project",
+      "resource_argument": "project",
+      "accepted_scopes": [
+        "bigquery"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_write",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "drive.file"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body",
+        "forms.body.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_publish",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_responses_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.responses.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_responses_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.responses.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_inspect",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_query",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sitemaps_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sitemaps_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sitemaps_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sitemaps_submit",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sites_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_sites_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "webmasters",
+        "webmasters.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_add_tab",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_append_range",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_clear_range",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_delete_tab",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_metadata",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_number_format_range",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_read_range",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_rename_tab",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_update_range",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_list_slides",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations",
+        "presentations.readonly"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_update_notes",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_accounts_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_accounts_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_containers_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_containers_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.delete.containers"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_containers_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_containers_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_containers_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_tags_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_tags_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_tags_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_tags_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_tags_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_triggers_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_triggers_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_triggers_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_triggers_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_triggers_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_variables_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_variables_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_variables_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_variables_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_variables_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_versions_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containerversions"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_versions_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.edit.containerversions",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_versions_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.edit.containerversions",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_versions_publish",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.publish"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_create-version",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containerversions"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.delete.containers"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_status",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers",
+        "tagmanager.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_sync",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tagmanager",
+      "tool": "tagmanager_workspaces_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "accepted_scopes": [
+        "tagmanager.edit.containers"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_add",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_clear",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_done",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_lists",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_lists_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [],
+      "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_raw",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks",
+        "tasks.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_undo",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "tasks",
+      "tool": "tasks_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "tasks"
+      ],
+      "http_methods": [
+        "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    }
+  ],
+  "live_verification_notice": "Every candidate_live_state is implemented_unverified_live: catalogue membership and fixture tests never prove live behavior. Only rows with historical_evidence carry representative_variant_verified_existing_deployment proof, and that proof is limited to the exact variant described on an existing deployment. Static binding metadata (destructive flag, accepted scopes, static HTTP methods) is admission-time description, never conditional approval of a native variant.",
+  "limitations": [
+    "Historical evidence covers only representative variants on an existing deployment and never constitutes whole-tool, whole-service or exhaustive candidate acceptance.",
+    "Rows without historical_evidence are historically unverified; proof is never inferred from tool name prefix, fixture presence or catalogue membership.",
+    "accepted_scopes lists alternatives declared by the runner binding, not a claim that every listed scope is required for every method.",
+    "http_methods_known=false marks a binding that declares no static method; no HTTP method is inferred.",
+    "destructive_binding_flag is the static admission flag from the runner binding; a false value does not guarantee that every variant is non-destructive."
+  ]
+}

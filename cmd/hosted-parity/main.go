@@ -35,6 +35,10 @@ var activeServices = []string{
 // commandToHosted contains only reviewed naming bridges that are not produced
 // by the exact-name rule below. The canonical catalog remains authoritative.
 var commandToHosted = map[string]string{
+	"sheets add-tab":                      "sheets_add_tab",
+	"sheets rename-tab":                   "sheets_rename_tab",
+	"sheets delete-tab":                   "sheets_delete_tab",
+	"sheets number-format":                "sheets_number_format_range",
 	"docs cat":                            "docs_get",
 	"slides list-slides":                  "slides_list_slides",
 	"slides update-notes":                 "slides_update_notes",
@@ -140,8 +144,14 @@ func run(args []string) error {
 	flags := flag.NewFlagSet("hosted-parity", flag.ContinueOnError)
 	schemaPath := flags.String("schema-json", "", "read the canonical `gog schema --json` document from a file instead of running gog")
 	checkPath := flags.String("check", "", "compare generated output with `path` instead of printing it")
+	liveMode := flags.Bool("live-matrix", false, "generate per-tool live evidence inventory without a CLI schema subprocess")
+	evidencePath := flags.String("evidence", "docs/hosted/live-tool-evidence.json", "curated existing-deployment evidence JSON for live inventory mode")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse flags: %w", err)
+	}
+
+	if *liveMode {
+		return runLiveMatrix(*evidencePath, *checkPath)
 	}
 
 	var schema schemaDocument
