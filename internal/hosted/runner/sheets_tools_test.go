@@ -408,18 +408,21 @@ func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *t
 			}
 			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
 				calls.Add(1)
+
 				path := r.URL.Path
 				if r.URL.Hostname() != "sheets.googleapis.com" || path != "/v4/spreadsheets/selected-sheet" && path != "/v4/spreadsheets/selected-sheet:batchUpdate" {
 					t.Errorf("unexpected native Sheets request: %s", r.URL)
 				}
 
 				body := "{}"
+
 				switch {
 				case r.Method == http.MethodGet && path == "/v4/spreadsheets/selected-sheet":
-					var entries []map[string]any
+					entries := make([]map[string]any, 0, len(tabs))
 					for id, title := range tabs {
 						entries = append(entries, map[string]any{"properties": map[string]any{"sheetId": id, "title": title}})
 					}
+
 					payload, err := json.Marshal(map[string]any{"spreadsheetId": "selected-sheet", "sheets": entries})
 					if err != nil {
 						t.Fatal(err)
@@ -437,9 +440,11 @@ func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *t
 					if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 						t.Error(err)
 					}
+
 					if len(input.Requests) != 1 {
 						t.Errorf("unexpected request count: %d", len(input.Requests))
 					}
+
 					switch {
 					case input.Requests[0].AddSheet != nil:
 						tabs[7] = "Summary"
@@ -455,6 +460,7 @@ func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *t
 						if err := json.Unmarshal(*input.Requests[0].UpdateSheetProperties, &update); err != nil {
 							t.Fatal(err)
 						}
+
 						if update.Properties.SheetID != 7 || update.Properties.Title != "Report" || update.Fields != "title" {
 							t.Errorf("unexpected rename payload: %+v", update)
 						}
@@ -467,9 +473,11 @@ func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *t
 						if err := json.Unmarshal(*input.Requests[0].DeleteSheet, &deleted); err != nil {
 							t.Fatal(err)
 						}
+
 						if deleted.SheetID != 7 {
 							t.Errorf("unexpected deleted sheet id: %d", deleted.SheetID)
 						}
+
 						delete(tabs, deleted.SheetID)
 						body = `{"replies":[{}]}`
 					case input.Requests[0].RepeatCell != nil:
@@ -508,14 +516,17 @@ func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *t
 	}
 
 	deleteArgs := map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Report"}
+
 	denied := call("sheets_delete_tab", deleteArgs, sheetsLocalAuthorization("sheets_delete_tab", sheetsWriteScope, true, false))
 	if denied.OK || denied.Status != 400 || denied.Error.Code != "invalid_request" {
 		t.Fatalf("delete without destructive permission was not rejected: %d %s", denied.Status, denied.Body)
 	}
+
 	deleted := call("sheets_delete_tab", deleteArgs, sheetsLocalAuthorization("sheets_delete_tab", sheetsWriteScope, true, true))
 	if deleted.Status != 200 || !deleted.OK {
 		t.Fatalf("native delete tab failed: %d %s", deleted.Status, deleted.Body)
 	}
+
 	if len(tabs) != 1 || tabs[0] != "Sheet1" {
 		t.Fatalf("tab lifecycle did not preserve the original sheet: %v", tabs)
 	}
@@ -558,6 +569,7 @@ func TestSignedNativeSheetsHostedWriteDenialsNeverReachGoogle(t *testing.T) {
 			}
 		})
 	}
+
 	if calls.Load() != 0 {
 		t.Fatal("denied invocation reached native handler")
 	}
@@ -565,6 +577,7 @@ func TestSignedNativeSheetsHostedWriteDenialsNeverReachGoogle(t *testing.T) {
 
 func TestNativeSheetsHostedRequestGuardAdmitsOnlyDeclaredPathsAndMethods(t *testing.T) {
 	base := "https://sheets.googleapis.com"
+
 	tests := []struct {
 		name   string
 		tool   string
@@ -589,10 +602,12 @@ func TestNativeSheetsHostedRequestGuardAdmitsOnlyDeclaredPathsAndMethods(t *test
 		t.Run(test.name, func(t *testing.T) {
 			invocation := &ToolInvocation{Name: test.tool, Arguments: test.args, Authorization: sheetsLocalAuthorization(test.tool, sheetsWriteScope, true, true)}
 			guard := nativeRequestGuard(invocation)
+
 			parsed, err := url.Parse(base + test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			denied := guard(&http.Request{Method: test.method, URL: parsed, Header: http.Header{}}) != nil
 			if denied == test.admit {
 				t.Fatalf("admission = %v, want admission = %v", !denied, test.admit)
@@ -610,16 +625,20 @@ func TestNativeSheetsHostedSchemasRemainResourceBoundAndDestructiveExplicit(t *t
 	} {
 		var actual []string
 		found := false
+
 		for _, tool := range cmd.HostedExistingToolCatalog() {
 			if tool.Tool.Name == name {
 				found = true
 				actual = tool.Tool.InputSchema.Required
+
 				break
 			}
 		}
+
 		if !found {
 			t.Fatalf("%s missing from hosted catalog", name)
 		}
+
 		for _, key := range required {
 			if !slices.Contains(actual, key) {
 				t.Fatalf("%s does not require %s", name, key)
@@ -631,6 +650,7 @@ func TestNativeSheetsHostedSchemasRemainResourceBoundAndDestructiveExplicit(t *t
 	if !ok || !binding.destructive {
 		t.Fatalf("sheets_delete_tab binding is not destructive")
 	}
+
 	for _, name := range []string{"sheets_add_tab", "sheets_rename_tab", "sheets_number_format_range"} {
 		binding, ok := nativeBinding(name)
 		if !ok || !binding.Write || binding.destructive {

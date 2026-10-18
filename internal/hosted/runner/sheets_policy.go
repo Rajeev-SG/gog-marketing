@@ -21,17 +21,19 @@ var sheetsRangeSelector = regexp.MustCompile(`^[\p{L}\p{N}\p{M}~ _.$:!'()&+,;=-]
 // embedded in request paths, so punctuation is not admitted for URL purposes.
 var sheetsLabelSelector = regexp.MustCompile(`^[^\p{C}]{1,512}$`)
 
+const nativeSheetsService = "sheets"
+
 var sheetsWriteScopes = []string{"spreadsheets", driveFileScope}
 
 func nativeSheetsBindings() []NativeToolBinding {
 	return []NativeToolBinding{
-		{Name: "sheets_metadata", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"spreadsheets.readonly", "spreadsheets", driveFileScope}, paths: exactPaths("/v4/spreadsheets/", "")},
-		{Name: "sheets_append_range", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":append")},
-		{Name: "sheets_clear_range", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":clear")},
-		{Name: "sheets_add_tab", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: sheetsWriteScopes, paths: exactPaths("", ":batchUpdate"), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
-		{Name: "sheets_rename_tab", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("old_name", "new_name")},
-		{Name: "sheets_delete_tab", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
-		{Name: "sheets_number_format_range", Service: "sheets", ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsFormattingPaths},
+		{Name: "sheets_metadata", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"spreadsheets.readonly", "spreadsheets", driveFileScope}, paths: exactPaths("/v4/spreadsheets/", "")},
+		{Name: "sheets_append_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":append")},
+		{Name: "sheets_clear_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":clear")},
+		{Name: "sheets_add_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: sheetsWriteScopes, paths: exactPaths("", ":batchUpdate"), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
+		{Name: "sheets_rename_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("old_name", "new_name")},
+		{Name: "sheets_delete_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
+		{Name: "sheets_number_format_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsFormattingPaths},
 	}
 }
 
@@ -66,6 +68,7 @@ func validateSheetsSpreadsheetPaths(labels ...string) func(map[string]any) ([]st
 		if !fileResourceID.MatchString(spreadsheetID) {
 			return nil, invalidf("invalid spreadsheet selector")
 		}
+
 		for _, label := range labels {
 			value, _ := args[label].(string)
 			if !validSheetsLabel(value) {
@@ -79,6 +82,7 @@ func validateSheetsSpreadsheetPaths(labels ...string) func(map[string]any) ([]st
 
 func validateSheetsFormattingPaths(args map[string]any) ([]string, error) {
 	spreadsheetID, _ := args["spreadsheet_id"].(string)
+
 	rangeSpec, _ := args["range"].(string)
 	if !fileResourceID.MatchString(spreadsheetID) || !sheetsRangeSelector.MatchString(rangeSpec) {
 		return nil, invalidf("invalid spreadsheet or range selector")

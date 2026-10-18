@@ -10,7 +10,7 @@ import (
 
 var errHostedSheetsTextInput = errors.New("sheets text input is invalid or too long")
 
-func requireHostedSheetsText(req mcp.CallToolRequest, key string, maximum int) (string, error) {
+func requireHostedSheetsText(req mcp.CallToolRequest, key string) (string, error) {
 	value, err := requireMCPString(req, key)
 	if err != nil {
 		return "", err
@@ -20,7 +20,7 @@ func requireHostedSheetsText(req mcp.CallToolRequest, key string, maximum int) (
 			return "", errHostedSheetsTextInput
 		}
 	}
-	if len(value) > maximum {
+	if len(value) > 512 {
 		return "", errHostedSheetsTextInput
 	}
 	return value, nil
@@ -78,7 +78,7 @@ func hostedSheetsTools() []mcpToolSpec {
 			if err != nil {
 				return nil, err
 			}
-			tabName, err := requireHostedSheetsText(req, "tab_name", 512)
+			tabName, err := requireHostedSheetsText(req, "tab_name")
 			if err != nil {
 				return nil, err
 			}
@@ -93,11 +93,11 @@ func hostedSheetsTools() []mcpToolSpec {
 			if err != nil {
 				return nil, err
 			}
-			oldName, err := requireHostedSheetsText(req, "old_name", 512)
+			oldName, err := requireHostedSheetsText(req, "old_name")
 			if err != nil {
 				return nil, err
 			}
-			newName, err := requireHostedSheetsText(req, "new_name", 512)
+			newName, err := requireHostedSheetsText(req, "new_name")
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +108,7 @@ func hostedSheetsTools() []mcpToolSpec {
 			if err != nil {
 				return nil, err
 			}
-			tabName, err := requireHostedSheetsText(req, "tab_name", 512)
+			tabName, err := requireHostedSheetsText(req, "tab_name")
 			if err != nil {
 				return nil, err
 			}
