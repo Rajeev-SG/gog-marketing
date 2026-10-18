@@ -20,6 +20,7 @@ let providerCalls = 0;
 let nextToolCall: { id: string; connectionId: string } | null = null;
 let rateLimited = false;
 let sessionChecks = 0;
+let delayedSessionCheck: string | undefined;
 const outboundRoutes: string[] = [];
 const owner = "user_native_chat_owner";
 const cohortA = "user_NativeCohortA";
@@ -164,6 +165,10 @@ beforeAll(async () => {
             if (url.origin !== "https://api.clerk.com" || !url.pathname.startsWith("/v1/sessions/"))
               throw new Error("Unexpected native fixture network request");
             const sessionId = url.pathname.split("/").at(-1)!;
+            if (sessionId === delayedSessionCheck) {
+              delayedSessionCheck = undefined;
+              await new Promise((resolve) => setTimeout(resolve, 1250));
+            }
             sessionChecks++;
             if (rateLimited)
               return Response.json(
@@ -473,6 +478,9 @@ it("persists native write approval over reconnect and never dispatches an unappr
     },
   ]);
   expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
+  // Fresh authorization can outlast Vitest's one-second default on shared CI.
+  // Exercise that delay while retaining the existing five-second native wait budget.
+  delayedSessionCheck = "session-tool-approvals";
   socket.send(
     JSON.stringify({
       type: "cf_agent_tool_approval",
@@ -489,8 +497,10 @@ it("persists native write approval over reconnect and never dispatches an unappr
             "SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'",
           )
           .first<{ count: number }>())!.count,
+      { timeout: 5000 },
     )
     .toBe(before!.count + 1);
+  expect(delayedSessionCheck).toBeUndefined();
   await expect
     .poll(async () => JSON.stringify(await history(path, sessionCookie)))
     .toContain("isError");
