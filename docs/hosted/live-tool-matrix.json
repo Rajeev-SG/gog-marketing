@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 159,
-  "active_tool_count": 121,
+  "total_catalog_count": 162,
+  "active_tool_count": 124,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -778,6 +778,38 @@
     },
     {
       "service": "drive",
+      "tool": "drive_comments_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
       "tool": "drive_copy",
       "write": true,
       "destructive_binding_flag": false,
@@ -939,6 +971,25 @@
       ],
       "http_methods": [
         "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_watch_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body",
+        "forms.body.readonly",
+        "forms.responses.readonly"
+      ],
+      "http_methods": [
+        "GET"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"

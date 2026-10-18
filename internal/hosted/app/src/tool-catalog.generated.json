@@ -5467,6 +5467,101 @@
     }
   },
   {
+    "name": "drive_comments_list",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List comments on one explicitly granted Google Drive file under an exact account/tool/file read grant. Supports paging and quoted-content inclusion; no all/since selectors or write access.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "include_quoted": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_comments_list"
+    }
+  },
+  {
+    "name": "drive_comments_get",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read one comment by id from one explicitly granted Google Drive file under an exact account/tool/file read grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "drive_comments_get"
+    }
+  },
+  {
+    "name": "forms_watch_list",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List watches configured on one explicitly granted Google Form under an exact account/tool/file read grant. No billing, create, renew or pubsub-target options.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "type": "string"
+          }
+        },
+        "required": ["form_id"],
+        "type": "object"
+      },
+      "name": "forms_watch_list"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",
