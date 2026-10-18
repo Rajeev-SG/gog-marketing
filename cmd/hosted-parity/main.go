@@ -35,6 +35,7 @@ var activeServices = []string{
 // commandToHosted contains only reviewed naming bridges that are not produced
 // by the exact-name rule below. The canonical catalog remains authoritative.
 var commandToHosted = map[string]string{
+	"forms create":                        "forms_create_blank",
 	"docs create":                         "docs_create_blank",
 	"slides create":                       "slides_create_blank",
 	"drive delete":                        "drive_trash",

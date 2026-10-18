@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Workspace: add title-only blank Docs, Slides and Forms creation using existing native handlers and exact account-level write-tool grants. No parent/template/import/publish options or automatic file permissions are exposed; new-file reads still require explicit grants. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Drive: add selected-file rename/copy and file-only trash through native handlers; preserve literal argument boundaries and reject folders, shortcuts, missing type or failed metadata verification before trash. Copies never gain automatic file grants. (#96, #97, thanks @Rajeev-SG)
 - Hosted Sheets: add blank spreadsheet creation under an explicit account-level tool/write grant, with title-only input and no automatic permission on the returned file. Parent/template/source fields remain unavailable. (#96, #97, thanks @Rajeev-SG)
 

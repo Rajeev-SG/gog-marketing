@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 154,
-  "active_tool_count": 116,
+  "total_catalog_count": 155,
+  "active_tool_count": 117,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -767,6 +767,22 @@
       "http_methods": [
         "GET",
         "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_create_blank",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"

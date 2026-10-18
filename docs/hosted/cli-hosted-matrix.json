@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 116,
-  "total_hosted_catalog_count": 154,
+  "hosted_tool_count": 117,
+  "total_hosted_catalog_count": 155,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 117,
-  "mapped_hosted_tool_count": 116,
+  "mapped_native_leaf_count": 118,
+  "mapped_hosted_tool_count": 117,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 117,
-    "missing_requires_audit": 184,
+    "implemented_hosted_unverified": 118,
+    "missing_requires_audit": 183,
     "product_limited": 20
   },
   "by_service": [
@@ -93,12 +93,12 @@
     {
       "service": "forms",
       "native_leaves": 17,
-      "hosted_tools": 5,
-      "mapped_native_leaves": 5,
+      "hosted_tools": 6,
+      "mapped_native_leaves": 6,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 5,
-        "missing_requires_audit": 11
+        "implemented_hosted_unverified": 6,
+        "missing_requires_audit": 10
       }
     },
     {
@@ -2252,10 +2252,23 @@
       "service": "forms",
       "command": "create",
       "native_command": "gog forms create",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_create_blank",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",

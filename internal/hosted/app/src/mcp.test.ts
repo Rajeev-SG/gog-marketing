@@ -2217,3 +2217,94 @@ it("blank spreadsheet creation never seeds file authority and remains tenant/acc
   expect(guessed.error.data.detail).toBe("grant_denied");
   expect(requests).toHaveLength(1);
 });
+
+for (const entry of [
+  { service: "docs", create: "docs_create_blank", read: "docs_get", selector: "document_id" },
+  {
+    service: "slides",
+    create: "slides_create_blank",
+    read: "slides_list_slides",
+    selector: "presentation_id",
+  },
+  { service: "forms", create: "forms_create_blank", read: "forms_get", selector: "form_id" },
+]) {
+  it(`${entry.service} blank creation cannot seed file grants or cross a tenant`, async () => {
+    const requests: ToolExecutionRequest[] = [];
+    const createdId = `new-ungranted-${entry.service}`;
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { id: createdId } };
+        },
+      },
+    });
+    const user = `${entry.service}-blank-owner`;
+    const owner = await createToolFixture(env, user, true);
+    const foreign = await createToolFixture(env, `${entry.service}-blank-foreign`, true);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(owner.tenantId, owner.connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["https://www.googleapis.com/auth/drive.file"],
+    });
+    await owner.repo.upsertCredential({
+      tenantId: owner.tenantId,
+      connectionId: owner.connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor(user);
+    const params = {
+      name: entry.create,
+      arguments: { title: "Blank fixture" },
+      connectionId: owner.connectionId,
+    };
+    const denied = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(denied.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await owner.repo.saveToolGrants(
+      owner.tenantId,
+      owner.connectionId,
+      [entry.create, entry.read].map((toolName) => ({
+        service: entry.service,
+        toolName,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      })),
+    );
+    const before = await owner.repo.listResourceGrants(owner.tenantId, owner.connectionId);
+    const result = await rpcJson(await rpc(env, "tools/call", params, { token }));
+    expect(result.result.structuredContent).toEqual({ id: createdId });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      connectionId: owner.connectionId,
+      service: entry.service,
+      resourceType: "",
+      resourceId: "",
+    });
+    expect(await owner.repo.listResourceGrants(owner.tenantId, owner.connectionId)).toEqual(before);
+    const read = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        {
+          name: entry.read,
+          arguments: { [entry.selector]: createdId },
+          connectionId: owner.connectionId,
+        },
+        { token },
+      ),
+    );
+    expect(read.error.data.detail).toBe("grant_denied");
+    const guessed = await rpcJson(
+      await rpc(env, "tools/call", { ...params, connectionId: foreign.connectionId }, { token }),
+    );
+    expect(guessed.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+  });
+}
