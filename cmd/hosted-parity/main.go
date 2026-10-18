@@ -232,7 +232,15 @@ func BuildMatrix(root *schemaNode, hosted []runner.NativeToolDescription, bindin
 		hostedByService[tool.Service][tool.Name] = true
 	}
 
+	nativeCommands := make(map[string]bool, len(leaves))
+	for _, leaf := range leaves {
+		nativeCommands[leaf.service+" "+leaf.command] = true
+	}
+
 	for command, tool := range commandToHosted {
+		if !nativeCommands[command] {
+			continue
+		}
 		service, _, found := strings.Cut(command, " ")
 		if !found {
 			return parityMatrix{}, fmt.Errorf("%w: %s -> %s", errMissingServiceTool, command, tool)
