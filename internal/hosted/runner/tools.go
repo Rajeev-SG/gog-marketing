@@ -118,8 +118,8 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "docs_write", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", Write: true, hosts: []string{"docs.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/v1/documents/" + id, "/v1/documents/" + id + ":batchUpdate"}
 	}, scopes: []string{"documents", "drive.file"}},
-	{Name: "sheets_read_range", Service: "sheets", ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
-	{Name: "sheets_update_range", Service: "sheets", ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
+	{Name: "sheets_read_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
+	{Name: "sheets_update_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
@@ -348,7 +348,7 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		// Legacy Sheets value reads/updates span any A1 suffix under the exact
 		// selected spreadsheet. Newer Sheets operations admit a precise path
 		// instead, so their endpoints cannot be reconstructed this loosely.
-		if binding.Service == "sheets" && (invocation.Name == "sheets_read_range" || invocation.Name == "sheets_update_range") {
+		if binding.Service == nativeSheetsService && (invocation.Name == "sheets_read_range" || invocation.Name == "sheets_update_range") {
 			// The ID is exact and the remaining suffix is an A1 range, not an
 			// additional spreadsheet. Other Sheets endpoints remain unavailable.
 			allowed = strings.HasPrefix(path, paths[0]) && len(path) > len(paths[0])
@@ -415,6 +415,15 @@ func admitWriteRequestMethod(name, path, method string) error {
 		}
 	case "sheets_clear_range":
 		if method != http.MethodPost || !strings.HasSuffix(path, ":clear") {
+			return native.ErrDenied
+		}
+	case "sheets_add_tab":
+		if method != http.MethodPost || !strings.HasSuffix(path, ":batchUpdate") {
+			return native.ErrDenied
+		}
+	case "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range":
+		batch := strings.HasSuffix(path, ":batchUpdate")
+		if (batch && method != http.MethodPost) || (!batch && method != http.MethodGet) {
 			return native.ErrDenied
 		}
 	}
