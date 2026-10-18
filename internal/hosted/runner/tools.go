@@ -417,6 +417,15 @@ func admitWriteRequestMethod(name, path, method string) error {
 		if method != http.MethodPost || !strings.HasSuffix(path, ":clear") {
 			return native.ErrDenied
 		}
+	case "sheets_add_tab":
+		if method != http.MethodPost || !strings.HasSuffix(path, ":batchUpdate") {
+			return native.ErrDenied
+		}
+	case "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range":
+		batch := strings.HasSuffix(path, ":batchUpdate")
+		if (batch && method != http.MethodPost) || (!batch && method != http.MethodGet) {
+			return native.ErrDenied
+		}
 	}
 
 	return nil

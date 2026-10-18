@@ -1,6 +1,44 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
-## Current priority and real acceptance (13 October 2026)
+## Current scope and Sheets engineering checkpoint (18 October 2026)
+
+The active priority is **11 services**: Drive, Docs, Slides, Tasks, Sheets,
+Forms, Apps Script, GA4, Search Console, BigQuery and GTM. **Calendar and Drive
+Labels are now deferred**, in addition to the ten previous service deferrals
+and earlier v2 exclusions. Preserve historical evidence below; do not treat the
+older 13-service checkpoint as the current release scope.
+
+This candidate adds four fixed-schema selected-spreadsheet tools, taking the
+catalogue from 142 to **146 tools across 23 services**, including **108 tools
+across the active 11 services** and nine Sheets tools. New tools remain disabled
+until their exact account/tool permission is saved. Each uses the existing
+selected-file resource grant; deletion additionally requires destructive
+permission. No consent scope or production permission was changed.
+
+| New hosted tool | Existing native command | Google methods | Destructive | Live state |
+| --- | --- | --- | --- | --- |
+| `sheets_add_tab` | `sheets add-tab` | POST spreadsheet `:batchUpdate` | No | Implemented, fixture-tested; unverified live |
+| `sheets_rename_tab` | `sheets rename-tab` | GET spreadsheet; POST `:batchUpdate` | No | Implemented, fixture-tested; unverified live |
+| `sheets_delete_tab` | `sheets delete-tab` | GET spreadsheet; POST `:batchUpdate` | Yes | Implemented, fixture-tested; unverified live |
+| `sheets_number_format_range` | `sheets number-format` | GET spreadsheet; POST `:batchUpdate` | No | Implemented, fixture-tested; unverified live |
+
+All four accept only `spreadsheets` or `drive.file` write authority. Current
+[official Sheets discovery](https://sheets.googleapis.com/$discovery/rest?version=v4)
+was checked on 18 October: `spreadsheets.get` and `spreadsheets.batchUpdate`
+both accept these scopes. Restricted all-Drive alternatives are not admitted.
+There is no arbitrary batch/format JSON proxy or spreadsheet creation in this
+batch. Other native Sheets operations remain implementation work under #96;
+these four newly executable tools enter #97 as **unverified live**.
+
+The signed typed-HTTP fixture exercises add, metadata-backed rename, number
+format and destructive deletion while preserving the original tab. Scope,
+grant, selector, method/path and destructive-permission denials are tested.
+This is deterministic engineering proof, not real Google mutation/read-back.
+Separate real read-only proof for two existing GA4 tools is recorded in
+[#97](https://github.com/Rajeev-SG/gog-marketing/issues/97#issuecomment-6251933114),
+without claiming blanket service or catalogue verification.
+
+## Historical priority and real acceptance (13 October 2026)
 
 The owner defers **Contacts, YouTube, Photos, Groups, Chat, AdSense,
 Classroom, Sites, Meet and People** to later roadmap steps. These ten services

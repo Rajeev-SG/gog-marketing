@@ -1,15 +1,35 @@
 package cmd
 
 import (
+	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+var errHostedSheetsTextInput = errors.New("sheets text input is invalid or too long")
+
+func requireHostedSheetsText(req mcp.CallToolRequest, key string, maximum int) (string, error) {
+	value, err := requireMCPString(req, key)
+	if err != nil {
+		return "", err
+	}
+	for _, r := range value {
+		if r < 0x20 || r == 0x7f {
+			return "", errHostedSheetsTextInput
+		}
+	}
+	if len(value) > maximum {
+		return "", errHostedSheetsTextInput
+	}
+	return value, nil
+}
+
 // hostedSheetsTools reuses the existing native Sheets handlers for a bounded
-// metadata/append/clear surface. Values are always inline literal JSON, never
-// stdin or @file references, and no batch proxy,copied validation or structural
-// mutation is exposed.
+// metadata/value/tab/number-format surface. Values are always inline literal
+// JSON, never stdin or @file references; no generic batch proxy or copied
+// validation is exposed.
 func hostedSheetsTools() []mcpToolSpec {
 	return []mcpToolSpec{
 		{Name: "sheets_metadata", Service: "sheets", Risk: mcpRiskRead, Description: "Get native Sheets spreadsheet metadata (title, locale, time zone and tabs) for an explicitly enabled Picker-selected spreadsheet. Cell values are not included.", Options: []mcp.ToolOption{mcp.WithString("spreadsheet_id", mcp.Required())}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
@@ -52,6 +72,70 @@ func hostedSheetsTools() []mcpToolSpec {
 				return nil, err
 			}
 			return []string{"sheets", "clear", "--", spreadsheetID, rangeSpec}, nil
+		}},
+		{Name: "sheets_add_tab", Service: "sheets", Risk: mcpRiskWrite, Description: "Add one empty tab to an explicitly enabled Picker-selected spreadsheet. Does not create a spreadsheet.", Options: []mcp.ToolOption{mcp.WithString("spreadsheet_id", mcp.Required()), mcp.WithString("tab_name", mcp.Required()), mcp.WithInteger("index", mcp.Min(0), mcp.Max(999))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+			spreadsheetID, err := requireMCPString(req, "spreadsheet_id")
+			if err != nil {
+				return nil, err
+			}
+			tabName, err := requireHostedSheetsText(req, "tab_name", 512)
+			if err != nil {
+				return nil, err
+			}
+			args := []string{"sheets", "add-tab"}
+			if _, present := req.GetArguments()["index"]; present {
+				args = append(args, "--index", strconv.Itoa(req.GetInt("index", -1)))
+			}
+			return append(args, "--", spreadsheetID, tabName), nil
+		}},
+		{Name: "sheets_rename_tab", Service: "sheets", Risk: mcpRiskWrite, Description: "Rename an existing tab in an explicitly enabled Picker-selected spreadsheet by its current title.", Options: []mcp.ToolOption{mcp.WithString("spreadsheet_id", mcp.Required()), mcp.WithString("old_name", mcp.Required()), mcp.WithString("new_name", mcp.Required())}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+			spreadsheetID, err := requireMCPString(req, "spreadsheet_id")
+			if err != nil {
+				return nil, err
+			}
+			oldName, err := requireHostedSheetsText(req, "old_name", 512)
+			if err != nil {
+				return nil, err
+			}
+			newName, err := requireHostedSheetsText(req, "new_name", 512)
+			if err != nil {
+				return nil, err
+			}
+			return []string{"sheets", "rename-tab", "--", spreadsheetID, oldName, newName}, nil
+		}},
+		{Name: "sheets_delete_tab", Service: "sheets", Risk: mcpRiskWrite, Description: "Delete one existing tab by title in an explicitly enabled Picker-selected spreadsheet. Requires destructive permission; tab contents cannot be recovered through this tool.", Options: []mcp.ToolOption{mcp.WithString("spreadsheet_id", mcp.Required()), mcp.WithString("tab_name", mcp.Required())}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+			spreadsheetID, err := requireMCPString(req, "spreadsheet_id")
+			if err != nil {
+				return nil, err
+			}
+			tabName, err := requireHostedSheetsText(req, "tab_name", 512)
+			if err != nil {
+				return nil, err
+			}
+			return []string{"sheets", "delete-tab", "--", spreadsheetID, tabName}, nil
+		}},
+		{Name: "sheets_number_format_range", Service: "sheets", Risk: mcpRiskWrite, Description: "Apply a fixed enum of Sheets number formats to a range in an explicitly enabled Picker-selected spreadsheet. Arbitrary cell-format JSON and other formatting are not supported.", Options: []mcp.ToolOption{mcp.WithString("spreadsheet_id", mcp.Required()), mcp.WithString("range", mcp.Required()), mcp.WithString("type", mcp.Enum("NUMBER", "CURRENCY", "PERCENT", "DATE", "TIME", "DATE_TIME", "SCIENTIFIC", "TEXT"), mcp.DefaultString("NUMBER")), mcp.WithString("pattern")}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+			spreadsheetID, err := requireMCPString(req, "spreadsheet_id")
+			if err != nil {
+				return nil, err
+			}
+			rangeSpec, err := requireMCPString(req, "range")
+			if err != nil {
+				return nil, err
+			}
+			formatType := req.GetString("type", "NUMBER")
+			if formatType == "" {
+				formatType = "NUMBER"
+			}
+			args := []string{"sheets", "number-format", "--type", formatType}
+			if pattern, present := req.GetArguments()["pattern"]; present {
+				text, isText := pattern.(string)
+				if !isText || strings.TrimSpace(text) == "" || len(text) > 256 {
+					return nil, errHostedSheetsTextInput
+				}
+				args = append(args, "--pattern", text)
+			}
+			return append(args, "--", spreadsheetID, rangeSpec), nil
 		}},
 	}
 }

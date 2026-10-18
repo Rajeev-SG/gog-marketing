@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/openclaw/gogcli/internal/app"
 	"github.com/openclaw/gogcli/internal/authclient"
+	"github.com/openclaw/gogcli/internal/cmd"
 	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
@@ -393,5 +395,246 @@ func TestNativeSheetsRequestGuardAdmitsOnlyExactMethodsAndSuffixes(t *testing.T)
 				t.Fatal("expected denial")
 			}
 		})
+	}
+}
+
+func TestSignedNativeSheetsTabAndNumberFormatHandlersUnderSelectedFileGrant(t *testing.T) {
+	var calls atomic.Int64
+	tabs := map[int64]string{0: "Sheet1"}
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices = app.Services{Sheets: func(ctx context.Context, account string) (*sheets.Service, error) {
+			if account != "owner@example.com" || authclient.AccessTokenFromContext(ctx) != "synthetic-ephemeral-token" || !googleapi.NoInputFromContext(ctx) {
+				t.Error("trusted execution identity was lost")
+			}
+			transport := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+				calls.Add(1)
+				path := r.URL.Path
+				if r.URL.Hostname() != "sheets.googleapis.com" || path != "/v4/spreadsheets/selected-sheet" && path != "/v4/spreadsheets/selected-sheet:batchUpdate" {
+					t.Errorf("unexpected native Sheets request: %s", r.URL)
+				}
+
+				body := "{}"
+				switch {
+				case r.Method == http.MethodGet && path == "/v4/spreadsheets/selected-sheet":
+					var entries []map[string]any
+					for id, title := range tabs {
+						entries = append(entries, map[string]any{"properties": map[string]any{"sheetId": id, "title": title}})
+					}
+					payload, err := json.Marshal(map[string]any{"spreadsheetId": "selected-sheet", "sheets": entries})
+					if err != nil {
+						t.Fatal(err)
+					}
+					body = string(payload)
+				case r.Method == http.MethodPost && path == "/v4/spreadsheets/selected-sheet:batchUpdate":
+					var input struct {
+						Requests []struct {
+							AddSheet              *json.RawMessage `json:"addSheet"`
+							UpdateSheetProperties *json.RawMessage `json:"updateSheetProperties"`
+							RepeatCell            *json.RawMessage `json:"repeatCell"`
+							DeleteSheet           *json.RawMessage `json:"deleteSheet"`
+						} `json:"requests"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+						t.Error(err)
+					}
+					if len(input.Requests) != 1 {
+						t.Errorf("unexpected request count: %d", len(input.Requests))
+					}
+					switch {
+					case input.Requests[0].AddSheet != nil:
+						tabs[7] = "Summary"
+						body = `{"replies":[{"addSheet":{"properties":{"sheetId":7,"title":"Summary","index":1}}}]}`
+					case input.Requests[0].UpdateSheetProperties != nil:
+						var update struct {
+							Properties struct {
+								SheetID int64  `json:"sheetId"`
+								Title   string `json:"title"`
+							} `json:"properties"`
+							Fields string `json:"fields"`
+						}
+						if err := json.Unmarshal(*input.Requests[0].UpdateSheetProperties, &update); err != nil {
+							t.Fatal(err)
+						}
+						if update.Properties.SheetID != 7 || update.Properties.Title != "Report" || update.Fields != "title" {
+							t.Errorf("unexpected rename payload: %+v", update)
+						}
+						tabs[update.Properties.SheetID] = update.Properties.Title
+						body = `{"replies":[{}]}`
+					case input.Requests[0].DeleteSheet != nil:
+						var deleted struct {
+							SheetID int64 `json:"sheetId"`
+						}
+						if err := json.Unmarshal(*input.Requests[0].DeleteSheet, &deleted); err != nil {
+							t.Fatal(err)
+						}
+						if deleted.SheetID != 7 {
+							t.Errorf("unexpected deleted sheet id: %d", deleted.SheetID)
+						}
+						delete(tabs, deleted.SheetID)
+						body = `{"replies":[{}]}`
+					case input.Requests[0].RepeatCell != nil:
+						body = `{"replies":[{}]}`
+					default:
+						t.Errorf("undeclared batch request body: %s", r.URL)
+					}
+				default:
+					t.Errorf("restricted/undeclared Sheets endpoint: %s %s", r.Method, r.URL)
+				}
+
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+			})
+
+			return sheets.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, transport)}))
+		}}
+	})
+	call := func(name string, args map[string]any, auth ToolAuthorization) capturedResponse {
+		body := signSheetsInvocation(t, name, args, auth)
+		return postExecute(t, harness.server, signInvocation(t, body, func(c map[string]any) { c["operation"] = OperationToolCall }), body)
+	}
+
+	added := call("sheets_add_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Summary", "index": 1}, sheetsLocalAuthorization("sheets_add_tab", sheetsWriteScope, true, false))
+	if added.Status != 200 || !added.OK || !strings.Contains(string(added.Result), `"sheetId":7`) {
+		t.Fatalf("native add tab failed: %d %s", added.Status, added.Body)
+	}
+
+	renamed := call("sheets_rename_tab", map[string]any{"spreadsheet_id": "selected-sheet", "old_name": "Summary", "new_name": "Report"}, sheetsLocalAuthorization("sheets_rename_tab", sheetsWriteScope, true, false))
+	if renamed.Status != 200 || !renamed.OK || !strings.Contains(string(renamed.Result), "Report") {
+		t.Fatalf("native rename tab failed: %d %s", renamed.Status, renamed.Body)
+	}
+
+	formatted := call("sheets_number_format_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": sheetsValuesRange, "type": "CURRENCY", "pattern": "$#,##0.00"}, sheetsLocalAuthorization("sheets_number_format_range", sheetsWriteScope, true, false))
+	if formatted.Status != 200 || !formatted.OK || !strings.Contains(string(formatted.Result), "CURRENCY") {
+		t.Fatalf("native number format failed: %d %s", formatted.Status, formatted.Body)
+	}
+
+	deleteArgs := map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Report"}
+	denied := call("sheets_delete_tab", deleteArgs, sheetsLocalAuthorization("sheets_delete_tab", sheetsWriteScope, true, false))
+	if denied.OK || denied.Status != 400 || denied.Error.Code != "invalid_request" {
+		t.Fatalf("delete without destructive permission was not rejected: %d %s", denied.Status, denied.Body)
+	}
+	deleted := call("sheets_delete_tab", deleteArgs, sheetsLocalAuthorization("sheets_delete_tab", sheetsWriteScope, true, true))
+	if deleted.Status != 200 || !deleted.OK {
+		t.Fatalf("native delete tab failed: %d %s", deleted.Status, deleted.Body)
+	}
+	if len(tabs) != 1 || tabs[0] != "Sheet1" {
+		t.Fatalf("tab lifecycle did not preserve the original sheet: %v", tabs)
+	}
+
+	// add + metadata/batch pairs for rename and format + metadata/batch delete.
+	if want := int64(7); calls.Load() != want {
+		t.Fatalf("native call count = %d, want %d", calls.Load(), want)
+	}
+}
+
+func TestSignedNativeSheetsHostedWriteDenialsNeverReachGoogle(t *testing.T) {
+	var calls atomic.Int64
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.Sheets = func(context.Context, string) (*sheets.Service, error) {
+			calls.Add(1)
+			return nil, errUnexpectedNativeFactory
+		}
+	})
+	call := func(name string, args map[string]any, auth ToolAuthorization) capturedResponse {
+		body := signSheetsInvocation(t, name, args, auth)
+		return postExecute(t, harness.server, signInvocation(t, body, func(c map[string]any) { c["operation"] = OperationToolCall }), body)
+	}
+
+	denials := []struct {
+		name string
+		tool string
+		args map[string]any
+		auth ToolAuthorization
+	}{
+		{"add wrong file", "sheets_add_tab", map[string]any{"spreadsheet_id": "unselected-sheet", "tab_name": "Summary"}, sheetsLocalAuthorization("sheets_add_tab", sheetsWriteScope, true, false)},
+		{"add write disabled", "sheets_add_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Summary"}, sheetsLocalAuthorization("sheets_add_tab", sheetsWriteScope, false, false)},
+		{"rename readonly scope", "sheets_rename_tab", map[string]any{"spreadsheet_id": "selected-sheet", "old_name": "Old", "new_name": "New"}, sheetsLocalAuthorization("sheets_rename_tab", sheetsReadScope, true, false)},
+		{"format wrong file", "sheets_number_format_range", map[string]any{"spreadsheet_id": "unselected-sheet", "range": sheetsValuesRange, "type": "TEXT"}, sheetsLocalAuthorization("sheets_number_format_range", sheetsWriteScope, true, false)},
+		{"delete destructive disabled", "sheets_delete_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Old"}, sheetsLocalAuthorization("sheets_delete_tab", sheetsWriteScope, true, false)},
+	}
+	for _, test := range denials {
+		t.Run(test.name, func(t *testing.T) {
+			if response := call(test.tool, test.args, test.auth); response.OK || response.Status != 400 || response.Error.Code != "invalid_request" {
+				t.Fatalf("unsafe invocation allowed: %d %s", response.Status, response.Body)
+			}
+		})
+	}
+	if calls.Load() != 0 {
+		t.Fatal("denied invocation reached native handler")
+	}
+}
+
+func TestNativeSheetsHostedRequestGuardAdmitsOnlyDeclaredPathsAndMethods(t *testing.T) {
+	base := "https://sheets.googleapis.com"
+	tests := []struct {
+		name   string
+		tool   string
+		args   map[string]any
+		path   string
+		method string
+		admit  bool
+	}{
+		{"add batch", "sheets_add_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Summary"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodPost, true},
+		{"add metadata", "sheets_add_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Summary"}, "/v4/spreadsheets/selected-sheet", http.MethodPost, false},
+		{"rename metadata", "sheets_rename_tab", map[string]any{"spreadsheet_id": "selected-sheet", "old_name": "Old", "new_name": "New"}, "/v4/spreadsheets/selected-sheet", http.MethodGet, true},
+		{"rename batch", "sheets_rename_tab", map[string]any{"spreadsheet_id": "selected-sheet", "old_name": "Old", "new_name": "New"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodPost, true},
+		{"rename wrong method", "sheets_rename_tab", map[string]any{"spreadsheet_id": "selected-sheet", "old_name": "Old", "new_name": "New"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodGet, false},
+		{"delete metadata", "sheets_delete_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Old"}, "/v4/spreadsheets/selected-sheet", http.MethodGet, true},
+		{"delete batch", "sheets_delete_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Old"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodPost, true},
+		{"delete wrong path", "sheets_delete_tab", map[string]any{"spreadsheet_id": "selected-sheet", "tab_name": "Old"}, "/v4/spreadsheets/unselected-sheet:batchUpdate", http.MethodPost, false},
+		{"format metadata", "sheets_number_format_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": sheetsValuesRange, "type": "TEXT"}, "/v4/spreadsheets/selected-sheet", http.MethodGet, true},
+		{"format batch", "sheets_number_format_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": sheetsValuesRange, "type": "TEXT"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodPost, true},
+		{"format wrong range", "sheets_number_format_range", map[string]any{"spreadsheet_id": "selected-sheet", "range": "Sheet1/../values/A1", "type": "TEXT"}, "/v4/spreadsheets/selected-sheet:batchUpdate", http.MethodPost, false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			invocation := &ToolInvocation{Name: test.tool, Arguments: test.args, Authorization: sheetsLocalAuthorization(test.tool, sheetsWriteScope, true, true)}
+			guard := nativeRequestGuard(invocation)
+			parsed, err := url.Parse(base + test.path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			denied := guard(&http.Request{Method: test.method, URL: parsed, Header: http.Header{}}) != nil
+			if denied == test.admit {
+				t.Fatalf("admission = %v, want admission = %v", !denied, test.admit)
+			}
+		})
+	}
+}
+
+func TestNativeSheetsHostedSchemasRemainResourceBoundAndDestructiveExplicit(t *testing.T) {
+	for name, required := range map[string][]string{
+		"sheets_add_tab":             {"spreadsheet_id", "tab_name"},
+		"sheets_rename_tab":          {"spreadsheet_id", "old_name", "new_name"},
+		"sheets_delete_tab":          {"spreadsheet_id", "tab_name"},
+		"sheets_number_format_range": {"spreadsheet_id", "range"},
+	} {
+		var actual []string
+		found := false
+		for _, tool := range cmd.HostedExistingToolCatalog() {
+			if tool.Tool.Name == name {
+				found = true
+				actual = tool.Tool.InputSchema.Required
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("%s missing from hosted catalog", name)
+		}
+		for _, key := range required {
+			if !slices.Contains(actual, key) {
+				t.Fatalf("%s does not require %s", name, key)
+			}
+		}
+	}
+
+	binding, ok := nativeBinding("sheets_delete_tab")
+	if !ok || !binding.destructive {
+		t.Fatalf("sheets_delete_tab binding is not destructive")
+	}
+	for _, name := range []string{"sheets_add_tab", "sheets_rename_tab", "sheets_number_format_range"} {
+		binding, ok := nativeBinding(name)
+		if !ok || !binding.Write || binding.destructive {
+			t.Fatalf("%s has incorrect write/destructive policy", name)
+		}
 	}
 }
