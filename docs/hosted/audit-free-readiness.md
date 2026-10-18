@@ -1,5 +1,25 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Selected-spreadsheet inventory candidate (18 October 2026)
+
+Five fixed-schema reads reuse native `sheets chart list`, `named-ranges list`,
+`table list`, `banding list` and `conditional-format list`: `sheets_chart_list`,
+`sheets_named_ranges_list`, `sheets_table_list`, `sheets_banding_list` and
+`sheets_conditional_format_list`. Each accepts only `spreadsheet_id`, requires
+an exact enabled Sheets tool/file grant and issues GET
+`/v4/spreadsheets/<selected-id>` with the native fixed metadata field mask.
+No arbitrary field masks, sheet/range selectors or mutation options are exposed.
+
+Official Sheets v4 discovery checked 18 October 2026 admits
+`spreadsheets.readonly`, `spreadsheets` or `drive.file`; broader Drive scopes are
+not admitted. Signed native fixtures check actual field masks, returned metadata,
+all three scope alternatives and grant/tenant denials. Each tool has a D1/Clerk
+selected-file isolation test. All five remain **unverified live** under #97.
+Candidate totals: **167 tools / 129 active**, **131 mapped native leaves** and
+**170 leaves requiring method/scope/resource audit**. No deployment, consent,
+credentials, Google grants, billing configuration or ordinary CLI changes.
+#96/#97 remain open.
+
 ## Selected-file comments and form-watch read candidate (18 October 2026)
 
 | Tool | Native command / Google method | Boundary | Live status |

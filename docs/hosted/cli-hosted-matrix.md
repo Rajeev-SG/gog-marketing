@@ -6,10 +6,10 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 347 visible native leaves in the 11 active services
-and 124 active hosted tools (162 total). It maps 124 hosted tools across 126
+and 129 active hosted tools (167 total). It maps 129 hosted tools across 131
 native leaves because Search Console exposes `query` and the equivalent
-`searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list` leaves. Counts are: 126 implemented/unverified hosted
-leaves, 0 reviewed eligible missing (the six reviewed commands are now implemented), 175 missing requiring per-method/scope/resource audit, 21 excluded, 20 product-limited, and 5 deferred.
+`searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list` leaves. Counts are: 131 implemented/unverified hosted
+leaves, 0 reviewed eligible missing (the six reviewed commands are now implemented), 170 missing requiring per-method/scope/resource audit, 21 excluded, 20 product-limited, and 5 deferred.
 
 `implemented_hosted_unverified` means only that an executable fixed-schema
 hosted binding exists. Every `live_verified` value is false; fixture success and
