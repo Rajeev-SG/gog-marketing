@@ -4604,6 +4604,85 @@
     }
   },
   {
+    "name": "analytics_accounts",
+    "service": "analytics",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List GA4 account summaries in the authorised Google account via the native Analytics Admin API, under an account-level exact tool grant. No property asset grant is implied. No arbitrary Admin API filter, write or credential access is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "name": "analytics_accounts"
+    }
+  },
+  {
+    "name": "analytics_properties_list",
+    "service": "analytics",
+    "resource_type": "account",
+    "resource_argument": "account",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List GA4 properties under one explicitly granted account via the native Analytics Admin API, using a fixed parent:accounts/\u003cid\u003e filter. No arbitrary filter, ancestor or global account-summary fallback is exposed, and no property asset grant is implied.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "type": "string"
+          },
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 200,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["account"],
+        "type": "object"
+      },
+      "name": "analytics_properties_list"
+    }
+  },
+  {
     "name": "chat_spaces_list",
     "service": "chat",
     "resource_type": "",

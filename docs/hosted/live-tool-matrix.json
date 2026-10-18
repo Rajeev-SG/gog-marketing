@@ -21,10 +21,26 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 155,
-  "active_tool_count": 117,
+  "total_catalog_count": 157,
+  "active_tool_count": 119,
   "historical_evidence_rows": 2,
   "rows": [
+    {
+      "service": "analytics",
+      "tool": "analytics_accounts",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
     {
       "service": "analytics",
       "tool": "analytics_custom-dimensions_archive",
@@ -459,6 +475,23 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_properties_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "resource_argument": "account",
+      "accepted_scopes": [
+        "analytics.edit",
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {

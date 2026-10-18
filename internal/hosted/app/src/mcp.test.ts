@@ -530,10 +530,10 @@ describe("MCP Streamable HTTP and bearer authority (#65)", () => {
         },
       },
       {
-        detail: "unknown_tool",
+        detail: "grant_denied",
         params: {
           name: "analytics_accounts",
-          arguments: { property: fixture.resourceId },
+          arguments: {},
         },
       },
       {

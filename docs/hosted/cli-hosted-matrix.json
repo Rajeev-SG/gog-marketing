@@ -22,27 +22,26 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 117,
-  "total_hosted_catalog_count": 155,
+  "hosted_tool_count": 119,
+  "total_hosted_catalog_count": 157,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 118,
-  "mapped_hosted_tool_count": 117,
+  "mapped_native_leaf_count": 120,
+  "mapped_hosted_tool_count": 119,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 118,
-    "missing_requires_audit": 183,
+    "implemented_hosted_unverified": 120,
+    "missing_requires_audit": 181,
     "product_limited": 20
   },
   "by_service": [
     {
       "service": "analytics",
       "native_leaves": 29,
-      "hosted_tools": 27,
-      "mapped_native_leaves": 27,
+      "hosted_tools": 29,
+      "mapped_native_leaves": 29,
       "classifications": {
-        "implemented_hosted_unverified": 27,
-        "missing_requires_audit": 2
+        "implemented_hosted_unverified": 29
       }
     },
     {
@@ -157,10 +156,23 @@
       "service": "analytics",
       "command": "accounts",
       "native_command": "gog analytics accounts",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "analytics_accounts",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "analytics",
@@ -773,10 +785,25 @@
       "service": "analytics",
       "command": "properties list",
       "native_command": "gog analytics properties list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "analytics_properties_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "account",
+      "resource_argument": "account",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "analytics",

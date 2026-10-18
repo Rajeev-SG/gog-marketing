@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 347 {
 		t.Fatalf("native leaf count = %d, want 347", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 117 || matrix.TotalHostedCatalogCount != 155 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 117/155/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 119 || matrix.TotalHostedCatalogCount != 157 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 119/157/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 118 || matrix.MappedHostedToolCount != 117 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 118/117", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 120 || matrix.MappedHostedToolCount != 119 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 120/119", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 27, "appscript": 5, "bigquery": 6, "docs": 3, "drive": 4, "forms": 6, "searchconsole": 8, "sheets": 10, "slides": 3, "tagmanager": 34, "tasks": 11} {
+	for service, count := range map[string]int{"analytics": 29, "appscript": 5, "bigquery": 6, "docs": 3, "drive": 4, "forms": 6, "searchconsole": 8, "sheets": 10, "slides": 3, "tagmanager": 34, "tasks": 11} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {
