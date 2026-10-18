@@ -2,6 +2,15 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Drive: add selected-file rename/copy and file-only trash through native handlers; preserve literal argument boundaries and reject folders, shortcuts, missing type or failed metadata verification before trash. Copies never gain automatic file grants. (#96, #97, thanks @Rajeev-SG)
+- Hosted Sheets: add blank spreadsheet creation under an explicit account-level tool/write grant, with title-only input and no automatic permission on the returned file. Parent/template/source fields remain unavailable. (#96, #97, thanks @Rajeev-SG)
+
+- Hosted inventory: generate native CLI-to-hosted and per-tool live-evidence matrices from canonical schemas/bindings; keep unaudited gaps explicit and existing-deployment representative proof separate from candidate acceptance. (#96, #97, thanks @Rajeev-SG)
+
+- Readiness: distinguish infrastructure free tiers from separately paid OpenRouter chat inference; quota limits are not a monetary or £0 guarantee. (#69, thanks @Rajeev-SG)
+
+- Hosted: expose native Apps Script deployment and version list reads with account/tool grants, official method scopes, exact project GET admission and bounded pagination. No OAuth changes, script execution or project mutations are enabled. Fixture pagination/denials are verified; live acceptance is pending. (#96)
+
 - Hosted Sheets: add selected-spreadsheet tab creation, rename, destructive deletion and bounded number-format edits through existing native handlers and explicit account/tool/file permissions. Regenerated catalogue and signed transport/security fixtures pass; live Google acceptance remains separate. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted chat: add an explicit verified-user cohort while preserving owner history and live Clerk/tenant checks; isolate sidebar/history/drafts on account switches and cap model starts per tenant at 1,000 per UTC month. Malformed cohort configuration fails closed. Deterministic two-user/browser coverage is not live non-owner acceptance. (#98, thanks @Rajeev-SG)

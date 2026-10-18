@@ -118,12 +118,12 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "docs_write", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", Write: true, hosts: []string{"docs.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/v1/documents/" + id, "/v1/documents/" + id + ":batchUpdate"}
 	}, scopes: []string{"documents", "drive.file"}},
-	{Name: "sheets_read_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
-	{Name: "sheets_update_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
+	{Name: "sheets_read_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{nativeSheetsHost}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
+	{Name: "sheets_update_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), nativeSheetsBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), nativeAnalyticsAdminBindings()...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(nativeFormsBindings(), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), nativeSheetsCreateBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -392,6 +392,11 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 // method and, for Sheets values actions, an exact native action suffix.
 func admitWriteRequestMethod(name, path, method string) error {
 	switch name {
+	case "drive_copy":
+		copyPath := strings.HasSuffix(path, "/copy")
+		if (copyPath && method != http.MethodPost) || (!copyPath && method != http.MethodGet) {
+			return native.ErrDenied
+		}
 	case "contacts_update":
 		updatePath := strings.HasSuffix(path, ":updateContact")
 		if (method == http.MethodGet && updatePath) || (method == http.MethodPatch && !updatePath) {
@@ -456,6 +461,15 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 		return engineOutcome("native tool execution unavailable")
 	}
 
+	// Drive trash is destructive and native DriveDeleteCmd currently PATCHes any
+	// selected resource.  A shortcut or folder can recursively affect children,
+	// so hosted calls require an authoritative preflight even with a grant.
+	if req.Tool.Name == "drive_trash" {
+		if out := s.verifyNativeDriveTrash(ctx, req); out.err != nil {
+			return out
+		}
+	}
+
 	result, err := s.Engine.ExecuteNative(ctx, req.Tool.Name, req.Tool.Arguments, native.Options{
 		Account: req.GoogleEmail, AccessToken: req.AccessToken,
 		AllowWrite:     req.Tool.Authorization.AllowWrite,
@@ -500,4 +514,40 @@ func (s *Server) executeNativeTool(ctx context.Context, req *Request) outcome {
 	}
 
 	return outcome{result: result}
+}
+
+// verifyNativeDriveTrash uses the existing typed selected-file verifier. The
+// copied request retains the original verified identity and credential context.
+func (s *Server) verifyNativeDriveTrash(ctx context.Context, req *Request) outcome {
+	if req == nil || req.Tool == nil || req.Tool.Authorization.Resource == nil || len(req.Tool.Arguments) != 1 {
+		return invalidOutcome("missing selected file")
+	}
+	id := req.Tool.Authorization.Resource.ResourceID
+
+	argument, ok := req.Tool.Arguments["file_id"].(string)
+	if !ok || id == "" || argument != id {
+		return invalidOutcome("invalid selected file")
+	}
+	checkedRequest := *req
+	checkedRequest.FileSelection = &FileSelection{IDs: []string{id}, Scopes: append([]string(nil), req.Tool.Authorization.Scopes...)}
+
+	checked := s.executeFileVerification(ctx, &checkedRequest)
+	if checked.err != nil {
+		return checked
+	}
+
+	files, ok := checked.result.(FileVerificationResult)
+	if ok && len(files.Rejected) != 0 {
+		return outcome{status: http.StatusForbidden, err: &apiError{Code: "permission_denied", Message: "file is not permitted for trash"}}
+	}
+
+	if !ok || len(files.Files) != 1 || files.Files[0].ID != id || files.Files[0].MimeType == "" {
+		return invalidOutcome("file kind could not be verified")
+	}
+
+	if files.Files[0].MimeType == "application/vnd.google-apps.folder" || files.Files[0].MimeType == "application/vnd.google-apps.shortcut" {
+		return outcome{status: http.StatusForbidden, err: &apiError{Code: "permission_denied", Message: "folder or shortcut trash is not supported"}}
+	}
+
+	return outcome{}
 }

@@ -3838,6 +3838,93 @@
     }
   },
   {
+    "name": "drive_rename",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Rename a Picker-selected Drive file. Requires drive.file and an explicit selected-file grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "new_name"],
+        "type": "object"
+      },
+      "name": "drive_rename"
+    }
+  },
+  {
+    "name": "drive_copy",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Copy a Picker-selected Drive file. Requires drive.file and an explicit selected-file grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "new_name": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "new_name"],
+        "type": "object"
+      },
+      "name": "drive_copy"
+    }
+  },
+  {
+    "name": "drive_trash",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Trash a freshly verified non-folder Picker-selected Drive file. Requires drive.file, the exact write/file grant and destructive permission. Folders, shortcuts, unknown kinds and permanent deletion are not supported.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_trash"
+    }
+  },
+  {
     "name": "groups_list",
     "service": "groups",
     "resource_type": "",
@@ -4405,6 +4492,88 @@
         "type": "object"
       },
       "name": "appscript_create"
+    }
+  },
+  {
+    "name": "appscript_deployments",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Apps Script deployments by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_deployments"
+    }
+  },
+  {
+    "name": "appscript_versions",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Apps Script versions by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_versions"
     }
   },
   {
@@ -5054,6 +5223,33 @@
         "type": "object"
       },
       "name": "sheets_number_format_range"
+    }
+  },
+  {
+    "name": "sheets_create_blank",
+    "service": "sheets",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a blank spreadsheet by literal title under an explicit account-level write-tool grant. No parent, template or source is accepted. The returned file is not automatically granted for later reads or writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "sheets_create_blank"
     }
   },
   {

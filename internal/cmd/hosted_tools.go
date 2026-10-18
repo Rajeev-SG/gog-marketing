@@ -50,6 +50,9 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedContactsTools()...)
 	tools = append(tools, hostedCalendarEventTools()...)
 	tools = append(tools, hostedDriveLabelsTools()...)
+	tools = append(tools, hostedDriveRenameTool())
+	tools = append(tools, hostedDriveCopyTool())
+	tools = append(tools, hostedDriveTrashTool())
 	tools = append(tools, hostedGroupsListTool(), hostedGroupsMembersTool())
 	tools = append(tools, hostedMeetSpaceTools()...)
 	tools = append(tools, hostedAdSenseAccountTools()...)
@@ -61,6 +64,7 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedYouTubePlaylistTools()...)
 	tools = append(tools, hostedPeopleMeTool())
 	tools = append(tools, hostedSheetsTools()...)
+	tools = append(tools, hostedSheetsCreateTools()...)
 	return append(tools, hostedPhotosLibraryTools()...)
 }
 
