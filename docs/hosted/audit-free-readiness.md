@@ -67,16 +67,25 @@ billing configuration or ordinary CLI behavior changed. #96/#97 remain open.
 - `docs_list_tabs` reuses native `docs list-tabs` (also `docs tabs list`): one GET
   of the selected document with `includeTabsContent=true`; output is tab IDs,
   titles, indexes and hierarchy, not a new arbitrary API proxy.
+- `docs_structure`, `docs_headings_list`, `docs_paragraphs_list`,
+  `docs_tables_list` and `docs_images_list` reuse native default-document
+  `structure`, `headings list`, `paragraphs list`, `tables list` and
+  `images list` reads for the selected document.
+- `docs_named_range_list` reuses native `docs named-range list` through the
+  reviewed hyphen naming bridge.
 
-Both reads require an exact enabled Docs tool grant plus the enabled selected
-file grant. Official Docs v1 discovery checked 18 October 2026 admits
+All eight reads require an exact enabled Docs tool grant plus the enabled
+selected file grant and report the default document view only; they do not
+claim all-tabs expansion or full CLI-option parity. Official Docs v1 discovery
+checked 18 October 2026 admits
 `documents.readonly`, `documents` or `drive.file`; broader Drive scopes are not
 admitted. Signed transport fixtures and D1 MCP permission tests cover selected
-files, disabled/foreign resources, foreign tenants and scope/tool denials.
-The candidate has **159 total / 121 active tools**, mapping **123 native leaves**;
-**178 leaves require method/scope/resource audit**. Both tools are **unverified
-live** under #97. No deployment, consent, credentials, grants or ordinary CLI
-behavior changed. #96/#97 remain open.
+files, disabled/foreign resources, foreign tenants and scope/tool denials for
+all eight tools.
+The candidate has **175 total / 137 active tools**, mapping **139 native leaves**;
+**162 leaves require method/scope/resource audit**. All six new Docs tools are
+**unverified live** under #97. No deployment, consent, credentials, grants or
+ordinary CLI behavior changed. #96/#97 remain open.
 
 ## GA4 account inventory candidate (18 October 2026)
 
