@@ -5697,6 +5697,81 @@
     }
   },
   {
+    "name": "sheets_freeze",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Freeze or unfreeze rows and columns on one explicitly named tab of one explicitly granted Google spreadsheet under an exact account/tool/file write grant with human approval. Reversible layout only: no arbitrary batch requests, tab deletion, duplication, or data-source operations.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cols": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "rows": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "sheet"],
+        "type": "object"
+      },
+      "name": "sheets_freeze"
+    }
+  },
+  {
+    "name": "sheets_reorder_tab",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Move one explicitly named or numeric tab to a fixed 0-based position in one explicitly granted Google spreadsheet under an exact account/tool/file write grant with human approval. Reversible layout only: no arbitrary batch requests, tab deletion, duplication, or data-source operations.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "to": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["spreadsheet_id", "tab", "to"],
+        "type": "object"
+      },
+      "name": "sheets_reorder_tab"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",

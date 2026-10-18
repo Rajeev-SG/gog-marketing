@@ -1,5 +1,30 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Selected-tab layout candidate (18 October 2026)
+
+- `sheets_freeze` reuses native `sheets freeze` with an explicitly required sheet
+  name and at least one integer `rows`/`cols` in 0–10,000. Zero unfreezes; omitted
+  properties remain unchanged. No implicit first-tab fallback is exposed.
+- `sheets_reorder_tab` reuses native `sheets reorder-tab`, with an explicit tab
+  title/numeric ID and bounded destination index; native metadata preflight
+  checks the destination against the current selected spreadsheet.
+
+Both writes require exact enabled account/tool/file write authority and existing
+native approval controls. Only `spreadsheets` or `drive.file` are admitted for
+selected-spreadsheet metadata GET and POST `:batchUpdate`; readonly scopes fail
+closed. Official Sheets v4 discovery checked 18 October 2026 confirms these
+method scopes. Method/path guards deny POST metadata, GET batch, foreign files,
+foreign hosts and other verbs. There is no deletion, duplication, arbitrary
+request body or external/data-source operation.
+
+Signed native stateful fixtures check actual persisted freeze properties, explicit
+zero fields, preservation of omitted properties, and forward/backward tab order.
+Missing tabs and invalid native indexes cannot mutate state. Both tools have
+D1/Clerk file/tool isolation coverage. No production permission, credentials,
+consent, billing setting or deployment changed; both tools remain **unverified
+live** under #97. Candidate totals: **169 / 131 active tools**, **133 mapped
+native leaves**, **168 requiring method/scope/resource audit**. #96/#97 stay open.
+
 ## Selected-spreadsheet inventory candidate (18 October 2026)
 
 Five fixed-schema reads reuse native `sheets chart list`, `named-ranges list`,

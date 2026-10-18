@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 167,
-  "active_tool_count": 129,
+  "total_catalog_count": 169,
+  "active_tool_count": 131,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -1265,6 +1265,24 @@
     },
     {
       "service": "sheets",
+      "tool": "sheets_freeze",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
       "tool": "sheets_metadata",
       "write": false,
       "destructive_binding_flag": false,
@@ -1343,6 +1361,24 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_reorder_tab",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {

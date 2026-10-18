@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Sheets: add explicitly selected-tab row/column freeze-unfreeze and tab reordering through native handlers, exact write-tool/file grants and existing approval controls. Zero values remain literal, unspecified freeze fields stay unchanged, and no duplication or arbitrary batch requests are exposed. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: add selected-spreadsheet chart, named-range, table, banding and conditional-format inventories through existing typed read handlers and exact tool/file grants. No mutations, arbitrary field masks or OAuth changes; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Drive/Forms: add selected-file comment listing/retrieval and selected-form watch listing through native read handlers, exact tool/file grants and method-specific scopes. No broad Drive access, comment mutations or watch creation/renewal; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
