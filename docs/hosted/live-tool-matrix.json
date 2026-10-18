@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 152,
-  "active_tool_count": 114,
+  "total_catalog_count": 154,
+  "active_tool_count": 116,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -663,6 +663,21 @@
     },
     {
       "service": "docs",
+      "tool": "docs_create_blank",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -1135,6 +1150,21 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_create_blank",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {
