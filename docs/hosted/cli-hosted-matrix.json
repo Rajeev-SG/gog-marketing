@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 110,
-  "total_hosted_catalog_count": 148,
+  "hosted_tool_count": 111,
+  "total_hosted_catalog_count": 149,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 111,
-  "mapped_hosted_tool_count": 110,
+  "mapped_native_leaf_count": 112,
+  "mapped_hosted_tool_count": 111,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 111,
-    "missing_requires_audit": 190,
+    "implemented_hosted_unverified": 112,
+    "missing_requires_audit": 189,
     "product_limited": 20
   },
   "by_service": [
@@ -113,12 +113,12 @@
     {
       "service": "sheets",
       "native_leaves": 67,
-      "hosted_tools": 9,
-      "mapped_native_leaves": 9,
+      "hosted_tools": 10,
+      "mapped_native_leaves": 10,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 9,
-        "missing_requires_audit": 47,
+        "implemented_hosted_unverified": 10,
+        "missing_requires_audit": 46,
         "product_limited": 10
       }
     },
@@ -2836,10 +2836,23 @@
       "service": "sheets",
       "command": "create",
       "native_command": "gog sheets create",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_create_blank",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",

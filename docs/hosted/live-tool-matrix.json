@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 148,
-  "active_tool_count": 110,
+  "total_catalog_count": 149,
+  "active_tool_count": 111,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -967,6 +967,22 @@
       "destructive_binding_flag": true,
       "resource_model": "file",
       "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_create_blank",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
       "accepted_scopes": [
         "drive.file",
         "spreadsheets"
