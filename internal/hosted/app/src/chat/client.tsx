@@ -671,6 +671,7 @@ function App() {
   const openThread = useCallback(
     (id?: string, replace = false) => {
       authGeneration.current++;
+      setThreadBusy(false);
       const url = id ? "/chat?thread=" + encodeURIComponent(id) : "/chat";
       if (replace) window.history.replaceState(null, "", url);
       else window.history.pushState(null, "", url);

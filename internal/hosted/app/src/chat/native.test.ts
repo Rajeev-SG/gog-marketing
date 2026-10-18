@@ -589,6 +589,7 @@ it("admits two independent native cohort tenants and rejects foreign or revoked 
   const tenantB = await new HostedRepository(
     (await mf.getD1Database("DB")) as unknown as D1Database,
   ).bootstrapTenant(cohortB);
+  expect(tenantA.id).not.toBe(tenantB.id);
   sessionUsers.set("sess_native_cohort_a", cohortA);
   sessionUsers.set("sess_native_cohort_b", cohortB);
 
