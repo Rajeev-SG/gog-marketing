@@ -23,17 +23,19 @@ var sheetsLabelSelector = regexp.MustCompile(`^[^\p{C}]{1,512}$`)
 
 const nativeSheetsService = "sheets"
 
+const nativeSheetsHost = "sheets.googleapis.com"
+
 var sheetsWriteScopes = []string{"spreadsheets", driveFileScope}
 
 func nativeSheetsBindings() []NativeToolBinding {
 	return []NativeToolBinding{
-		{Name: "sheets_metadata", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodGet}, scopes: []string{"spreadsheets.readonly", "spreadsheets", driveFileScope}, paths: exactPaths("/v4/spreadsheets/", "")},
-		{Name: "sheets_append_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":append")},
-		{Name: "sheets_clear_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":clear")},
-		{Name: "sheets_add_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost}, scopes: sheetsWriteScopes, paths: exactPaths("", ":batchUpdate"), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
-		{Name: "sheets_rename_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("old_name", "new_name")},
-		{Name: "sheets_delete_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
-		{Name: "sheets_number_format_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsFormattingPaths},
+		{Name: "sheets_metadata", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", hosts: []string{nativeSheetsHost}, methods: []string{http.MethodGet}, scopes: []string{"spreadsheets.readonly", "spreadsheets", driveFileScope}, paths: exactPaths("/v4/spreadsheets/", "")},
+		{Name: "sheets_append_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":append")},
+		{Name: "sheets_clear_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{nativeSheetsHost}, methods: []string{http.MethodPost}, scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("", ""), argumentPaths: validateSheetsRangePaths(":clear")},
+		{Name: "sheets_add_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, methods: []string{http.MethodPost}, scopes: sheetsWriteScopes, paths: exactPaths("", ":batchUpdate"), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
+		{Name: "sheets_rename_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("old_name", "new_name")},
+		{Name: "sheets_delete_tab", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, destructive: true, hosts: []string{nativeSheetsHost}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsSpreadsheetPaths("tab_name")},
+		{Name: "sheets_number_format_range", Service: nativeSheetsService, ResourceType: resourceTypeFile, ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, scopes: sheetsWriteScopes, paths: exactPaths("/v4/spreadsheets/", ""), argumentPaths: validateSheetsFormattingPaths},
 	}
 }
 

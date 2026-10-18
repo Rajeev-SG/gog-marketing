@@ -118,8 +118,8 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "docs_write", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", Write: true, hosts: []string{"docs.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/v1/documents/" + id, "/v1/documents/" + id + ":batchUpdate"}
 	}, scopes: []string{"documents", "drive.file"}},
-	{Name: "sheets_read_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
-	{Name: "sheets_update_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{"sheets.googleapis.com"}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
+	{Name: "sheets_read_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", hosts: []string{nativeSheetsHost}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets.readonly", "spreadsheets", "drive.file"}},
+	{Name: "sheets_update_range", Service: nativeSheetsService, ResourceType: "file", ResourceArgument: "spreadsheet_id", Write: true, hosts: []string{nativeSheetsHost}, paths: exactPaths("/v4/spreadsheets/", "/values/"), scopes: []string{"spreadsheets", "drive.file"}},
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},

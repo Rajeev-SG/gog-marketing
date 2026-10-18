@@ -9,7 +9,7 @@ import (
 func nativeSheetsCreateBindings() []NativeToolBinding {
 	return []NativeToolBinding{{
 		Name: "sheets_create_blank", Service: "sheets", Write: true,
-		hosts: []string{"sheets.googleapis.com"}, methods: []string{http.MethodPost},
+		hosts: []string{nativeSheetsHost}, methods: []string{http.MethodPost},
 		scopes: []string{"spreadsheets", driveFileScope}, paths: exactPaths("/v4/spreadsheets", ""),
 		argumentPaths: func(args map[string]any) ([]string, error) {
 			if len(args) != 1 {
