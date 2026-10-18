@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted: expose native Apps Script deployment and version list reads with account/tool grants, official method scopes, exact project GET admission and bounded pagination. No OAuth changes, script execution or project mutations are enabled. Fixture pagination/denials are verified; live acceptance is pending. (#96)
+
 - Hosted Sheets: add selected-spreadsheet tab creation, rename, destructive deletion and bounded number-format edits through existing native handlers and explicit account/tool/file permissions. Regenerated catalogue and signed transport/security fixtures pass; live Google acceptance remains separate. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted chat: add an explicit verified-user cohort while preserving owner history and live Clerk/tenant checks; isolate sidebar/history/drafts on account switches and cap model starts per tenant at 1,000 per UTC month. Malformed cohort configuration fails closed. Deterministic two-user/browser coverage is not live non-owner acceptance. (#98, thanks @Rajeev-SG)

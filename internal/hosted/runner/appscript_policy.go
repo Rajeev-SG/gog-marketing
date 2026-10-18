@@ -5,6 +5,8 @@ import "net/http"
 const (
 	scriptProjectCreate = "create"
 	scriptProjectGet    = "get"
+	scriptDeployments   = "deployments"
+	scriptVersions      = "versions"
 )
 
 func nativeAppScriptProjectBindings() []NativeToolBinding {
@@ -36,6 +38,28 @@ func nativeAppScriptProjectBindings() []NativeToolBinding {
 
 			return []string{path}, nil
 		}})
+	}
+
+	for _, inventory := range []struct {
+		operation string
+		scopes    []string
+	}{
+		{scriptDeployments, []string{"script.deployments.readonly", "script.deployments"}},
+		{scriptVersions, []string{"script.projects.readonly", "script.projects"}},
+	} {
+		result = append(result, NativeToolBinding{
+			Name: "appscript_" + inventory.operation, Service: "appscript",
+			hosts: []string{"script.googleapis.com"}, methods: []string{http.MethodGet},
+			scopes: inventory.scopes, paths: exactPaths("", ""),
+			argumentPaths: func(args map[string]any) ([]string, error) {
+				id, _ := args["script_id"].(string)
+				if !fileResourceID.MatchString(id) {
+					return nil, invalidf("invalid script project ID")
+				}
+
+				return []string{"/v1/projects/" + id + "/" + inventory.operation}, nil
+			},
+		})
 	}
 
 	return result

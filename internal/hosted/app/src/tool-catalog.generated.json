@@ -4408,6 +4408,88 @@
     }
   },
   {
+    "name": "appscript_deployments",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Apps Script deployments by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_deployments"
+    }
+  },
+  {
+    "name": "appscript_versions",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read native Apps Script versions by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "max": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_versions"
+    }
+  },
+  {
     "name": "chat_spaces_list",
     "service": "chat",
     "resource_type": "",
