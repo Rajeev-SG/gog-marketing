@@ -2,6 +2,10 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Drive/Forms: add selected-file comment listing/retrieval and selected-form watch listing through native read handlers, exact tool/file grants and method-specific scopes. No broad Drive access, comment mutations or watch creation/renewal; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
+
+- Hosted Docs: add selected-document metadata and tab-inventory reads through existing typed handlers and exact read-tool/file grants. No new OAuth scopes, content mutations or implicit resource permissions; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted GA4: add account-summary discovery under an exact account-level tool grant and property inventory under one selected account grant. Fixed parent filters, native pagination and signed request guards preserve tenant/resource isolation; discovered properties remain ungranted. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Workspace: add title-only blank Docs, Slides and Forms creation using existing native handlers and exact account-level write-tool grants. No parent/template/import/publish options or automatic file permissions are exposed; new-file reads still require explicit grants. (#96, #97, thanks @Rajeev-SG)

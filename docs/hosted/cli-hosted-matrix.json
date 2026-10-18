@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 119,
-  "total_hosted_catalog_count": 157,
+  "hosted_tool_count": 124,
+  "total_hosted_catalog_count": 162,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 120,
-  "mapped_hosted_tool_count": 119,
+  "mapped_native_leaf_count": 126,
+  "mapped_hosted_tool_count": 124,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 120,
-    "missing_requires_audit": 181,
+    "implemented_hosted_unverified": 126,
+    "missing_requires_audit": 175,
     "product_limited": 20
   },
   "by_service": [
@@ -68,36 +68,36 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 3,
-      "mapped_native_leaves": 3,
+      "hosted_tools": 5,
+      "mapped_native_leaves": 6,
       "classifications": {
-        "implemented_hosted_unverified": 3,
-        "missing_requires_audit": 67,
+        "implemented_hosted_unverified": 6,
+        "missing_requires_audit": 64,
         "product_limited": 2
       }
     },
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 4,
-      "mapped_native_leaves": 4,
+      "hosted_tools": 6,
+      "mapped_native_leaves": 6,
       "classifications": {
         "deferred": 5,
         "excluded": 18,
-        "implemented_hosted_unverified": 4,
-        "missing_requires_audit": 17,
+        "implemented_hosted_unverified": 6,
+        "missing_requires_audit": 15,
         "product_limited": 3
       }
     },
     {
       "service": "forms",
       "native_leaves": 17,
-      "hosted_tools": 6,
-      "mapped_native_leaves": 6,
+      "hosted_tools": 7,
+      "mapped_native_leaves": 7,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 6,
-        "missing_requires_audit": 10
+        "implemented_hosted_unverified": 7,
+        "missing_requires_audit": 9
       }
     },
     {
@@ -1409,10 +1409,26 @@
       "service": "docs",
       "command": "info",
       "native_command": "gog docs info",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_info",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1508,10 +1524,26 @@
       "service": "docs",
       "command": "list-tabs",
       "native_command": "gog docs list-tabs",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_list_tabs",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1742,10 +1774,26 @@
       "service": "docs",
       "command": "tabs list",
       "native_command": "gog docs tabs list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_list_tabs",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1908,19 +1956,47 @@
       "service": "drive",
       "command": "comments get",
       "native_command": "gog drive comments get",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_comments_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
       "command": "comments list",
       "native_command": "gog drive comments list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_comments_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
@@ -2495,10 +2571,27 @@
       "service": "forms",
       "command": "watch list",
       "native_command": "gog forms watch list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_watch_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body",
+          "forms.body.readonly",
+          "forms.responses.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",

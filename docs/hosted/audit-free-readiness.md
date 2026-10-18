@@ -1,5 +1,38 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Selected-file comments and form-watch read candidate (18 October 2026)
+
+| Tool | Native command / Google method | Boundary | Live status |
+| --- | --- | --- | --- |
+| `drive_comments_list` | `drive comments list`; GET `/drive/v3/files/<id>/comments` | Exact selected-file/tool read grant; `drive.file` only; max 1–100, manual page cursor and optional quoted content; no all-pages/since or writes | Unverified live |
+| `drive_comments_get` | `drive comments get`; GET `/drive/v3/files/<id>/comments/<commentId>` | Exact selected-file/tool read grant and canonical comment ID; `drive.file` only | Unverified live |
+| `forms_watch_list` | `forms watch list`; GET `/v1/forms/<id>/watches` | Exact selected-form/tool read grant; `drive.file`, `forms.body.readonly`, `forms.body` or `forms.responses.readonly`; no watch creation, renewal, deletion or Pub/Sub target configuration | Unverified live |
+
+Official Drive v3 and Forms v1 discovery documents checked 18 October 2026
+confirm those method scopes; broader Drive scopes are not admitted. The candidate
+has **162 total / 124 active tools**, mapping **126 native leaves**; **175 leaves
+require method/scope/resource audit**. Catalogue/fixture coverage is not live
+Google acceptance (#97). No deployment, consent, credentials, Google grants,
+billing configuration or ordinary CLI behavior changed. #96/#97 remain open.
+
+## Selected-document inventory candidate (18 October 2026)
+
+- `docs_info` reuses native `docs info`: one GET `/v1/documents/<id>` with fixed
+  `documentId,title,revisionId` fields.
+- `docs_list_tabs` reuses native `docs list-tabs` (also `docs tabs list`): one GET
+  of the selected document with `includeTabsContent=true`; output is tab IDs,
+  titles, indexes and hierarchy, not a new arbitrary API proxy.
+
+Both reads require an exact enabled Docs tool grant plus the enabled selected
+file grant. Official Docs v1 discovery checked 18 October 2026 admits
+`documents.readonly`, `documents` or `drive.file`; broader Drive scopes are not
+admitted. Signed transport fixtures and D1 MCP permission tests cover selected
+files, disabled/foreign resources, foreign tenants and scope/tool denials.
+The candidate has **159 total / 121 active tools**, mapping **123 native leaves**;
+**178 leaves require method/scope/resource audit**. Both tools are **unverified
+live** under #97. No deployment, consent, credentials, grants or ordinary CLI
+behavior changed. #96/#97 remain open.
+
 ## GA4 account inventory candidate (18 October 2026)
 
 Two bounded native reads bring the candidate to **157 total tools / 119 active
