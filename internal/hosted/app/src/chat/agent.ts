@@ -45,6 +45,7 @@ import {
   authenticateChatOwner,
   chatConversationDigest,
   chatModelIdentifier,
+  chatCohortUserIds,
   verifyActiveClerkSession,
 } from "./access.js";
 import { HostedRepository } from "../../../state/src/repository.js";
@@ -64,7 +65,8 @@ const MODEL_ERROR =
   "OpenRouter could not respond. Check the server API key, credits and model availability, then try again.";
 const UNAUTHORIZED_MESSAGE = "Not authorized.";
 const UNAVAILABLE_MESSAGE = "Chat is not available.";
-const BUDGET_MESSAGE = "Message limit reached. Wait before trying again (10/minute, 100/day).";
+const BUDGET_MESSAGE =
+  "Message limit reached. Wait before trying again (10/minute, 100/UTC day, 1000/UTC month).";
 const TEXT_ONLY_MESSAGE =
   "This chat accepts text only, with a maximum conversation size of 100 KB and 8000 characters per message.";
 const SYSTEM_PROMPT =
@@ -103,6 +105,17 @@ function userMessageTextPrefix(parts: unknown): number {
 function userMessageOnlyText(parts: unknown): boolean {
   if (!Array.isArray(parts)) return false;
   return (parts as PartLike[]).every((part) => part?.type === "text");
+}
+
+/**
+ * Re-admit only the server-configured owner or current explicit cohort. Used
+ * on every connection/trust check so a runtime allowlist change cannot leave
+ * an already-connected frame outside the admission boundary.
+ */
+function isConfiguredChatUser(env: ChatEnv, userId: string): boolean {
+  const owner = (env.CHAT_OWNER_USER_ID ?? "").trim();
+  const cohort = chatCohortUserIds(env);
+  return cohort.kind === "valid" && !!owner && (userId === owner || cohort.userIds.has(userId));
 }
 
 export class Chat extends AIChatAgent<ChatEnv> {
@@ -249,12 +262,10 @@ export class Chat extends AIChatAgent<ChatEnv> {
   private async connectionAuthorization(
     connection: Connection,
   ): Promise<"active" | "unauthenticated" | "unavailable"> {
-    const owner = (this.env.CHAT_OWNER_USER_ID ?? "").trim();
     const state = (connection.state as ChatConnectionState | null) ?? null;
     if (
-      !owner ||
+      !isConfiguredChatUser(this.env, state?.userId ?? "") ||
       !state ||
-      state.userId !== owner ||
       !state.sessionId ||
       !state.tenantId ||
       !state.expiresAt ||

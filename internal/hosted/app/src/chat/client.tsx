@@ -484,12 +484,24 @@ function App() {
   const signOutView = useCallback((notice = "") => {
     authGeneration.current++;
     setSession(null);
+    setThreads([]);
+    setPendingDeletions([]);
+    setThreadError("");
+    setThreadBusy(false);
+    setThreadAction(null);
+    setNavigationOpen(false);
     setGate("unauthenticated");
     setMessage(notice);
   }, []);
   const ownerOnlyView = useCallback((notice = "") => {
     authGeneration.current++;
     setSession(null);
+    setThreads([]);
+    setPendingDeletions([]);
+    setThreadError("");
+    setThreadBusy(false);
+    setThreadAction(null);
+    setNavigationOpen(false);
     setGate("owner-only");
     setMessage(notice);
   }, []);
@@ -659,6 +671,7 @@ function App() {
   const openThread = useCallback(
     (id?: string, replace = false) => {
       authGeneration.current++;
+      setThreadBusy(false);
       const url = id ? "/chat?thread=" + encodeURIComponent(id) : "/chat";
       if (replace) window.history.replaceState(null, "", url);
       else window.history.pushState(null, "", url);
@@ -762,7 +775,8 @@ function App() {
         );
       }
     } finally {
-      setThreadBusy(false);
+      if (generation === authGeneration.current && identity === activeClerkSessionId())
+        setThreadBusy(false);
     }
   };
   const retryDeletion = async (pending: { id: string; draftKey: string }) => {
@@ -793,7 +807,8 @@ function App() {
           "Deletion cleanup is still pending. Your other conversations are available; retry when the connection recovers.",
         );
     } finally {
-      setThreadBusy(false);
+      if (generation === authGeneration.current && identity === activeClerkSessionId())
+        setThreadBusy(false);
     }
   };
   if (gate === "loading")
@@ -824,11 +839,9 @@ function App() {
           <div className="brand">
             gog-marketing<span> / private assistant</span>
           </div>
-          <span className="eyebrow">OWNER ONLY</span>
+          <span className="eyebrow">INVITATION REQUIRED</span>
           <h1>Workspace unavailable</h1>
-          <p role="alert">
-            {message || "This workspace is available only to the workspace owner."}
-          </p>
+          <p role="alert">{message || "Chat is available only to invited users."}</p>
           <a className="signin-link" href="/">
             Home
           </a>
@@ -850,7 +863,7 @@ function App() {
           </h1>
           <p role={signOutFailed ? "alert" : undefined}>
             {message ||
-              "An owner-only workspace. Sign in to pick up where you left off. Your unsent draft stays in this tab."}
+              "A private workspace for invited users. Sign in to pick up where you left off. Your unsent draft stays in this tab."}
           </p>
           {signOutFailed && (
             <button type="button" onClick={() => void signOut()}>

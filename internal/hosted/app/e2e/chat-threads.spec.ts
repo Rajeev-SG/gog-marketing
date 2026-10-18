@@ -31,8 +31,10 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   const pending = new Map<string, { id: string; draftKey: string }>();
   let firstPurgeFails = true;
   let firstCreateFails = true;
+  let createdCount = 0;
   const deleteAttempts: string[] = [];
   const createdId = "00000000-0000-4000-8000-000000000002";
+  const secondCreatedId = "00000000-0000-4000-8000-000000000004";
   await page.addInitScript(() => {
     Object.assign(window, {
       Clerk: {
@@ -70,14 +72,15 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
           firstCreateFails = false;
           return route.fulfill({ status: 503, json: { error: "Temporary create failure" } });
         }
+        const first = createdCount++ === 0;
         const thread = {
-          id: createdId,
+          id: first ? createdId : secondCreatedId,
           title: "New chat",
-          conversation: "2".repeat(64),
+          conversation: (first ? "2" : "4").repeat(64),
           createdAt: now,
           updatedAt: now,
         };
-        threads.set(createdId, thread);
+        threads.set(thread.id, thread);
         return route.fulfill({ status: 201, json: { thread } });
       }
       return route.fulfill({
@@ -95,7 +98,7 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
         deleteAttempts.push(id);
         if (thread) pending.set(id, { id, draftKey: thread.conversation });
         threads.delete(id);
-        if (firstPurgeFails) {
+        if (id === "original" && firstPurgeFails) {
           firstPurgeFails = false;
           return route.fulfill({ status: 503, json: { error: "Deletion pending" } });
         }
@@ -168,6 +171,21 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   await expect(page.getByText("Legacy saved answer")).toHaveCount(0);
   await expect(page.getByText("Other conversation answer")).toBeVisible();
   await input.fill("new private draft");
+  // No reload: navigation after a successful mutation must release busy state.
+  await expect(page.getByRole("button", { name: "New chat", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "New chat", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(secondCreatedId));
+  await expect(input).toHaveValue("");
+  await page.getByRole("button", { name: "Rename", exact: true }).click();
+  await page.getByRole("textbox", { name: "Conversation name" }).fill("Second temporary chat");
+  await page.getByRole("button", { name: "Save name", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Second temporary chat" })).toBeVisible();
+  await page.getByRole("button", { name: "Delete", exact: true }).click();
+  await page.getByRole("button", { name: "Delete conversation", exact: true }).click();
+  await expect(page).toHaveURL(/thread=original/);
+  await expect(page.getByRole("button", { name: "New chat", exact: true })).toBeEnabled();
+  await page.getByRole("link", { name: "New chat", exact: true }).click();
+  await expect(input).toHaveValue("new private draft");
   await page.reload();
   await expect(input).toHaveValue("new private draft");
   await page.getByRole("link", { name: "Original conversation", exact: true }).click();
@@ -198,7 +216,7 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
   await expect(page.getByRole("button", { name: /Finish deletion/ })).toBeVisible();
   await page.getByRole("button", { name: /Finish deletion/ }).click();
   await expect(page.getByRole("region", { name: "Pending conversation cleanup" })).toHaveCount(0);
-  expect(deleteAttempts).toEqual(["original", "original"]);
+  expect(deleteAttempts).toEqual([secondCreatedId, "original", "original"]);
   await page.goto("/chat?thread=original");
   await expect(page).toHaveURL(new RegExp(createdId));
   await expect(page.getByRole("link", { name: "Renamed original", exact: true })).toHaveCount(0);
