@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Readiness: distinguish infrastructure free tiers from separately paid OpenRouter chat inference; quota limits are not a monetary or £0 guarantee. (#69, thanks @Rajeev-SG)
+
 - Hosted: expose native Apps Script deployment and version list reads with account/tool grants, official method scopes, exact project GET admission and bounded pagination. No OAuth changes, script execution or project mutations are enabled. Fixture pagination/denials are verified; live acceptance is pending. (#96)
 
 - Hosted Sheets: add selected-spreadsheet tab creation, rename, destructive deletion and bounded number-format edits through existing native handlers and explicit account/tool/file permissions. Regenerated catalogue and signed transport/security fixtures pass; live Google acceptance remains separate. (#96, #97, thanks @Rajeev-SG)

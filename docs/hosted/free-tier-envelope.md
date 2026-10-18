@@ -6,6 +6,9 @@ capacity or billing decision.
 
 ## Current envelope
 
+This is an **infrastructure-only** envelope, not a claim that integrated chat
+or the whole product costs £0. Model inference is a separate provider charge.
+
 | Service | Free allowance relevant to hosted v1 |
 | --- | --- |
 | Cloudflare Workers Free | 100,000 requests/day; 10 ms CPU per HTTP request; 128 MB per isolate; 50 subrequests/request |
@@ -22,9 +25,28 @@ billing envelope: 240,000 vCPU-seconds and 450,000 GiB-seconds per month, with
 no request allowance. Hosted v1 must use request-based billing to preserve the
 invocation-based envelope and scale-to-zero cost behaviour described below.
 
-## First paid bottleneck
+## Chat inference is separate paid usage
 
-The first automatic paid overage is expected at the private Cloud Run runner,
+On 18 October 2026 the deployed chat session metadata reported
+`openai/gpt-4.1-mini`. The current official
+[OpenRouter model catalogue](https://openrouter.ai/api/v1/models) listed
+$0.40 per million prompt tokens and $1.60 per million completion tokens for
+that model (cached input has separate pricing). These are dated published
+prices, not a measured invoice, a permanent rate or a promise about another
+operator-configured model. No model invocation was needed for this check.
+
+Inference can incur cost from its first billable token, before Cloud Run's
+infrastructure free tier is exhausted. Chat's server-side tenant quotas,
+output-token limit and tool-step limit bound usage; they are **not a monetary
+budget or a £0 guarantee**. Include actual OpenRouter usage/cost evidence,
+alongside infrastructure measurements, before claiming the operating envelope
+in #69. Do not change models, credentials, privacy routing or billing settings
+as an unapproved cost-control shortcut. See [chat.md](chat.md) for chat limits.
+
+## First infrastructure paid bottleneck
+
+For the infrastructure listed above, the first automatic paid overage is
+expected at the private Cloud Run runner,
 through request count and CPU time. At the beta soft ceiling of 500 users and
 100 tool calls/user/day, one runner request per tool call is approximately
 1.5 million requests/month. That remains under the 2 million request allowance
