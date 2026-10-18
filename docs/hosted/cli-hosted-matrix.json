@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 124,
-  "total_hosted_catalog_count": 162,
+  "hosted_tool_count": 129,
+  "total_hosted_catalog_count": 167,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 126,
-  "mapped_hosted_tool_count": 124,
+  "mapped_native_leaf_count": 131,
+  "mapped_hosted_tool_count": 129,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 126,
-    "missing_requires_audit": 175,
+    "implemented_hosted_unverified": 131,
+    "missing_requires_audit": 170,
     "product_limited": 20
   },
   "by_service": [
@@ -112,12 +112,12 @@
     {
       "service": "sheets",
       "native_leaves": 67,
-      "hosted_tools": 10,
-      "mapped_native_leaves": 10,
+      "hosted_tools": 15,
+      "mapped_native_leaves": 15,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 10,
-        "missing_requires_audit": 46,
+        "implemented_hosted_unverified": 15,
+        "missing_requires_audit": 41,
         "product_limited": 10
       }
     },
@@ -2875,10 +2875,26 @@
       "service": "sheets",
       "command": "banding list",
       "native_command": "gog sheets banding list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_banding_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -2938,10 +2954,26 @@
       "service": "sheets",
       "command": "chart list",
       "native_command": "gog sheets chart list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_chart_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -2998,10 +3030,26 @@
       "service": "sheets",
       "command": "conditional-format list",
       "native_command": "gog sheets conditional-format list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_conditional_format_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -3324,10 +3372,26 @@
       "service": "sheets",
       "command": "named-ranges list",
       "native_command": "gog sheets named-ranges list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_named_ranges_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -3485,10 +3549,26 @@
       "service": "sheets",
       "command": "table list",
       "native_command": "gog sheets table list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "sheets_table_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",

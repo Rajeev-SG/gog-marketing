@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 162,
-  "active_tool_count": 124,
+  "total_catalog_count": 167,
+  "active_tool_count": 129,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -1163,6 +1163,42 @@
     },
     {
       "service": "sheets",
+      "tool": "sheets_banding_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_chart_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
       "tool": "sheets_clear_range",
       "write": true,
       "destructive_binding_flag": true,
@@ -1174,6 +1210,24 @@
       ],
       "http_methods": [
         "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_conditional_format_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
@@ -1212,6 +1266,24 @@
     {
       "service": "sheets",
       "tool": "sheets_metadata",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_named_ranges_list",
       "write": false,
       "destructive_binding_flag": false,
       "resource_model": "file",
@@ -1271,6 +1343,24 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_table_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets",
+        "spreadsheets.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {
