@@ -1,0 +1,4769 @@
+{
+  "schema_version": 2,
+  "scope": {
+    "active_services": [
+      "analytics",
+      "appscript",
+      "bigquery",
+      "docs",
+      "drive",
+      "forms",
+      "searchconsole",
+      "sheets",
+      "slides",
+      "tagmanager",
+      "tasks"
+    ],
+    "calendar_drive_labels_in_gap_counts": false,
+    "deferred_services": [
+      "calendar",
+      "drivelabels"
+    ],
+    "prior_deferred_excluded": true
+  },
+  "native_leaf_count": 347,
+  "hosted_tool_count": 104,
+  "total_hosted_catalog_count": 142,
+  "excluded_hosted_tool_count": 38,
+  "mapped_native_leaf_count": 105,
+  "mapped_hosted_tool_count": 104,
+  "classifications": {
+    "deferred": 5,
+    "eligible_missing": 6,
+    "excluded": 21,
+    "implemented_hosted_unverified": 105,
+    "missing_requires_audit": 190,
+    "product_limited": 20
+  },
+  "by_service": [
+    {
+      "service": "analytics",
+      "native_leaves": 29,
+      "hosted_tools": 27,
+      "mapped_native_leaves": 27,
+      "classifications": {
+        "implemented_hosted_unverified": 27,
+        "missing_requires_audit": 2
+      }
+    },
+    {
+      "service": "appscript",
+      "native_leaves": 7,
+      "hosted_tools": 3,
+      "mapped_native_leaves": 3,
+      "classifications": {
+        "eligible_missing": 2,
+        "excluded": 1,
+        "implemented_hosted_unverified": 3,
+        "product_limited": 1
+      }
+    },
+    {
+      "service": "bigquery",
+      "native_leaves": 7,
+      "hosted_tools": 6,
+      "mapped_native_leaves": 6,
+      "classifications": {
+        "implemented_hosted_unverified": 6,
+        "product_limited": 1
+      }
+    },
+    {
+      "service": "docs",
+      "native_leaves": 72,
+      "hosted_tools": 2,
+      "mapped_native_leaves": 2,
+      "classifications": {
+        "implemented_hosted_unverified": 2,
+        "missing_requires_audit": 68,
+        "product_limited": 2
+      }
+    },
+    {
+      "service": "drive",
+      "native_leaves": 47,
+      "hosted_tools": 1,
+      "mapped_native_leaves": 1,
+      "classifications": {
+        "deferred": 5,
+        "excluded": 18,
+        "implemented_hosted_unverified": 1,
+        "missing_requires_audit": 20,
+        "product_limited": 3
+      }
+    },
+    {
+      "service": "forms",
+      "native_leaves": 17,
+      "hosted_tools": 5,
+      "mapped_native_leaves": 5,
+      "classifications": {
+        "excluded": 1,
+        "implemented_hosted_unverified": 5,
+        "missing_requires_audit": 11
+      }
+    },
+    {
+      "service": "searchconsole",
+      "native_leaves": 9,
+      "hosted_tools": 8,
+      "mapped_native_leaves": 9,
+      "classifications": {
+        "implemented_hosted_unverified": 9
+      }
+    },
+    {
+      "service": "sheets",
+      "native_leaves": 67,
+      "hosted_tools": 5,
+      "mapped_native_leaves": 5,
+      "classifications": {
+        "eligible_missing": 4,
+        "excluded": 1,
+        "implemented_hosted_unverified": 5,
+        "missing_requires_audit": 47,
+        "product_limited": 10
+      }
+    },
+    {
+      "service": "slides",
+      "native_leaves": 47,
+      "hosted_tools": 2,
+      "mapped_native_leaves": 2,
+      "classifications": {
+        "implemented_hosted_unverified": 2,
+        "missing_requires_audit": 42,
+        "product_limited": 3
+      }
+    },
+    {
+      "service": "tagmanager",
+      "native_leaves": 34,
+      "hosted_tools": 34,
+      "mapped_native_leaves": 34,
+      "classifications": {
+        "implemented_hosted_unverified": 34
+      }
+    },
+    {
+      "service": "tasks",
+      "native_leaves": 11,
+      "hosted_tools": 11,
+      "mapped_native_leaves": 11,
+      "classifications": {
+        "implemented_hosted_unverified": 11
+      }
+    }
+  ],
+  "leaves": [
+    {
+      "service": "analytics",
+      "command": "accounts",
+      "native_command": "gog analytics accounts",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-dimensions archive",
+      "native_command": "gog analytics custom-dimensions archive",
+      "hosted_tool": "analytics_custom-dimensions_archive",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-dimensions create",
+      "native_command": "gog analytics custom-dimensions create",
+      "hosted_tool": "analytics_custom-dimensions_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-dimensions get",
+      "native_command": "gog analytics custom-dimensions get",
+      "hosted_tool": "analytics_custom-dimensions_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-dimensions list",
+      "native_command": "gog analytics custom-dimensions list",
+      "hosted_tool": "analytics_custom-dimensions_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-dimensions update",
+      "native_command": "gog analytics custom-dimensions update",
+      "hosted_tool": "analytics_custom-dimensions_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-metrics archive",
+      "native_command": "gog analytics custom-metrics archive",
+      "hosted_tool": "analytics_custom-metrics_archive",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-metrics create",
+      "native_command": "gog analytics custom-metrics create",
+      "hosted_tool": "analytics_custom-metrics_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-metrics get",
+      "native_command": "gog analytics custom-metrics get",
+      "hosted_tool": "analytics_custom-metrics_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-metrics list",
+      "native_command": "gog analytics custom-metrics list",
+      "hosted_tool": "analytics_custom-metrics_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "custom-metrics update",
+      "native_command": "gog analytics custom-metrics update",
+      "hosted_tool": "analytics_custom-metrics_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "datastreams create",
+      "native_command": "gog analytics datastreams create",
+      "hosted_tool": "analytics_datastreams_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "datastreams delete",
+      "native_command": "gog analytics datastreams delete",
+      "hosted_tool": "analytics_datastreams_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "datastreams get",
+      "native_command": "gog analytics datastreams get",
+      "hosted_tool": "analytics_datastreams_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "datastreams list",
+      "native_command": "gog analytics datastreams list",
+      "hosted_tool": "analytics_datastreams_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "datastreams update",
+      "native_command": "gog analytics datastreams update",
+      "hosted_tool": "analytics_datastreams_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "googleads-links create",
+      "native_command": "gog analytics googleads-links create",
+      "hosted_tool": "analytics_googleads-links_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "googleads-links delete",
+      "native_command": "gog analytics googleads-links delete",
+      "hosted_tool": "analytics_googleads-links_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "googleads-links get",
+      "native_command": "gog analytics googleads-links get",
+      "hosted_tool": "analytics_googleads-links_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "googleads-links list",
+      "native_command": "gog analytics googleads-links list",
+      "hosted_tool": "analytics_googleads-links_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "googleads-links update",
+      "native_command": "gog analytics googleads-links update",
+      "hosted_tool": "analytics_googleads-links_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "keyevents create",
+      "native_command": "gog analytics keyevents create",
+      "hosted_tool": "analytics_keyevents_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "keyevents delete",
+      "native_command": "gog analytics keyevents delete",
+      "hosted_tool": "analytics_keyevents_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "keyevents get",
+      "native_command": "gog analytics keyevents get",
+      "hosted_tool": "analytics_keyevents_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "keyevents list",
+      "native_command": "gog analytics keyevents list",
+      "hosted_tool": "analytics_keyevents_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "keyevents update",
+      "native_command": "gog analytics keyevents update",
+      "hosted_tool": "analytics_keyevents_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "properties get",
+      "native_command": "gog analytics properties get",
+      "hosted_tool": "analytics_properties_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit",
+          "analytics.readonly"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "analytics",
+      "command": "properties list",
+      "native_command": "gog analytics properties list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "analytics",
+      "command": "report",
+      "native_command": "gog analytics report",
+      "hosted_tool": "analytics_report",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.readonly"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "appscript",
+      "command": "content",
+      "native_command": "gog appscript content",
+      "hosted_tool": "appscript_content",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects",
+          "script.projects.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "create",
+      "native_command": "gog appscript create",
+      "hosted_tool": "appscript_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "deployments",
+      "native_command": "gog appscript deployments",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed GET projects/{scriptId}/deployments; script.deployments.readonly or script.deployments and an account-level exact tool grant"
+    },
+    {
+      "service": "appscript",
+      "command": "get",
+      "native_command": "gog appscript get",
+      "hosted_tool": "appscript_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects",
+          "script.projects.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "pull",
+      "native_command": "gog appscript pull",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "the native command writes a local filesystem tree, which the hosted boundary does not expose"
+    },
+    {
+      "service": "appscript",
+      "command": "run",
+      "native_command": "gog appscript run",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "Apps Script execution remains policy-excluded pending transitive-scope audit"
+    },
+    {
+      "service": "appscript",
+      "command": "versions",
+      "native_command": "gog appscript versions",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed GET projects/{scriptId}/versions; script.projects.readonly or script.projects and an account-level exact tool grant"
+    },
+    {
+      "service": "bigquery",
+      "command": "datasets get",
+      "native_command": "gog bigquery datasets get",
+      "hosted_tool": "bigquery_dataset_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "bigquery",
+      "command": "datasets list",
+      "native_command": "gog bigquery datasets list",
+      "hosted_tool": "bigquery_datasets_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "bigquery",
+      "command": "query",
+      "native_command": "gog bigquery query",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "SQL jobs require a customer billing project, max-bytes-billed and explicit billable approval before hosting"
+    },
+    {
+      "service": "bigquery",
+      "command": "tables get",
+      "native_command": "gog bigquery tables get",
+      "hosted_tool": "bigquery_table_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "bigquery",
+      "command": "tables list",
+      "native_command": "gog bigquery tables list",
+      "hosted_tool": "bigquery_tables_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "bigquery",
+      "command": "tables rows",
+      "native_command": "gog bigquery tables rows",
+      "hosted_tool": "bigquery_table_rows",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "bigquery",
+      "command": "tables schema",
+      "native_command": "gog bigquery tables schema",
+      "hosted_tool": "bigquery_table_schema",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "project",
+      "resource_argument": "project",
+      "policy_binding": {
+        "accepted_scopes": [
+          "bigquery"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "docs",
+      "command": "add-tab",
+      "native_command": "gog docs add-tab",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "cat",
+      "native_command": "gog docs cat",
+      "hosted_tool": "docs_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "docs",
+      "command": "cell-style",
+      "native_command": "gog docs cell-style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "cell-update",
+      "native_command": "gog docs cell-update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "clear",
+      "native_command": "gog docs clear",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments add",
+      "native_command": "gog docs comments add",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments delete",
+      "native_command": "gog docs comments delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments get",
+      "native_command": "gog docs comments get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments list",
+      "native_command": "gog docs comments list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments locate",
+      "native_command": "gog docs comments locate",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments poll",
+      "native_command": "gog docs comments poll",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments reopen",
+      "native_command": "gog docs comments reopen",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments reply",
+      "native_command": "gog docs comments reply",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "comments resolve",
+      "native_command": "gog docs comments resolve",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "copy",
+      "native_command": "gog docs copy",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "create",
+      "native_command": "gog docs create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "delete",
+      "native_command": "gog docs delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "delete-tab",
+      "native_command": "gog docs delete-tab",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "edit",
+      "native_command": "gog docs edit",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "export",
+      "native_command": "gog docs export",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
+    },
+    {
+      "service": "docs",
+      "command": "find-range",
+      "native_command": "gog docs find-range",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "find-replace",
+      "native_command": "gog docs find-replace",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "footer create",
+      "native_command": "gog docs footer create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "footer delete",
+      "native_command": "gog docs footer delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "footer list",
+      "native_command": "gog docs footer list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "format",
+      "native_command": "gog docs format",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "header create",
+      "native_command": "gog docs header create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "header delete",
+      "native_command": "gog docs header delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "header list",
+      "native_command": "gog docs header list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "headings list",
+      "native_command": "gog docs headings list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "images list",
+      "native_command": "gog docs images list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "info",
+      "native_command": "gog docs info",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert",
+      "native_command": "gog docs insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-date-chip",
+      "native_command": "gog docs insert-date-chip",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-file-chip",
+      "native_command": "gog docs insert-file-chip",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-footnote",
+      "native_command": "gog docs insert-footnote",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-horizontal-rule",
+      "native_command": "gog docs insert-horizontal-rule",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-image",
+      "native_command": "gog docs insert-image",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-page-break",
+      "native_command": "gog docs insert-page-break",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-person",
+      "native_command": "gog docs insert-person",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-section-break",
+      "native_command": "gog docs insert-section-break",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "insert-table",
+      "native_command": "gog docs insert-table",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "list-tabs",
+      "native_command": "gog docs list-tabs",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "named-range create",
+      "native_command": "gog docs named-range create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "named-range delete",
+      "native_command": "gog docs named-range delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "named-range list",
+      "native_command": "gog docs named-range list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "named-range replace",
+      "native_command": "gog docs named-range replace",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "page-layout",
+      "native_command": "gog docs page-layout",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "paragraphs list",
+      "native_command": "gog docs paragraphs list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "raw",
+      "native_command": "gog docs raw",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
+    },
+    {
+      "service": "docs",
+      "command": "rename-tab",
+      "native_command": "gog docs rename-tab",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "replace-image",
+      "native_command": "gog docs replace-image",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "section-columns",
+      "native_command": "gog docs section-columns",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "sed",
+      "native_command": "gog docs sed",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "structure",
+      "native_command": "gog docs structure",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "suggestions list",
+      "native_command": "gog docs suggestions list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-column delete",
+      "native_command": "gog docs table-column delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-column insert",
+      "native_command": "gog docs table-column insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-column-width",
+      "native_command": "gog docs table-column-width",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-merge",
+      "native_command": "gog docs table-merge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-row delete",
+      "native_command": "gog docs table-row delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-row insert",
+      "native_command": "gog docs table-row insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-row pin-header",
+      "native_command": "gog docs table-row pin-header",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-row style",
+      "native_command": "gog docs table-row style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "table-unmerge",
+      "native_command": "gog docs table-unmerge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "tables list",
+      "native_command": "gog docs tables list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "tabs add",
+      "native_command": "gog docs tabs add",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "tabs delete",
+      "native_command": "gog docs tabs delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "tabs list",
+      "native_command": "gog docs tabs list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "tabs rename",
+      "native_command": "gog docs tabs rename",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "update",
+      "native_command": "gog docs update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "docs",
+      "command": "write",
+      "native_command": "gog docs write",
+      "hosted_tool": "docs_write",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "drive",
+      "command": "activity query",
+      "native_command": "gog drive activity query",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "audit sharing",
+      "native_command": "gog drive audit sharing",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "audit user",
+      "native_command": "gog drive audit user",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "bulk remove-public",
+      "native_command": "gog drive bulk remove-public",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime or selected-file batching does not currently represent this native behavior"
+    },
+    {
+      "service": "drive",
+      "command": "bulk update-role",
+      "native_command": "gog drive bulk update-role",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime or selected-file batching does not currently represent this native behavior"
+    },
+    {
+      "service": "drive",
+      "command": "changes list",
+      "native_command": "gog drive changes list",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "changes poll",
+      "native_command": "gog drive changes poll",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "changes serve",
+      "native_command": "gog drive changes serve",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "changes start-token",
+      "native_command": "gog drive changes start-token",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "changes stop",
+      "native_command": "gog drive changes stop",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "changes watch",
+      "native_command": "gog drive changes watch",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "comments create",
+      "native_command": "gog drive comments create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments delete",
+      "native_command": "gog drive comments delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments get",
+      "native_command": "gog drive comments get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments list",
+      "native_command": "gog drive comments list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments reopen",
+      "native_command": "gog drive comments reopen",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments reply",
+      "native_command": "gog drive comments reply",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments resolve",
+      "native_command": "gog drive comments resolve",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "comments update",
+      "native_command": "gog drive comments update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "copy",
+      "native_command": "gog drive copy",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "delete",
+      "native_command": "gog drive delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "download",
+      "native_command": "gog drive download",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime or selected-file batching does not currently represent this native behavior"
+    },
+    {
+      "service": "drive",
+      "command": "drives",
+      "native_command": "gog drive drives",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "du",
+      "native_command": "gog drive du",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "get",
+      "native_command": "gog drive get",
+      "hosted_tool": "drive_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "drive",
+      "command": "inventory",
+      "native_command": "gog drive inventory",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "labels file apply",
+      "native_command": "gog drive labels file apply",
+      "hosted_tool": null,
+      "status": "deferred",
+      "live_verified": false,
+      "classification_reason": "Drive Labels is explicitly deferred and excluded from active gap counts"
+    },
+    {
+      "service": "drive",
+      "command": "labels file list",
+      "native_command": "gog drive labels file list",
+      "hosted_tool": null,
+      "status": "deferred",
+      "live_verified": false,
+      "classification_reason": "Drive Labels is explicitly deferred and excluded from active gap counts"
+    },
+    {
+      "service": "drive",
+      "command": "labels file remove",
+      "native_command": "gog drive labels file remove",
+      "hosted_tool": null,
+      "status": "deferred",
+      "live_verified": false,
+      "classification_reason": "Drive Labels is explicitly deferred and excluded from active gap counts"
+    },
+    {
+      "service": "drive",
+      "command": "labels get",
+      "native_command": "gog drive labels get",
+      "hosted_tool": null,
+      "status": "deferred",
+      "live_verified": false,
+      "classification_reason": "Drive Labels is explicitly deferred and excluded from active gap counts"
+    },
+    {
+      "service": "drive",
+      "command": "labels list",
+      "native_command": "gog drive labels list",
+      "hosted_tool": null,
+      "status": "deferred",
+      "live_verified": false,
+      "classification_reason": "Drive Labels is explicitly deferred and excluded from active gap counts"
+    },
+    {
+      "service": "drive",
+      "command": "ls",
+      "native_command": "gog drive ls",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "mkdir",
+      "native_command": "gog drive mkdir",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "move",
+      "native_command": "gog drive move",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "permissions",
+      "native_command": "gog drive permissions",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "raw",
+      "native_command": "gog drive raw",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "rename",
+      "native_command": "gog drive rename",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "revisions get",
+      "native_command": "gog drive revisions get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "revisions list",
+      "native_command": "gog drive revisions list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "search",
+      "native_command": "gog drive search",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "share",
+      "native_command": "gog drive share",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "shortcut create",
+      "native_command": "gog drive shortcut create",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "sync push",
+      "native_command": "gog drive sync push",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "tree",
+      "native_command": "gog drive tree",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
+    },
+    {
+      "service": "drive",
+      "command": "unshare",
+      "native_command": "gog drive unshare",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "upload",
+      "native_command": "gog drive upload",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "drive",
+      "command": "url",
+      "native_command": "gog drive url",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "add-question",
+      "native_command": "gog forms add-question",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "create",
+      "native_command": "gog forms create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "delete-question",
+      "native_command": "gog forms delete-question",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "get",
+      "native_command": "gog forms get",
+      "hosted_tool": "forms_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body",
+          "forms.body.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "forms",
+      "command": "move-question",
+      "native_command": "gog forms move-question",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "publish",
+      "native_command": "gog forms publish",
+      "hosted_tool": "forms_publish",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "forms",
+      "command": "questions add",
+      "native_command": "gog forms questions add",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "questions delete",
+      "native_command": "gog forms questions delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "questions move",
+      "native_command": "gog forms questions move",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "raw",
+      "native_command": "gog forms raw",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "arbitrary Forms passthrough is outside fixed hosted tool policy"
+    },
+    {
+      "service": "forms",
+      "command": "responses get",
+      "native_command": "gog forms responses get",
+      "hosted_tool": "forms_responses_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.responses.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "forms",
+      "command": "responses list",
+      "native_command": "gog forms responses list",
+      "hosted_tool": "forms_responses_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.responses.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "forms",
+      "command": "update",
+      "native_command": "gog forms update",
+      "hosted_tool": "forms_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "forms",
+      "command": "watch create",
+      "native_command": "gog forms watch create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "watch delete",
+      "native_command": "gog forms watch delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "watch list",
+      "native_command": "gog forms watch list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "forms",
+      "command": "watch renew",
+      "native_command": "gog forms watch renew",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "searchconsole",
+      "command": "inspect",
+      "native_command": "gog searchconsole inspect",
+      "hosted_tool": "searchconsole_inspect",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "query",
+      "native_command": "gog searchconsole query",
+      "hosted_tool": "searchconsole_query",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "searchanalytics query",
+      "native_command": "gog searchconsole searchanalytics query",
+      "hosted_tool": "searchconsole_query",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sitemaps delete",
+      "native_command": "gog searchconsole sitemaps delete",
+      "hosted_tool": "searchconsole_sitemaps_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sitemaps get",
+      "native_command": "gog searchconsole sitemaps get",
+      "hosted_tool": "searchconsole_sitemaps_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sitemaps list",
+      "native_command": "gog searchconsole sitemaps list",
+      "hosted_tool": "searchconsole_sitemaps_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sitemaps submit",
+      "native_command": "gog searchconsole sitemaps submit",
+      "hosted_tool": "searchconsole_sitemaps_submit",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sites get",
+      "native_command": "gog searchconsole sites get",
+      "hosted_tool": "searchconsole_sites_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "site",
+      "resource_argument": "site_url",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "sites list",
+      "native_command": "gog searchconsole sites list",
+      "hosted_tool": "searchconsole_sites_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters",
+          "webmasters.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "sheets",
+      "command": "add-tab",
+      "native_command": "gog sheets add-tab",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed selected-spreadsheet POST batchUpdate/addSheet; spreadsheets or drive.file and exact file/tool write grants"
+    },
+    {
+      "service": "sheets",
+      "command": "append",
+      "native_command": "gog sheets append",
+      "hosted_tool": "sheets_append_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "sheets",
+      "command": "banding clear",
+      "native_command": "gog sheets banding clear",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "banding list",
+      "native_command": "gog sheets banding list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "banding set",
+      "native_command": "gog sheets banding set",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "batch-request",
+      "native_command": "gog sheets batch-request",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "batch-update",
+      "native_command": "gog sheets batch-update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "chart create",
+      "native_command": "gog sheets chart create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "chart delete",
+      "native_command": "gog sheets chart delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "chart get",
+      "native_command": "gog sheets chart get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "chart list",
+      "native_command": "gog sheets chart list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "chart update",
+      "native_command": "gog sheets chart update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "clear",
+      "native_command": "gog sheets clear",
+      "hosted_tool": "sheets_clear_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "sheets",
+      "command": "conditional-format add",
+      "native_command": "gog sheets conditional-format add",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "conditional-format clear",
+      "native_command": "gog sheets conditional-format clear",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "conditional-format list",
+      "native_command": "gog sheets conditional-format list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "copy",
+      "native_command": "gog sheets copy",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "copy-paste",
+      "native_command": "gog sheets copy-paste",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "create",
+      "native_command": "gog sheets create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource add",
+      "native_command": "gog sheets datasource add",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource delete",
+      "native_command": "gog sheets datasource delete",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource describe",
+      "native_command": "gog sheets datasource describe",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource list",
+      "native_command": "gog sheets datasource list",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource refresh",
+      "native_command": "gog sheets datasource refresh",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource table describe",
+      "native_command": "gog sheets datasource table describe",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource table list",
+      "native_command": "gog sheets datasource table list",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource table read",
+      "native_command": "gog sheets datasource table read",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "datasource update",
+      "native_command": "gog sheets datasource update",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "delete-dimension",
+      "native_command": "gog sheets delete-dimension",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "delete-tab",
+      "native_command": "gog sheets delete-tab",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed selected-spreadsheet GET plus POST batchUpdate/deleteSheet; spreadsheets or drive.file and destructive file/tool permission"
+    },
+    {
+      "service": "sheets",
+      "command": "duplicate-tab",
+      "native_command": "gog sheets duplicate-tab",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "export",
+      "native_command": "gog sheets export",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "external datasource, billing semantics or local-file export output need a separate verified model"
+    },
+    {
+      "service": "sheets",
+      "command": "filter set",
+      "native_command": "gog sheets filter set",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "find-replace",
+      "native_command": "gog sheets find-replace",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "format",
+      "native_command": "gog sheets format",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "freeze",
+      "native_command": "gog sheets freeze",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "get",
+      "native_command": "gog sheets get",
+      "hosted_tool": "sheets_read_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "sheets",
+      "command": "insert",
+      "native_command": "gog sheets insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "links get",
+      "native_command": "gog sheets links get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "links set",
+      "native_command": "gog sheets links set",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "merge",
+      "native_command": "gog sheets merge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "metadata",
+      "native_command": "gog sheets metadata",
+      "hosted_tool": "sheets_metadata",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "sheets",
+      "command": "named-ranges add",
+      "native_command": "gog sheets named-ranges add",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "named-ranges delete",
+      "native_command": "gog sheets named-ranges delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "named-ranges get",
+      "native_command": "gog sheets named-ranges get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "named-ranges list",
+      "native_command": "gog sheets named-ranges list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "named-ranges update",
+      "native_command": "gog sheets named-ranges update",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "notes",
+      "native_command": "gog sheets notes",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "number-format",
+      "native_command": "gog sheets number-format",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed selected-spreadsheet GET plus fixed number-format POST batchUpdate; spreadsheets or drive.file and file/tool write grants"
+    },
+    {
+      "service": "sheets",
+      "command": "raw",
+      "native_command": "gog sheets raw",
+      "hosted_tool": null,
+      "status": "excluded",
+      "live_verified": false,
+      "classification_reason": "arbitrary Sheets batch/API passthrough is outside fixed hosted tool policy"
+    },
+    {
+      "service": "sheets",
+      "command": "read-format",
+      "native_command": "gog sheets read-format",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "rename-tab",
+      "native_command": "gog sheets rename-tab",
+      "hosted_tool": null,
+      "status": "eligible_missing",
+      "live_verified": false,
+      "classification_reason": "Reviewed selected-spreadsheet GET plus POST batchUpdate/updateSheetProperties; spreadsheets or drive.file and file/tool write grants"
+    },
+    {
+      "service": "sheets",
+      "command": "reorder-tab",
+      "native_command": "gog sheets reorder-tab",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "resize-columns",
+      "native_command": "gog sheets resize-columns",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "resize-rows",
+      "native_command": "gog sheets resize-rows",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table append",
+      "native_command": "gog sheets table append",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table clear",
+      "native_command": "gog sheets table clear",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table create",
+      "native_command": "gog sheets table create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table delete",
+      "native_command": "gog sheets table delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table get",
+      "native_command": "gog sheets table get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "table list",
+      "native_command": "gog sheets table list",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "unmerge",
+      "native_command": "gog sheets unmerge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "update",
+      "native_command": "gog sheets update",
+      "hosted_tool": "sheets_update_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "sheets",
+      "command": "update-note",
+      "native_command": "gog sheets update-note",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "validation clear",
+      "native_command": "gog sheets validation clear",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "validation get",
+      "native_command": "gog sheets validation get",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "sheets",
+      "command": "validation set",
+      "native_command": "gog sheets validation set",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "add-slide",
+      "native_command": "gog slides add-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "bullets",
+      "native_command": "gog slides bullets",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "copy",
+      "native_command": "gog slides copy",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "create",
+      "native_command": "gog slides create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "create-from-markdown",
+      "native_command": "gog slides create-from-markdown",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "create-from-template",
+      "native_command": "gog slides create-from-template",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "delete-slide",
+      "native_command": "gog slides delete-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "duplicate-slide",
+      "native_command": "gog slides duplicate-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element alt-text",
+      "native_command": "gog slides element alt-text",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element create-line",
+      "native_command": "gog slides element create-line",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element create-shape",
+      "native_command": "gog slides element create-shape",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element delete",
+      "native_command": "gog slides element delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element group",
+      "native_command": "gog slides element group",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element style",
+      "native_command": "gog slides element style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element transform",
+      "native_command": "gog slides element transform",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element ungroup",
+      "native_command": "gog slides element ungroup",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "element z-order",
+      "native_command": "gog slides element z-order",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "export",
+      "native_command": "gog slides export",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
+    },
+    {
+      "service": "slides",
+      "command": "info",
+      "native_command": "gog slides info",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "insert-image",
+      "native_command": "gog slides insert-image",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "insert-text",
+      "native_command": "gog slides insert-text",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "link",
+      "native_command": "gog slides link",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "list-slides",
+      "native_command": "gog slides list-slides",
+      "hosted_tool": "slides_list_slides",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations",
+          "presentations.readonly"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "slides",
+      "command": "locate",
+      "native_command": "gog slides locate",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "move-slide",
+      "native_command": "gog slides move-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "new-slide",
+      "native_command": "gog slides new-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "paragraph-style",
+      "native_command": "gog slides paragraph-style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "raw",
+      "native_command": "gog slides raw",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
+    },
+    {
+      "service": "slides",
+      "command": "read-slide",
+      "native_command": "gog slides read-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "replace-slide",
+      "native_command": "gog slides replace-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "replace-text",
+      "native_command": "gog slides replace-text",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "skip-slide",
+      "native_command": "gog slides skip-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "style-text",
+      "native_command": "gog slides style-text",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table border style",
+      "native_command": "gog slides table border style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table cell style",
+      "native_command": "gog slides table cell style",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table column delete",
+      "native_command": "gog slides table column delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table column insert",
+      "native_command": "gog slides table column insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table column size",
+      "native_command": "gog slides table column size",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table create",
+      "native_command": "gog slides table create",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table merge",
+      "native_command": "gog slides table merge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table row delete",
+      "native_command": "gog slides table row delete",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table row insert",
+      "native_command": "gog slides table row insert",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table row size",
+      "native_command": "gog slides table row size",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "table unmerge",
+      "native_command": "gog slides table unmerge",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "thumbnail",
+      "native_command": "gog slides thumbnail",
+      "hosted_tool": null,
+      "status": "product_limited",
+      "live_verified": false,
+      "classification_reason": "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
+    },
+    {
+      "service": "slides",
+      "command": "unskip-slide",
+      "native_command": "gog slides unskip-slide",
+      "hosted_tool": null,
+      "status": "missing_requires_audit",
+      "live_verified": false,
+      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+    },
+    {
+      "service": "slides",
+      "command": "update-notes",
+      "native_command": "gog slides update-notes",
+      "hosted_tool": "slides_update_notes",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "tagmanager",
+      "command": "accounts get",
+      "native_command": "gog tagmanager accounts get",
+      "hosted_tool": "tagmanager_accounts_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "accounts list",
+      "native_command": "gog tagmanager accounts list",
+      "hosted_tool": "tagmanager_accounts_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "containers create",
+      "native_command": "gog tagmanager containers create",
+      "hosted_tool": "tagmanager_containers_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "containers delete",
+      "native_command": "gog tagmanager containers delete",
+      "hosted_tool": "tagmanager_containers_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.delete.containers"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "containers get",
+      "native_command": "gog tagmanager containers get",
+      "hosted_tool": "tagmanager_containers_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "containers list",
+      "native_command": "gog tagmanager containers list",
+      "hosted_tool": "tagmanager_containers_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "account",
+      "resource_argument": "account_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "containers update",
+      "native_command": "gog tagmanager containers update",
+      "hosted_tool": "tagmanager_containers_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "tags create",
+      "native_command": "gog tagmanager tags create",
+      "hosted_tool": "tagmanager_tags_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "tags delete",
+      "native_command": "gog tagmanager tags delete",
+      "hosted_tool": "tagmanager_tags_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "tags get",
+      "native_command": "gog tagmanager tags get",
+      "hosted_tool": "tagmanager_tags_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "tags list",
+      "native_command": "gog tagmanager tags list",
+      "hosted_tool": "tagmanager_tags_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "tags update",
+      "native_command": "gog tagmanager tags update",
+      "hosted_tool": "tagmanager_tags_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "triggers create",
+      "native_command": "gog tagmanager triggers create",
+      "hosted_tool": "tagmanager_triggers_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "triggers delete",
+      "native_command": "gog tagmanager triggers delete",
+      "hosted_tool": "tagmanager_triggers_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "triggers get",
+      "native_command": "gog tagmanager triggers get",
+      "hosted_tool": "tagmanager_triggers_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "triggers list",
+      "native_command": "gog tagmanager triggers list",
+      "hosted_tool": "tagmanager_triggers_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "triggers update",
+      "native_command": "gog tagmanager triggers update",
+      "hosted_tool": "tagmanager_triggers_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "variables create",
+      "native_command": "gog tagmanager variables create",
+      "hosted_tool": "tagmanager_variables_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "variables delete",
+      "native_command": "gog tagmanager variables delete",
+      "hosted_tool": "tagmanager_variables_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "variables get",
+      "native_command": "gog tagmanager variables get",
+      "hosted_tool": "tagmanager_variables_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "variables list",
+      "native_command": "gog tagmanager variables list",
+      "hosted_tool": "tagmanager_variables_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "variables update",
+      "native_command": "gog tagmanager variables update",
+      "hosted_tool": "tagmanager_variables_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "versions delete",
+      "native_command": "gog tagmanager versions delete",
+      "hosted_tool": "tagmanager_versions_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containerversions"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "versions get",
+      "native_command": "gog tagmanager versions get",
+      "hosted_tool": "tagmanager_versions_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.edit.containerversions",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "versions list",
+      "native_command": "gog tagmanager versions list",
+      "hosted_tool": "tagmanager_versions_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.edit.containerversions",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "versions publish",
+      "native_command": "gog tagmanager versions publish",
+      "hosted_tool": "tagmanager_versions_publish",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.publish"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces create",
+      "native_command": "gog tagmanager workspaces create",
+      "hosted_tool": "tagmanager_workspaces_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces create-version",
+      "native_command": "gog tagmanager workspaces create-version",
+      "hosted_tool": "tagmanager_workspaces_create-version",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containerversions"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces delete",
+      "native_command": "gog tagmanager workspaces delete",
+      "hosted_tool": "tagmanager_workspaces_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.delete.containers"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces get",
+      "native_command": "gog tagmanager workspaces get",
+      "hosted_tool": "tagmanager_workspaces_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces list",
+      "native_command": "gog tagmanager workspaces list",
+      "hosted_tool": "tagmanager_workspaces_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces status",
+      "native_command": "gog tagmanager workspaces status",
+      "hosted_tool": "tagmanager_workspaces_status",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers",
+          "tagmanager.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces sync",
+      "native_command": "gog tagmanager workspaces sync",
+      "hosted_tool": "tagmanager_workspaces_sync",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tagmanager",
+      "command": "workspaces update",
+      "native_command": "gog tagmanager workspaces update",
+      "hosted_tool": "tagmanager_workspaces_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "container",
+      "resource_argument": "container_path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tagmanager.edit.containers"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "add",
+      "native_command": "gog tasks add",
+      "hosted_tool": "tasks_add",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "clear",
+      "native_command": "gog tasks clear",
+      "hosted_tool": "tasks_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "delete",
+      "native_command": "gog tasks delete",
+      "hosted_tool": "tasks_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "done",
+      "native_command": "gog tasks done",
+      "hosted_tool": "tasks_done",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "get",
+      "native_command": "gog tasks get",
+      "hosted_tool": "tasks_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks",
+          "tasks.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "list",
+      "native_command": "gog tasks list",
+      "hosted_tool": "tasks_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks",
+          "tasks.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "lists create",
+      "native_command": "gog tasks lists create",
+      "hosted_tool": "tasks_lists_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "tasks",
+      "command": "lists list",
+      "native_command": "gog tasks lists list",
+      "hosted_tool": "tasks_lists",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks",
+          "tasks.readonly"
+        ],
+        "http_methods": null,
+        "http_methods_known": false,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "tasks",
+      "command": "raw",
+      "native_command": "gog tasks raw",
+      "hosted_tool": "tasks_raw",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks",
+          "tasks.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "undo",
+      "native_command": "gog tasks undo",
+      "hosted_tool": "tasks_undo",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "update",
+      "native_command": "gog tasks update",
+      "hosted_tool": "tasks_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    }
+  ],
+  "unmapped_hosted_tools": [],
+  "live_verification_notice": "Implemented means an executable fixed-schema hosted tool exists and fixture tests may pass; every live_verified value is false and no Google acceptance is claimed.",
+  "limitations": [
+    "HTTP methods are populated only when the runner binding declares static methods; http_methods_known=false marks omitted methods as unknown.",
+    "Accepted scopes are alternatives declared by the runner policy, not a claim that every listed scope is required for every method.",
+    "Missing commands without exact method/scope/resource review are missing_requires_audit, not proven eligible.",
+    "A mapped native leaf identifies a fixed-schema hosted subset; full CLI option/variant parity is not claimed.",
+    "A second Search Console leaf intentionally maps to searchconsole_query; this is command duplication, not duplicate hosted work."
+  ]
+}
