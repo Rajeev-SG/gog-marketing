@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted GA4: add account-summary discovery under an exact account-level tool grant and property inventory under one selected account grant. Fixed parent filters, native pagination and signed request guards preserve tenant/resource isolation; discovered properties remain ungranted. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Workspace: add title-only blank Docs, Slides and Forms creation using existing native handlers and exact account-level write-tool grants. No parent/template/import/publish options or automatic file permissions are exposed; new-file reads still require explicit grants. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Drive: add selected-file rename/copy and file-only trash through native handlers; preserve literal argument boundaries and reject folders, shortcuts, missing type or failed metadata verification before trash. Copies never gain automatic file grants. (#96, #97, thanks @Rajeev-SG)

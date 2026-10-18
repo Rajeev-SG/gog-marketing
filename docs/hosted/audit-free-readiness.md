@@ -1,5 +1,24 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## GA4 account inventory candidate (18 October 2026)
+
+Two bounded native reads bring the candidate to **157 total tools / 119 active
+priority tools**, mapping **120 native leaves**; **181 leaves still require
+method/scope/resource audit**. This is fixed-schema coverage, not all CLI options.
+
+- `analytics_accounts`: GET `/v1beta/accountSummaries` under an exact account-level
+  tool grant. Returned accounts/properties do not acquire resource authority.
+- `analytics_properties_list`: GET `/v1beta/properties` with exactly one fixed
+  `parent:accounts/<id>` filter and an enabled selected-account resource grant.
+  Arbitrary/ancestor/global filters, foreign accounts and request overrides fail
+  closed; native page tokens retain the selected-account boundary.
+
+The official Analytics Admin v1beta discovery document checked 18 October 2026
+admits `analytics.readonly` or `analytics.edit` for both methods. Existing typed
+handlers and signed transport are reused. No consent, deployed permissions,
+credentials or deployment changed. Both tools remain **unverified live** under
+#97; the two historical GA4 representative proofs are unchanged. #96 remains open.
+
 ## Additional blank Workspace creation candidate (18 October 2026)
 
 Three further fixed adapters bring this candidate to **155 total tools / 117
@@ -271,7 +290,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `sites` | `drive.file` | No existing service write scope requested | **untested** | Native sites_get/sites_url now use enabled Picker-selected file grants, drive.file and exact GET admission; fixture resource/scope denials pass. Global Drive-backed inventory/search excluded; multi-file URL authorization and live Picker/Sites acceptance pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Native space create/get/update/end use account/tool grants, canonical space paths, method scopes and destructive end permission; fixture config persistence/scope denials pass. History/participants, account prerequisites and live acceptance pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
 | `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Native project get/content/create use account/tool grants, method scopes and exact project admission; fixture reads/create/denials pass. Function execution stays excluded pending target-scope audit; deployments/versions/bound-file/pull adapters and live acceptance pending | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
-| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Native property/report reads and data-stream/key-event CRUD, custom-dimension/custom-metric management and GA4 Ads-link CRUD routed with selected-property grants and method scopes; fixture persistence/scope/destructive/file-reference denials pass. Native custom-dimension/custom-metric list/get/create/update/archive and GA4 Google Ads-link CRUD are now included under analytics scopes, with destructive archive/delete grants. Account/property inventory tool coverage and live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
+| `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Native property/report reads and data-stream/key-event CRUD, custom-dimension/custom-metric management and GA4 Ads-link CRUD routed with selected-property grants and method scopes; fixture persistence/scope/destructive/file-reference denials pass. Native custom-dimension/custom-metric list/get/create/update/archive and GA4 Google Ads-link CRUD are now included under analytics scopes, with destructive archive/delete grants. Bounded account-summary and selected-account property inventory are fixture-tested; live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Eight native site/query/sitemap/inspection tools routed with URL-prefix/domain site grants and method scopes; fixture submission/read-back/deletion and foreign URL/encoding denials pass. Cross-site sitemap authorization, richer query options and live acceptance pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
 | `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | `tagmanager_versions_publish` uses the existing native handler, canonical enabled-container grants, publish scope and destructive permission; compiler failures are errors. Fixture execution/denial tests pass; all 34 existing native commands now have fixed bindings, exact selected account/container admission and method scopes; native fixture operations and denials pass; live GTM workflow acceptance pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
 | `bigquery` | `bigquery` (combined scope; fixed GET-only runtime reads) | `bigquery` | **untested** | Six native dataset/table metadata/schema/row reads require an enabled customer project and exact GET endpoint admission; platform project and SQL jobs excluded. Dry-run/SQL execution and billing/destructive safeguards remain pending | [Google](https://docs.cloud.google.com/bigquery/docs/authentication) |
