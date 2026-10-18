@@ -5139,6 +5139,33 @@
     }
   },
   {
+    "name": "sheets_create_blank",
+    "service": "sheets",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a blank spreadsheet by literal title under an explicit account-level write-tool grant. No parent, template or source is accepted. The returned file is not automatically granted for later reads or writes.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title"],
+        "type": "object"
+      },
+      "name": "sheets_create_blank"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",
