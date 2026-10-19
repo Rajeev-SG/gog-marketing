@@ -1,5 +1,28 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Comprehensive non-deferred capability review (19 October 2026)
+
+All 164 previously unmapped native entries in the eleven priority services now
+have source/method/scope evidence in the parity inventory. Of these, 162 have an
+existing approved-scope variant with no paid Google assessment barrier identified;
+that does not override resource, runtime, billing or owner-policy constraints.
+Current categories are 129 eligible missing, 31 implementation-design gaps,
+two owner exclusions and one scope-boundary block. Forms raw is the same Form
+GET already provided by `forms_get` and is now mapped without a duplicate tool.
+There are 183 mapped native leaves, 174 active hosted tools and 212 total tools.
+
+The old `missing_requires_audit` label was an internal engineering-review gap,
+not evidence that paid CASA/security assessment was required. It is replaced by
+explicit categories and per-command `engineering_review` records. In particular,
+Docs/Slides/Sheets/Drive raw commands are fixed selected-resource GETs, not generic
+HTTP proxies. Their bounded variants must not be excluded by name alone.
+
+Drive Activity and shared-drive enumeration exceed the current consent boundary;
+paid-assessment exemptions are not assumed. The review does not add scopes,
+change grants, implement the remaining adapters or establish live Google proof.
+See `cli-hosted-matrix.md` and the embedded `cmd/hosted-parity/capability-review.json`
+for the complete inventory and unresolved engineering constraints.
+
 ## Apps Script execution candidate (19 October 2026)
 
 `appscript_run` invokes the native `appscript run` handler for an explicit

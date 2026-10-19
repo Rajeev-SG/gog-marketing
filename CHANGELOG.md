@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted coverage: review all 164 remaining non-deferred native operations against source and current official method scopes; distinguish eligible adapters, resource/runtime/billing design, owner exclusions and scope-boundary blocks from paid Google security assessments. Correct fixed raw-read false exclusions and map Forms raw to existing forms_get without duplicating a tool. No new consent or runtime permissions. (#96, #97, thanks @Rajeev-SG)
+
 - Apps Script: expose deployed function execution through hosted MCP and all Apps Script tools through chat. Execution is an explicitly enabled, account-wide destructive capability, not a selected-file sandbox; reject BigQuery-authorised tokens and all scopes outside the existing audit-free allowlist. Preserve native deployment/parameter handling, add a no-network dry run, disable automatic execution retries, and retain exact one-use chat approval. Google API-executable/shared-standard-project setup and all required script scopes remain necessary; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Apps Script: add native and hosted all-file source push, immutable version creation, version-pinned deployment creation, and explicit bound-project creation. Hosted source replacement and deployment require destructive tool permission; bound creation requires an explicitly enabled parent-file grant. Native local pull remains available. Management uses existing script scopes; hosted execution remains separate work, not a blanket paid-audit requirement. (#96, #97, thanks @Rajeev-SG)

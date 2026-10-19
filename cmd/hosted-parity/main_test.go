@@ -55,8 +55,8 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.HostedToolCount != 174 || matrix.TotalHostedCatalogCount != 212 || matrix.ExcludedHostedToolCount != 38 {
 		t.Fatalf("hosted counts = %d/%d/%d, want 174/212/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 182 || matrix.MappedHostedToolCount != 174 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 182/174", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 183 || matrix.MappedHostedToolCount != 174 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 183/174", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -129,8 +129,8 @@ func TestExactNameFutureToolAutomaps(t *testing.T) {
 
 func TestUnknownMappingsRemainUnknown(t *testing.T) {
 	status, reason := classifyMissing("sheets", "future feature")
-	if status != "missing_requires_audit" || reason == "" {
-		t.Fatalf("unknown command = %q/%q, want explicit missing_requires_audit reason", status, reason)
+	if status != "unreviewed_mapping" || reason == "" {
+		t.Fatalf("unknown command = %q/%q, want explicit unreviewed_mapping reason", status, reason)
 	}
 
 	fixtureHosted := []runner.NativeToolDescription{
@@ -147,17 +147,18 @@ func TestUnknownMappingsRemainUnknown(t *testing.T) {
 	}
 }
 
-func TestServiceEligibilityDoesNotInventMethodScopeOrResourceReview(t *testing.T) {
-	for _, entry := range []struct{ service, command string }{
-		{"forms", "watch create"},
-		{"sheets", "batch-request"},
-		{"docs", "insert-file-chip"},
-		{"slides", "create-from-template"},
-		{"drive", "move"},
+func TestReviewClassificationKeepsEngineeringAndPaidAssessmentSeparate(t *testing.T) {
+	for _, entry := range []struct{ service, command, want string }{
+		{"forms", "watch create", "implementation_design_required"},
+		{"sheets", "batch-request", "excluded"},
+		{"drive", "drives", "scope_boundary_blocked"},
+		{"docs", "raw", "eligible_missing"},
+		{"slides", "table unmerge", "eligible_missing"},
+		{"sheets", "future feature", "unreviewed_mapping"},
 	} {
 		status, _ := classifyMissing(entry.service, entry.command)
-		if status != "missing_requires_audit" {
-			t.Fatalf("%s %s: unaudited operation classified as %q", entry.service, entry.command, status)
+		if status != entry.want {
+			t.Fatalf("%s %s = %s, want %s", entry.service, entry.command, status, entry.want)
 		}
 	}
 }

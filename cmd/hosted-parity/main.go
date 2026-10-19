@@ -35,6 +35,7 @@ var activeServices = []string{
 // commandToHosted contains only reviewed naming bridges that are not produced
 // by the exact-name rule below. The canonical catalog remains authoritative.
 var commandToHosted = map[string]string{
+	"forms raw":                           "forms_get",
 	"appscript bound-create":              "appscript_bound_create",
 	"appscript version-create":            "appscript_version_create",
 	"appscript deployment-create":         "appscript_deployment_create",
@@ -132,18 +133,19 @@ type bindingMetadata struct {
 }
 
 type parityLeaf struct {
-	Service              string           `json:"service"`
-	Command              string           `json:"command"`
-	NativeCommand        string           `json:"native_command"`
-	HostedTool           *string          `json:"hosted_tool"`
-	Status               string           `json:"status"`
-	ImplementationState  string           `json:"implementation_state,omitempty"`
-	LiveVerified         bool             `json:"live_verified"`
-	ClassificationReason string           `json:"classification_reason,omitempty"`
-	ResourceModel        *string          `json:"resource_model,omitempty"`
-	ResourceArgument     *string          `json:"resource_argument,omitempty"`
-	PolicyBinding        *bindingMetadata `json:"policy_binding,omitempty"`
-	BindingEvidence      string           `json:"binding_evidence,omitempty"`
+	EngineeringReview    *capabilityReview `json:"engineering_review,omitempty"`
+	Service              string            `json:"service"`
+	Command              string            `json:"command"`
+	NativeCommand        string            `json:"native_command"`
+	HostedTool           *string           `json:"hosted_tool"`
+	Status               string            `json:"status"`
+	ImplementationState  string            `json:"implementation_state,omitempty"`
+	LiveVerified         bool              `json:"live_verified"`
+	ClassificationReason string            `json:"classification_reason,omitempty"`
+	ResourceModel        *string           `json:"resource_model,omitempty"`
+	ResourceArgument     *string           `json:"resource_argument,omitempty"`
+	PolicyBinding        *bindingMetadata  `json:"policy_binding,omitempty"`
+	BindingEvidence      string            `json:"binding_evidence,omitempty"`
 }
 
 type serviceSummary struct {
@@ -293,6 +295,9 @@ func BuildMatrix(root *schemaNode, hosted []runner.NativeToolDescription, bindin
 			Command:       leaf.command,
 			NativeCommand: "gog " + leaf.path,
 			LiveVerified:  false,
+		}
+		if review, known := reviewedCapabilities[leaf.service+" "+leaf.command]; known {
+			entry.EngineeringReview = &review
 		}
 		if tool, mapped := hostedMapping(leaf.service, leaf.command, hostedByService); mapped {
 			entry.HostedTool = &tool
@@ -451,6 +456,9 @@ func walkNativeLeaves(node *schemaNode, path string, out *[]nativeLeaf) {
 
 func classifyMissing(service, command string) (string, string) {
 	key := service + " " + command
+	if review, known := reviewedCapabilities[key]; known {
+		return classifyReviewedCapability(review)
+	}
 	if reason, reviewed := reviewedEligibleMissing[key]; reviewed {
 		return "eligible_missing", reason
 	}
@@ -461,28 +469,24 @@ func classifyMissing(service, command string) (string, string) {
 	case "drive activity query", "drive audit sharing", "drive audit user",
 		"drive changes list", "drive changes poll", "drive changes serve",
 		"drive changes start-token", "drive changes stop", "drive changes watch",
-		"drive drives", "drive du", "drive inventory", "drive ls", "drive raw",
+		"drive drives", "drive du", "drive inventory", "drive ls",
 		"drive search", "drive shortcut create", "drive sync push", "drive tree":
 		return "excluded", "global/all-Drive, audit or arbitrary-endpoint behavior is outside selected-file hosted grants"
 	case "drive download", "drive bulk remove-public", "drive bulk update-role":
 		return "product_limited", "hosted fixed-schema JSON output/runtime or selected-file batching does not currently represent this native behavior"
-	case "docs export", "docs raw", "slides export", "slides raw", "slides thumbnail":
+	case "docs export", "slides export", "slides thumbnail":
 		return "product_limited", "hosted fixed-schema JSON output/runtime does not currently represent binary export or raw API behavior"
 	case "sheets datasource add", "sheets datasource delete", "sheets datasource describe",
 		"sheets datasource list", "sheets datasource refresh", "sheets datasource table describe",
 		"sheets datasource table list", "sheets datasource table read", "sheets datasource update",
 		"sheets export":
 		return "product_limited", "external datasource, billing semantics or local-file export output need a separate verified model"
-	case "sheets raw":
-		return "excluded", "arbitrary Sheets batch/API passthrough is outside fixed hosted tool policy"
-	case "forms raw":
-		return "excluded", "arbitrary Forms passthrough is outside fixed hosted tool policy"
 	case "appscript pull":
 		return "product_limited", "the native command writes a local filesystem tree, which the hosted boundary does not expose"
 	case "bigquery query":
 		return "product_limited", "SQL jobs require a customer billing project, max-bytes-billed and explicit billable approval before hosting"
 	}
-	return "missing_requires_audit", "no reviewed policy classification exists; audit required before implementation"
+	return "unreviewed_mapping", "Engineering method/scope/resource mapping is not yet reviewed; this is not evidence of a paid Google security-assessment requirement."
 }
 
 func hostedToolDescription(tools []runner.NativeToolDescription, name string) *runner.NativeToolDescription {

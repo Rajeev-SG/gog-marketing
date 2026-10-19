@@ -6,20 +6,25 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 351 visible native leaves in the 11 active services
-and 174 active hosted tools (212 total). It maps 174 hosted tools across 182
+and 174 active hosted tools (212 total). It maps 174 hosted tools across 183
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 182 implemented/unverified hosted
-leaves, 0 reviewed eligible missing (the six reviewed commands are now implemented), 124 missing requiring per-method/scope/resource audit, 20 excluded, 20 product-limited, and 5 deferred.
+also map direct and grouped aliases. Counts are: 183 implemented/unverified hosted
+leaves, 129 reviewed eligible missing, 31 requiring resource/transport/billing
+implementation design, 2 explicitly excluded, 1 outside the current scope
+boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
+not a separate missing hosted tool.
 
 `implemented_hosted_unverified` means only that an executable fixed-schema
 hosted binding exists. Every `live_verified` value is false; fixture success and
-catalogue presence are not live Google verification. Missing commands outside
-the exact reviewed classification sets are explicitly `missing_requires_audit`,
-never assumed eligible merely because their service uses audit-free OAuth. Empty binding methods have `http_methods_known: false`.
+catalogue presence are not live Google verification. Every remaining non-deferred native operation now has an `engineering_review`
+record in this matrix. Future unknown commands are `unreviewed_mapping`, never
+assumed eligible merely because their service uses audit-free OAuth. The old
+`missing_requires_audit` label meant an internal engineering review—not a paid
+Google security assessment—and is no longer emitted. Empty binding methods have `http_methods_known: false`.
 
 Calendar and Drive Labels are deferred and are excluded from active gap counts.
 The matrix includes the integrated Sheets and Apps Script runtime batches;
@@ -27,7 +32,7 @@ regenerate it whenever executable bindings change.
 
 A mapped command means an executable fixed-schema binding exists; it does not
 claim full native CLI flag/variant parity. Missing methods, resource models or
-transitive-scope/billing checks must still be audited before adding an adapter.
+transitive-scope/billing checks must still receive engineering review before adding an adapter.
 
 ## Per-tool live-verification inventory (#97)
 
@@ -48,3 +53,38 @@ coverage nor deployed-candidate acceptance is inferred. Unknown source SHA stays
 fixture pass or another tool. Scope alternatives and destructive flags are static
 binding metadata; absent method declarations and argument-specific destructive
 behavior are explicitly not invented.
+
+
+## Complete remaining-capability scope review (19 October 2026)
+
+The canonical evidence is `cmd/hosted-parity/capability-review.json`, embedded by
+the generator and checked against the actual Kong command schema, native Run
+receivers, approved scope catalogue and saved official method/scope evidence.
+It reviews all **164** previously unmapped, non-deferred leaves at source
+`288ba8a3741958150f1b4df78518cd4143c7712c`; one Forms read alias is now mapped,
+leaving **163** explicitly classified rows. No row is silently treated as a paid
+assessment requirement.
+
+**162 reviewed rows have an approved-scope variant with no paid assessment
+barrier identified.** This is not a promise of turnkey implementation: 129 are
+fixed-adapter candidates, 31 need resource/transport/billing design, one remains
+excluded by owner policy, and one is the already-covered Forms alias. The two
+outside-boundary cases are Drive Activity and native shared-drive enumeration;
+no unsupported conclusion about paid assessment exemptions is made for them.
+
+Commands named `raw` are classified by their source, not their name. The native
+Docs/Slides/Sheets/Drive raw commands use fixed single-resource GET endpoints;
+bounded selected-file projections are eligible, not arbitrary HTTP proxies.
+Forms raw returns the same Form resource as the existing typed `forms_get`.
+Arbitrary Sheets request batches remain excluded as raw input; typed allowlisted
+batch variants would need their own engineering design. Selected-file sharing
+and user-permission audits are eligible: native `--file` does not impersonate the
+user argument or scan a tree. Folder sync needs trusted staged/local-client files
+and child-grant planning, not arbitrary shared runner filesystem access.
+
+BigQuery has a useful native bounded dry-run variant; actual query execution
+still needs referenced-project authority, explicit billable approval, safe SQL
+semantics and bounded result collection. Native local-file outputs and Forms
+Pub/Sub watches need product/runtime/customer-infrastructure design, not a
+blanket paid Google assessment. All future adapters still require their own
+permission, scope, payload, tenant, retry and real-acceptance checks.
