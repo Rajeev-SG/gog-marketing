@@ -2720,12 +2720,16 @@ it.each(slidesReadToolCases)(
       "Slides account",
       "[]",
     );
+    const googleScope =
+      toolName === "slides_info"
+        ? "https://www.googleapis.com/auth/drive.file"
+        : "https://www.googleapis.com/auth/presentations.readonly";
     const credential: StoredGoogleCredential = {
       access_token: ACCESS_TOKEN,
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3_600_000).toISOString(),
-      granted_scopes: ["openid", "https://www.googleapis.com/auth/presentations.readonly"],
+      granted_scopes: ["openid", googleScope],
     };
     const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
     await repo.upsertCredential({
@@ -2810,6 +2814,12 @@ it.each(slidesReadToolCases)(
     expect(requests[0]!.nativeTool!.name).toBe(toolName);
     expect(requests[0]!.nativeTool!.arguments).toEqual(args);
     expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(requests[0]!.nativeTool!.scopes).toContain(googleScope);
+    if (toolName === "slides_info") {
+      expect(requests[0]!.nativeTool!.scopes).not.toContain(
+        "https://www.googleapis.com/auth/presentations.readonly",
+      );
+    }
     expect(requests[0]!.tenantId).toBe(tenant.id);
     expect(requests[0]!.connectionId).toBe(connection.id);
     expect(requests[0]!.service).toBe(service);
