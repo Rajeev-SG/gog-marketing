@@ -6386,6 +6386,129 @@
     }
   },
   {
+    "name": "sheets_notes",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read cell notes from one granted spreadsheet range.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_notes"
+    }
+  },
+  {
+    "name": "sheets_links_get",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read cell hyperlinks from one granted spreadsheet range; links are returned, not fetched.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_links_get"
+    }
+  },
+  {
+    "name": "sheets_read_format",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read cell display formats from one granted spreadsheet range; supports effective formats.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "effective": {
+            "type": "boolean"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_read_format"
+    }
+  },
+  {
+    "name": "sheets_validation_get",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read cell validation rules, including native table-derived rules, from one granted spreadsheet range.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_validation_get"
+    }
+  },
+  {
     "name": "sheets_freeze",
     "service": "sheets",
     "resource_type": "file",

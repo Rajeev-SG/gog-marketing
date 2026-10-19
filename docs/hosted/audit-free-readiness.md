@@ -1,5 +1,27 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Sheets cell-metadata reads candidate (19 October 2026)
+
+`sheets_notes`, `sheets_links_get`, `sheets_read_format` and
+`sheets_validation_get` reuse native handlers for one explicitly granted
+spreadsheet and required range. Native A1/named-range handling is retained.
+Notes, hyperlinks and formats include native formatted cell values. Hyperlinks
+are returned as metadata, never followed. Format reads preserve user-entered
+and effective views; validation combines explicit cell rules with native
+range-bounded table-derived rules without overwriting explicit rules.
+Notes/link/format GET requests now inherit execution cancellation/deadlines.
+
+Only `spreadsheets.readonly`, `spreadsheets` or `drive.file` are admitted.
+Official Sheets v4 discovery checked 19 October 2026 confirms these GET scopes.
+Fixed field masks and selected-file/tool grants remain mandatory. Validation
+preflight and table metadata requests stay on the same selected spreadsheet;
+no values endpoint, arbitrary field mask, write or new OAuth scope is exposed.
+
+Candidate totals: **199 / 161 active tools**, **169 mapped native leaves**,
+**132 requiring method/scope/resource audit**. All four tools remain
+**unverified live** under #97; no deployment, real Google acceptance, credential
+or billing change is claimed.
+
 ## Native Sheets selected-object detail candidate (19 October 2026)
 
 `sheets_chart_get`, `sheets_named_ranges_get` and `sheets_table_get` reuse native

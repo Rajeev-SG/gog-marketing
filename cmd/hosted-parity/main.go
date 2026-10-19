@@ -54,6 +54,7 @@ var commandToHosted = map[string]string{
 	"sheets reorder-tab":                  "sheets_reorder_tab",
 	"sheets named-ranges list":            "sheets_named_ranges_list",
 	"sheets named-ranges get":             "sheets_named_ranges_get",
+	"sheets read-format":                  "sheets_read_format",
 	"sheets conditional-format list":      "sheets_conditional_format_list",
 	"docs add-tab":                        "docs_add_tab",
 	"docs tabs add":                       "docs_add_tab",

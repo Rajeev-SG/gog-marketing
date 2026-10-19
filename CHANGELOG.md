@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Sheets: expose selected-range notes, hyperlinks, user-entered/effective formatting and cell/table-derived validation reads through native handlers and exact tool/file grants. Preserve named-range handling and execution cancellation; returned links are not fetched. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: add selected chart, named-range and table detail reads through native handlers, exact tool/file grants and existing read scopes. Preserve native ID/name resolution and chart-request cancellation; no arbitrary metadata proxy or mutations. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: expose native header/footer inventories and pending suggestion reads, including optional tab selection, under exact selected-document/tool read grants. No header/footer or suggestion mutations; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
