@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/api/slides/v1"
 
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -75,6 +76,7 @@ func (c *SlidesNewSlideCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
+	ctx = googleapi.WithoutRetries(ctx)
 	slidesSvc, err := slidesService(ctx, account)
 	if err != nil {
 		return err
@@ -170,6 +172,7 @@ func (c *SlidesDuplicateSlideCmd) Run(ctx context.Context, flags *RootFlags) err
 	if err != nil {
 		return err
 	}
+	ctx = googleapi.WithoutRetries(ctx)
 	slidesSvc, err := slidesService(ctx, account)
 	if err != nil {
 		return err
@@ -248,6 +251,7 @@ func (c *SlidesMoveSlideCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if err != nil {
 		return err
 	}
+	ctx = googleapi.WithoutRetries(ctx)
 	slidesSvc, err := slidesService(ctx, account)
 	if err != nil {
 		return err

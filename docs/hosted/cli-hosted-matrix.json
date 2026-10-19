@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 357,
-  "hosted_tool_count": 191,
-  "total_hosted_catalog_count": 229,
+  "hosted_tool_count": 195,
+  "total_hosted_catalog_count": 233,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 201,
-  "mapped_hosted_tool_count": 191,
+  "mapped_native_leaf_count": 205,
+  "mapped_hosted_tool_count": 195,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 109,
+    "eligible_missing": 105,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 201,
+    "implemented_hosted_unverified": 205,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -124,12 +124,12 @@
     {
       "service": "slides",
       "native_leaves": 47,
-      "hosted_tools": 9,
-      "mapped_native_leaves": 9,
+      "hosted_tools": 13,
+      "mapped_native_leaves": 13,
       "classifications": {
-        "eligible_missing": 34,
+        "eligible_missing": 30,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 9
+        "implemented_hosted_unverified": 13
       }
     },
     {
@@ -7712,10 +7712,25 @@
       "service": "slides",
       "command": "delete-slide",
       "native_command": "gog slides delete-slide",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_delete_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive: existing dryRunAndConfirmDestructive confirmation must be preserved in any adapter"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7741,10 +7756,25 @@
       "service": "slides",
       "command": "duplicate-slide",
       "native_command": "gog slides duplicate-slide",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_duplicate_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed two-request batch; index bounds validated \u003e=0"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8228,10 +8258,25 @@
       "service": "slides",
       "command": "move-slide",
       "native_command": "gog slides move-slide",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_move_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "--to-index required and \u003e=0; dry-run preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8258,10 +8303,25 @@
       "service": "slides",
       "command": "new-slide",
       "native_command": "gog slides new-slide",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_new_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "layout/layout-id mutually exclusive; generated client-side object ID"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {

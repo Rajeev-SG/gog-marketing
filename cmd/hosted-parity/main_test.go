@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 357 {
 		t.Fatalf("native leaf count = %d, want 357", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 191 || matrix.TotalHostedCatalogCount != 229 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 191/229/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 195 || matrix.TotalHostedCatalogCount != 233 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 195/233/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 201 || matrix.MappedHostedToolCount != 191 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 201/191", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 205 || matrix.MappedHostedToolCount != 195 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 205/195", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 31, "appscript": 10, "bigquery": 6, "docs": 28, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 9, "tagmanager": 34, "tasks": 15} {
+	for service, count := range map[string]int{"analytics": 31, "appscript": 10, "bigquery": 6, "docs": 28, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {

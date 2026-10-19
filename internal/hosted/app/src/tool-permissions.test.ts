@@ -43,6 +43,13 @@ describe("explicit executable tool permissions", () => {
   });
   afterEach(() => db.close());
 
+  const slidesLifecycleTools = [
+    "slides_new_slide",
+    "slides_duplicate_slide",
+    "slides_move_slide",
+    "slides_delete_slide",
+  ] as const;
+
   it("persists the entire expanded fixed catalogue without granting unknown or duplicate tools", async () => {
     const updates = EXECUTABLE_TOOLS.map((tool) => ({
       toolName: tool.name,
@@ -63,7 +70,10 @@ describe("explicit executable tool permissions", () => {
 
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(229);
+    expect(view.tools).toHaveLength(233);
+    expect(
+      view.tools.filter((tool) => !(slidesLifecycleTools as readonly string[]).includes(tool.name)),
+    ).toHaveLength(229);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);
@@ -144,6 +154,43 @@ describe("explicit executable tool permissions", () => {
       enabled: false,
       allowDestructive: false,
     });
+  });
+
+  it("requires selected-deck and exact tool grants for native Slides lifecycle tools", async () => {
+    const tenant = (await repo.getTenant(session.tenantId))!;
+    await saveToolPermissions(repo, session, connectionId, [
+      { toolName: "slides_new_slide", enabled: true, allowDestructive: false },
+      { toolName: "slides_duplicate_slide", enabled: true, allowDestructive: false },
+      { toolName: "slides_move_slide", enabled: true, allowDestructive: false },
+      { toolName: "slides_delete_slide", enabled: true, allowDestructive: true },
+    ]);
+    expect(await policyTools(repo, tenant)).toEqual([]);
+
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connectionId,
+      "slides",
+      "selected-deck",
+      "file",
+      "Deck",
+      true,
+      "{}",
+    );
+
+    expect((await policyTools(repo, tenant)).map((tool) => tool.name).sort()).toEqual([
+      "slides_delete_slide",
+      "slides_duplicate_slide",
+      "slides_move_slide",
+      "slides_new_slide",
+    ]);
+    const view = await toolPermissionView(repo, session, connectionId);
+    for (const toolName of slidesLifecycleTools) {
+      expect(view.tools.find((tool) => tool.name === toolName)).toMatchObject({
+        enabled: true,
+        write: true,
+        allowDestructive: toolName === "slides_delete_slide",
+      });
+    }
   });
 
   it("rejects unsupported/wildcard/billing/foreign authority and validates whole batches", async () => {

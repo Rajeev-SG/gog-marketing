@@ -1,5 +1,26 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Slides lifecycle (19 October 2026)
+
+`slides_new_slide`, `slides_duplicate_slide`, `slides_move_slide` and
+`slides_delete_slide` reuse the native CLI handlers through Slides
+`presentations.batchUpdate`. Exact POST paths, selected file resource IDs and
+existing `presentations` or `drive.file` write scopes are retained; no Drive
+API call is made. Tool grants and selected-deck authority are unchanged, with
+one-use exact-argument chat approval.
+
+New slides accept zero-based insertion and either one of eleven native
+predefined layouts or an exact layout object ID; omission keeps the native
+BLANK default. Duplicate and move accept zero-based target positions; deletion
+also requires destructive authority. Optional layout fields are strict,
+nonblank and mutually exclusive. Generated duplicate IDs stay native. All four
+mutations suppress SDK retries before service creation; an uncertain response
+is not replayed, and no revision guarantee is invented.
+
+Candidate has 233 total/195 active tools, 357 native leaves/205 mapped, 105
+eligible missing. Fixture tests do not substitute for live Google acceptance,
+which remains #97. No OAuth, grant, credential, billing or deployment change.
+
 ## Native Docs formatting and layout (19 October 2026)
 
 Candidate tools `docs_format`, `docs_page_layout` and `docs_section_columns`
