@@ -132,7 +132,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	[]NativeToolBinding{nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()},
 	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(),
 	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
-	nativeSlidesLifecycleBindings(), nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
+	nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
 	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(),
 )...)
 
