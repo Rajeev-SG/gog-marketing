@@ -6161,6 +6161,182 @@
     }
   },
   {
+    "name": "docs_find_range",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Find native UTF-16 text ranges in one explicitly granted document, optionally targeting a tab or exact header/footer/footnote segment. Defaults to first match with whitespace normalization; supports all or an occurrence, case matching and fail-empty.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "normalize_whitespace": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_find_range"
+    }
+  },
+  {
+    "name": "docs_named_range_create",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a named range in one explicitly granted document by literal anchor or explicit UTF-16 start/end indexes, optionally on a selected tab. Native ambiguity checks and revision guards remain enforced. Requires exact write-tool/file grants; chat additionally requires one-use exact-argument approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "end": {
+            "maximum": 2147483647,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "name": {
+            "type": "string"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "start": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "name"],
+        "type": "object"
+      },
+      "name": "docs_named_range_create"
+    }
+  },
+  {
+    "name": "docs_named_range_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a named-range definition by exact ID or unique exact name from one explicitly granted document, optionally scoped to a tab. Requires destructive permission and exact write-tool/file grants; chat additionally requires one-use exact-argument approval; native revision guard remains enforced.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "name_or_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "name_or_id"],
+        "type": "object"
+      },
+      "name": "docs_named_range_delete"
+    }
+  },
+  {
+    "name": "docs_named_range_replace",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Replace named-range content with literal inline plain text in one explicitly granted document, optionally scoped to a tab. Empty text clears and additionally requires destructive permission. Exact write-tool/file grants, native revision guards and readback remain enforced; chat additionally requires one-use exact-argument approval; no file/stdin/markdown input.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "name_or_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "name_or_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_named_range_replace"
+    }
+  },
+  {
     "name": "drive_revisions_list",
     "service": "drive",
     "resource_type": "file",

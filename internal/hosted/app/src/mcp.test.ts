@@ -1925,7 +1925,7 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
 
 // The in-product chat uses the very same MCP authorization/runner path, not an OAuth client.
 describe("chat Google tools and durable write approvals", () => {
-  async function chatFixture(scriptTool?: string) {
+  async function chatFixture(scriptTool?: string, docTool?: string) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({
@@ -1964,10 +1964,10 @@ describe("chat Google tools and durable write approvals", () => {
     };
     await repo.saveToolGrants(tenantId, connectionId, [
       {
-        service: scriptTool ? "appscript" : "tasks",
-        toolName: scriptTool ?? "tasks_lists_create",
+        service: docTool ? "docs" : scriptTool ? "appscript" : "tasks",
+        toolName: docTool ?? scriptTool ?? "tasks_lists_create",
         enabled: true,
-        allowDestructive: Boolean(scriptTool),
+        allowDestructive: docTool ? docTool !== "docs_find_range" : Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -1977,16 +1977,18 @@ describe("chat Google tools and durable write approvals", () => {
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3600000).toISOString(),
-      granted_scopes: scriptTool
-        ? [
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/script.projects",
-            "https://www.googleapis.com/auth/script.deployments",
-          ]
-        : [
-            "https://www.googleapis.com/auth/tasks",
-            "https://www.googleapis.com/auth/analytics.readonly",
-          ],
+      granted_scopes: docTool
+        ? ["https://www.googleapis.com/auth/documents"]
+        : scriptTool
+          ? [
+              "https://www.googleapis.com/auth/userinfo.email",
+              "https://www.googleapis.com/auth/script.projects",
+              "https://www.googleapis.com/auth/script.deployments",
+            ]
+          : [
+              "https://www.googleapis.com/auth/tasks",
+              "https://www.googleapis.com/auth/analytics.readonly",
+            ],
     });
     await repo.upsertCredential({
       tenantId,
@@ -2003,6 +2005,17 @@ describe("chat Google tools and durable write approvals", () => {
         "parent-1",
         "file",
         "Parent",
+        true,
+        "{}",
+      );
+    if (docTool)
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        "docs",
+        "selected-doc",
+        "file",
+        "Selected doc",
         true,
         "{}",
       );
@@ -2100,6 +2113,84 @@ describe("chat Google tools and durable write approvals", () => {
     await expect(f.run(name, input)).rejects.toThrow("fresh approval");
     expect(f.requests).toHaveLength(1);
   });
+
+  it("Docs range search is available in chat without write authority or approval", async () => {
+    const f = await chatFixture(undefined, "docs_find_range");
+    const result = await f.run("docs_find_range", {
+      document_id: "selected-doc",
+      text: "needle",
+      connectionId: f.connectionId,
+    });
+    expect(result).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(f.values.size).toBe(0);
+  });
+
+  it.each([
+    {
+      name: "docs_named_range_create",
+      args: { document_id: "selected-doc", name: "Named", start: 1, end: 3 },
+    },
+    {
+      name: "docs_named_range_delete",
+      args: { document_id: "selected-doc", name_or_id: "range-1" },
+    },
+    {
+      name: "docs_named_range_replace",
+      args: { document_id: "selected-doc", name_or_id: "range-1", text: "replacement" },
+    },
+    {
+      name: "docs_named_range_replace",
+      args: { document_id: "selected-doc", name_or_id: "range-1", text: "" },
+    },
+  ])(
+    "Docs named edit $name retains exact one-use approval and fresh grants",
+    async ({ name, args }) => {
+      const f = await chatFixture(undefined, name);
+      const input = { ...args, connectionId: f.connectionId };
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      expect(f.requests).toHaveLength(0);
+      await f.approvals.request("call-1", name, input, f.session);
+      expect(
+        await f.approvals.respond("call-1", true, { ...f.session, userId: "foreign-user" }),
+      ).toBe(false);
+      expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+      await expect(f.run(name, { ...input, document_id: "foreign-doc" })).rejects.toThrow(
+        "fresh approval",
+      );
+      expect(await f.run(name, input)).toHaveProperty("structuredContent");
+      expect(f.requests).toHaveLength(1);
+      expect(f.requests[0]!.nativeTool).toMatchObject({ name, allowWrite: true, arguments: args });
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      await f.approvals.request("call-2", name, input, f.session);
+      await f.approvals.respond("call-2", true, f.session);
+      await f.repo.upsertResourceGrant(
+        f.tenantId,
+        f.connectionId,
+        "docs",
+        "selected-doc",
+        "file",
+        "Selected doc",
+        false,
+        "{}",
+      );
+      expect(await f.run(name, input, "call-2")).toHaveProperty("isError", true);
+      expect(f.requests).toHaveLength(1);
+      await f.repo.upsertResourceGrant(
+        f.tenantId,
+        f.connectionId,
+        "docs",
+        "selected-doc",
+        "file",
+        "Selected doc",
+        true,
+        "{}",
+      );
+      await expect(f.run(name, input, "call-2")).rejects.toThrow("fresh approval");
+      expect(f.requests).toHaveLength(1);
+    },
+  );
 
   it("requires exact one-use approval, rejects changed arguments and concurrent replay", async () => {
     const f = await chatFixture();
@@ -2548,6 +2639,7 @@ const docsReadToolNames = [
   "docs_tables_list",
   "docs_images_list",
   "docs_named_range_list",
+  "docs_find_range",
 ];
 
 it.each(docsReadToolNames)(
@@ -2637,7 +2729,11 @@ it.each(docsReadToolNames)(
         "tools/call",
         {
           name: toolName,
-          arguments: { document_id: "selected-doc", ...overrides },
+          arguments: {
+            ...(toolName === "docs_find_range" ? { text: "needle" } : {}),
+            document_id: "selected-doc",
+            ...overrides,
+          },
         },
         { token },
       );
@@ -2669,7 +2765,10 @@ it.each(docsReadToolNames)(
     expect(requests[0]!.resourceType).toBe("file");
     expect(requests[0]!.resourceId).toBe("selected-doc");
     expect(requests[0]!.nativeTool!.name).toBe(toolName);
-    expect(requests[0]!.nativeTool!.arguments).toEqual({ document_id: "selected-doc" });
+    expect(requests[0]!.nativeTool!.arguments).toEqual({
+      ...(toolName === "docs_find_range" ? { text: "needle" } : {}),
+      document_id: "selected-doc",
+    });
     expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
     expect(requests[0]!.tenantId).toBe(tenant.id);
     expect(requests[0]!.connectionId).toBe(connection.id);
@@ -2680,7 +2779,13 @@ it.each(docsReadToolNames)(
       rpc(
         env,
         "tools/call",
-        { name: toolName, arguments: { document_id: "other-doc" } },
+        {
+          name: toolName,
+          arguments: {
+            ...(toolName === "docs_find_range" ? { text: "needle" } : {}),
+            document_id: "other-doc",
+          },
+        },
         { token },
       ),
     );
@@ -2695,7 +2800,10 @@ it.each(docsReadToolNames)(
         "tools/call",
         {
           name: toolName,
-          arguments: { document_id: "selected-doc" },
+          arguments: {
+            ...(toolName === "docs_find_range" ? { text: "needle" } : {}),
+            document_id: "selected-doc",
+          },
           connectionId: otherConnection.id,
         },
         { token },
@@ -2947,6 +3055,40 @@ it.each(slidesReadToolCases)(
 );
 
 const workspaceWriteToolCases = [
+  {
+    toolName: "docs_named_range_replace",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", name_or_id: "range-1", text: "" },
+    result: { updated: true },
+    allowDestructive: true,
+  },
+
+  {
+    toolName: "docs_named_range_create",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", name: "NewRange", start: 1, end: 3 },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_named_range_delete",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", name_or_id: "range-1" },
+    result: { updated: true },
+    allowDestructive: true,
+  },
+  {
+    toolName: "docs_named_range_replace",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", name_or_id: "range-1", text: "Replacement" },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+
   {
     toolName: "appscript_bound_create",
     service: "appscript",

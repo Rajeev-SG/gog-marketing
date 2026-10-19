@@ -1,5 +1,22 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Docs literal range search and named-range edits (19 October 2026)
+
+`docs_find_range`, `docs_named_range_create`, `docs_named_range_delete` and
+`docs_named_range_replace` now reuse native typed handlers for an explicitly
+selected document. Literal search preserves first/all/Nth, case, whitespace,
+UTF-16, tab and segment semantics. Create preserves explicit-index/anchor
+placement validation, delete affects the definition only, and replacement uses
+literal inline text plus native readback. No server files, stdin or markdown
+inputs are exposed. Delete and empty replacement require destructive authority;
+all writes retain exact tool/file grants, native revision guards and chat's
+one-use exact-argument approval. Read scopes remain documents.readonly,
+documents or drive.file; writes admit documents or drive.file only.
+
+Candidate catalogue216total/178active,187mapped native leaves,117eligible
+missing,39design gaps. Fixture evidence is not live Google acceptance; all four
+remain unverified under#97. No OAuth/credential/permission/deployment change.
+
 ## Comprehensive non-deferred capability review (19 October 2026)
 
 All 164 previously unmapped native entries in the eleven priority services now
@@ -9,7 +26,8 @@ that does not override resource, runtime, billing or owner-policy constraints.
 Current categories are 121 eligible missing, 39 implementation-design gaps,
 two owner exclusions and one scope-boundary block. Forms raw is the same Form
 GET already provided by `forms_get` and is now mapped without a duplicate tool.
-There are 183 mapped native leaves, 174 active hosted tools and 212 total tools.
+That review snapshot had183mapped leaves/174active/212total tools; current
+counts are updated in the Docs range candidate above.
 
 The old `missing_requires_audit` label was an internal engineering-review gap,
 not evidence that paid CASA/security assessment was required. It is replaced by

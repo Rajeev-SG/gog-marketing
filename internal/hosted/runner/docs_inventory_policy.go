@@ -4,16 +4,14 @@ import (
 	"net/http"
 )
 
-// Native Docs inventory is read-only. Each tool reads one selected document
-// through an account-level exact tool grant and a per-file resource grant.
-// The document id is validated against the same file resource id pattern used
-// for Drive resources; only the fixed GET /v1/documents/<id> path is ever
-// permitted.
+// Native Docs inventory reads use exact-tool and per-file grants and fixed GET
+// paths. The separately defined named-range edits appended below retain their
+// explicit write/destructive authority and GET/POST method policy.
 func nativeDocsInventoryBindings() []NativeToolBinding {
 	names := []string{
 		"docs_info", "docs_list_tabs", "docs_structure", "docs_headings_list",
 		"docs_paragraphs_list", "docs_tables_list", "docs_images_list",
-		"docs_named_range_list", "docs_header_list", "docs_footer_list", "docs_suggestions_list",
+		"docs_named_range_list", "docs_find_range", "docs_header_list", "docs_footer_list", "docs_suggestions_list",
 	}
 
 	bindings := make([]NativeToolBinding, 0, len(names))
@@ -21,7 +19,7 @@ func nativeDocsInventoryBindings() []NativeToolBinding {
 		bindings = append(bindings, nativeDocsInventoryBinding(name))
 	}
 
-	return bindings
+	return append(bindings, nativeDocsNamedEditBindings()...)
 }
 
 func nativeDocsInventoryBinding(name string) NativeToolBinding {
