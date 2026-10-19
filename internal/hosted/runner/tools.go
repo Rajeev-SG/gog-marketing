@@ -123,7 +123,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), nativeSlidesReadBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), append(nativeSlidesReadBindings(), nativeSlidesEditBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -186,6 +186,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 
 	if err := validateAdminReplacement(invocation); err != nil {
 		return err
+	}
+
+	if invocation.Name == "slides_replace_text" && invocation.Arguments["replacement"] == "" && !auth.AllowDestructive {
+		return invalidf("empty replacement requires destructive permission")
 	}
 
 	if invocation.Name == "forms_publish" && invocation.Arguments["unpublish"] == true && !auth.AllowDestructive {
@@ -445,7 +449,7 @@ func admitWriteRequestMethod(name, path, method string) error {
 		if method != http.MethodPost || !strings.HasSuffix(path, ":batchUpdate") {
 			return native.ErrDenied
 		}
-	case "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab":
+	case "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab", "slides_replace_text":
 		batch := strings.HasSuffix(path, ":batchUpdate")
 		if (batch && method != http.MethodPost) || (!batch && method != http.MethodGet) {
 			return native.ErrDenied
