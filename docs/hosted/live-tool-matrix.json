@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 207,
-  "active_tool_count": 169,
+  "total_catalog_count": 211,
+  "active_tool_count": 173,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -521,6 +521,22 @@
     },
     {
       "service": "appscript",
+      "tool": "appscript_bound_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "parent_id",
+      "accepted_scopes": [
+        "script.projects"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
       "tool": "appscript_content",
       "write": false,
       "destructive_binding_flag": false,
@@ -543,6 +559,21 @@
       "resource_model": "account",
       "accepted_scopes": [
         "script.projects"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_deployment_create",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.deployments"
       ],
       "http_methods": [
         "POST"
@@ -578,6 +609,36 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_push",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_version_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "script.projects"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"

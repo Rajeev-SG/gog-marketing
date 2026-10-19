@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Apps Script: add native and hosted all-file source push, immutable version creation, version-pinned deployment creation, and explicit bound-project creation. Hosted source replacement and deployment require destructive tool permission; bound creation requires an explicitly enabled parent-file grant. Native local pull remains available. Management uses existing script scopes; hosted execution remains separate work, not a blanket paid-audit requirement. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: add native named-range creation, partial updates and destructive deletion, plus inline note set/clear under exact tool/file write grants. Empty notes additionally require destructive permission; note-file input stays unavailable. Preserve native resolution and POST cancellation. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Sheets: expose fixed-size/auto-fit row and column resizing plus merge/unmerge via native handlers and exact selected-file/tool write grants. Merge additionally requires destructive permission; native range/type semantics and zero indexes are preserved. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

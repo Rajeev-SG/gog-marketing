@@ -804,3 +804,30 @@ scopes, Cloud Admin operations, dataset creation or SQL jobs are introduced.
 Existing local explicit-project discovery is unchanged. A paginated native HTTP
 fixture verifies project grants/ownership; actual IAM/project availability remains
 subject to real account acceptance.
+
+
+### Apps Script management expansion (#96/#97)
+
+Native and hosted source replacement (`appscript_push`), immutable version
+creation (`appscript_version_create`), pinned deployment creation
+(`appscript_deployment_create`) and bound creation (`appscript_bound_create`)
+use the existing `script.projects` / `script.deployments` scopes. Official
+[Apps Script API discovery](https://script.googleapis.com/$discovery/rest?version=v1)
+was checked on 19 October 2026; no restricted scope or paid security assessment
+requirement was identified for these management methods.
+
+Push replaces every HEAD file, including the manifest, and may affect installed
+triggers. Push and deployment creation require destructive exact-tool authority;
+all four require write permission. Bound creation additionally requires an enabled
+`appscript` file grant for the exact parent. Picker verifies eligible parent MIME
+and creates this grant disabled, never silently authorising it. Hosted push
+accepts literal files JSON only, subject to the existing request-size limit; local
+directory reads and downloads remain CLI-only (`push --dir`, `pull`).
+
+Hosted arbitrary execution is separate unfinished capability work, not a blanket
+paid-audit prerequisite. Native `appscript run` already exists. Google's execution
+API requires an API-executable deployment, the same standard Cloud project for
+script and caller, API enablement, and caller authorisation for every scope of the
+entire script. Arbitrary execution must not imply permission to bypass selected-file
+or billable-operation controls. No live Google management, execution, deployment
+or OAuth change is claimed by this engineering batch.

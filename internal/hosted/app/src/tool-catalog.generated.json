@@ -4625,7 +4625,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Run native Apps Script project get with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "description": "Run native Apps Script project get with explicit account/tool grants and approved project scopes. Script execution is a separate capability; local downloads use the native pull command.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -4652,7 +4652,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Run native Apps Script project content with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "description": "Run native Apps Script project content with explicit account/tool grants and approved project scopes. Script execution is a separate capability; local downloads use the native pull command.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -4679,7 +4679,7 @@
         "idempotentHint": false,
         "openWorldHint": true
       },
-      "description": "Run native Apps Script project create with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.",
+      "description": "Run native Apps Script project create with explicit account/tool grants and approved project scopes. Script execution is a separate capability; local downloads use the native pull command.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -4706,7 +4706,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Read native Apps Script deployments by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "description": "Read native Apps Script deployments by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. This tool does not execute or mutate a project.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -4747,7 +4747,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Read native Apps Script versions by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+      "description": "Read native Apps Script versions by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. This tool does not execute or mutate a project.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -4773,6 +4773,134 @@
         "type": "object"
       },
       "name": "appscript_versions"
+    }
+  },
+  {
+    "name": "appscript_bound_create",
+    "service": "appscript",
+    "resource_type": "file",
+    "resource_argument": "parent_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create an Apps Script project bound to an explicitly selected parent document, spreadsheet, presentation or form. Requires an enabled appscript file grant for that parent and exact-tool write approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "parent_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["title", "parent_id"],
+        "type": "object"
+      },
+      "name": "appscript_bound_create"
+    }
+  },
+  {
+    "name": "appscript_push",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Replace ALL saved HEAD files, including the manifest, in an Apps Script project. Can affect existing triggers. Requires explicit account-level exact-tool destructive permission and approval. Supply literal files JSON, never a server path.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "files_json": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id", "files_json"],
+        "type": "object"
+      },
+      "name": "appscript_push"
+    }
+  },
+  {
+    "name": "appscript_version_create",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create an immutable Apps Script version of the current saved project under an account-level exact-tool write grant and approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id"],
+        "type": "object"
+      },
+      "name": "appscript_version_create"
+    }
+  },
+  {
+    "name": "appscript_deployment_create",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create an Apps Script deployment pinned to an immutable version. May expose executable entry points declared by that version. Requires explicit account-level exact-tool destructive permission and approval; does not run the script.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "manifest_file_name": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          },
+          "version_number": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["script_id", "version_number"],
+        "type": "object"
+      },
+      "name": "appscript_deployment_create"
     }
   },
   {

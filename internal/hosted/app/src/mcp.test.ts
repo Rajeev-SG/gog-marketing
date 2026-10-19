@@ -2893,6 +2893,14 @@ it.each(slidesReadToolCases)(
 
 const workspaceWriteToolCases = [
   {
+    toolName: "appscript_bound_create",
+    service: "appscript",
+    resourceArgument: "parent_id",
+    args: { parent_id: "selected-deck", title: "Bound" },
+    result: { created: true },
+    allowDestructive: false,
+  },
+  {
     toolName: "slides_replace_text",
     service: "slides",
     resourceArgument: "presentation_id",
@@ -3095,7 +3103,10 @@ it.each(workspaceWriteToolCases)(
       "Slides account",
       "[]",
     );
-    const googleScope = "https://www.googleapis.com/auth/drive.file";
+    const googleScope =
+      service === "appscript"
+        ? "https://www.googleapis.com/auth/script.projects"
+        : "https://www.googleapis.com/auth/drive.file";
     const credential: StoredGoogleCredential = {
       access_token: ACCESS_TOKEN,
       refresh_token: REFRESH_TOKEN,
@@ -3849,5 +3860,98 @@ it.each([
     const disabled = await readResult(await call());
     expect(disabled.error.data.detail).toBe("grant_denied");
     expect(requests.length).toBe(disabledBefore);
+  },
+);
+
+it.each([
+  {
+    name: "appscript_push",
+    scope: "script.projects",
+    destructive: true,
+    args: {
+      script_id: "script123",
+      files_json: JSON.stringify([{ name: "appsscript", type: "JSON", source: "{}" }]),
+    },
+  },
+  {
+    name: "appscript_version_create",
+    scope: "script.projects",
+    destructive: false,
+    args: { script_id: "script123", description: "release" },
+  },
+  {
+    name: "appscript_deployment_create",
+    scope: "script.deployments",
+    destructive: true,
+    args: { script_id: "script123", version_number: 7 },
+  },
+])(
+  "Apps Script management $name requires exact account authority",
+  async ({ name, scope, destructive, args }) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { created: true } };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_appscript_management");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-script-user",
+      "script@example.test",
+      "Script account",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const credential: StoredGoogleCredential = {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
+    };
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("user_appscript_management");
+    const call = async () =>
+      rpcJson(await rpc(env, "tools/call", { name, arguments: args }, { token }));
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "appscript",
+        toolName: name,
+        enabled: true,
+        allowDestructive: destructive,
+        allowBillable: false,
+      },
+    ]);
+    expect((await call()).result.structuredContent).toEqual({ created: true });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.tenantId).toBe(tenant.id);
+    expect(requests[0]!.connectionId).toBe(connection.id);
+    expect(requests[0]!.nativeTool!.arguments).toEqual(args);
+    expect(requests[0]!.nativeTool!.allowDestructive).toBe(destructive);
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "appscript",
+        toolName: name,
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
   },
 );

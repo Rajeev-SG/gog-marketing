@@ -21,16 +21,16 @@
     ],
     "prior_deferred_excluded": true
   },
-  "native_leaf_count": 347,
-  "hosted_tool_count": 169,
-  "total_hosted_catalog_count": 207,
+  "native_leaf_count": 351,
+  "hosted_tool_count": 173,
+  "total_hosted_catalog_count": 211,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 177,
-  "mapped_hosted_tool_count": 169,
+  "mapped_native_leaf_count": 181,
+  "mapped_hosted_tool_count": 173,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 177,
+    "implemented_hosted_unverified": 181,
     "missing_requires_audit": 124,
     "product_limited": 20
   },
@@ -46,12 +46,12 @@
     },
     {
       "service": "appscript",
-      "native_leaves": 7,
-      "hosted_tools": 5,
-      "mapped_native_leaves": 5,
+      "native_leaves": 11,
+      "hosted_tools": 9,
+      "mapped_native_leaves": 9,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 5,
+        "implemented_hosted_unverified": 9,
         "product_limited": 1
       }
     },
@@ -828,6 +828,29 @@
     },
     {
       "service": "appscript",
+      "command": "bound-create",
+      "native_command": "gog appscript bound-create",
+      "hosted_tool": "appscript_bound_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "parent_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
       "command": "content",
       "native_command": "gog appscript content",
       "hosted_tool": "appscript_content",
@@ -866,6 +889,27 @@
         ],
         "http_methods_known": true,
         "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "deployment-create",
+      "native_command": "gog appscript deployment-create",
+      "hosted_tool": "appscript_deployment_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.deployments"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
       },
       "binding_evidence": "runner binding metadata"
     },
@@ -924,12 +968,54 @@
     },
     {
       "service": "appscript",
+      "command": "push",
+      "native_command": "gog appscript push",
+      "hosted_tool": "appscript_push",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
       "command": "run",
       "native_command": "gog appscript run",
       "hosted_tool": null,
       "status": "excluded",
       "live_verified": false,
       "classification_reason": "Apps Script execution remains policy-excluded pending transitive-scope audit"
+    },
+    {
+      "service": "appscript",
+      "command": "version-create",
+      "native_command": "gog appscript version-create",
+      "hosted_tool": "appscript_version_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.projects"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "appscript",
