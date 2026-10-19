@@ -22,6 +22,8 @@ func TestNativeDocsFormatLayoutPayload(t *testing.T) {
 		{"docs_page_layout", `{"margin_left":"0"}`},
 		{"docs_section_columns", `{"count":2,"index":1}`},
 		{"docs_section_columns", `{"count":2,"at":"abc"}`},
+		{"docs_section_columns", `{"count":2}`},
+		{"docs_section_columns", `{"count":2,"at_end":true}`},
 	}
 	for _, tc := range cases {
 		for _, scope := range []string{"documents", "drive.file"} {
@@ -180,7 +182,14 @@ func TestNativeDocsFormatLayoutPayload(t *testing.T) {
 						t.Fatalf("%s/%s: columnProperties: %v", tc.name, scope, secStyle)
 					}
 
-					if rng := sub(uss, "range"); rng["startIndex"] != float64(1) {
+					wantStart := float64(1)
+					if _, indexed := args["index"]; !indexed {
+						if _, anchored := args["at"]; !anchored {
+							wantStart = 4
+						}
+					}
+
+					if rng := sub(uss, "range"); rng["startIndex"] != wantStart || rng["endIndex"] != wantStart+1 {
 						t.Fatalf("%s/%s: range: %v", tc.name, scope, rng)
 					}
 
@@ -189,7 +198,7 @@ func TestNativeDocsFormatLayoutPayload(t *testing.T) {
 							t.Fatalf("anchor revision: %v", wc)
 						}
 					} else if _, present := batch["writeControl"]; present {
-						t.Fatalf("unexpected explicit-index revision: %v", batch)
+						t.Fatalf("unexpected index/end revision: %v", batch)
 					}
 				}
 			})

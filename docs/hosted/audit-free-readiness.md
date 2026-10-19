@@ -7,7 +7,7 @@ reuse typed native commands under existing documents/drive.file scopes, selected
 file/tool write grants and one-use exact-argument chat approval. Explicit false
 clears text styles; zero spacing/indents and false paragraph keep flags survive.
 Margin-only updates do not reset page mode. Columns retain native body-placement,
-ambiguity and anchor/end revision controls (not explicit-index placement);
+ambiguity and anchor-only revision controls (not explicit-index or end placement);
 formatting/page layout do not promise
 new revision guarantees. No files, stdin, persisted batches or raw masks.
 
