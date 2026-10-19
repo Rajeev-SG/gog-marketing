@@ -261,11 +261,7 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 	}
 
 	argument, ok := invocation.Arguments[binding.ResourceArgument].(string)
-	matchedResource := argument == grant.ResourceID
-	if binding.ResourceType == "property" && strings.HasPrefix(grant.ResourceID, "properties/") {
-		matchedResource = argument == strings.TrimPrefix(grant.ResourceID, "properties/")
-	}
-	if !ok || !matchedResource {
+	if !ok || argument != grant.ResourceID {
 		return invalidf("resource does not match grant")
 	}
 
@@ -304,7 +300,7 @@ func validateNativeResourceArgument(resourceType, argument string) error {
 			return invalidf("invalid file resource")
 		}
 	case "property":
-		if !canonicalPropertyID.MatchString(argument) && !positiveAnalyticsPropertyID.MatchString(argument) {
+		if !canonicalPropertyID.MatchString(argument) {
 			return invalidf("invalid property resource")
 		}
 	case "calendar":

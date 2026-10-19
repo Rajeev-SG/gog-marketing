@@ -2281,7 +2281,7 @@ describe("chat Google tools and durable write approvals", () => {
     const f = await chatFixture(undefined, undefined, "analytics_metadata_get");
     expect(
       await f.run("analytics_metadata_get", {
-        property_id: "123",
+        property: "properties/123",
         connectionId: f.connectionId,
       }),
     ).toHaveProperty("structuredContent");
@@ -2299,10 +2299,13 @@ describe("chat Google tools and durable write approvals", () => {
     );
     await expect(
       f.run("analytics_metadata_get", {
-        property_id: "123",
+        property: "properties/123",
         connectionId: f.connectionId,
       }),
-    ).rejects.toThrow("grant_denied");
+    ).resolves.toMatchObject({
+      isError: true,
+      message: "Google action unavailable or denied. Check Google settings before retrying.",
+    });
     expect(f.requests).toHaveLength(1);
     expect(f.values.size).toBe(0);
   });
@@ -4658,19 +4661,13 @@ it.each([
     name: "analytics_metadata_get",
     scope: "analytics.readonly",
     write: false,
-    args: { property_id: "123" },
+    args: { property: "properties/123" },
   },
   {
     name: "analytics_retention_get",
     scope: "analytics.edit",
     write: false,
     args: { property: "properties/123" },
-  },
-  {
-    name: "analytics_metadata_get",
-    scope: "analytics.edit",
-    write: false,
-    args: { property_id: "123" },
   },
   {
     name: "analytics_retention_update",
@@ -4779,10 +4776,7 @@ it.each([
       scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
     });
     expect(requests[0]!.resourceId).toBe("properties/123");
-    expect(
-      (await call(name === "analytics_metadata_get" ? { property_id: "456" } : { property: "properties/456" }))
-        .error.data.detail,
-    ).toBe("grant_denied");
+    expect((await call({ property: "properties/456" })).error.data.detail).toBe("grant_denied");
     await repo.bootstrapTenant("user_retention_foreign");
     const foreign = await rpcJson(
       await rpc(

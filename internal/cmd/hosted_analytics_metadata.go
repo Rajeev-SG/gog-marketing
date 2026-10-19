@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -9,21 +10,22 @@ import (
 var hostedAnalyticsMetadataPropertyID = regexp.MustCompile(`^[1-9][0-9]*$`)
 
 func hostedAnalyticsMetadataTools() []mcpToolSpec {
-	propertyID := mcp.WithString("property_id", mcp.Required(), mcp.Description("Positive numeric GA4 property ID"))
+	propertyID := mcp.WithString("property", mcp.Required(), mcp.Description("GA4 property in properties/ID form with a positive numeric ID"))
 	return []mcpToolSpec{
 		{
 			Name: "analytics_metadata_get", Service: "analytics", Risk: mcpRiskRead,
 			Description: "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly or analytics. No account-wide access, raw HTTP, alternate hosts or retries.",
 			Options:     []mcp.ToolOption{propertyID},
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
-				value, err := requireMCPString(req, "property_id")
+				value, err := requireMCPString(req, "property")
 				if err != nil {
 					return nil, err
 				}
-				if !hostedAnalyticsMetadataPropertyID.MatchString(value) {
-					return nil, usage("a positive numeric GA4 property_id is required")
+				propertyID := strings.TrimPrefix(value, "properties/")
+				if propertyID == value || !hostedAnalyticsMetadataPropertyID.MatchString(propertyID) {
+					return nil, usage("a canonical properties/ID selector with a positive numeric GA4 property ID is required")
 				}
-				return []string{"analytics", "metadata", "get", value}, nil
+				return []string{"analytics", "metadata", "get", propertyID}, nil
 			},
 		},
 	}

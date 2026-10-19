@@ -3,21 +3,22 @@ package runner
 import (
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 var positiveAnalyticsPropertyID = regexp.MustCompile(`^[1-9][0-9]*$`)
 
 func nativeAnalyticsMetadataBindings() []NativeToolBinding {
 	return []NativeToolBinding{{
-		Name: "analytics_metadata_get", Service: ServiceAnalytics, ResourceType: "property", ResourceArgument: "property_id",
+		Name: "analytics_metadata_get", Service: ServiceAnalytics, ResourceType: "property", ResourceArgument: "property",
 		hosts: []string{"analyticsdata.googleapis.com"}, scopes: []string{"analytics.readonly", "analytics"},
 		methods: []string{http.MethodGet}, paths: exactPaths("/v1beta/", ""),
 		argumentPaths: func(args map[string]any) ([]string, error) {
-			property, _ := args["property_id"].(string)
-			if !positiveAnalyticsPropertyID.MatchString(property) {
-				return nil, invalidf("invalid property ID")
+			property, _ := args["property"].(string)
+			if !canonicalPropertyID.MatchString(property) || !positiveAnalyticsPropertyID.MatchString(strings.TrimPrefix(property, "properties/")) {
+				return nil, invalidf("invalid property selector")
 			}
-			return []string{"/v1beta/properties/" + property + "/metadata"}, nil
+			return []string{"/v1beta/" + property + "/metadata"}, nil
 		},
 	}}
 }

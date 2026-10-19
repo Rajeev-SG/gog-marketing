@@ -8,7 +8,7 @@ import (
 
 func TestHostedAnalyticsMetadataArgs(t *testing.T) {
 	spec := findHostedAnalyticsMetadataTool(t, "analytics_metadata_get")
-	args, err := spec.BuildArgs(hostedAnalyticsMetadataTestRequest(map[string]any{"property_id": "123"}))
+	args, err := spec.BuildArgs(hostedAnalyticsMetadataTestRequest(map[string]any{"property": "properties/123"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,8 +19,8 @@ func TestHostedAnalyticsMetadataArgs(t *testing.T) {
 
 func TestHostedAnalyticsMetadataRejectsSelectors(t *testing.T) {
 	spec := findHostedAnalyticsMetadataTool(t, "analytics_metadata_get")
-	for _, property := range []string{"properties/123", "0", "-1", "abc", "123/../456"} {
-		if _, err := spec.BuildArgs(hostedAnalyticsMetadataTestRequest(map[string]any{"property_id": property})); err == nil {
+	for _, property := range []string{"123", "properties/0", "properties/-1", "properties/abc", "properties/123/../456"} {
+		if _, err := spec.BuildArgs(hostedAnalyticsMetadataTestRequest(map[string]any{"property": property})); err == nil {
 			t.Fatalf("property %q accepted", property)
 		}
 	}

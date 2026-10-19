@@ -7,7 +7,7 @@ import (
 
 func TestAnalyticsMetadataPolicy(t *testing.T) {
 	binding, ok := nativeBinding("analytics_metadata_get")
-	if !ok || binding.Write || binding.ResourceType != "property" || binding.ResourceArgument != "property_id" {
+	if !ok || binding.Write || binding.ResourceType != "property" || binding.ResourceArgument != "property" {
 		t.Fatalf("binding = %+v/%t", binding, ok)
 	}
 	if len(binding.methods) != 1 || binding.methods[0] != http.MethodGet {
@@ -19,18 +19,20 @@ func TestAnalyticsMetadataPolicy(t *testing.T) {
 	if fmtSprintStrings(binding.scopes) != fmtSprintStrings([]string{"analytics.readonly", "analytics"}) {
 		t.Fatalf("scopes = %#v", binding.scopes)
 	}
-	paths, err := binding.argumentPaths(map[string]any{"property_id": "123"})
+	paths, err := binding.argumentPaths(map[string]any{"property": "properties/123"})
 	if err != nil || fmtSprintStrings(paths) != fmtSprintStrings([]string{"/v1beta/properties/123/metadata"}) {
 		t.Fatalf("argumentPaths = %#v/%v", paths, err)
 	}
-	if _, err := binding.argumentPaths(map[string]any{"property_id": "properties/123"}); err == nil {
-		t.Fatal("foreign selector accepted")
+	for _, bad := range []string{"123", "properties/0", "properties/abc", "Properties/123"} {
+		if _, err := binding.argumentPaths(map[string]any{"property": bad}); err == nil {
+			t.Fatalf("foreign selector accepted: %s", bad)
+		}
 	}
 }
 
 func TestAnalyticsMetadataInvocationAndRequestGuard(t *testing.T) {
-	auth := ToolAuthorization{Service: ServiceAnalytics, AllowedTools: []string{"analytics_metadata_get"}, Scopes: []string{"https://www.googleapis.com/auth/analytics.readonly"}, Resource: &ResourceGrantInput{Enabled: true, Service: ServiceAnalytics, ResourceType: "property", ResourceID: "123"}}
-	invocation := ToolInvocation{Name: "analytics_metadata_get", Arguments: map[string]any{"property_id": "123"}, Authorization: auth}
+	auth := ToolAuthorization{Service: ServiceAnalytics, AllowedTools: []string{"analytics_metadata_get"}, Scopes: []string{"https://www.googleapis.com/auth/analytics.readonly"}, Resource: &ResourceGrantInput{Enabled: true, Service: ServiceAnalytics, ResourceType: "property", ResourceID: "properties/123"}}
+	invocation := ToolInvocation{Name: "analytics_metadata_get", Arguments: map[string]any{"property": "properties/123"}, Authorization: auth}
 	if err := validateToolInvocation(&invocation); err != nil {
 		t.Fatalf("valid invocation rejected: %v", err)
 	}
