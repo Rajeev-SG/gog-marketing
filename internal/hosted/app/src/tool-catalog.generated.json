@@ -6509,6 +6509,147 @@
     }
   },
   {
+    "name": "sheets_merge",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Merge cells in a Sheet range. The range must name its sheet explicitly, for example Sheet1!A1:B2. WARNING: merging can discard values other than each merged group's upper-left cell; this destructive operation requires a destructive grant and human approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "type": {
+            "default": "MERGE_ALL",
+            "enum": ["MERGE_ALL", "MERGE_COLUMNS", "MERGE_ROWS"],
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_merge"
+    }
+  },
+  {
+    "name": "sheets_unmerge",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Unmerge previously merged cells in a Sheet range. The range must name its sheet explicitly, for example Sheet1!A1:B2.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_unmerge"
+    }
+  },
+  {
+    "name": "sheets_resize_columns",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Resize columns to a fixed pixel width (width) or auto-fit them to their contents (auto=true); exactly one of width or auto=true must be provided. An unqualified column range (for example A:D) defaults to the first tab in the spreadsheet; that first-tab default is preserved.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto": {
+            "type": "boolean"
+          },
+          "columns": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "width": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["spreadsheet_id", "columns"],
+        "type": "object"
+      },
+      "name": "sheets_resize_columns"
+    }
+  },
+  {
+    "name": "sheets_resize_rows",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Resize rows to a fixed pixel height (height) or auto-fit them to their contents (auto=true); exactly one of height or auto=true must be provided. An unqualified row range (for example 1:10) defaults to the first tab in the spreadsheet; that first-tab default is preserved.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "auto": {
+            "type": "boolean"
+          },
+          "height": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rows": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "rows"],
+        "type": "object"
+      },
+      "name": "sheets_resize_rows"
+    }
+  },
+  {
     "name": "sheets_freeze",
     "service": "sheets",
     "resource_type": "file",

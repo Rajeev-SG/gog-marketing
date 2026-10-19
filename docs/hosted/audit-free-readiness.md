@@ -1,5 +1,28 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Sheets geometry writes candidate (19 October 2026)
+
+`sheets_resize_columns`, `sheets_resize_rows`, `sheets_merge` and
+`sheets_unmerge` reuse fixed typed native handlers. Resizing preserves positive
+int32 pixel sizes or auto-fit, qualified ranges, reversed spans and the native
+first-tab default for unqualified dimension ranges. Merge/unmerge require a
+sheet-qualified range; all three native merge types are supported. Merging
+requires destructive permission before any Google call because values may be
+lost; unmerging cannot restore values discarded by an earlier merge.
+
+Exact selected-file/tool write grants and existing durable argument approval
+remain mandatory. Only `spreadsheets` or `drive.file` are admitted; readonly
+scopes cannot mutate. Official Sheets v4 discovery checked 19 October 2026
+confirms these scopes and pixel-size int32 type. Metadata GET and batchUpdate
+POST stay bound to the selected spreadsheet. Each command emits one typed
+operation, never arbitrary batch JSON. Native replies are mutation summaries,
+not server read-back; auto-fit pixel sizes remain provider-determined.
+
+Candidate totals: **203 / 165 active tools**, **173 mapped native leaves**,
+**128 requiring method/scope/resource audit**. All four tools remain
+**unverified live** under #97; no deployment, real Google mutation, credential,
+OAuth or billing change is claimed.
+
 ## Native Sheets cell-metadata reads candidate (19 October 2026)
 
 `sheets_notes`, `sheets_links_get`, `sheets_read_format` and

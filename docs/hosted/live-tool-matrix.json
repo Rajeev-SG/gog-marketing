@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 199,
-  "active_tool_count": 161,
+  "total_catalog_count": 203,
+  "active_tool_count": 165,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -1620,6 +1620,24 @@
     },
     {
       "service": "sheets",
+      "tool": "sheets_merge",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
       "tool": "sheets_metadata",
       "write": false,
       "destructive_binding_flag": false,
@@ -1774,6 +1792,42 @@
     },
     {
       "service": "sheets",
+      "tool": "sheets_resize_columns",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_resize_rows",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
       "tool": "sheets_table_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -1804,6 +1858,24 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "sheets",
+      "tool": "sheets_unmerge",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "accepted_scopes": [
+        "drive.file",
+        "spreadsheets"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
