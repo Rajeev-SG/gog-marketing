@@ -7101,6 +7101,111 @@
     }
   },
   {
+    "name": "drive_permissions",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List one bounded page of permission metadata for an explicitly selected Drive file. Returns a next-page token when available; no content downloads, no automatic page traversal, and no access to other files. Returned hyperlinks are metadata only and are never fetched. Requires existing drive.file scope and exact tool/file grants; no write approval or new consent.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "max_results": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_token": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_permissions"
+    }
+  },
+  {
+    "name": "drive_audit_sharing",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a native Drive sharing audit for one explicitly selected Drive file only, optionally filtered to public-only or external-only results and with optional internal-domain classification overrides. No parent traversal, children enumeration, content downloads, or access beyond the granted file. Returned hyperlinks are metadata only and are never fetched. Requires existing drive.file scope and exact tool/file grants; no write approval or new consent.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "external_only": {
+            "type": "boolean"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "internal_domains": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "public_only": {
+            "type": "boolean"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_audit_sharing"
+    }
+  },
+  {
+    "name": "drive_audit_user",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a native Drive user sharing audit for one explicitly selected Drive file only, filtered locally to a single required user email. The email is a local filter, not impersonation. No parent traversal, children enumeration, content downloads, or access beyond the granted file. Returned hyperlinks are metadata only and are never fetched. Requires existing drive.file scope and exact tool/file grants; no write approval or new consent.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "user"],
+        "type": "object"
+      },
+      "name": "drive_audit_user"
+    }
+  },
+  {
     "name": "drive_comments_list",
     "service": "drive",
     "resource_type": "file",

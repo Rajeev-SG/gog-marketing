@@ -1,5 +1,25 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Selected-file Drive permission reads (20 October 2026)
+
+`drive_permissions`, `drive_audit_sharing` and `drive_audit_user` reuse native
+read handlers under existing `drive.file` scope and exact tool/file grants.
+Permission listing returns one bounded page (1–100 rows) plus a next-page token.
+Audits fetch metadata and traverse permission pages only for the selected file;
+no parent/tree scan is exposed. Repeated-page-token and cancellation handling
+remain native. Sharing supports public/external filters and internal-domain
+classification; user email is a local filter, never impersonation.
+
+Only exact selected-file metadata/permissions GET paths are admitted. Media,
+foreign files/hosts, child enumeration and mutations are denied. Returned links
+are metadata and are not followed. Chat reads need no write approval and recheck
+file authority after revocation; tenant isolation is unchanged.
+
+Candidate has 239 total/201 active tools, 360 native leaves/211 mapped and 102
+eligible missing. All 236 inherited tools remain unchanged. These are fixture
+results, not live Google acceptance; no deployment, consent or credentials were
+changed. Real acceptance remains #97.
+
 ## Apps Script deployment update (19 October 2026)
 
 `appscript_deployment_update` reuses native `appscript deployment-update` to
