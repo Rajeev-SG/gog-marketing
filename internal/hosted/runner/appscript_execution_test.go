@@ -132,3 +132,30 @@ func TestAppScriptExecutionRequestGuard(t *testing.T) {
 		}
 	}
 }
+
+func TestNativeAppScriptExecutionDoesNotRetryThroughGuard(t *testing.T) {
+	var effects atomic.Int64
+	harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.AppScript = func(ctx context.Context, _ string) (*script.Service, error) {
+			base := nativeFixtureTransport(func(req *http.Request) (*http.Response, error) {
+				effects.Add(1)
+				return &http.Response{StatusCode: http.StatusServiceUnavailable, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(`{"error":{"code":503,"message":"uncertain after effect"}}`)), Request: req}, nil
+			})
+			retry := googleapi.NewRetryTransport(base)
+			retry.MaxRetries5xx = 1
+
+			return script.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, retry)}))
+		}
+	})
+	body := nativeToolBody(t, func(req *Request) {
+		req.Tool = &ToolInvocation{
+			Name: "appscript_run", Arguments: map[string]any{"deployment_id": "deployment-1", "function": "mutate"},
+			Authorization: ToolAuthorization{Service: "appscript", AllowedTools: []string{"appscript_run"}, Scopes: []string{"https://www.googleapis.com/auth/userinfo.email"}, AllowWrite: true, AllowDestructive: true},
+		}
+	})
+
+	result := postExecute(t, harness.server, signInvocation(t, body, func(claims map[string]any) { claims["operation"] = OperationToolCall }), body)
+	if result.OK || effects.Load() != 1 {
+		t.Fatalf("uncertain execution repeated: effects=%d response=%s", effects.Load(), result.Body)
+	}
+}

@@ -7,6 +7,7 @@ import (
 
 	scriptapi "google.golang.org/api/script/v1"
 
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -144,6 +145,9 @@ func (c *AppScriptRunCmd) Run(ctx context.Context, flags *RootFlags) error {
 	if dryRunErr := dryRunExit(ctx, flags, "appscript.run", map[string]any{"deployment_id": scriptID, "function": function, "parameter_count": len(params), "dev_mode": c.DevMode}); dryRunErr != nil {
 		return dryRunErr
 	}
+
+	// Script effects cannot be assumed idempotent after an uncertain response.
+	ctx = googleapi.WithoutRetries(ctx)
 
 	svc, err := appScriptService(ctx, account)
 	if err != nil {

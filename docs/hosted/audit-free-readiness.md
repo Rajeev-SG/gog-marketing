@@ -28,8 +28,10 @@ shared **standard** Cloud project between the script and caller OAuth client,
 Apps Script API enablement and caller authorisation for every scope used by the
 entire script. Responses/parameters must use basic JSON data. These setup and
 scope requirements are not a blanket paid security-assessment requirement.
-Cancelling a request is not proof that remote script execution stopped; do not
-automatically retry a failed or uncertain write.
+Each run disables the existing production retry transport before service creation
+and retains that setting through guarded request contexts. A 503 after effects
+is surfaced after one attempt, never replayed automatically. Cancelling a request
+is not proof that remote execution stopped; do not retry an uncertain write.
 
 Candidate totals: **212 / 174 active tools**, **182 mapped native leaves**,
 **124 requiring method/scope/resource audit**. Signed runner/HTTP, D1 denial,
