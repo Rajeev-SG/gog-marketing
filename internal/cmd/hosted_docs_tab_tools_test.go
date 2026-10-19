@@ -26,7 +26,8 @@ func TestHostedDocsTabFixedArguments(t *testing.T) {
 	}{
 		{"docs_add_tab", map[string]any{"document_id": "selected-doc"}, []string{"docs", "tabs", "add", "--", "selected-doc"}},
 		{"docs_add_tab", map[string]any{"document_id": "selected-doc", "title": "--account=else", "index": 0, "parent_tab": "Parent & 子", "icon_emoji": "🚀"}, []string{"docs", "tabs", "add", "--title=--account=else", "--index=0", "--parent-tab=Parent & 子", "--icon-emoji=🚀", "--", "selected-doc"}},
-		{"docs_rename_tab", map[string]any{"document_id": "selected-doc", "tab": "Tab & 子", "title": "New title"}, []string{"docs", "tabs", "rename", "--tab=Tab & 子", "--title=New title", "--", "selected-doc"}},
+		{"docs_add_tab", map[string]any{"document_id": "selected-doc", "title": "Title 👩‍💻", "index": 0, "parent_tab": "Parent 👩‍💻", "icon_emoji": "👩‍💻"}, []string{"docs", "tabs", "add", "--title=Title 👩‍💻", "--index=0", "--parent-tab=Parent 👩‍💻", "--icon-emoji=👩‍💻", "--", "selected-doc"}},
+		{"docs_rename_tab", map[string]any{"document_id": "selected-doc", "tab": "Tab 👩‍💻", "title": "New title"}, []string{"docs", "tabs", "rename", "--tab=Tab 👩‍💻", "--title=New title", "--", "selected-doc"}},
 		{"docs_delete_tab", map[string]any{"document_id": "selected-doc", "tab": "tab-1"}, []string{"docs", "tabs", "delete", "--tab=tab-1", "--", "selected-doc"}},
 	} {
 		req := mcp.CallToolRequest{}

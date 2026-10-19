@@ -16,12 +16,19 @@ var (
 )
 
 // hostedLabelControlPattern rejects every Unicode C-category character
-// (control, format, surrogate, private use, unassigned) in tab labels.
+// (control, format, surrogate, private use, unassigned) in tab labels,
+// except the zero-width joiner, which Google Docs accepts in joined emoji.
 var hostedLabelControlPattern = regexp.MustCompile(`\p{C}`)
+
+// hostedLabelValidationCopy removes the permitted zero-width joiner before
+// checking the control-category contract. The caller preserves the original literal.
+func hostedLabelValidationCopy(label string) string {
+	return strings.ReplaceAll(label, "\u200d", "")
+}
 
 // validateHostedTabLabelArg enforces the shared label contract: the raw
 // argument must be an actual string (nil and every other type are rejected),
-// at most 512 UTF-8 bytes, and free of Unicode C-category characters.
+// at most 512 UTF-8 bytes, and free of Unicode C-category characters except U+200D.
 // Required labels must be non-empty after trimming; optional labels may be
 // empty (auto-title, root parent, no icon). The literal value is returned
 // unchanged so the flag value is preserved verbatim.
@@ -30,7 +37,7 @@ func validateHostedTabLabelArg(raw any, required bool) (string, error) {
 	if !ok {
 		return "", errHostedDocsTabLabel
 	}
-	if len(label) > 512 || hostedLabelControlPattern.MatchString(label) {
+	if len(label) > 512 || hostedLabelControlPattern.MatchString(hostedLabelValidationCopy(label)) {
 		return "", errHostedDocsTabLabel
 	}
 	if required && strings.TrimSpace(label) == "" {

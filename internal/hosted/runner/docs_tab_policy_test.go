@@ -170,9 +170,9 @@ func TestNativeDocsTabsPersistSelectedHierarchy(t *testing.T) {
 					t.Fatal(r.Body)
 				}
 			}
-			good("docs_add_tab", map[string]any{"document_id": "selected-doc", "title": "Added", "index": 0, "icon_emoji": "🚀"}, false)
+			good("docs_add_tab", map[string]any{"document_id": "selected-doc", "title": "Added", "index": 0, "icon_emoji": "👩‍💻"}, false)
 
-			if !slices.Equal(order[""], []string{"new-0", "t1", "t2"}) || props["new-0"].IconEmoji != "🚀" || props["t1"].Title != "Root" {
+			if !slices.Equal(order[""], []string{"new-0", "t1", "t2"}) || props["new-0"].IconEmoji != "👩‍💻" || props["t1"].Title != "Root" {
 				t.Fatal("root insertion failed or changed old tabs")
 			}
 
