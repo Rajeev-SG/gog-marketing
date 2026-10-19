@@ -58,6 +58,7 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedAdSenseAccountTools()...)
 	tools = append(tools, hostedSitesTools()...)
 	tools = append(tools, hostedFormsTools()...)
+	tools = append(tools, hostedFormsQuestionTools()...)
 	tools = append(tools, hostedFormsCreateTools()...)
 	tools = append(tools, hostedAppScriptProjectTools()...)
 	tools = append(tools, hostedAnalyticsInventoryTools()...)
@@ -156,6 +157,11 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	parser, cli, err := newParserWithWriters("Hosted typed execution", &output, io.Discard)
 	if err != nil {
 		return nil, ErrHostedToolExecution
+	}
+	if spec.Name == "forms_add_question" {
+		if configureErr := configureHostedFormsQuestionSlices(parser); configureErr != nil {
+			return nil, configureErr
+		}
 	}
 	command, err := parser.Parse(args)
 	if err != nil {

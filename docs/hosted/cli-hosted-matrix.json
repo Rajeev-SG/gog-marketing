@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 143,
-  "total_hosted_catalog_count": 181,
+  "hosted_tool_count": 146,
+  "total_hosted_catalog_count": 184,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 145,
-  "mapped_hosted_tool_count": 143,
+  "mapped_native_leaf_count": 151,
+  "mapped_hosted_tool_count": 146,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 145,
-    "missing_requires_audit": 156,
+    "implemented_hosted_unverified": 151,
+    "missing_requires_audit": 150,
     "product_limited": 20
   },
   "by_service": [
@@ -92,12 +92,12 @@
     {
       "service": "forms",
       "native_leaves": 17,
-      "hosted_tools": 7,
-      "mapped_native_leaves": 7,
+      "hosted_tools": 10,
+      "mapped_native_leaves": 13,
       "classifications": {
         "excluded": 1,
-        "implemented_hosted_unverified": 7,
-        "missing_requires_audit": 9
+        "implemented_hosted_unverified": 13,
+        "missing_requires_audit": 3
       }
     },
     {
@@ -2442,10 +2442,26 @@
       "service": "forms",
       "command": "add-question",
       "native_command": "gog forms add-question",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_add_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
@@ -2473,10 +2489,26 @@
       "service": "forms",
       "command": "delete-question",
       "native_command": "gog forms delete-question",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_delete_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
@@ -2507,10 +2539,25 @@
       "service": "forms",
       "command": "move-question",
       "native_command": "gog forms move-question",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_move_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
@@ -2541,28 +2588,75 @@
       "service": "forms",
       "command": "questions add",
       "native_command": "gog forms questions add",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_add_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
       "command": "questions delete",
       "native_command": "gog forms questions delete",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_delete_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
       "command": "questions move",
       "native_command": "gog forms questions move",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "forms_move_question",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "forms.body"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",

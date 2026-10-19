@@ -1,5 +1,33 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Forms questions candidate (19 October 2026)
+
+Three fixed-schema adapters reuse native `forms questions add/move/delete`
+(and map the existing direct aliases): `forms_add_question`,
+`forms_move_question` and `forms_delete_question`.
+Creation preserves text/paragraph/radio/checkbox/dropdown/scale/date/time,
+required answers, ordered choices, quiz answers/points, append/explicit position,
+description, scale labels/bounds and date/time flags. Pure native planning
+validates the input; no arbitrary item JSON or file/source input is accepted.
+Hosted choice/answer arrays retain literal commas and backslashes through a
+Forms-add-only parser setting; ordinary CLI comma parsing remains unchanged.
+
+Exact enabled form/tool write authority and existing approvals are required.
+Deletion additionally requires destructive permission before any Google call.
+Only `forms.body` or `drive.file` are admitted. GET selected-form preflight and
+POST selected `:batchUpdate` are pinned; moving is POST only. Official Forms
+v1 discovery checked 19 October 2026 confirms these scopes. No publishing,
+watch mutations, external/data-source operation or new OAuth scope is exposed.
+
+Signed native stateful fixtures decode SDK requests, persist each of the eight
+question types and grading, and check append, index zero, move and delete
+preservation plus authorization denials. D1/Clerk fixtures verify matching
+write/destructive snapshots and foreign/disabled resource/tool isolation.
+All three tools remain **unverified live** under #97; no product deployment,
+real Google mutation, permission, credential or billing change is claimed.
+Candidate totals: **184 / 146 active tools**, **151 mapped native leaves**,
+**150 requiring method/scope/resource audit**. #96 preclosed state is untouched.
+
 ## Explicit Slides edits candidate (19 October 2026)
 
 - `slides_replace_text` reuses native `slides replace-text`, preserving exactly
