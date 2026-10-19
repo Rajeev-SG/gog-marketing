@@ -1,5 +1,28 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Sheets named-range/note writes candidate (19 October 2026)
+
+`sheets_named_ranges_add`, `sheets_named_ranges_update`,
+`sheets_named_ranges_delete` and `sheets_update_note` reuse native typed handlers
+for one explicitly granted spreadsheet. Named-range ID/name resolution, partial
+name/range updates and native update readback are preserved. Sheet-qualified A1
+ranges are required for creation, range changes and note writes. Note text is
+inline and literal, including multiline/Unicode/whitespace and explicit empty
+clears; no note-file input or formula evaluation is introduced.
+
+Deletion and empty-note clearing require destructive permission before Google.
+Exact tool/file write grants and existing durable approval remain mandatory;
+only `spreadsheets` or `drive.file` are admitted. Fixed metadata GET and typed
+batchUpdate POST requests remain on the selected spreadsheet. These POSTs now
+inherit execution cancellation/deadlines. Native note mutation summaries are
+not server readback; no claim is made that their cell count measures an
+open-ended range's eventual extent.
+
+Candidate totals: **207 / 169 active tools**, **177 mapped native leaves**,
+**124 requiring method/scope/resource audit**. All four tools remain
+**unverified live** under #97; no deployment, real Google mutation, OAuth,
+credential or billing change is claimed.
+
 ## Native Sheets geometry writes candidate (19 October 2026)
 
 `sheets_resize_columns`, `sheets_resize_rows`, `sheets_merge` and
