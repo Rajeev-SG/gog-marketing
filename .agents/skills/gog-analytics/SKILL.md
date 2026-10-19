@@ -34,6 +34,7 @@ gog --readonly --account user@example.com analytics --help
 | `datastreams` | GA4 data streams |
 | `googleads-links` | GA4 Google Ads links |
 | `keyevents` | GA4 key events |
+| `metadata` | GA4 Analytics Data API metadata |
 | `properties` | GA4 properties |
 | `report` | Run a GA4 report (Analytics Data API) |
 | `retention` | GA4 retention settings |

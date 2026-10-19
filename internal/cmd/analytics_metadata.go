@@ -17,24 +17,24 @@ type AnalyticsMetadataGetCmd struct {
 	Property string `arg:"" name:"property" help:"GA4 numeric property ID"`
 }
 
-func analyticsMetadataPropertyPath(raw string) (string, string, error) {
+func analyticsMetadataPropertyPath(raw string) (string, error) {
 	property := strings.TrimSpace(raw)
 	property = strings.TrimPrefix(property, "properties/")
 	if property == "0" || property == "" {
-		return "", "", usage("a positive numeric GA4 property ID is required")
+		return "", usage("a positive numeric GA4 property ID is required")
 	}
 	if strings.Trim(property, "0123456789") != "" {
-		return "", "", usage("a positive numeric GA4 property ID is required")
+		return "", usage("a positive numeric GA4 property ID is required")
 	}
 	id, err := strconv.ParseUint(property, 10, 64)
-	if err != nil {
-		return "", "", usage("a positive numeric GA4 property ID is required")
+	if err != nil || id == 0 {
+		return "", usage("a positive numeric GA4 property ID is required")
 	}
-	return "properties/" + strconv.FormatUint(id, 10), "", nil
+	return "properties/" + strconv.FormatUint(id, 10), nil
 }
 
 func (c *AnalyticsMetadataGetCmd) Run(ctx context.Context, flags *RootFlags) error {
-	path, _, err := analyticsMetadataPropertyPath(c.Property)
+	path, err := analyticsMetadataPropertyPath(c.Property)
 	if err != nil {
 		return err
 	}

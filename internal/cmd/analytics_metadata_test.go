@@ -49,7 +49,7 @@ func TestAnalyticsMetadataGet(t *testing.T) {
 }
 
 func TestAnalyticsMetadataGetRejectsBeforeFactory(t *testing.T) {
-	for _, property := range []string{"0", "properties/0", "-1", "abc", "123/../456", "properties/123/", "999999999999999999999999"} {
+	for _, property := range []string{"0", "00", "properties/00", "properties/0", "-1", "abc", "123/../456", "properties/123/", "999999999999999999999999"} {
 		result := executeWithAnalyticsDataTestServiceFactory(t, []string{"--account=a@b.com", "analytics", "metadata", "get", property}, unexpectedAnalyticsDataTestService(t, "invalid metadata property"))
 		if result.err == nil {
 			t.Fatalf("property %q accepted", property)

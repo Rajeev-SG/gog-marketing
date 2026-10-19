@@ -1,5 +1,18 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## GA4 property metadata (19 October 2026)
+
+`analytics_metadata_get` uses the native metadata command and a fixed GET to
+`analyticsdata.googleapis.com/v1beta/properties/ID/metadata`. Hosted selectors
+use canonical `properties/ID` resource grants; native numeric IDs remain supported.
+Only `analytics.readonly` or API-supported `analytics` authorize this Data API
+read; `analytics.edit` alone does not. No write approval or new scopes are added.
+
+Candidate has 234 total/196 active tools, 358 native leaves/206 mapped and 105
+eligible missing. Catalogue and fixture evidence do not prove live Google
+acceptance; this operation remains unverified live under #97. No deployment,
+credential or consent changes.
+
 ## Native Slides lifecycle (19 October 2026)
 
 `slides_new_slide`, `slides_duplicate_slide`, `slides_move_slide` and
