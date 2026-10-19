@@ -28,12 +28,16 @@ gog --readonly --account user@example.com appscript --help
 
 | Command | Purpose |
 | --- | --- |
+| `bound-create` | Create an Apps Script project bound to an explicit parent file |
 | `content` | Get Apps Script project content |
 | `create` | Create an Apps Script project |
+| `deployment-create` | Create a deployment of an immutable version |
 | `deployments` | List deployments |
 | `get` | Get Apps Script project metadata |
 | `pull` | Pull an Apps Script project into a local directory |
+| `push` | Replace all project HEAD files from a local directory or inline JSON |
 | `run` | Run a deployed Apps Script function |
+| `version-create` | Create an immutable project version |
 | `versions` | List versions |
 
 Run `gog appscript <command> --help` for flags and `gog schema appscript <command> --json`

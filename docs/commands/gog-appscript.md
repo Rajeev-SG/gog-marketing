@@ -16,12 +16,16 @@ gog appscript (script,apps-script) <command> [flags]
 
 ## Subcommands
 
+- [gog appscript bound-create](gog-appscript-bound-create.md) - Create an Apps Script project bound to an explicit parent file
 - [gog appscript content](gog-appscript-content.md) - Get Apps Script project content
 - [gog appscript create](gog-appscript-create.md) - Create an Apps Script project
+- [gog appscript deployment-create](gog-appscript-deployment-create.md) - Create a deployment of an immutable version
 - [gog appscript deployments](gog-appscript-deployments.md) - List deployments
 - [gog appscript get](gog-appscript-get.md) - Get Apps Script project metadata
 - [gog appscript pull](gog-appscript-pull.md) - Pull an Apps Script project into a local directory
+- [gog appscript push](gog-appscript-push.md) - Replace all project HEAD files from a local directory or inline JSON
 - [gog appscript run](gog-appscript-run.md) - Run a deployed Apps Script function
+- [gog appscript version-create](gog-appscript-version-create.md) - Create an immutable project version
 - [gog appscript versions](gog-appscript-versions.md) - List versions
 
 ## Flags
