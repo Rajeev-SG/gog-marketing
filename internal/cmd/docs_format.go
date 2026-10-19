@@ -10,6 +10,7 @@ import (
 	"github.com/openclaw/gogcli/internal/docsedit"
 	"github.com/openclaw/gogcli/internal/docsformat"
 	"github.com/openclaw/gogcli/internal/docssed"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -77,6 +78,7 @@ const (
 )
 
 func (c *DocsFormatCmd) Run(ctx context.Context, flags *RootFlags) error {
+	ctx = googleapi.WithoutRetries(ctx)
 	id := strings.TrimSpace(c.DocID)
 	if id == "" {
 		return usage("empty docId")

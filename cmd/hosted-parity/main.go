@@ -84,6 +84,8 @@ var commandToHosted = map[string]string{
 	"slides skip-slide":                   "slides_skip_slide",
 	"slides unskip-slide":                 "slides_unskip_slide",
 	"slides read-slide":                   "slides_read_slide",
+	"docs page-layout":                    "docs_page_layout",
+	"docs section-columns":                "docs_section_columns",
 	"docs find-range":                     "docs_find_range",
 	"docs named-range create":             "docs_named_range_create",
 	"docs named-range delete":             "docs_named_range_delete",

@@ -6,14 +6,14 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 357 visible native leaves in the 11 active services
-and 188 active hosted tools (226 total). It maps 188 hosted tools across 198
+and 191 active hosted tools (229 total). It maps 191 hosted tools across 201
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 198 implemented/unverified hosted
-leaves, 112 reviewed eligible missing, 39 requiring resource/transport/billing
+also map direct and grouped aliases. Counts are: 201 implemented/unverified hosted
+leaves, 109 reviewed eligible missing, 39 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.

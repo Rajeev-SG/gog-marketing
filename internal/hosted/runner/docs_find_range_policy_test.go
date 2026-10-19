@@ -118,7 +118,7 @@ func TestNativeDocsFindRangeSelection(t *testing.T) {
 }
 
 func TestDocsNamedEditExactMethodGuard(t *testing.T) {
-	for _, name := range []string{"docs_find_range", "docs_named_range_create", "docs_named_range_delete", "docs_named_range_replace"} {
+	for _, name := range []string{"docs_find_range", "docs_named_range_create", "docs_named_range_delete", "docs_named_range_replace", "docs_format", "docs_page_layout", "docs_section_columns"} {
 		guard := nativeRequestGuard(&ToolInvocation{Name: name, Arguments: map[string]any{"document_id": "selected-doc"}, Authorization: ToolAuthorization{Resource: &ResourceGrantInput{ResourceID: "selected-doc"}}})
 
 		base := "https://docs.googleapis.com/v1/documents/selected-doc"
