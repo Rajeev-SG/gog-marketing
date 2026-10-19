@@ -1,5 +1,29 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Docs literal text editing (19 October 2026)
+
+`docs_insert`, `docs_delete`, `docs_clear` and `docs_find_replace` reuse native
+text-edit commands; `docs edit` is an equivalent find-replace leaf. Current
+ documents/drive.file write scopes, exact selected-document/tool grants and
+one-use exact-argument chat approval are retained. Delete, clear and empty
+replacement require destructive authority before any Google request.
+
+Insert/delete preserve native UTF-16 index or literal-anchor selection,
+ambiguity, occurrence, tab/segment behavior and zero segment indexes. Native
+revision controls remain where available (anchor/first operations), not invented
+for explicit-index or replace-all operations. Find-replace uses plain text only,
+defaults to all matches and can select first/tab/case. No files, stdin, markdown,
+persisted batch or arbitrary sed input is exposed.
+
+All four commands are single-attempt. Clear retains default-body/final-newline
+and whitespace-only no-op behavior, using one typed API write rather than sed's
+independent retry loop. It adds a revision precondition when Google supplies one.
+Cancellation is not proof a remote mutation stopped.
+
+Candidate226total/188active tools,357native leaves/198mapped,112eligible
+missing. All four remain fixture-tested/unverified live#97; no real documents,
+OAuth, permissions, credentials, billing or deployment changed.
+
 ## API-only Tasks list lifecycle and moving (19 October 2026)
 
 Typed native CLI, MCP and chat now expose tasks_lists_get/rename/delete and

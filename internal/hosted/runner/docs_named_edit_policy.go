@@ -31,8 +31,8 @@ func nativeDocsNamedEditBindings() []NativeToolBinding {
 }
 
 func validateNativeDocsRangeClear(invocation *ToolInvocation) error {
-	if invocation.Name == "docs_named_range_replace" && invocation.Arguments["text"] == "" && !invocation.Authorization.AllowDestructive {
-		return invalidf("clearing named-range text requires destructive permission")
+	if ((invocation.Name == "docs_named_range_replace" && invocation.Arguments["text"] == "") || (invocation.Name == "docs_find_replace" && invocation.Arguments["replacement"] == "")) && !invocation.Authorization.AllowDestructive {
+		return invalidf("clearing document text requires destructive permission")
 	}
 
 	return nil

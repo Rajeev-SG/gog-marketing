@@ -6,14 +6,14 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 357 visible native leaves in the 11 active services
-and 184 active hosted tools (222 total). It maps 184 hosted tools across 193
+and 188 active hosted tools (226 total). It maps 188 hosted tools across 198
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 193 implemented/unverified hosted
-leaves, 117 reviewed eligible missing, 39 requiring resource/transport/billing
+also map direct and grouped aliases. Counts are: 198 implemented/unverified hosted
+leaves, 112 reviewed eligible missing, 39 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.
@@ -61,13 +61,13 @@ The canonical evidence is `cmd/hosted-parity/capability-review.json`, embedded b
 the generator and checked against the actual Kong command schema, native Run
 receivers, approved scope catalogue and saved official method/scope evidence.
 It reviews all **164** previously unmapped, non-deferred leaves at source
-`288ba8a3741958150f1b4df78518cd4143c7712c`; one Forms read alias and four Docs range/named-range operations are now mapped,
-leaving **159** currently unmapped, explicitly classified rows. No row is silently treated as a paid
+`288ba8a3741958150f1b4df78518cd4143c7712c`; one Forms read alias, four Docs range/named-range operations and five Docs text-edit leaves are now mapped,
+leaving **154** currently unmapped, explicitly classified rows. No row is silently treated as a paid
 assessment requirement.
 
 **153 reviewed rows have an approved-scope variant with no paid assessment
 barrier identified.** At the original review snapshot, 121 were
-fixed-adapter candidates (four Docs operations are now implemented), 30 need resource/transport/billing design, one remains
+fixed-adapter candidates (nine Docs operations are now implemented), 30 need resource/transport/billing design, one remains
 excluded by owner policy, and one is the already-covered Forms alias. Nine further
 Connected Sheets rows require additional `bigquery.readonly` authorization, not
 currently in the hosted allowlist; no paid-assessment classification is assumed.

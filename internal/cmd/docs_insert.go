@@ -10,6 +10,7 @@ import (
 
 	"github.com/openclaw/gogcli/internal/docsedit"
 	"github.com/openclaw/gogcli/internal/docsmarkdown"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -91,6 +92,8 @@ func (c *DocsInsertCmd) Run(ctx context.Context, kctx *kong.Context, flags *Root
 	if batchErr := validateDocsBatchTarget(ctx, flags, c.Batch, docID); batchErr != nil {
 		return batchErr
 	}
+
+	ctx = googleapi.WithoutRetries(ctx)
 
 	svc, err := requireDocsService(ctx, flags)
 	if err != nil {

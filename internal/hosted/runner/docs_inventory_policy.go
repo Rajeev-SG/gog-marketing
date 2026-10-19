@@ -19,7 +19,7 @@ func nativeDocsInventoryBindings() []NativeToolBinding {
 		bindings = append(bindings, nativeDocsInventoryBinding(name))
 	}
 
-	return append(bindings, nativeDocsNamedEditBindings()...)
+	return append(append(bindings, nativeDocsNamedEditBindings()...), nativeDocsTextEditBindings()...)
 }
 
 func nativeDocsInventoryBinding(name string) NativeToolBinding {

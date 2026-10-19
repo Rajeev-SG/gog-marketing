@@ -2158,6 +2158,18 @@ describe("chat Google tools and durable write approvals", () => {
   });
 
   it.each([
+    { name: "docs_insert", args: { document_id: "selected-doc", text: "Hi", index: 1 } },
+    { name: "docs_delete", args: { document_id: "selected-doc", start: 1, end: 3 } },
+    { name: "docs_clear", args: { document_id: "selected-doc" } },
+    {
+      name: "docs_find_replace",
+      args: { document_id: "selected-doc", find: "a", replacement: "aa" },
+    },
+    {
+      name: "docs_find_replace",
+      args: { document_id: "selected-doc", find: "a", replacement: "" },
+    },
+
     {
       name: "docs_named_range_create",
       args: { document_id: "selected-doc", name: "Named", start: 1, end: 3 },
@@ -3213,6 +3225,47 @@ it.each(slidesReadToolCases)(
 );
 
 const workspaceWriteToolCases = [
+  {
+    toolName: "docs_insert",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", text: "Hello", index: 1 },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_delete",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", start: 1, end: 3 },
+    result: { updated: true },
+    allowDestructive: true,
+  },
+  {
+    toolName: "docs_clear",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck" },
+    result: { updated: true },
+    allowDestructive: true,
+  },
+  {
+    toolName: "docs_find_replace",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", find: "Old", replacement: "New", first: true },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_find_replace",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", find: "Old", replacement: "" },
+    result: { updated: true },
+    allowDestructive: true,
+  },
+
   {
     toolName: "docs_named_range_replace",
     service: "docs",
