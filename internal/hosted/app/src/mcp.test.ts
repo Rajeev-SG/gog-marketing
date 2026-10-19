@@ -2481,7 +2481,7 @@ it("routes GA4 account inventory and gated property listing without granting ret
   expect(requests).toHaveLength(2);
 });
 
-it.each([
+const docsReadToolNames = [
   "docs_info",
   "docs_list_tabs",
   "docs_structure",
@@ -2490,170 +2490,180 @@ it.each([
   "docs_tables_list",
   "docs_images_list",
   "docs_named_range_list",
-])("docs tool %s enforces per-file grants and tenant scoping", async (toolName) => {
-  const requests: ToolExecutionRequest[] = [];
-  const env = await createEnv({
-    __testToolRunner: {
-      async execute(request) {
-        requests.push(request);
-        return { status: "ok", result: { documentId: "selected-doc" } };
-      },
-    },
-  });
-  const repo = new HostedRepository(env.DB as unknown as Database);
-  const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+];
 
-  // Owner tenant/connection (no file grant yet).
-  const tenant = await repo.bootstrapTenant("user_docs_files");
-  const connection = await repo.createConnection(
-    tenant.id,
-    "google-user_docs_files",
-    "user_docs_files@google.example.test",
-    "Test account",
-    "[]",
-  );
-  const encryptFor = async (tId: string, cId: string): Promise<void> => {
-    const credential: StoredGoogleCredential = {
-      access_token: ACCESS_TOKEN,
-      refresh_token: REFRESH_TOKEN,
-      token_type: "Bearer",
-      expiry: new Date(Date.now() + 3_600_000).toISOString(),
-      granted_scopes: ["openid", "https://www.googleapis.com/auth/documents.readonly"],
-    };
-    const encrypted = await cipher.encrypt(tId, cId, credential);
-    await repo.upsertCredential({
-      tenantId: tId,
-      connectionId: cId,
-      ciphertext: encrypted.ciphertext,
-      nonce: encrypted.nonce,
-      keyVersion: Number(encrypted.keyVersion),
+it.each(docsReadToolNames)(
+  "docs tool %s enforces per-file grants and tenant scoping",
+  async (toolName) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { documentId: "selected-doc" } };
+        },
+      },
     });
-  };
-  await encryptFor(tenant.id, connection.id);
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
 
-  // Foreign tenant with its own connection and a granted file ("other-doc").
-  const otherTenant = await repo.bootstrapTenant("user_docs_other");
-  const otherConnection = await repo.createConnection(
-    otherTenant.id,
-    "google-user_docs_other",
-    "user_docs_other@google.example.test",
-    "Other account",
-    "[]",
-  );
-  await encryptFor(otherTenant.id, otherConnection.id);
-  await repo.upsertResourceGrant(
-    otherTenant.id,
-    otherConnection.id,
-    "docs",
-    "other-doc",
-    "file",
-    "Other doc",
-    true,
-    "{}",
-  );
-  await repo.saveToolGrants(otherTenant.id, otherConnection.id, [
-    {
-      service: "docs",
-      toolName: "docs_info",
-      enabled: true,
-      allowDestructive: false,
-      allowBillable: false,
-    },
-    {
-      service: "docs",
-      toolName: "docs_list_tabs",
-      enabled: true,
-      allowDestructive: false,
-      allowBillable: false,
-    },
-  ]);
-
-  const token = await tokenFor("user_docs_files");
-  const call = (overrides: Record<string, unknown> = {}) =>
-    rpc(
-      env,
-      "tools/call",
-      {
-        name: toolName,
-        arguments: { document_id: "selected-doc", ...overrides },
-      },
-      { token },
+    // Owner tenant/connection (no file grant yet).
+    const tenant = await repo.bootstrapTenant("user_docs_files");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-user_docs_files",
+      "user_docs_files@google.example.test",
+      "Test account",
+      "[]",
     );
-  const readResult = async (response: Response | Promise<Response>) => rpcJson(await response);
+    const encryptFor = async (tId: string, cId: string): Promise<void> => {
+      const credential: StoredGoogleCredential = {
+        access_token: ACCESS_TOKEN,
+        refresh_token: REFRESH_TOKEN,
+        token_type: "Bearer",
+        expiry: new Date(Date.now() + 3_600_000).toISOString(),
+        granted_scopes: ["openid", "https://www.googleapis.com/auth/documents.readonly"],
+      };
+      const encrypted = await cipher.encrypt(tId, cId, credential);
+      await repo.upsertCredential({
+        tenantId: tId,
+        connectionId: cId,
+        ciphertext: encrypted.ciphertext,
+        nonce: encrypted.nonce,
+        keyVersion: Number(encrypted.keyVersion),
+      });
+    };
+    await encryptFor(tenant.id, connection.id);
 
-  // 1) Tool grant saved, but selected file has no grant yet: deny, zero dispatches.
-  await repo.saveToolGrants(tenant.id, connection.id, [
-    { service: "docs", toolName, enabled: true, allowDestructive: false, allowBillable: false },
-  ]);
-  expect(requests).toHaveLength(0);
-  const beforeGrant = await readResult(await call());
-  expect(beforeGrant.error.data.detail).toBe("grant_denied");
-  expect(requests).toHaveLength(0);
-
-  // 2) Enable the docs file resource for selected-doc: call succeeds.
-  await repo.upsertResourceGrant(
-    tenant.id,
-    connection.id,
-    "docs",
-    "selected-doc",
-    "file",
-    "Selected doc",
-    true,
-    "{}",
-  );
-  const ok = await readResult(await call());
-  expect(ok.result.structuredContent).toEqual({ documentId: "selected-doc" });
-  expect(requests).toHaveLength(1);
-  expect(requests[0]!.resourceType).toBe("file");
-  expect(requests[0]!.resourceId).toBe("selected-doc");
-  expect(requests[0]!.nativeTool!.name).toBe(toolName);
-  expect(requests[0]!.nativeTool!.arguments).toEqual({ document_id: "selected-doc" });
-  expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
-  expect(requests[0]!.tenantId).toBe(tenant.id);
-  expect(requests[0]!.connectionId).toBe(connection.id);
-
-  // 3) Foreign document id: deny by file grant.
-  const foreignBefore = requests.length;
-  const foreign = await readResult(
-    rpc(env, "tools/call", { name: toolName, arguments: { document_id: "other-doc" } }, { token }),
-  );
-  expect(foreign.error.data.detail).toBe("grant_denied");
-  expect(requests.length).toBe(foreignBefore);
-
-  // 4) Request pinned to the other tenant's connection: policy denial, unchanged requests.
-  const crossBefore = requests.length;
-  const cross = await readResult(
-    rpc(
-      env,
-      "tools/call",
+    // Foreign tenant with its own connection and a granted file ("other-doc").
+    const otherTenant = await repo.bootstrapTenant("user_docs_other");
+    const otherConnection = await repo.createConnection(
+      otherTenant.id,
+      "google-user_docs_other",
+      "user_docs_other@google.example.test",
+      "Other account",
+      "[]",
+    );
+    await encryptFor(otherTenant.id, otherConnection.id);
+    await repo.upsertResourceGrant(
+      otherTenant.id,
+      otherConnection.id,
+      "docs",
+      "other-doc",
+      "file",
+      "Other doc",
+      true,
+      "{}",
+    );
+    await repo.saveToolGrants(otherTenant.id, otherConnection.id, [
       {
-        name: toolName,
-        arguments: { document_id: "selected-doc" },
-        connectionId: otherConnection.id,
+        service: "docs",
+        toolName: "docs_info",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
       },
-      { token },
-    ),
-  );
-  expect(cross.error.data.reason).toBe("policy_denied");
-  expect(JSON.stringify(cross)).toMatch(/grant_denied|connection_not_found/);
-  expect(requests.length).toBe(crossBefore);
+      {
+        service: "docs",
+        toolName: "docs_list_tabs",
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
 
-  // 5) Disable own file grant: deny again before the runner is reached.
-  await repo.upsertResourceGrant(
-    tenant.id,
-    connection.id,
-    "docs",
-    "selected-doc",
-    "file",
-    "Selected doc",
-    false,
-    "{}",
-  );
-  const disabledBefore = requests.length;
-  const disabled = await readResult(await call());
-  expect(disabled.error.data.detail).toBe("grant_denied");
-  expect(requests.length).toBe(disabledBefore);
-});
+    const token = await tokenFor("user_docs_files");
+    const call = (overrides: Record<string, unknown> = {}) =>
+      rpc(
+        env,
+        "tools/call",
+        {
+          name: toolName,
+          arguments: { document_id: "selected-doc", ...overrides },
+        },
+        { token },
+      );
+    const readResult = async (response: Response | Promise<Response>) => rpcJson(await response);
+
+    // 1) Tool grant saved, but selected file has no grant yet: deny, zero dispatches.
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      { service: "docs", toolName, enabled: true, allowDestructive: false, allowBillable: false },
+    ]);
+    expect(requests).toHaveLength(0);
+    const beforeGrant = await readResult(await call());
+    expect(beforeGrant.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+
+    // 2) Enable the docs file resource for selected-doc: call succeeds.
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      "docs",
+      "selected-doc",
+      "file",
+      "Selected doc",
+      true,
+      "{}",
+    );
+    const ok = await readResult(await call());
+    expect(ok.result.structuredContent).toEqual({ documentId: "selected-doc" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.resourceType).toBe("file");
+    expect(requests[0]!.resourceId).toBe("selected-doc");
+    expect(requests[0]!.nativeTool!.name).toBe(toolName);
+    expect(requests[0]!.nativeTool!.arguments).toEqual({ document_id: "selected-doc" });
+    expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(requests[0]!.tenantId).toBe(tenant.id);
+    expect(requests[0]!.connectionId).toBe(connection.id);
+
+    // 3) Foreign document id: deny by file grant.
+    const foreignBefore = requests.length;
+    const foreign = await readResult(
+      rpc(
+        env,
+        "tools/call",
+        { name: toolName, arguments: { document_id: "other-doc" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests.length).toBe(foreignBefore);
+
+    // 4) Request pinned to the other tenant's connection: policy denial, unchanged requests.
+    const crossBefore = requests.length;
+    const cross = await readResult(
+      rpc(
+        env,
+        "tools/call",
+        {
+          name: toolName,
+          arguments: { document_id: "selected-doc" },
+          connectionId: otherConnection.id,
+        },
+        { token },
+      ),
+    );
+    expect(cross.error.data.reason).toBe("policy_denied");
+    expect(JSON.stringify(cross)).toMatch(/grant_denied|connection_not_found/);
+    expect(requests.length).toBe(crossBefore);
+
+    // 5) Disable own file grant: deny again before the runner is reached.
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      "docs",
+      "selected-doc",
+      "file",
+      "Selected doc",
+      false,
+      "{}",
+    );
+    const disabledBefore = requests.length;
+    const disabled = await readResult(await call());
+    expect(disabled.error.data.detail).toBe("grant_denied");
+    expect(requests.length).toBe(disabledBefore);
+  },
+);
 
 it.each([
   {

@@ -1,5 +1,28 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Docs structure inventory candidate (19 October 2026)
+
+Six fixed-schema reads reuse native `docs structure`, `headings list`,
+`paragraphs list`, `tables list`, `images list` and `named-range list`:
+`docs_structure`, `docs_headings_list`, `docs_paragraphs_list`,
+`docs_tables_list`, `docs_images_list` and `docs_named_range_list`.
+Only the selected `document_id` is exposed. Native default document views
+are preserved; optional tab/all-tabs selectors and full CLI-option parity are
+not claimed. Existing metadata and tab-list tool behavior is unchanged.
+
+Each uses GET `/v1/documents/<selected-id>` with exact account/tool/file grants.
+Official Docs v1 discovery checked 19 October 2026 admits
+`documents.readonly`, `documents` or `drive.file`; broader Drive scopes are not
+admitted. There are no content mutations, image downloads, external fetches or
+automatic grants. Signed native fixtures exercise real structured outputs,
+all three scopes and permission/tenant denials; D1/Clerk cases cover each tool.
+
+Candidate totals: **175 tools / 137 active**, **139 mapped native leaves**,
+**162 leaves requiring method/scope/resource audit**. All six tools remain
+**unverified live** under #97. Missing-functionality scope #96 is not complete
+despite its pre-existing closed state. No product deployment, consent,
+credentials, Google grants, billing settings or ordinary CLI behavior changed.
+
 ## Selected-tab layout candidate (18 October 2026)
 
 - `sheets_freeze` reuses native `sheets freeze` with an explicitly required sheet
@@ -67,25 +90,16 @@ billing configuration or ordinary CLI behavior changed. #96/#97 remain open.
 - `docs_list_tabs` reuses native `docs list-tabs` (also `docs tabs list`): one GET
   of the selected document with `includeTabsContent=true`; output is tab IDs,
   titles, indexes and hierarchy, not a new arbitrary API proxy.
-- `docs_structure`, `docs_headings_list`, `docs_paragraphs_list`,
-  `docs_tables_list` and `docs_images_list` reuse native default-document
-  `structure`, `headings list`, `paragraphs list`, `tables list` and
-  `images list` reads for the selected document.
-- `docs_named_range_list` reuses native `docs named-range list` through the
-  reviewed hyphen naming bridge.
 
-All eight reads require an exact enabled Docs tool grant plus the enabled
-selected file grant and report the default document view only; they do not
-claim all-tabs expansion or full CLI-option parity. Official Docs v1 discovery
-checked 18 October 2026 admits
+Both reads require an exact enabled Docs tool grant plus the enabled selected
+file grant. Official Docs v1 discovery checked 18 October 2026 admits
 `documents.readonly`, `documents` or `drive.file`; broader Drive scopes are not
 admitted. Signed transport fixtures and D1 MCP permission tests cover selected
-files, disabled/foreign resources, foreign tenants and scope/tool denials for
-all eight tools.
-The candidate has **175 total / 137 active tools**, mapping **139 native leaves**;
-**162 leaves require method/scope/resource audit**. All six new Docs tools are
-**unverified live** under #97. No deployment, consent, credentials, grants or
-ordinary CLI behavior changed. #96/#97 remain open.
+files, disabled/foreign resources, foreign tenants and scope/tool denials.
+The candidate has **159 total / 121 active tools**, mapping **123 native leaves**;
+**178 leaves require method/scope/resource audit**. Both tools are **unverified
+live** under #97. No deployment, consent, credentials, grants or ordinary CLI
+behavior changed. #96/#97 remain open.
 
 ## GA4 account inventory candidate (18 October 2026)
 

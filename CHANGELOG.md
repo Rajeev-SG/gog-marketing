@@ -2,13 +2,15 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add selected-document structure, headings, paragraphs, tables, images and named-range inventories through existing typed read handlers and exact tool/file grants. Fixed default views only; no new OAuth scopes, mutations, downloads or automatic grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: add explicitly selected-tab row/column freeze-unfreeze and tab reordering through native handlers, exact write-tool/file grants and existing approval controls. Zero values remain literal, unspecified freeze fields stay unchanged, and no duplication or arbitrary batch requests are exposed. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Sheets: add selected-spreadsheet chart, named-range, table, banding and conditional-format inventories through existing typed read handlers and exact tool/file grants. No mutations, arbitrary field masks or OAuth changes; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Drive/Forms: add selected-file comment listing/retrieval and selected-form watch listing through native read handlers, exact tool/file grants and method-specific scopes. No broad Drive access, comment mutations or watch creation/renewal; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
-- Hosted Docs: add selected-document metadata, tab inventory, structure, heading, paragraph, table, image and named-range reads through existing typed handlers and exact read-tool/file grants. Default document view only; no all-tabs expansion, CLI-option parity, new OAuth scopes, content mutations or implicit resource permissions. Fixture-tested; all six new tools remain live-verification pending. (#96, #97, thanks @Rajeev-SG)
+- Hosted Docs: add selected-document metadata and tab-inventory reads through existing typed handlers and exact read-tool/file grants. No new OAuth scopes, content mutations or implicit resource permissions; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted GA4: add account-summary discovery under an exact account-level tool grant and property inventory under one selected account grant. Fixed parent filters, native pagination and signed request guards preserve tenant/resource isolation; discovered properties remain ungranted. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 

@@ -15,10 +15,12 @@ func nativeDocsInventoryBindings() []NativeToolBinding {
 		"docs_paragraphs_list", "docs_tables_list", "docs_images_list",
 		"docs_named_range_list",
 	}
+
 	bindings := make([]NativeToolBinding, 0, len(names))
 	for _, name := range names {
 		bindings = append(bindings, nativeDocsInventoryBinding(name))
 	}
+
 	return bindings
 }
 

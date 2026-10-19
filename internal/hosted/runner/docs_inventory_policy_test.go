@@ -217,6 +217,7 @@ func TestNativeDocsInventorySignedExecution(t *testing.T) {
 				if !ok.OK {
 					t.Fatalf("%s under %s failed: %s", test.tool, scope, ok.Body)
 				}
+
 				if scope == "documents.readonly" {
 					t.Logf("%s result: %s", test.tool, ok.Result)
 				}
@@ -231,6 +232,7 @@ func TestNativeDocsInventorySignedExecution(t *testing.T) {
 				if err := json.Unmarshal(ok.Result, &structured); err != nil {
 					t.Fatalf("%s result was not structured: %v", test.tool, err)
 				}
+
 				if len(structured) == 0 {
 					t.Fatalf("%s structured output was empty", test.tool)
 				}
