@@ -102,7 +102,7 @@ func (c *SheetsUpdateNoteCmd) Run(ctx context.Context, flags *RootFlags) error {
 		},
 	}
 
-	if _, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, batchReq).Do(); err != nil {
+	if _, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, batchReq).Context(ctx).Do(); err != nil {
 		return fmt.Errorf("update note: %w", err)
 	}
 

@@ -194,7 +194,7 @@ func (c *SheetsNamedRangesAddCmd) Run(ctx context.Context, flags *RootFlags) err
 		},
 	}
 
-	resp, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Do()
+	resp, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -306,7 +306,7 @@ func (c *SheetsNamedRangesUpdateCmd) Run(ctx context.Context, flags *RootFlags) 
 		},
 	}
 
-	if _, batchErr := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Do(); batchErr != nil {
+	if _, batchErr := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Context(ctx).Do(); batchErr != nil {
 		return batchErr
 	}
 
@@ -387,7 +387,7 @@ func (c *SheetsNamedRangesDeleteCmd) Run(ctx context.Context, flags *RootFlags) 
 		},
 	}
 
-	if _, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Do(); err != nil {
+	if _, err := svc.Spreadsheets.BatchUpdate(spreadsheetID, req).Context(ctx).Do(); err != nil {
 		return err
 	}
 

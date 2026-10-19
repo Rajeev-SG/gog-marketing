@@ -6650,6 +6650,138 @@
     }
   },
   {
+    "name": "sheets_named_ranges_add",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a named range in one explicitly granted spreadsheet using a sheet-qualified A1 range and exact write-tool grant with human approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "name", "range"],
+        "type": "object"
+      },
+      "name": "sheets_named_ranges_add"
+    }
+  },
+  {
+    "name": "sheets_named_ranges_update",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update a named range by exact ID or case-insensitive name in one explicitly granted spreadsheet. Provide a new name, sheet-qualified range, or both; omitted fields stay unchanged. Requires write-tool grant and human approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "name_or_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "name_or_id"],
+        "type": "object"
+      },
+      "name": "sheets_named_ranges_update"
+    }
+  },
+  {
+    "name": "sheets_named_ranges_delete",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a named-range definition by exact ID or case-insensitive name in one explicitly granted spreadsheet. Requires destructive permission, write-tool grant and human approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name_or_id": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "name_or_id"],
+        "type": "object"
+      },
+      "name": "sheets_named_ranges_delete"
+    }
+  },
+  {
+    "name": "sheets_update_note",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Set literal inline notes on a sheet-qualified range in one explicitly granted spreadsheet. Empty notes clear and additionally require destructive permission. No note-file input or formula evaluation; returns the native mutation summary, not server readback. Requires write-tool grant and human approval.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "note": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "note"],
+        "type": "object"
+      },
+      "name": "sheets_update_note"
+    }
+  },
+  {
     "name": "sheets_freeze",
     "service": "sheets",
     "resource_type": "file",
