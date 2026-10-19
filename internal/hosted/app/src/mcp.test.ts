@@ -3394,6 +3394,30 @@ it.each([
     args: { spreadsheet_id: "selected-resource", table_id: "table-1" },
   },
   {
+    toolName: "sheets_notes",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", range: "Sheet1!B3:B4" },
+  },
+  {
+    toolName: "sheets_links_get",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", range: "Sheet1!B3:B4" },
+  },
+  {
+    toolName: "sheets_read_format",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", range: "Sheet1!B3:B4" },
+  },
+  {
+    toolName: "sheets_validation_get",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", range: "Sheet1!B3:B4" },
+  },
+  {
     toolName: "sheets_chart_list",
     service: "sheets",
     resourceArgument: "spreadsheet_id",

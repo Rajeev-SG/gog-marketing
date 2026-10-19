@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 347 {
 		t.Fatalf("native leaf count = %d, want 347", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 157 || matrix.TotalHostedCatalogCount != 195 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 157/195/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 161 || matrix.TotalHostedCatalogCount != 199 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 161/199/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 165 || matrix.MappedHostedToolCount != 157 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 165/157", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 169 || matrix.MappedHostedToolCount != 161 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 169/161", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 29, "appscript": 5, "bigquery": 6, "docs": 17, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 20, "slides": 9, "tagmanager": 34, "tasks": 11} {
+	for service, count := range map[string]int{"analytics": 29, "appscript": 5, "bigquery": 6, "docs": 17, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 24, "slides": 9, "tagmanager": 34, "tasks": 11} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {

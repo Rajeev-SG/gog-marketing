@@ -58,6 +58,7 @@ func (c *SheetsReadFormatCmd) Run(ctx context.Context, flags *RootFlags) error {
 		Ranges(rangeSpec).
 		IncludeGridData(true).
 		Fields(googleapi.Field(fmt.Sprintf("sheets(properties(title),data(startRow,startColumn,rowData(values(%s,formattedValue))))", source))).
+		Context(ctx).
 		Do()
 	if err != nil {
 		return err

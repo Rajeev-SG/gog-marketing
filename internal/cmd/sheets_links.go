@@ -45,6 +45,7 @@ func (c *SheetsLinksGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 		Ranges(rangeSpec).
 		IncludeGridData(true).
 		Fields("sheets(properties(title),data(startRow,startColumn,rowData(values(hyperlink,formattedValue,userEnteredFormat(textFormat(link(uri))),textFormatRuns(format(link(uri)))))))").
+		Context(ctx).
 		Do()
 	if err != nil {
 		return err
