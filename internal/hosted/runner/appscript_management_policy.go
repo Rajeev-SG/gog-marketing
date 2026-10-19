@@ -34,6 +34,7 @@ func nativeAppScriptManagementBindings() []NativeToolBinding {
 			if !fileResourceID.MatchString(scriptID) {
 				return nil, invalidf("invalid script project ID")
 			}
+
 			deploymentID, _ := args["deployment_id"].(string)
 			if !fileResourceID.MatchString(deploymentID) {
 				return nil, invalidf("invalid deployment ID")

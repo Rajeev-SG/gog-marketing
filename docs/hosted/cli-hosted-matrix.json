@@ -21,18 +21,18 @@
     ],
     "prior_deferred_excluded": true
   },
-  "native_leaf_count": 358,
-  "hosted_tool_count": 196,
-  "total_hosted_catalog_count": 234,
+  "native_leaf_count": 359,
+  "hosted_tool_count": 197,
+  "total_hosted_catalog_count": 235,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 206,
-  "mapped_hosted_tool_count": 196,
+  "mapped_native_leaf_count": 207,
+  "mapped_hosted_tool_count": 197,
   "classifications": {
     "deferred": 5,
     "eligible_missing": 105,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 206,
+    "implemented_hosted_unverified": 207,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -47,12 +47,12 @@
     },
     {
       "service": "appscript",
-      "native_leaves": 11,
-      "hosted_tools": 10,
-      "mapped_native_leaves": 10,
+      "native_leaves": 12,
+      "hosted_tools": 11,
+      "mapped_native_leaves": 11,
       "classifications": {
         "implementation_design_required": 1,
-        "implemented_hosted_unverified": 10
+        "implemented_hosted_unverified": 11
       }
     },
     {
@@ -977,6 +977,27 @@
         ],
         "http_methods": [
           "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "deployment-delete",
+      "native_command": "gog appscript deployment-delete",
+      "hosted_tool": "appscript_deployment_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.deployments"
+        ],
+        "http_methods": [
+          "DELETE"
         ],
         "http_methods_known": true,
         "destructive": true

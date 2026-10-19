@@ -20,6 +20,7 @@ gog appscript (script,apps-script) <command> [flags]
 - [gog appscript content](gog-appscript-content.md) - Get Apps Script project content
 - [gog appscript create](gog-appscript-create.md) - Create an Apps Script project
 - [gog appscript deployment-create](gog-appscript-deployment-create.md) - Create a deployment of an immutable version
+- [gog appscript deployment-delete](gog-appscript-deployment-delete.md) - Delete a deployment of an immutable version
 - [gog appscript deployments](gog-appscript-deployments.md) - List deployments
 - [gog appscript get](gog-appscript-get.md) - Get Apps Script project metadata
 - [gog appscript pull](gog-appscript-pull.md) - Pull an Apps Script project into a local directory
