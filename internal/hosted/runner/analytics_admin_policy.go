@@ -55,5 +55,5 @@ func nativeAnalyticsAdminBindings() []NativeToolBinding {
 		}
 	}
 
-	return result
+	return append(result, nativeAnalyticsRetentionBindings()...)
 }

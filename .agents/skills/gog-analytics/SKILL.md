@@ -36,6 +36,7 @@ gog --readonly --account user@example.com analytics --help
 | `keyevents` | GA4 key events |
 | `properties` | GA4 properties |
 | `report` | Run a GA4 report (Analytics Data API) |
+| `retention` | GA4 retention settings |
 
 Run `gog analytics <command> --help` for flags and `gog schema analytics <command> --json`
 for the machine-readable contract. Do not guess command syntax.

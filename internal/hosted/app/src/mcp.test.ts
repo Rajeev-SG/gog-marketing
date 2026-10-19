@@ -1925,7 +1925,7 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
 
 // The in-product chat uses the very same MCP authorization/runner path, not an OAuth client.
 describe("chat Google tools and durable write approvals", () => {
-  async function chatFixture(scriptTool?: string, docTool?: string) {
+  async function chatFixture(scriptTool?: string, docTool?: string, analyticsTool?: string) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({
@@ -1964,10 +1964,20 @@ describe("chat Google tools and durable write approvals", () => {
     };
     await repo.saveToolGrants(tenantId, connectionId, [
       {
-        service: docTool ? "docs" : scriptTool ? "appscript" : "tasks",
-        toolName: docTool ?? scriptTool ?? "tasks_lists_create",
+        service: analyticsTool
+          ? "analytics"
+          : docTool
+            ? "docs"
+            : scriptTool
+              ? "appscript"
+              : "tasks",
+        toolName: analyticsTool ?? docTool ?? scriptTool ?? "tasks_lists_create",
         enabled: true,
-        allowDestructive: docTool ? docTool !== "docs_find_range" : Boolean(scriptTool),
+        allowDestructive: analyticsTool
+          ? analyticsTool === "analytics_retention_update"
+          : docTool
+            ? docTool !== "docs_find_range"
+            : Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -1977,18 +1987,20 @@ describe("chat Google tools and durable write approvals", () => {
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3600000).toISOString(),
-      granted_scopes: docTool
-        ? ["https://www.googleapis.com/auth/documents"]
-        : scriptTool
-          ? [
-              "https://www.googleapis.com/auth/userinfo.email",
-              "https://www.googleapis.com/auth/script.projects",
-              "https://www.googleapis.com/auth/script.deployments",
-            ]
-          : [
-              "https://www.googleapis.com/auth/tasks",
-              "https://www.googleapis.com/auth/analytics.readonly",
-            ],
+      granted_scopes: analyticsTool
+        ? ["https://www.googleapis.com/auth/analytics.edit"]
+        : docTool
+          ? ["https://www.googleapis.com/auth/documents"]
+          : scriptTool
+            ? [
+                "https://www.googleapis.com/auth/userinfo.email",
+                "https://www.googleapis.com/auth/script.projects",
+                "https://www.googleapis.com/auth/script.deployments",
+              ]
+            : [
+                "https://www.googleapis.com/auth/tasks",
+                "https://www.googleapis.com/auth/analytics.readonly",
+              ],
     });
     await repo.upsertCredential({
       tenantId,
@@ -2016,6 +2028,17 @@ describe("chat Google tools and durable write approvals", () => {
         "selected-doc",
         "file",
         "Selected doc",
+        true,
+        "{}",
+      );
+    if (analyticsTool)
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        "analytics",
+        "properties/123",
+        "property",
+        "Property",
         true,
         "{}",
       );
@@ -2191,6 +2214,63 @@ describe("chat Google tools and durable write approvals", () => {
       expect(f.requests).toHaveLength(1);
     },
   );
+
+  it("GA4 retention read in chat needs no write approval", async () => {
+    const f = await chatFixture(undefined, undefined, "analytics_retention_get");
+    expect(
+      await f.run("analytics_retention_get", {
+        property: "properties/123",
+        connectionId: f.connectionId,
+      }),
+    ).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(f.values.size).toBe(0);
+  });
+  it("GA4 retention changes require exact one-use approval and fresh property grants", async () => {
+    const name = "analytics_retention_update";
+    const f = await chatFixture(undefined, undefined, name);
+    const input = {
+      property: "properties/123",
+      reset_user_data_on_new_activity: false,
+      connectionId: f.connectionId,
+    };
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    await f.approvals.request("call-1", name, input, f.session);
+    expect(
+      await f.approvals.respond("call-1", true, { ...f.session, userId: "foreign-user" }),
+    ).toBe(false);
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    await expect(f.run(name, { ...input, property: "properties/456" })).rejects.toThrow(
+      "fresh approval",
+    );
+    await expect(f.run(name, { ...input, reset_user_data_on_new_activity: true })).rejects.toThrow(
+      "fresh approval",
+    );
+    expect(await f.run(name, input)).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool).toMatchObject({
+      name,
+      allowWrite: true,
+      allowDestructive: true,
+      arguments: { property: "properties/123", reset_user_data_on_new_activity: false },
+    });
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    await f.approvals.request("call-2", name, input, f.session);
+    await f.approvals.respond("call-2", true, f.session);
+    await f.repo.upsertResourceGrant(
+      f.tenantId,
+      f.connectionId,
+      "analytics",
+      "properties/123",
+      "property",
+      "Property",
+      false,
+      "{}",
+    );
+    expect(await f.run(name, input, "call-2")).toHaveProperty("isError", true);
+    expect(f.requests).toHaveLength(1);
+  });
 
   it("requires exact one-use approval, rejects changed arguments and concurrent replay", async () => {
     const f = await chatFixture();
@@ -4256,5 +4336,139 @@ it.each([
     const serialized = JSON.stringify({ body, audit: await repo.listAudit(tenant.id, 10) });
     expect(serialized).not.toContain(ACCESS_TOKEN);
     expect(serialized).not.toContain(REFRESH_TOKEN);
+  },
+);
+
+it.each([
+  {
+    name: "analytics_retention_get",
+    scope: "analytics.readonly",
+    write: false,
+    args: { property: "properties/123" },
+  },
+  {
+    name: "analytics_retention_get",
+    scope: "analytics.edit",
+    write: false,
+    args: { property: "properties/123" },
+  },
+  {
+    name: "analytics_retention_update",
+    scope: "analytics.edit",
+    write: true,
+    args: { property: "properties/123", reset_user_data_on_new_activity: false },
+  },
+])(
+  "GA4 retention $name with $scope enforces tenant and property authority",
+  async ({ name, scope, write, args }) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return {
+            status: "ok",
+            result: {
+              data_retention: {
+                name: "properties/123/dataRetentionSettings",
+                resetUserDataOnNewActivity: false,
+              },
+            },
+          };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_retention_owner");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-retention-owner",
+      "owner@example.test",
+      "Retention",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
+    });
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "analytics",
+        toolName: name,
+        enabled: true,
+        allowDestructive: write,
+        allowBillable: false,
+      },
+    ]);
+    const token = await tokenFor("user_retention_owner");
+    const call = async (override: Record<string, unknown> = {}) =>
+      rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          { name, arguments: { ...args, connectionId: connection.id, ...override } },
+          { token },
+        ),
+      );
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      "analytics",
+      "properties/123",
+      "property",
+      "Property",
+      true,
+      "{}",
+    );
+    expect((await call()).result.structuredContent.data_retention.name).toBe(
+      "properties/123/dataRetentionSettings",
+    );
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name,
+      arguments: args,
+      allowWrite: write,
+      allowDestructive: write,
+      scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
+    });
+    expect(requests[0]!.resourceId).toBe("properties/123");
+    expect((await call({ property: "properties/456" })).error.data.detail).toBe("grant_denied");
+    await repo.bootstrapTenant("user_retention_foreign");
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name, arguments: { ...args, connectionId: connection.id } },
+        { token: await tokenFor("user_retention_foreign") },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("connection_not_found");
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "analytics",
+        toolName: name,
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+    const audit = JSON.stringify(await repo.listAudit(tenant.id, 10));
+    expect(audit).not.toContain(ACCESS_TOKEN);
+    expect(audit).not.toContain(REFRESH_TOKEN);
   },
 );

@@ -24,6 +24,7 @@ gog analytics (ga) <command> [flags]
 - [gog analytics keyevents](gog-analytics-keyevents.md) - GA4 key events
 - [gog analytics properties](gog-analytics-properties.md) - GA4 properties
 - [gog analytics report](gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
+- [gog analytics retention](gog-analytics-retention.md) - GA4 retention settings
 
 ## Flags
 

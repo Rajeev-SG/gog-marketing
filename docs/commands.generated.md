@@ -95,6 +95,9 @@ Generated from `gog schema --json`.
       - [`gog analytics (ga) properties get (info,show) <property>`](commands/gog-analytics-properties-get.md)
       - [`gog analytics (ga) properties list (ls) [flags]`](commands/gog-analytics-properties-list.md)
     - [`gog analytics (ga) report <property> [flags]`](commands/gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
+    - [`gog analytics (ga) retention <command>`](commands/gog-analytics-retention.md) - GA4 retention settings
+      - [`gog analytics (ga) retention get <property>`](commands/gog-analytics-retention-get.md) - Read GA4 retention settings for one property
+      - [`gog analytics (ga) retention update <property> [flags]`](commands/gog-analytics-retention-update.md) - Change GA4 retention settings; shortening retention can irreversibly delete historical data
   - [`gog api <command> [flags]`](commands/gog-api.md) - Google Discovery APIs and generic method calls
     - [`gog api call <api> <version> <method> [flags]`](commands/gog-api-call.md) - Call a Discovery-described API method
     - [`gog api describe <api> <version> [<method>] [flags]`](commands/gog-api-describe.md) - Describe a Discovery API or method
