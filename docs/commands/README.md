@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 901.
+Generated pages: 903.
 
 ## Top-level Commands
 
@@ -152,6 +152,8 @@ Generated pages: 901.
       - [gog analytics keyevents get](gog-analytics-keyevents-get.md)
       - [gog analytics keyevents list](gog-analytics-keyevents-list.md)
       - [gog analytics keyevents update](gog-analytics-keyevents-update.md)
+    - [gog analytics metadata](gog-analytics-metadata.md) - GA4 Analytics Data API metadata
+      - [gog analytics metadata get](gog-analytics-metadata-get.md) - Read GA4 Analytics Data API metadata for one property
     - [gog analytics properties](gog-analytics-properties.md) - GA4 properties
       - [gog analytics properties get](gog-analytics-properties-get.md)
       - [gog analytics properties list](gog-analytics-properties-list.md)

@@ -15,6 +15,7 @@ import (
 type AnalyticsCmd struct {
 	Retention        AnalyticsRetentionCmd        `cmd:"" name:"retention" help:"GA4 retention settings"`
 	Accounts         AnalyticsAccountsCmd         `cmd:"" name:"accounts" aliases:"list,ls" default:"withargs" help:"List GA4 account summaries"`
+	Metadata         AnalyticsMetadataCmd         `cmd:"" name:"metadata" help:"GA4 Analytics Data API metadata"`
 	Report           AnalyticsReportCmd           `cmd:"" name:"report" help:"Run a GA4 report (Analytics Data API)"`
 	Properties       AnalyticsPropertiesCmd       `cmd:"" name:"properties" help:"GA4 properties"`
 	DataStreams      AnalyticsDataStreamsCmd      `cmd:"" name:"datastreams" aliases:"data-streams" help:"GA4 data streams"`

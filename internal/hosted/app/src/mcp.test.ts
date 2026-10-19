@@ -2249,6 +2249,35 @@ describe("chat Google tools and durable write approvals", () => {
     expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
     expect(f.values.size).toBe(0);
   });
+  it("GA4 metadata read in chat needs no write approval and a fresh grant", async () => {
+    const f = await chatFixture(undefined, undefined, "analytics_metadata_get");
+    expect(
+      await f.run("analytics_metadata_get", {
+        property_id: "123",
+        connectionId: f.connectionId,
+      }),
+    ).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
+    await f.repo.upsertResourceGrant(
+      f.tenantId,
+      f.connectionId,
+      "analytics",
+      "properties/123",
+      "property",
+      "Property",
+      false,
+      "{}",
+    );
+    await expect(
+      f.run("analytics_metadata_get", {
+        property_id: "123",
+        connectionId: f.connectionId,
+      }),
+    ).rejects.toThrow("grant_denied");
+    expect(f.requests).toHaveLength(1);
+    expect(f.values.size).toBe(0);
+  });
   it("GA4 retention changes require exact one-use approval and fresh property grants", async () => {
     const name = "analytics_retention_update";
     const f = await chatFixture(undefined, undefined, name);
@@ -4505,10 +4534,22 @@ it.each([
     args: { property: "properties/123" },
   },
   {
+    name: "analytics_metadata_get",
+    scope: "analytics.readonly",
+    write: false,
+    args: { property_id: "123" },
+  },
+  {
     name: "analytics_retention_get",
     scope: "analytics.edit",
     write: false,
     args: { property: "properties/123" },
+  },
+  {
+    name: "analytics_metadata_get",
+    scope: "analytics.edit",
+    write: false,
+    args: { property_id: "123" },
   },
   {
     name: "analytics_retention_update",
@@ -4524,6 +4565,16 @@ it.each([
       __testToolRunner: {
         async execute(request) {
           requests.push(request);
+          if (name === "analytics_metadata_get") {
+            return {
+              status: "ok",
+              result: {
+                name: "properties/123/metadata",
+                dimensions: [],
+                metrics: [],
+              },
+            };
+          }
           return {
             status: "ok",
             result: {
@@ -4591,9 +4642,13 @@ it.each([
       true,
       "{}",
     );
-    expect((await call()).result.structuredContent.data_retention.name).toBe(
-      "properties/123/dataRetentionSettings",
-    );
+    if (name === "analytics_metadata_get") {
+      expect((await call()).result.structuredContent.name).toBe("properties/123/metadata");
+    } else {
+      expect((await call()).result.structuredContent.data_retention.name).toBe(
+        "properties/123/dataRetentionSettings",
+      );
+    }
     expect(requests).toHaveLength(1);
     expect(requests[0]!.nativeTool).toMatchObject({
       name,
@@ -4603,7 +4658,10 @@ it.each([
       scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
     });
     expect(requests[0]!.resourceId).toBe("properties/123");
-    expect((await call({ property: "properties/456" })).error.data.detail).toBe("grant_denied");
+    expect(
+      (await call(name === "analytics_metadata_get" ? { property_id: "456" } : { property: "properties/456" }))
+        .error.data.detail,
+    ).toBe("grant_denied");
     await repo.bootstrapTenant("user_retention_foreign");
     const foreign = await rpcJson(
       await rpc(

@@ -25,7 +25,9 @@
             "type": "string"
           }
         },
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "type": "object"
       },
       "name": "drive_get"
@@ -68,7 +70,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_get"
@@ -97,7 +101,11 @@
           },
           "render": {
             "description": "Value render option",
-            "enum": ["FORMATTED_VALUE", "UNFORMATTED_VALUE", "FORMULA"],
+            "enum": [
+              "FORMATTED_VALUE",
+              "UNFORMATTED_VALUE",
+              "FORMULA"
+            ],
             "type": "string"
           },
           "spreadsheet_id": {
@@ -105,7 +113,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_read_range"
@@ -169,7 +180,9 @@
             "type": "boolean"
           }
         },
-        "required": ["calendar_id"],
+        "required": [
+          "calendar_id"
+        ],
         "type": "object"
       },
       "name": "calendar_events"
@@ -220,7 +233,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "text"],
+        "required": [
+          "document_id",
+          "text"
+        ],
         "type": "object"
       },
       "name": "docs_write"
@@ -246,7 +262,10 @@
           "input": {
             "default": "USER_ENTERED",
             "description": "Value input option",
-            "enum": ["RAW", "USER_ENTERED"],
+            "enum": [
+              "RAW",
+              "USER_ENTERED"
+            ],
             "type": "string"
           },
           "range": {
@@ -262,7 +281,11 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range", "values_json"],
+        "required": [
+          "spreadsheet_id",
+          "range",
+          "values_json"
+        ],
         "type": "object"
       },
       "name": "sheets_update_range"
@@ -311,7 +334,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_report"
@@ -338,7 +363,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_properties_get"
@@ -404,7 +431,11 @@
             "type": "string"
           }
         },
-        "required": ["site_url", "from", "to"],
+        "required": [
+          "site_url",
+          "from",
+          "to"
+        ],
         "type": "object"
       },
       "name": "searchconsole_query"
@@ -431,7 +462,9 @@
             "type": "string"
           }
         },
-        "required": ["site_url"],
+        "required": [
+          "site_url"
+        ],
         "type": "object"
       },
       "name": "searchconsole_sitemaps_list"
@@ -461,7 +494,10 @@
             "type": "string"
           }
         },
-        "required": ["site_url", "feed_path"],
+        "required": [
+          "site_url",
+          "feed_path"
+        ],
         "type": "object"
       },
       "name": "searchconsole_sitemaps_submit"
@@ -491,7 +527,10 @@
             "type": "string"
           }
         },
-        "required": ["site_url", "feed_path"],
+        "required": [
+          "site_url",
+          "feed_path"
+        ],
         "type": "object"
       },
       "name": "searchconsole_sitemaps_delete"
@@ -521,7 +560,10 @@
             "type": "string"
           }
         },
-        "required": ["site_url", "url"],
+        "required": [
+          "site_url",
+          "url"
+        ],
         "type": "object"
       },
       "name": "searchconsole_inspect"
@@ -548,7 +590,9 @@
             "type": "string"
           }
         },
-        "required": ["project"],
+        "required": [
+          "project"
+        ],
         "type": "object"
       },
       "name": "bigquery_datasets_list"
@@ -578,7 +622,10 @@
             "type": "string"
           }
         },
-        "required": ["project", "dataset"],
+        "required": [
+          "project",
+          "dataset"
+        ],
         "type": "object"
       },
       "name": "bigquery_tables_list"
@@ -611,7 +658,11 @@
             "type": "string"
           }
         },
-        "required": ["project", "dataset", "table"],
+        "required": [
+          "project",
+          "dataset",
+          "table"
+        ],
         "type": "object"
       },
       "name": "bigquery_table_get"
@@ -644,7 +695,11 @@
             "type": "string"
           }
         },
-        "required": ["project", "dataset", "table"],
+        "required": [
+          "project",
+          "dataset",
+          "table"
+        ],
         "type": "object"
       },
       "name": "bigquery_table_schema"
@@ -683,7 +738,11 @@
             "type": "string"
           }
         },
-        "required": ["project", "dataset", "table"],
+        "required": [
+          "project",
+          "dataset",
+          "table"
+        ],
         "type": "object"
       },
       "name": "bigquery_table_rows"
@@ -743,7 +802,9 @@
             "type": "string"
           }
         },
-        "required": ["account_path"],
+        "required": [
+          "account_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_accounts_get"
@@ -779,7 +840,9 @@
             "type": "string"
           }
         },
-        "required": ["account_path"],
+        "required": [
+          "account_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_containers_list"
@@ -806,7 +869,9 @@
             "type": "string"
           }
         },
-        "required": ["container_path"],
+        "required": [
+          "container_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_containers_get"
@@ -837,7 +902,10 @@
             "type": "string"
           }
         },
-        "required": ["account_path", "body_json"],
+        "required": [
+          "account_path",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_containers_create"
@@ -868,7 +936,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "body_json"],
+        "required": [
+          "container_path",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_containers_update"
@@ -895,7 +966,9 @@
             "type": "string"
           }
         },
-        "required": ["container_path"],
+        "required": [
+          "container_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_containers_delete"
@@ -931,7 +1004,9 @@
             "type": "string"
           }
         },
-        "required": ["container_path"],
+        "required": [
+          "container_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_list"
@@ -961,7 +1036,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_get"
@@ -992,7 +1070,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "body_json"],
+        "required": [
+          "container_path",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_create"
@@ -1026,7 +1107,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_update"
@@ -1056,7 +1141,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_delete"
@@ -1086,7 +1174,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_status"
@@ -1116,7 +1207,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_sync"
@@ -1152,7 +1246,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_workspaces_create-version"
@@ -1191,7 +1288,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_tags_list"
@@ -1224,7 +1324,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_tags_get"
@@ -1258,7 +1362,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_tags_create"
@@ -1295,7 +1403,12 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_tags_update"
@@ -1328,7 +1441,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_tags_delete"
@@ -1367,7 +1484,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_triggers_list"
@@ -1400,7 +1520,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_triggers_get"
@@ -1434,7 +1558,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_triggers_create"
@@ -1471,7 +1599,12 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_triggers_update"
@@ -1504,7 +1637,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_triggers_delete"
@@ -1543,7 +1680,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id"],
+        "required": [
+          "container_path",
+          "workspace_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_variables_list"
@@ -1576,7 +1716,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_variables_get"
@@ -1610,7 +1754,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_variables_create"
@@ -1647,7 +1795,12 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id", "body_json"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "tagmanager_variables_update"
@@ -1680,7 +1833,11 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "workspace_id", "resource_id"],
+        "required": [
+          "container_path",
+          "workspace_id",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_variables_delete"
@@ -1716,7 +1873,9 @@
             "type": "string"
           }
         },
-        "required": ["container_path"],
+        "required": [
+          "container_path"
+        ],
         "type": "object"
       },
       "name": "tagmanager_versions_list"
@@ -1746,7 +1905,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "version_id"],
+        "required": [
+          "container_path",
+          "version_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_versions_get"
@@ -1776,7 +1938,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "version_id"],
+        "required": [
+          "container_path",
+          "version_id"
+        ],
         "type": "object"
       },
       "name": "tagmanager_versions_delete"
@@ -1810,7 +1975,10 @@
             "type": "string"
           }
         },
-        "required": ["container_path", "version"],
+        "required": [
+          "container_path",
+          "version"
+        ],
         "type": "object"
       },
       "name": "tagmanager_versions_publish"
@@ -1840,7 +2008,10 @@
             "type": "string"
           }
         },
-        "required": ["project", "dataset"],
+        "required": [
+          "project",
+          "dataset"
+        ],
         "type": "object"
       },
       "name": "bigquery_dataset_get"
@@ -1867,7 +2038,9 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id"],
+        "required": [
+          "presentation_id"
+        ],
         "type": "object"
       },
       "name": "slides_list_slides"
@@ -1900,7 +2073,11 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "slide_id", "notes"],
+        "required": [
+          "presentation_id",
+          "slide_id",
+          "notes"
+        ],
         "type": "object"
       },
       "name": "slides_update_notes"
@@ -1965,7 +2142,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "tasks_lists_create"
@@ -2033,7 +2212,9 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id"],
+        "required": [
+          "tasklist_id"
+        ],
         "type": "object"
       },
       "name": "tasks_list"
@@ -2063,7 +2244,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_get"
@@ -2096,7 +2280,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_raw"
@@ -2155,7 +2342,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "title"],
+        "required": [
+          "tasklist_id",
+          "title"
+        ],
         "type": "object"
       },
       "name": "tasks_add"
@@ -2186,7 +2376,10 @@
             "type": "string"
           },
           "status": {
-            "enum": ["needsAction", "completed"],
+            "enum": [
+              "needsAction",
+              "completed"
+            ],
             "type": "string"
           },
           "task_id": {
@@ -2200,7 +2393,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_update"
@@ -2230,7 +2426,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_done"
@@ -2260,7 +2459,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_undo"
@@ -2290,7 +2492,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_delete"
@@ -2317,7 +2522,9 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id"],
+        "required": [
+          "tasklist_id"
+        ],
         "type": "object"
       },
       "name": "tasks_clear"
@@ -2344,7 +2551,9 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id"],
+        "required": [
+          "tasklist_id"
+        ],
         "type": "object"
       },
       "name": "tasks_lists_get"
@@ -2374,7 +2583,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "title"],
+        "required": [
+          "tasklist_id",
+          "title"
+        ],
         "type": "object"
       },
       "name": "tasks_lists_rename"
@@ -2401,7 +2613,9 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id"],
+        "required": [
+          "tasklist_id"
+        ],
         "type": "object"
       },
       "name": "tasks_lists_delete"
@@ -2440,7 +2654,10 @@
             "type": "string"
           }
         },
-        "required": ["tasklist_id", "task_id"],
+        "required": [
+          "tasklist_id",
+          "task_id"
+        ],
         "type": "object"
       },
       "name": "tasks_move"
@@ -2481,7 +2698,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_datastreams_list"
@@ -2512,7 +2731,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_datastreams_get"
@@ -2543,7 +2765,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "body_json"],
+        "required": [
+          "property",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "analytics_datastreams_create"
@@ -2582,7 +2807,12 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "required": [
+          "property",
+          "resource_id",
+          "body_json",
+          "update_mask"
+        ],
         "type": "object"
       },
       "name": "analytics_datastreams_update"
@@ -2613,7 +2843,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_datastreams_delete"
@@ -2654,7 +2887,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_keyevents_list"
@@ -2685,7 +2920,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_keyevents_get"
@@ -2716,7 +2954,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "body_json"],
+        "required": [
+          "property",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "analytics_keyevents_create"
@@ -2755,7 +2996,12 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "required": [
+          "property",
+          "resource_id",
+          "body_json",
+          "update_mask"
+        ],
         "type": "object"
       },
       "name": "analytics_keyevents_update"
@@ -2786,7 +3032,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_keyevents_delete"
@@ -2827,7 +3076,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-dimensions_list"
@@ -2858,7 +3109,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-dimensions_get"
@@ -2889,7 +3143,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "body_json"],
+        "required": [
+          "property",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-dimensions_create"
@@ -2928,7 +3185,12 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "required": [
+          "property",
+          "resource_id",
+          "body_json",
+          "update_mask"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-dimensions_update"
@@ -2959,7 +3221,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-dimensions_archive"
@@ -3000,7 +3265,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-metrics_list"
@@ -3031,7 +3298,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-metrics_get"
@@ -3062,7 +3332,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "body_json"],
+        "required": [
+          "property",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-metrics_create"
@@ -3101,7 +3374,12 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "required": [
+          "property",
+          "resource_id",
+          "body_json",
+          "update_mask"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-metrics_update"
@@ -3132,7 +3410,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_custom-metrics_archive"
@@ -3173,7 +3454,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_googleads-links_list"
@@ -3204,7 +3487,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_googleads-links_get"
@@ -3235,7 +3521,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "body_json"],
+        "required": [
+          "property",
+          "body_json"
+        ],
         "type": "object"
       },
       "name": "analytics_googleads-links_create"
@@ -3274,7 +3563,12 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id", "body_json", "update_mask"],
+        "required": [
+          "property",
+          "resource_id",
+          "body_json",
+          "update_mask"
+        ],
         "type": "object"
       },
       "name": "analytics_googleads-links_update"
@@ -3305,7 +3599,10 @@
             "type": "string"
           }
         },
-        "required": ["property", "resource_id"],
+        "required": [
+          "property",
+          "resource_id"
+        ],
         "type": "object"
       },
       "name": "analytics_googleads-links_delete"
@@ -3332,7 +3629,9 @@
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_retention_get"
@@ -3372,14 +3671,49 @@
             "type": "boolean"
           },
           "user_data_retention": {
-            "enum": ["TWO_MONTHS", "FOURTEEN_MONTHS"],
+            "enum": [
+              "TWO_MONTHS",
+              "FOURTEEN_MONTHS"
+            ],
             "type": "string"
           }
         },
-        "required": ["property"],
+        "required": [
+          "property"
+        ],
         "type": "object"
       },
       "name": "analytics_retention_update"
+    }
+  },
+  {
+    "name": "analytics_metadata_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly or analytics. No account-wide access, raw HTTP, alternate hosts or retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property_id": {
+            "description": "Positive numeric GA4 property ID",
+            "type": "string"
+          }
+        },
+        "required": [
+          "property_id"
+        ],
+        "type": "object"
+      },
+      "name": "analytics_metadata_get"
     }
   },
   {
@@ -3403,7 +3737,9 @@
             "type": "string"
           }
         },
-        "required": ["site_url"],
+        "required": [
+          "site_url"
+        ],
         "type": "object"
       },
       "name": "searchconsole_sites_get"
@@ -3433,7 +3769,10 @@
             "type": "string"
           }
         },
-        "required": ["site_url", "feed_path"],
+        "required": [
+          "site_url",
+          "feed_path"
+        ],
         "type": "object"
       },
       "name": "searchconsole_sitemaps_get"
@@ -3497,7 +3836,9 @@
             "type": "string"
           }
         },
-        "required": ["query"],
+        "required": [
+          "query"
+        ],
         "type": "object"
       },
       "name": "contacts_search"
@@ -3525,7 +3866,9 @@
             "type": "string"
           }
         },
-        "required": ["resource_name"],
+        "required": [
+          "resource_name"
+        ],
         "type": "object"
       },
       "name": "contacts_get"
@@ -3601,7 +3944,9 @@
             "type": "array"
           }
         },
-        "required": ["given"],
+        "required": [
+          "given"
+        ],
         "type": "object"
       },
       "name": "contacts_create"
@@ -3687,7 +4032,9 @@
             "type": "array"
           }
         },
-        "required": ["resource_name"],
+        "required": [
+          "resource_name"
+        ],
         "type": "object"
       },
       "name": "contacts_update"
@@ -3715,7 +4062,9 @@
             "type": "string"
           }
         },
-        "required": ["resource_name"],
+        "required": [
+          "resource_name"
+        ],
         "type": "object"
       },
       "name": "contacts_delete"
@@ -3745,7 +4094,10 @@
             "type": "string"
           }
         },
-        "required": ["calendar_id", "event_id"],
+        "required": [
+          "calendar_id",
+          "event_id"
+        ],
         "type": "object"
       },
       "name": "calendar_event_get"
@@ -3817,7 +4169,9 @@
             "type": "boolean"
           }
         },
-        "required": ["calendar_id"],
+        "required": [
+          "calendar_id"
+        ],
         "type": "object"
       },
       "name": "calendar_event_create"
@@ -3871,7 +4225,11 @@
             "type": "string"
           },
           "scope": {
-            "enum": ["single", "future", "all"],
+            "enum": [
+              "single",
+              "future",
+              "all"
+            ],
             "type": "string"
           },
           "send_updates": {
@@ -3899,7 +4257,10 @@
             "type": "boolean"
           }
         },
-        "required": ["calendar_id", "event_id"],
+        "required": [
+          "calendar_id",
+          "event_id"
+        ],
         "type": "object"
       },
       "name": "calendar_event_update"
@@ -3932,14 +4293,21 @@
             "type": "string"
           },
           "scope": {
-            "enum": ["single", "future", "all"],
+            "enum": [
+              "single",
+              "future",
+              "all"
+            ],
             "type": "string"
           },
           "send_updates": {
             "type": "string"
           }
         },
-        "required": ["calendar_id", "event_id"],
+        "required": [
+          "calendar_id",
+          "event_id"
+        ],
         "type": "object"
       },
       "name": "calendar_event_delete"
@@ -4025,7 +4393,9 @@
             "type": "string"
           }
         },
-        "required": ["label_name"],
+        "required": [
+          "label_name"
+        ],
         "type": "object"
       },
       "name": "drivelabels_get"
@@ -4055,7 +4425,10 @@
             "type": "string"
           }
         },
-        "required": ["file_id", "new_name"],
+        "required": [
+          "file_id",
+          "new_name"
+        ],
         "type": "object"
       },
       "name": "drive_rename"
@@ -4085,7 +4458,10 @@
             "type": "string"
           }
         },
-        "required": ["file_id", "new_name"],
+        "required": [
+          "file_id",
+          "new_name"
+        ],
         "type": "object"
       },
       "name": "drive_copy"
@@ -4112,7 +4488,9 @@
             "type": "string"
           }
         },
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "type": "object"
       },
       "name": "drive_trash"
@@ -4191,7 +4569,9 @@
             "type": "string"
           }
         },
-        "required": ["group_email"],
+        "required": [
+          "group_email"
+        ],
         "type": "object"
       },
       "name": "groups_members"
@@ -4215,11 +4595,18 @@
         "additionalProperties": false,
         "properties": {
           "access": {
-            "enum": ["open", "trusted", "restricted"],
+            "enum": [
+              "open",
+              "trusted",
+              "restricted"
+            ],
             "type": "string"
           },
           "entry_point": {
-            "enum": ["all", "creator-only"],
+            "enum": [
+              "all",
+              "creator-only"
+            ],
             "type": "string"
           }
         },
@@ -4251,7 +4638,9 @@
             "type": "string"
           }
         },
-        "required": ["space_name"],
+        "required": [
+          "space_name"
+        ],
         "type": "object"
       },
       "name": "meet_space_get"
@@ -4275,11 +4664,18 @@
         "additionalProperties": false,
         "properties": {
           "access": {
-            "enum": ["open", "trusted", "restricted"],
+            "enum": [
+              "open",
+              "trusted",
+              "restricted"
+            ],
             "type": "string"
           },
           "entry_point": {
-            "enum": ["all", "creator-only"],
+            "enum": [
+              "all",
+              "creator-only"
+            ],
             "type": "string"
           },
           "space_name": {
@@ -4287,7 +4683,9 @@
             "type": "string"
           }
         },
-        "required": ["space_name"],
+        "required": [
+          "space_name"
+        ],
         "type": "object"
       },
       "name": "meet_space_update"
@@ -4315,7 +4713,9 @@
             "type": "string"
           }
         },
-        "required": ["space_name"],
+        "required": [
+          "space_name"
+        ],
         "type": "object"
       },
       "name": "meet_space_end"
@@ -4380,7 +4780,9 @@
             "type": "string"
           }
         },
-        "required": ["account_name"],
+        "required": [
+          "account_name"
+        ],
         "type": "object"
       },
       "name": "adsense_accounts_get"
@@ -4410,7 +4812,9 @@
             "type": "string"
           }
         },
-        "required": ["site_id"],
+        "required": [
+          "site_id"
+        ],
         "type": "object"
       },
       "name": "sites_get"
@@ -4437,7 +4841,9 @@
             "type": "string"
           }
         },
-        "required": ["site_id"],
+        "required": [
+          "site_id"
+        ],
         "type": "object"
       },
       "name": "sites_url"
@@ -4464,7 +4870,9 @@
             "type": "string"
           }
         },
-        "required": ["form_id"],
+        "required": [
+          "form_id"
+        ],
         "type": "object"
       },
       "name": "forms_get"
@@ -4500,7 +4908,9 @@
             "type": "string"
           }
         },
-        "required": ["form_id"],
+        "required": [
+          "form_id"
+        ],
         "type": "object"
       },
       "name": "forms_update"
@@ -4533,7 +4943,9 @@
             "type": "boolean"
           }
         },
-        "required": ["form_id"],
+        "required": [
+          "form_id"
+        ],
         "type": "object"
       },
       "name": "forms_publish"
@@ -4571,7 +4983,9 @@
             "type": "string"
           }
         },
-        "required": ["form_id"],
+        "required": [
+          "form_id"
+        ],
         "type": "object"
       },
       "name": "forms_responses_list"
@@ -4601,7 +5015,10 @@
             "type": "string"
           }
         },
-        "required": ["form_id", "response_id"],
+        "required": [
+          "form_id",
+          "response_id"
+        ],
         "type": "object"
       },
       "name": "forms_responses_get"
@@ -4698,11 +5115,23 @@
           },
           "type": {
             "description": "Question type (default text)",
-            "enum": ["text", "paragraph", "radio", "checkbox", "dropdown", "scale", "date", "time"],
+            "enum": [
+              "text",
+              "paragraph",
+              "radio",
+              "checkbox",
+              "dropdown",
+              "scale",
+              "date",
+              "time"
+            ],
             "type": "string"
           }
         },
-        "required": ["form_id", "title"],
+        "required": [
+          "form_id",
+          "title"
+        ],
         "type": "object"
       },
       "name": "forms_add_question"
@@ -4740,7 +5169,11 @@
             "type": "integer"
           }
         },
-        "required": ["form_id", "old_index", "new_index"],
+        "required": [
+          "form_id",
+          "old_index",
+          "new_index"
+        ],
         "type": "object"
       },
       "name": "forms_move_question"
@@ -4773,7 +5206,10 @@
             "type": "integer"
           }
         },
-        "required": ["form_id", "index"],
+        "required": [
+          "form_id",
+          "index"
+        ],
         "type": "object"
       },
       "name": "forms_delete_question"
@@ -4800,7 +5236,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "forms_create_blank"
@@ -4827,7 +5265,9 @@
             "type": "string"
           }
         },
-        "required": ["script_id"],
+        "required": [
+          "script_id"
+        ],
         "type": "object"
       },
       "name": "appscript_get"
@@ -4854,7 +5294,9 @@
             "type": "string"
           }
         },
-        "required": ["script_id"],
+        "required": [
+          "script_id"
+        ],
         "type": "object"
       },
       "name": "appscript_content"
@@ -4881,7 +5323,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "appscript_create"
@@ -4922,7 +5366,9 @@
             "type": "string"
           }
         },
-        "required": ["script_id"],
+        "required": [
+          "script_id"
+        ],
         "type": "object"
       },
       "name": "appscript_deployments"
@@ -4963,7 +5409,9 @@
             "type": "string"
           }
         },
-        "required": ["script_id"],
+        "required": [
+          "script_id"
+        ],
         "type": "object"
       },
       "name": "appscript_versions"
@@ -4993,7 +5441,10 @@
             "type": "string"
           }
         },
-        "required": ["title", "parent_id"],
+        "required": [
+          "title",
+          "parent_id"
+        ],
         "type": "object"
       },
       "name": "appscript_bound_create"
@@ -5023,7 +5474,10 @@
             "type": "string"
           }
         },
-        "required": ["script_id", "files_json"],
+        "required": [
+          "script_id",
+          "files_json"
+        ],
         "type": "object"
       },
       "name": "appscript_push"
@@ -5053,7 +5507,9 @@
             "type": "string"
           }
         },
-        "required": ["script_id"],
+        "required": [
+          "script_id"
+        ],
         "type": "object"
       },
       "name": "appscript_version_create"
@@ -5091,7 +5547,10 @@
             "type": "integer"
           }
         },
-        "required": ["script_id", "version_number"],
+        "required": [
+          "script_id",
+          "version_number"
+        ],
         "type": "object"
       },
       "name": "appscript_deployment_create"
@@ -5125,7 +5584,10 @@
             "type": "string"
           }
         },
-        "required": ["deployment_id", "function"],
+        "required": [
+          "deployment_id",
+          "function"
+        ],
         "type": "object"
       },
       "name": "appscript_run"
@@ -5204,7 +5666,9 @@
             "type": "string"
           }
         },
-        "required": ["account"],
+        "required": [
+          "account"
+        ],
         "type": "object"
       },
       "name": "analytics_properties_list"
@@ -5269,7 +5733,9 @@
             "type": "string"
           }
         },
-        "required": ["display_name"],
+        "required": [
+          "display_name"
+        ],
         "type": "object"
       },
       "name": "chat_spaces_create"
@@ -5299,7 +5765,10 @@
             "type": "string"
           }
         },
-        "required": ["space_name", "text"],
+        "required": [
+          "space_name",
+          "text"
+        ],
         "type": "object"
       },
       "name": "chat_messages_send"
@@ -5373,7 +5842,9 @@
             "type": "string"
           }
         },
-        "required": ["course_id"],
+        "required": [
+          "course_id"
+        ],
         "type": "object"
       },
       "name": "classroom_courses_get"
@@ -5418,7 +5889,9 @@
             "type": "string"
           }
         },
-        "required": ["name"],
+        "required": [
+          "name"
+        ],
         "type": "object"
       },
       "name": "classroom_courses_create"
@@ -5466,7 +5939,9 @@
             "type": "string"
           }
         },
-        "required": ["course_id"],
+        "required": [
+          "course_id"
+        ],
         "type": "object"
       },
       "name": "classroom_courses_update"
@@ -5493,7 +5968,9 @@
             "type": "string"
           }
         },
-        "required": ["course_id"],
+        "required": [
+          "course_id"
+        ],
         "type": "object"
       },
       "name": "classroom_courses_delete"
@@ -5552,14 +6029,20 @@
             "type": "string"
           },
           "privacy": {
-            "enum": ["public", "unlisted", "private"],
+            "enum": [
+              "public",
+              "unlisted",
+              "private"
+            ],
             "type": "string"
           },
           "title": {
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "youtube_playlists_create"
@@ -5586,7 +6069,9 @@
             "type": "string"
           }
         },
-        "required": ["playlist_id"],
+        "required": [
+          "playlist_id"
+        ],
         "type": "object"
       },
       "name": "youtube_playlists_delete"
@@ -5636,7 +6121,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_metadata"
@@ -5661,11 +6148,17 @@
         "properties": {
           "input": {
             "default": "USER_ENTERED",
-            "enum": ["RAW", "USER_ENTERED"],
+            "enum": [
+              "RAW",
+              "USER_ENTERED"
+            ],
             "type": "string"
           },
           "insert": {
-            "enum": ["OVERWRITE", "INSERT_ROWS"],
+            "enum": [
+              "OVERWRITE",
+              "INSERT_ROWS"
+            ],
             "type": "string"
           },
           "range": {
@@ -5678,7 +6171,11 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range", "values_json"],
+        "required": [
+          "spreadsheet_id",
+          "range",
+          "values_json"
+        ],
         "type": "object"
       },
       "name": "sheets_append_range"
@@ -5708,7 +6205,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_clear_range"
@@ -5743,7 +6243,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "tab_name"],
+        "required": [
+          "spreadsheet_id",
+          "tab_name"
+        ],
         "type": "object"
       },
       "name": "sheets_add_tab"
@@ -5776,7 +6279,11 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "old_name", "new_name"],
+        "required": [
+          "spreadsheet_id",
+          "old_name",
+          "new_name"
+        ],
         "type": "object"
       },
       "name": "sheets_rename_tab"
@@ -5806,7 +6313,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "tab_name"],
+        "required": [
+          "spreadsheet_id",
+          "tab_name"
+        ],
         "type": "object"
       },
       "name": "sheets_delete_tab"
@@ -5853,7 +6363,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_number_format_range"
@@ -5880,7 +6393,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "sheets_create_blank"
@@ -5907,7 +6422,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "docs_create_blank"
@@ -5934,7 +6451,9 @@
             "type": "string"
           }
         },
-        "required": ["title"],
+        "required": [
+          "title"
+        ],
         "type": "object"
       },
       "name": "slides_create_blank"
@@ -5961,7 +6480,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_info"
@@ -5988,7 +6509,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_list_tabs"
@@ -6015,7 +6538,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_structure"
@@ -6042,7 +6567,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_headings_list"
@@ -6069,7 +6596,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_paragraphs_list"
@@ -6096,7 +6625,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_tables_list"
@@ -6123,7 +6654,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_images_list"
@@ -6150,7 +6683,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_named_range_list"
@@ -6195,7 +6730,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_add_tab"
@@ -6228,7 +6765,11 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "tab", "title"],
+        "required": [
+          "document_id",
+          "tab",
+          "title"
+        ],
         "type": "object"
       },
       "name": "docs_rename_tab"
@@ -6258,7 +6799,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "tab"],
+        "required": [
+          "document_id",
+          "tab"
+        ],
         "type": "object"
       },
       "name": "docs_delete_tab"
@@ -6288,7 +6832,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_header_list"
@@ -6318,7 +6864,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_footer_list"
@@ -6348,7 +6896,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_suggestions_list"
@@ -6401,7 +6951,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "text"],
+        "required": [
+          "document_id",
+          "text"
+        ],
         "type": "object"
       },
       "name": "docs_find_range"
@@ -6455,7 +7008,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "name"],
+        "required": [
+          "document_id",
+          "name"
+        ],
         "type": "object"
       },
       "name": "docs_named_range_create"
@@ -6488,7 +7044,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "name_or_id"],
+        "required": [
+          "document_id",
+          "name_or_id"
+        ],
         "type": "object"
       },
       "name": "docs_named_range_delete"
@@ -6524,7 +7083,11 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "name_or_id", "text"],
+        "required": [
+          "document_id",
+          "name_or_id",
+          "text"
+        ],
         "type": "object"
       },
       "name": "docs_named_range_replace"
@@ -6576,7 +7139,10 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "text"],
+        "required": [
+          "document_id",
+          "text"
+        ],
         "type": "object"
       },
       "name": "docs_insert"
@@ -6630,7 +7196,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_delete"
@@ -6657,7 +7225,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_clear"
@@ -6699,7 +7269,11 @@
             "type": "string"
           }
         },
-        "required": ["document_id", "find", "replacement"],
+        "required": [
+          "document_id",
+          "find",
+          "replacement"
+        ],
         "type": "object"
       },
       "name": "docs_find_replace"
@@ -6735,11 +7309,17 @@
             "type": "string"
           },
           "bullet_style": {
-            "enum": ["unordered", "ordered", "none"],
+            "enum": [
+              "unordered",
+              "ordered",
+              "none"
+            ],
             "type": "string"
           },
           "code_style": {
-            "enum": ["apply"],
+            "enum": [
+              "apply"
+            ],
             "type": "string"
           },
           "document_id": {
@@ -6817,7 +7397,9 @@
             "type": "boolean"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_format"
@@ -6844,7 +7426,11 @@
             "type": "string"
           },
           "layout": {
-            "enum": ["pageless", "pages", "paged"],
+            "enum": [
+              "pageless",
+              "pages",
+              "paged"
+            ],
             "type": "string"
           },
           "margin_bottom": {
@@ -6872,7 +7458,9 @@
             "type": "string"
           }
         },
-        "required": ["document_id"],
+        "required": [
+          "document_id"
+        ],
         "type": "object"
       },
       "name": "docs_page_layout"
@@ -6923,14 +7511,20 @@
             "type": "integer"
           },
           "separator": {
-            "enum": ["none", "between"],
+            "enum": [
+              "none",
+              "between"
+            ],
             "type": "string"
           },
           "tab": {
             "type": "string"
           }
         },
-        "required": ["document_id", "count"],
+        "required": [
+          "document_id",
+          "count"
+        ],
         "type": "object"
       },
       "name": "docs_section_columns"
@@ -6965,7 +7559,9 @@
             "type": "string"
           }
         },
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "type": "object"
       },
       "name": "drive_revisions_list"
@@ -6995,7 +7591,10 @@
             "type": "string"
           }
         },
-        "required": ["file_id", "revision_id"],
+        "required": [
+          "file_id",
+          "revision_id"
+        ],
         "type": "object"
       },
       "name": "drive_revisions_get"
@@ -7033,7 +7632,9 @@
             "type": "string"
           }
         },
-        "required": ["file_id"],
+        "required": [
+          "file_id"
+        ],
         "type": "object"
       },
       "name": "drive_comments_list"
@@ -7063,7 +7664,10 @@
             "type": "string"
           }
         },
-        "required": ["file_id", "comment_id"],
+        "required": [
+          "file_id",
+          "comment_id"
+        ],
         "type": "object"
       },
       "name": "drive_comments_get"
@@ -7090,7 +7694,9 @@
             "type": "string"
           }
         },
-        "required": ["form_id"],
+        "required": [
+          "form_id"
+        ],
         "type": "object"
       },
       "name": "forms_watch_list"
@@ -7117,7 +7723,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_chart_list"
@@ -7144,7 +7752,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_named_ranges_list"
@@ -7171,7 +7781,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_table_list"
@@ -7198,7 +7810,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_banding_list"
@@ -7225,7 +7839,9 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id"],
+        "required": [
+          "spreadsheet_id"
+        ],
         "type": "object"
       },
       "name": "sheets_conditional_format_list"
@@ -7257,7 +7873,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "chart_id"],
+        "required": [
+          "spreadsheet_id",
+          "chart_id"
+        ],
         "type": "object"
       },
       "name": "sheets_chart_get"
@@ -7287,7 +7906,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "name_or_id"],
+        "required": [
+          "spreadsheet_id",
+          "name_or_id"
+        ],
         "type": "object"
       },
       "name": "sheets_named_ranges_get"
@@ -7317,7 +7939,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "table_id"],
+        "required": [
+          "spreadsheet_id",
+          "table_id"
+        ],
         "type": "object"
       },
       "name": "sheets_table_get"
@@ -7347,7 +7972,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_notes"
@@ -7377,7 +8005,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_links_get"
@@ -7410,7 +8041,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_read_format"
@@ -7440,7 +8074,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_validation_get"
@@ -7471,11 +8108,18 @@
           },
           "type": {
             "default": "MERGE_ALL",
-            "enum": ["MERGE_ALL", "MERGE_COLUMNS", "MERGE_ROWS"],
+            "enum": [
+              "MERGE_ALL",
+              "MERGE_COLUMNS",
+              "MERGE_ROWS"
+            ],
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_merge"
@@ -7505,7 +8149,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range"],
+        "required": [
+          "spreadsheet_id",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_unmerge"
@@ -7543,7 +8190,10 @@
             "type": "integer"
           }
         },
-        "required": ["spreadsheet_id", "columns"],
+        "required": [
+          "spreadsheet_id",
+          "columns"
+        ],
         "type": "object"
       },
       "name": "sheets_resize_columns"
@@ -7581,7 +8231,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "rows"],
+        "required": [
+          "spreadsheet_id",
+          "rows"
+        ],
         "type": "object"
       },
       "name": "sheets_resize_rows"
@@ -7614,7 +8267,11 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "name", "range"],
+        "required": [
+          "spreadsheet_id",
+          "name",
+          "range"
+        ],
         "type": "object"
       },
       "name": "sheets_named_ranges_add"
@@ -7650,7 +8307,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "name_or_id"],
+        "required": [
+          "spreadsheet_id",
+          "name_or_id"
+        ],
         "type": "object"
       },
       "name": "sheets_named_ranges_update"
@@ -7680,7 +8340,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "name_or_id"],
+        "required": [
+          "spreadsheet_id",
+          "name_or_id"
+        ],
         "type": "object"
       },
       "name": "sheets_named_ranges_delete"
@@ -7713,7 +8376,11 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "range", "note"],
+        "required": [
+          "spreadsheet_id",
+          "range",
+          "note"
+        ],
         "type": "object"
       },
       "name": "sheets_update_note"
@@ -7753,7 +8420,10 @@
             "type": "string"
           }
         },
-        "required": ["spreadsheet_id", "sheet"],
+        "required": [
+          "spreadsheet_id",
+          "sheet"
+        ],
         "type": "object"
       },
       "name": "sheets_freeze"
@@ -7788,7 +8458,11 @@
             "type": "integer"
           }
         },
-        "required": ["spreadsheet_id", "tab", "to"],
+        "required": [
+          "spreadsheet_id",
+          "tab",
+          "to"
+        ],
         "type": "object"
       },
       "name": "sheets_reorder_tab"
@@ -7815,7 +8489,9 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id"],
+        "required": [
+          "presentation_id"
+        ],
         "type": "object"
       },
       "name": "slides_info"
@@ -7848,7 +8524,10 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "slide_id"],
+        "required": [
+          "presentation_id",
+          "slide_id"
+        ],
         "type": "object"
       },
       "name": "slides_read_slide"
@@ -7895,7 +8574,10 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "text"],
+        "required": [
+          "presentation_id",
+          "text"
+        ],
         "type": "object"
       },
       "name": "slides_locate"
@@ -7927,7 +8609,10 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "slide_id"],
+        "required": [
+          "presentation_id",
+          "slide_id"
+        ],
         "type": "object"
       },
       "name": "slides_skip_slide"
@@ -7959,7 +8644,10 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "slide_id"],
+        "required": [
+          "presentation_id",
+          "slide_id"
+        ],
         "type": "object"
       },
       "name": "slides_unskip_slide"
@@ -8014,7 +8702,11 @@
             "type": "string"
           }
         },
-        "required": ["presentation_id", "find", "replacement"],
+        "required": [
+          "presentation_id",
+          "find",
+          "replacement"
+        ],
         "type": "object"
       },
       "name": "slides_replace_text"
@@ -8073,7 +8765,9 @@
             "type": "string"
           }
         },
-        "required": ["media_id"],
+        "required": [
+          "media_id"
+        ],
         "type": "object"
       },
       "name": "photos_get"
