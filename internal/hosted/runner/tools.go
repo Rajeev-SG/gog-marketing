@@ -463,7 +463,7 @@ func admitWriteRequestMethod(name, path, method string) error {
 		if method != http.MethodPost || !strings.HasSuffix(path, ":batchUpdate") {
 			return native.ErrDenied
 		}
-	case "sheets_named_ranges_add", "sheets_named_ranges_update", "sheets_named_ranges_delete", "sheets_update_note", "sheets_merge", "sheets_unmerge", "sheets_resize_columns", "sheets_resize_rows", "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab", "slides_replace_text", "forms_add_question", "forms_delete_question", "docs_add_tab", "docs_rename_tab", "docs_delete_tab":
+	case "sheets_named_ranges_add", "sheets_named_ranges_update", "sheets_named_ranges_delete", "sheets_update_note", "sheets_merge", "sheets_unmerge", "sheets_resize_columns", "sheets_resize_rows", "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab", "slides_replace_text", "forms_add_question", "forms_delete_question", "docs_add_tab", "docs_rename_tab", "docs_delete_tab", "docs_named_range_create", "docs_named_range_delete", "docs_named_range_replace":
 		batch := strings.HasSuffix(path, ":batchUpdate")
 		if (batch && method != http.MethodPost) || (!batch && method != http.MethodGet) {
 			return native.ErrDenied
@@ -590,7 +590,7 @@ func (s *Server) verifyNativeDriveTrash(ctx context.Context, req *Request) outco
 }
 
 func validateSupplementalToolAuthorization(invocation *ToolInvocation) error {
-	for _, check := range []func(*ToolInvocation) error{validateAdminReplacement, validateNativeNoteClear, validateAppScriptExecution} {
+	for _, check := range []func(*ToolInvocation) error{validateAdminReplacement, validateNativeNoteClear, validateAppScriptExecution, validateNativeDocsRangeClear} {
 		if err := check(invocation); err != nil {
 			return err
 		}

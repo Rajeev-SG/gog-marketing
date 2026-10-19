@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 351,
-  "hosted_tool_count": 174,
-  "total_hosted_catalog_count": 212,
+  "hosted_tool_count": 178,
+  "total_hosted_catalog_count": 216,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 183,
-  "mapped_hosted_tool_count": 174,
+  "mapped_native_leaf_count": 187,
+  "mapped_hosted_tool_count": 178,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 121,
+    "eligible_missing": 117,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 183,
+    "implemented_hosted_unverified": 187,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,12 +68,12 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 17,
-      "mapped_native_leaves": 21,
+      "hosted_tools": 21,
+      "mapped_native_leaves": 25,
       "classifications": {
-        "eligible_missing": 47,
+        "eligible_missing": 43,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 21
+        "implemented_hosted_unverified": 25
       }
     },
     {
@@ -1875,10 +1875,26 @@
       "service": "docs",
       "command": "find-range",
       "native_command": "gog docs find-range",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_find_range",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Pure read plus local computation; no write call; requires document read access to the selected file"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2556,10 +2572,26 @@
       "service": "docs",
       "command": "named-range create",
       "native_command": "gog docs named-range create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_named_range_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Name limited to 256 UTF-16 units; WriteControl revision guard; read-back of target doc scoped to same documentId"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2587,10 +2619,26 @@
       "service": "docs",
       "command": "named-range delete",
       "native_command": "gog docs named-range delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_named_range_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Targets only ranges in the operator-designated document; destructive but single-document scoped; revision guard preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -2643,10 +2691,26 @@
       "service": "docs",
       "command": "named-range replace",
       "native_command": "gog docs named-range replace",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_named_range_replace",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Empty-text replacement handled via ForceSendFields; single-document scope; revision guard preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {

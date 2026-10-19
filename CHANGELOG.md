@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add literal UTF-16 range search and named-range create/delete/plain-text replacement through native handlers, selected-document grants and existing scopes. Preserve ambiguity/revision checks, readback and one-use chat write approval; delete/empty clearing require destructive permission. No server-file or markdown inputs. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted coverage: review all 164 remaining non-deferred native operations against source and current official method scopes; distinguish eligible adapters, resource/runtime/billing design, owner exclusions and scope-boundary blocks from paid Google security assessments. Correct fixed raw-read false exclusions and map Forms raw to existing forms_get without duplicating a tool. No new consent or runtime permissions. (#96, #97, thanks @Rajeev-SG)
 
 - Apps Script: expose deployed function execution through hosted MCP and all Apps Script tools through chat. Execution is an explicitly enabled, account-wide destructive capability, not a selected-file sandbox; reject BigQuery-authorised tokens and all scopes outside the existing audit-free allowlist. Preserve native deployment/parameter handling, add a no-network dry run, disable automatic execution retries, and retain exact one-use chat approval. Google API-executable/shared-standard-project setup and all required script scopes remain necessary; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
