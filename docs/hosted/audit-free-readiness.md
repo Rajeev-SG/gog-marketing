@@ -5,8 +5,9 @@
 `analytics_metadata_get` uses the native metadata command and a fixed GET to
 `analyticsdata.googleapis.com/v1beta/properties/ID/metadata`. Hosted selectors
 use canonical `properties/ID` resource grants; native numeric IDs remain supported.
-Only `analytics.readonly` or API-supported `analytics` authorize this Data API
-read; `analytics.edit` alone does not. No write approval or new scopes are added.
+Hosted metadata requires `analytics.readonly`; `analytics.edit` alone does not
+authorize this Data API read. The API-supported broader `analytics` scope remains
+outside the hosted allowlist and is rejected, without expanding consent. No write approval or new scopes are added.
 
 Candidate has 234 total/196 active tools, 358 native leaves/206 mapped and 105
 eligible missing. Catalogue and fixture evidence do not prove live Google

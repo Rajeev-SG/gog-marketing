@@ -3395,7 +3395,7 @@
         "idempotentHint": true,
         "openWorldHint": true
       },
-      "description": "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly or analytics. No account-wide access, raw HTTP, alternate hosts or retries.",
+      "description": "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly; broader analytics is outside the hosted allowlist. No account-wide access, raw HTTP, alternate hosts or retries.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

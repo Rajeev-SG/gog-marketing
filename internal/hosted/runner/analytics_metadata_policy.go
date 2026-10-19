@@ -11,7 +11,7 @@ var positiveAnalyticsPropertyID = regexp.MustCompile(`^[1-9][0-9]*$`)
 func nativeAnalyticsMetadataBindings() []NativeToolBinding {
 	return []NativeToolBinding{{
 		Name: "analytics_metadata_get", Service: ServiceAnalytics, ResourceType: ResourceTypeProperty, ResourceArgument: ResourceTypeProperty,
-		hosts: []string{"analyticsdata.googleapis.com"}, scopes: []string{"analytics.readonly", ServiceAnalytics},
+		hosts: []string{"analyticsdata.googleapis.com"}, scopes: []string{"analytics.readonly"},
 		methods: []string{http.MethodGet}, paths: exactPaths("/v1beta/", ""),
 		argumentPaths: func(args map[string]any) ([]string, error) {
 			property, _ := args["property"].(string)

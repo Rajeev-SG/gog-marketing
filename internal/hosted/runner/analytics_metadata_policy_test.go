@@ -19,7 +19,7 @@ func TestAnalyticsMetadataPolicy(t *testing.T) {
 		t.Fatalf("hosts = %#v", binding.hosts)
 	}
 
-	if fmtSprintStrings(binding.scopes) != fmtSprintStrings([]string{"analytics.readonly", ServiceAnalytics}) {
+	if fmtSprintStrings(binding.scopes) != fmtSprintStrings([]string{"analytics.readonly"}) {
 		t.Fatalf("scopes = %#v", binding.scopes)
 	}
 
@@ -60,11 +60,14 @@ func TestAnalyticsMetadataInvocationAndRequestGuard(t *testing.T) {
 			t.Fatalf("accepted %s %s%s", tc.method, tc.host, tc.path)
 		}
 	}
-	unauthorized := invocation
 
-	unauthorized.Authorization.Scopes = []string{"https://www.googleapis.com/auth/analytics.edit"}
-	if err := validateToolInvocation(&unauthorized); err == nil {
-		t.Fatal("edit-only scope accepted")
+	for _, scope := range []string{"https://www.googleapis.com/auth/analytics.edit", "https://www.googleapis.com/auth/analytics"} {
+		unauthorized := invocation
+
+		unauthorized.Authorization.Scopes = []string{scope}
+		if err := validateToolInvocation(&unauthorized); err == nil {
+			t.Fatalf("unsupported scope accepted: %s", scope)
+		}
 	}
 }
 

@@ -470,7 +470,6 @@
       "resource_model": "property",
       "resource_argument": "property",
       "accepted_scopes": [
-        "analytics",
         "analytics.readonly"
       ],
       "http_methods": [

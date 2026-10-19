@@ -772,7 +772,6 @@
       "resource_argument": "property",
       "policy_binding": {
         "accepted_scopes": [
-          "analytics",
           "analytics.readonly"
         ],
         "http_methods": [

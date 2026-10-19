@@ -14,7 +14,7 @@ func hostedAnalyticsMetadataTools() []mcpToolSpec {
 	return []mcpToolSpec{
 		{
 			Name: "analytics_metadata_get", Service: "analytics", Risk: mcpRiskRead,
-			Description: "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly or analytics. No account-wide access, raw HTTP, alternate hosts or retries.",
+			Description: "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly; broader analytics is outside the hosted allowlist. No account-wide access, raw HTTP, alternate hosts or retries.",
 			Options:     []mcp.ToolOption{propertyID},
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
 				value, err := requireMCPString(req, "property")
