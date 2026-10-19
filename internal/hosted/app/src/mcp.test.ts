@@ -1931,6 +1931,7 @@ describe("chat Google tools and durable write approvals", () => {
     analyticsTool?: string,
     taskTool?: string,
     slidesTool?: string,
+    driveTool?: string,
   ) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
@@ -1979,27 +1980,37 @@ describe("chat Google tools and durable write approvals", () => {
     };
     await repo.saveToolGrants(tenantId, connectionId, [
       {
-        service: slidesTool
-          ? "slides"
-          : analyticsTool
-            ? "analytics"
-            : docTool
-              ? "docs"
-              : scriptTool
-                ? "appscript"
-                : "tasks",
+        service: driveTool
+          ? "drive"
+          : slidesTool
+            ? "slides"
+            : analyticsTool
+              ? "analytics"
+              : docTool
+                ? "docs"
+                : scriptTool
+                  ? "appscript"
+                  : "tasks",
         toolName:
-          slidesTool ?? analyticsTool ?? docTool ?? scriptTool ?? taskTool ?? "tasks_lists_create",
+          driveTool ??
+          slidesTool ??
+          analyticsTool ??
+          docTool ??
+          scriptTool ??
+          taskTool ??
+          "tasks_lists_create",
         enabled: true,
-        allowDestructive: slidesTool
-          ? slidesTool === "slides_delete_slide"
-          : analyticsTool
-            ? analyticsTool === "analytics_retention_update"
-            : docTool
-              ? docTool !== "docs_find_range"
-              : taskTool
-                ? taskTool === "tasks_lists_delete"
-                : Boolean(scriptTool),
+        allowDestructive: driveTool
+          ? false
+          : slidesTool
+            ? slidesTool === "slides_delete_slide"
+            : analyticsTool
+              ? analyticsTool === "analytics_retention_update"
+              : docTool
+                ? docTool !== "docs_find_range"
+                : taskTool
+                  ? taskTool === "tasks_lists_delete"
+                  : Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -2009,22 +2020,24 @@ describe("chat Google tools and durable write approvals", () => {
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3600000).toISOString(),
-      granted_scopes: slidesTool
-        ? ["https://www.googleapis.com/auth/presentations"]
-        : analyticsTool
-          ? ["https://www.googleapis.com/auth/analytics.edit"]
-          : docTool
-            ? ["https://www.googleapis.com/auth/documents"]
-            : scriptTool
-              ? [
-                  "https://www.googleapis.com/auth/userinfo.email",
-                  "https://www.googleapis.com/auth/script.projects",
-                  "https://www.googleapis.com/auth/script.deployments",
-                ]
-              : [
-                  "https://www.googleapis.com/auth/tasks",
-                  "https://www.googleapis.com/auth/analytics.readonly",
-                ],
+      granted_scopes: driveTool
+        ? ["https://www.googleapis.com/auth/drive.file"]
+        : slidesTool
+          ? ["https://www.googleapis.com/auth/presentations"]
+          : analyticsTool
+            ? ["https://www.googleapis.com/auth/analytics.edit"]
+            : docTool
+              ? ["https://www.googleapis.com/auth/documents"]
+              : scriptTool
+                ? [
+                    "https://www.googleapis.com/auth/userinfo.email",
+                    "https://www.googleapis.com/auth/script.projects",
+                    "https://www.googleapis.com/auth/script.deployments",
+                  ]
+                : [
+                    "https://www.googleapis.com/auth/tasks",
+                    "https://www.googleapis.com/auth/analytics.readonly",
+                  ],
     });
     await repo.upsertCredential({
       tenantId,
@@ -2077,6 +2090,17 @@ describe("chat Google tools and durable write approvals", () => {
         true,
         "{}",
       );
+    if (driveTool)
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        "drive",
+        "selected-drive",
+        "file",
+        "Selected Drive file",
+        true,
+        "{}",
+      );
     const tools = await googleTools(env, repo, session, approvals, authorize);
     const run = async (name: string, input: Record<string, unknown>, id = "call-1") =>
       tools[name]!.execute!(input, {
@@ -2100,6 +2124,38 @@ describe("chat Google tools and durable write approvals", () => {
       },
     };
   }
+
+  it.each(["drive_permissions", "drive_audit_sharing", "drive_audit_user"])(
+    "Drive permission chat read %s needs no approval and fresh file authority",
+    async (name) => {
+      const f = await chatFixture(undefined, undefined, undefined, undefined, undefined, name);
+      const args = {
+        file_id: "selected-drive",
+        ...(name === "drive_audit_user" ? { user: "guest@outside.test" } : {}),
+        connectionId: f.connectionId,
+      };
+      expect(f.tools).toHaveProperty(name);
+      expect(await f.run(name, args)).toHaveProperty("structuredContent");
+      expect(f.requests).toHaveLength(1);
+      expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
+      expect(f.requests[0]!.resourceId).toBe("selected-drive");
+      expect(f.requests[0]!.tenantId).toBe(f.tenantId);
+      expect(f.values.size).toBe(0);
+      await f.repo.upsertResourceGrant(
+        f.tenantId,
+        f.connectionId,
+        "drive",
+        "selected-drive",
+        "file",
+        "Selected Drive file",
+        false,
+        "{}",
+      );
+      await expect(f.run(name, args)).resolves.toMatchObject({ isError: true });
+      expect(f.requests).toHaveLength(1);
+      expect(f.values.size).toBe(0);
+    },
+  );
 
   it("lists only enabled account tools/resources and executes real shared-MCP reads", async () => {
     const f = await chatFixture();
@@ -3873,6 +3929,24 @@ it.each(workspaceWriteToolCases)(
 );
 
 it.each([
+  {
+    toolName: "drive_permissions",
+    service: "drive",
+    resourceArgument: "file_id",
+    args: { file_id: "selected-resource" },
+  },
+  {
+    toolName: "drive_audit_sharing",
+    service: "drive",
+    resourceArgument: "file_id",
+    args: { file_id: "selected-resource" },
+  },
+  {
+    toolName: "drive_audit_user",
+    service: "drive",
+    resourceArgument: "file_id",
+    args: { file_id: "selected-resource", user: "guest@outside.test" },
+  },
   {
     toolName: "drive_revisions_list",
     service: "drive",

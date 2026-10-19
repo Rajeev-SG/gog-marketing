@@ -133,7 +133,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(),
 	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
 	nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
-	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(),
+	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(), nativeDrivePermissionReadBindings(),
 )...)
 
 var (
@@ -354,7 +354,8 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			return native.ErrDenied
 		}
 
-		if invocation.Name == "drive_revisions_list" || invocation.Name == "drive_revisions_get" {
+		switch invocation.Name {
+		case "drive_revisions_list", "drive_revisions_get", "drive_permissions", "drive_audit_sharing", "drive_audit_user":
 			if alt, present := request.URL.Query()["alt"]; present && (len(alt) != 1 || alt[0] != "json") {
 				return native.ErrDenied
 			}

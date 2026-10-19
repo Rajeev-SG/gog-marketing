@@ -10,6 +10,9 @@ import { HostedRepository } from "../../../state/src/repository.js";
 // A bounded starter surface, not CLI parity. These are existing fixed runner mappings.
 export const CHAT_GOOGLE_TOOLS = new Set([
   "drive_get",
+  "drive_permissions",
+  "drive_audit_sharing",
+  "drive_audit_user",
   "docs_get",
   "docs_write",
   "docs_find_range",

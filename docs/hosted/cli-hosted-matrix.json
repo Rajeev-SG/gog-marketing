@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 360,
-  "hosted_tool_count": 198,
-  "total_hosted_catalog_count": 236,
+  "hosted_tool_count": 201,
+  "total_hosted_catalog_count": 239,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 208,
-  "mapped_hosted_tool_count": 198,
+  "mapped_native_leaf_count": 211,
+  "mapped_hosted_tool_count": 201,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 105,
+    "eligible_missing": 102,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 208,
+    "implemented_hosted_unverified": 211,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -79,14 +79,14 @@
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 8,
-      "mapped_native_leaves": 8,
+      "hosted_tools": 11,
+      "mapped_native_leaves": 11,
       "classifications": {
         "deferred": 5,
-        "eligible_missing": 16,
+        "eligible_missing": 13,
         "excluded": 1,
         "implementation_design_required": 16,
-        "implemented_hosted_unverified": 8,
+        "implemented_hosted_unverified": 11,
         "scope_boundary_blocked": 1
       }
     },
@@ -3731,10 +3731,24 @@
       "service": "drive",
       "command": "audit sharing",
       "native_command": "gog drive audit sharing",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_audit_sharing",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native driveAuditItems short-circuits to exactly one file when --file is supplied; sharing/user audits then inspect that file permissions only. Force the selected --file argument, omit tree/parent/global scan options, retain current account. The user argument is a permission-email FILTER, not account impersonation."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3765,10 +3779,24 @@
       "service": "drive",
       "command": "audit user",
       "native_command": "gog drive audit user",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_audit_user",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native driveAuditItems short-circuits to exactly one file when --file is supplied; sharing/user audits then inspect that file permissions only. Force the selected --file argument, omit tree/parent/global scan options, retain current account. The user argument is a permission-email FILTER, not account impersonation."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4605,10 +4633,24 @@
       "service": "drive",
       "command": "permissions",
       "native_command": "gog drive permissions",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_permissions",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "drive.file variant exposes only app-created/app-opened file grants; list-only, supportsAllDrives already set"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
