@@ -304,6 +304,10 @@ func BuildMatrix(root *schemaNode, hosted []runner.NativeToolDescription, bindin
 			entry.Status = "implemented_hosted_unverified"
 			entry.ImplementationState = "executable_fixed_schema_live_evidence_separate"
 			entry.ClassificationReason = "exact canonical hosted tool invokes this native handler path"
+			if entry.EngineeringReview != nil && entry.EngineeringReview.Hostability == "already_covered_variant" {
+				entry.ImplementationState = "executable_equivalent_read_variant_live_evidence_separate"
+				entry.ClassificationReason = "reviewed equivalent Form resource GET via native FormsGetCmd; raw formatter and handler identity are not claimed equivalent"
+			}
 			matchedTools[tool] = true
 			mappedNativeLeafCount++
 			if metadata, found := bindings[tool]; found {

@@ -13,7 +13,7 @@ leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
 also map direct and grouped aliases. Counts are: 183 implemented/unverified hosted
-leaves, 129 reviewed eligible missing, 31 requiring resource/transport/billing
+leaves, 121 reviewed eligible missing, 39 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.
@@ -65,11 +65,13 @@ It reviews all **164** previously unmapped, non-deferred leaves at source
 leaving **163** explicitly classified rows. No row is silently treated as a paid
 assessment requirement.
 
-**162 reviewed rows have an approved-scope variant with no paid assessment
-barrier identified.** This is not a promise of turnkey implementation: 129 are
-fixed-adapter candidates, 31 need resource/transport/billing design, one remains
-excluded by owner policy, and one is the already-covered Forms alias. The two
-outside-boundary cases are Drive Activity and native shared-drive enumeration;
+**153 reviewed rows have an approved-scope variant with no paid assessment
+barrier identified.** This is not a promise of turnkey implementation: 121 are
+fixed-adapter candidates, 30 need resource/transport/billing design, one remains
+excluded by owner policy, and one is the already-covered Forms alias. Nine further
+Connected Sheets rows require additional `bigquery.readonly` authorization, not
+currently in the hosted allowlist; no paid-assessment classification is assumed.
+Together there are 39 design gaps. The two outside-boundary cases are Drive Activity and native shared-drive enumeration;
 no unsupported conclusion about paid assessment exemptions is made for them.
 
 Commands named `raw` are classified by their source, not their name. The native
@@ -88,3 +90,19 @@ semantics and bounded result collection. Native local-file outputs and Forms
 Pub/Sub watches need product/runtime/customer-infrastructure design, not a
 blanket paid Google assessment. All future adapters still require their own
 permission, scope, payload, tenant, retry and real-acceptance checks.
+
+
+Connected Sheets is an explicit additional-scope exception: the official
+[guide](https://developers.google.com/workspace/sheets/api/guides/connected-sheets)
+requires `bigquery.readonly` for BigQuery Connected Sheets data, beyond ordinary
+Sheets method scopes. All nine native variants are design-required until explicit
+optional authorization is assessed; refresh/update/add also need customer billing
+controls. They are not included in the 153 proven-approved-scope rows and are not
+assumed to require paid Google security assessment. No consent scope was added.
+
+
+This census covers the existing native CLI engine, not every operation in the
+underlying Google APIs. Fully mapped CLI services are not claimed to have full
+Google API coverage. API-only methods and batch request types absent from the
+native command tree remain a separate discovery pass, not implicitly excluded
+as requiring paid assessments.

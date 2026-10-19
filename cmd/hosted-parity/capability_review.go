@@ -9,18 +9,20 @@ import (
 var capabilityReviewJSON []byte
 
 type capabilityReview struct {
-	Command         string   `json:"command"`
-	ScopeBoundary   string   `json:"scope_boundary"`
-	PaidAssessment  string   `json:"paid_assessment"`
-	Hostability     string   `json:"hostability"`
-	GoogleMethods   []string `json:"google_methods"`
-	Scopes          []string `json:"scopes"`
-	ResourceModel   string   `json:"resource_model"`
-	Constraint      string   `json:"constraint"`
-	SourceEvidence  string   `json:"source_evidence"`
-	ExistingTool    string   `json:"existing_tool,omitempty"`
-	ControllerNotes []string `json:"controller_notes,omitempty"`
-	NativeHandler   struct {
+	AdditionalScopeRequirements []string `json:"additional_scope_requirements,omitempty"`
+	AdditionalScopeEvidence     string   `json:"additional_scope_evidence,omitempty"`
+	Command                     string   `json:"command"`
+	ScopeBoundary               string   `json:"scope_boundary"`
+	PaidAssessment              string   `json:"paid_assessment"`
+	Hostability                 string   `json:"hostability"`
+	GoogleMethods               []string `json:"google_methods"`
+	Scopes                      []string `json:"scopes"`
+	ResourceModel               string   `json:"resource_model"`
+	Constraint                  string   `json:"constraint"`
+	SourceEvidence              string   `json:"source_evidence"`
+	ExistingTool                string   `json:"existing_tool,omitempty"`
+	ControllerNotes             []string `json:"controller_notes,omitempty"`
+	NativeHandler               struct {
 		File         string `json:"file"`
 		LineAtReview int    `json:"line_at_review"`
 		Receiver     string `json:"receiver"`

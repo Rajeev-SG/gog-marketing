@@ -58,6 +58,14 @@ func TestCapabilityReviewCoversActualRemainingNativeCommands(t *testing.T) {
 			t.Fatalf("%s lacks the cited native Run handler", entry.Command)
 		}
 		status, _ := classifyReviewedCapability(entry)
+		if len(entry.AdditionalScopeRequirements) > 0 {
+			if entry.AdditionalScopeEvidence == "" {
+				t.Fatalf("%s lacks additional-scope evidence", entry.Command)
+			}
+			if status == "eligible_missing" || entry.PaidAssessment == "not_required_for_approved_scope_variant" {
+				t.Fatalf("%s confuses method-level scopes with complete transitive authorization", entry.Command)
+			}
+		}
 		if status == "eligible_missing" && entry.PaidAssessment != "not_required_for_approved_scope_variant" {
 			t.Fatalf("%s was assumed eligible without approved-scope evidence", entry.Command)
 		}
@@ -110,7 +118,7 @@ func TestFixedRawReadsAreNotArbitraryAPIExclusions(t *testing.T) {
 			}
 			found = true
 			if service == "forms" {
-				if leaf.HostedTool == nil || *leaf.HostedTool != "forms_get" {
+				if leaf.HostedTool == nil || *leaf.HostedTool != "forms_get" || leaf.ImplementationState != "executable_equivalent_read_variant_live_evidence_separate" {
 					t.Fatal("Forms fixed GET alias was not mapped to existing typed tool")
 				}
 			} else if leaf.Status != "eligible_missing" {
@@ -122,6 +130,40 @@ func TestFixedRawReadsAreNotArbitraryAPIExclusions(t *testing.T) {
 		}
 		if !found {
 			t.Fatalf("missing actual raw native command %s", service)
+		}
+	}
+}
+
+func TestConnectedSheetsScopeAndBillingAreNotOrdinaryAdapterReadiness(t *testing.T) {
+	count := 0
+	for command, review := range reviewedCapabilities {
+		if !strings.HasPrefix(command, "sheets datasource") {
+			continue
+		}
+		count++
+		status, _ := classifyReviewedCapability(review)
+		if status != "implementation_design_required" || review.ScopeBoundary != "additional_scope_review_required" || !slices.Contains(review.AdditionalScopeRequirements, "https://www.googleapis.com/auth/bigquery.readonly") {
+			t.Fatalf("%s lost additional-scope/cost requirements", command)
+		}
+		if policy.ValidateScopes(review.AdditionalScopeRequirements) == nil {
+			t.Fatalf("%s scope boundary changed: review the recorded requirement before claiming readiness", command)
+		}
+	}
+	if count != 9 {
+		t.Fatalf("Connected Sheets source variants reviewed=%d,want9", count)
+	}
+}
+
+func TestReviewedMultiCallInventoriesRetainRequiredMethods(t *testing.T) {
+	for command, required := range map[string][]string{
+		"drive sync push": {"drive.files.list", "drive.files.get", "drive.files.create", "drive.files.update"},
+		"slides copy":     {"drive.files.copy", "slides.presentations.get"},
+	} {
+		review := reviewedCapabilities[command]
+		for _, method := range required {
+			if !slices.Contains(review.GoogleMethods, method) {
+				t.Fatalf("%s omits mandatory native RPC %s", command, method)
+			}
 		}
 	}
 }

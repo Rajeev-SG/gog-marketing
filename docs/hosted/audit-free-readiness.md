@@ -3,10 +3,10 @@
 ## Comprehensive non-deferred capability review (19 October 2026)
 
 All 164 previously unmapped native entries in the eleven priority services now
-have source/method/scope evidence in the parity inventory. Of these, 162 have an
+have source/method/scope evidence in the parity inventory. Of these, 153 have an
 existing approved-scope variant with no paid Google assessment barrier identified;
 that does not override resource, runtime, billing or owner-policy constraints.
-Current categories are 129 eligible missing, 31 implementation-design gaps,
+Current categories are 121 eligible missing, 39 implementation-design gaps,
 two owner exclusions and one scope-boundary block. Forms raw is the same Form
 GET already provided by `forms_get` and is now mapped without a duplicate tool.
 There are 183 mapped native leaves, 174 active hosted tools and 212 total tools.
@@ -894,3 +894,19 @@ script and caller, API enablement, and caller authorisation for every scope of t
 entire script. Arbitrary execution must not imply permission to bypass selected-file
 or billable-operation controls. No live Google management, execution, deployment
 or OAuth change is claimed by this engineering batch.
+
+
+Connected Sheets is an explicit additional-scope exception: the official
+[guide](https://developers.google.com/workspace/sheets/api/guides/connected-sheets)
+requires `bigquery.readonly` for BigQuery Connected Sheets data, beyond ordinary
+Sheets method scopes. All nine native variants are design-required until explicit
+optional authorization is assessed; refresh/update/add also need customer billing
+controls. They are not included in the 153 proven-approved-scope rows and are not
+assumed to require paid Google security assessment. No consent scope was added.
+
+
+This census covers the existing native CLI engine, not every operation in the
+underlying Google APIs. Fully mapped CLI services are not claimed to have full
+Google API coverage. API-only methods and batch request types absent from the
+native command tree remain a separate discovery pass, not implicitly excluded
+as requiring paid assessments.

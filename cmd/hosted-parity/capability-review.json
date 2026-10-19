@@ -14,6 +14,9 @@
     "appscript": "https://script.googleapis.com/$discovery/rest?version=v1",
     "driveactivity": "https://driveactivity.googleapis.com/$discovery/rest?version=v2"
   },
+  "additional_scope_evidence": {
+    "sheets datasource": "Official guide: requests for any BigQuery Connected Sheets data require bigquery.readonly in addition to ordinary Sheets scopes; https://developers.google.com/workspace/sheets/api/guides/connected-sheets"
+  },
   "method_evidence": {
     "bigquery.jobs.query": {
       "http_method": "POST",
@@ -2281,7 +2284,10 @@
       "paid_assessment": "not_required_for_approved_scope_variant",
       "constraint": "Native local-folder scan and remote child reconciliation are not a paid-scope barrier. Needs trusted uploaded/local-client workspace input, bounded staged files, explicit destination/child resource authority and approved plan application; never accept arbitrary shared runner filesystem paths or silently scan all Drive.",
       "google_methods": [
-        "drive.files.list"
+        "drive.files.list",
+        "drive.files.get",
+        "drive.files.create",
+        "drive.files.update"
       ],
       "hostability": "requires_resource_or_transport_design",
       "resource_model": "bulk local-to-Drive tree sync plan",
@@ -2291,6 +2297,7 @@
       ],
       "source_evidence": "internal/cmd/drive_sync_push.go:35 (buildDriveSyncPlan, applyDriveSyncPlan via googleDriveSyncClient)",
       "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative.",
         "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative.",
         "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
       ],
@@ -2545,6 +2552,18 @@
       "controller_notes": [
         "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
       ],
+      "variants": [
+        {
+          "name": "arbitrary_requests",
+          "hostability": "owner_excluded",
+          "native_evidence": "internal/cmd/sheets_batch_request.go raw batch body is not automatically authorized by one selected-file grant"
+        },
+        {
+          "name": "allowlisted_typed_requests",
+          "hostability": "requires_resource_or_transport_design",
+          "native_evidence": "Same native batch endpoint could admit only already-typed safe operations after child-tool/scope/resource/billing validation; no arbitrary passthrough implied"
+        }
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_batch_request.go",
         "line_at_review": 31,
@@ -2721,8 +2740,8 @@
     },
     {
       "command": "sheets datasource add",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
       "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.batchUpdate"
@@ -2732,8 +2751,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Connected Sheets AddDataSource (BigQuery DataSourceSpec) on a spreadsheet; may trigger data execution on creation",
-      "constraint": "Starts BigQuery execution with possible charges; adapter must preserve tenant BigQuery cost guardrails (max-bytes-billed) and handle missing dataSourceId in reply plus FAILED execution status; Connected Sheets availability may be edition-limited",
+      "constraint": "Starts BigQuery execution with possible charges; adapter must preserve tenant BigQuery cost guardrails (max-bytes-billed) and handle missing dataSourceId in reply plus FAILED execution status; Connected Sheets availability may be edition-limited Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:15 (executeConnectedSheetsWrite, AddDataSourceRequest, connectedSheetsExecutionError; preview flags may_incur_bigquery_charges)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource_add.go",
         "line_at_review": 24,
@@ -2742,9 +2768,9 @@
     },
     {
       "command": "sheets datasource delete",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.batchUpdate"
       ],
@@ -2753,8 +2779,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Connected Sheets data source object within a spreadsheet; delete also removes its linked DATA_SOURCE sheet",
-      "constraint": "Destructive; deletes linked sheet and unlinks dependent extracts/charts/pivots; guarded by readOnly check and confirmDestructiveChecked",
+      "constraint": "Destructive; deletes linked sheet and unlinks dependent extracts/charts/pivots; guarded by readOnly check and confirmDestructiveChecked Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource_delete.go:15 (executeConnectedSheetsWrite)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource_delete.go",
         "line_at_review": 20,
@@ -2763,9 +2796,9 @@
     },
     {
       "command": "sheets datasource describe",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.get"
       ],
@@ -2775,8 +2808,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Single Connected Sheets data source snapshot plus its DATA_SOURCE sheet and refresh schedules",
-      "constraint": "Requires Connected Sheets (BigQuery-backed) spreadsheet; feature availability depends on Workspace edition",
+      "constraint": "Requires Connected Sheets (BigQuery-backed) spreadsheet; feature availability depends on Workspace edition Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:41 (requireConnectedSheetsService, fetchSheetsDataSourceSnapshot)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource.go",
         "line_at_review": 136,
@@ -2785,9 +2825,9 @@
     },
     {
       "command": "sheets datasource list",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.get"
       ],
@@ -2797,8 +2837,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "All data sources in one spreadsheet, sorted by dataSourceId",
-      "constraint": "Read-only snapshot via spreadsheets.get; empty list printed to stderr",
+      "constraint": "Read-only snapshot via spreadsheets.get; empty list printed to stderr Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:37 (fetchSheetsDataSourceSnapshot)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource.go",
         "line_at_review": 99,
@@ -2807,9 +2854,9 @@
     },
     {
       "command": "sheets datasource refresh",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.batchUpdate"
       ],
@@ -2818,8 +2865,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "RefreshDataSource request on one data source; returns per-object DataExecutionStatus entries",
-      "constraint": "Starts Google-side BigQuery execution; missing reply treated as ambiguous to prevent blind retry; FAILED status surfaced",
+      "constraint": "Starts Google-side BigQuery execution; missing reply treated as ambiguous to prevent blind retry; FAILED status surfaced Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource_refresh.go:14 (executeConnectedSheetsWrite)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource_refresh.go",
         "line_at_review": 20,
@@ -2828,9 +2882,9 @@
     },
     {
       "command": "sheets datasource table describe",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.get"
       ],
@@ -2840,8 +2894,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "DataSourceTable anchored at an A1 range in one spreadsheet",
-      "constraint": "Anchor must resolve to an existing data-source table; A1 validation via validateSheetsDataSourceTableArgs",
+      "constraint": "Anchor must resolve to an existing data-source table; A1 validation via validateSheetsDataSourceTableArgs Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:51 (fetchSheetsDataSourceTables)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource.go",
         "line_at_review": 229,
@@ -2850,9 +2911,9 @@
     },
     {
       "command": "sheets datasource table list",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.get"
       ],
@@ -2862,8 +2923,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "All DataSourceTable objects in one spreadsheet, optional filter by dataSourceId",
-      "constraint": "Read-only; client-side filtering by data source id",
+      "constraint": "Read-only; client-side filtering by data source id Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:46 (fetchSheetsDataSourceTables)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource.go",
         "line_at_review": 189,
@@ -2872,9 +2940,9 @@
     },
     {
       "command": "sheets datasource table read",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.get",
         "sheets.spreadsheets.values.get"
@@ -2885,8 +2953,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Values grid over a data-source table range, bounds computed from table rowLimit and column count",
-      "constraint": "Column count inferred from table/sheet metadata with fallback fetch; --max-rows must be > 0; honors table rowLimit truncation",
+      "constraint": "Column count inferred from table/sheet metadata with fallback fetch; --max-rows must be > 0; honors table rowLimit truncation Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource.go:56 (fetchSheetsDataSourceTables, Spreadsheets.Values.Get)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource.go",
         "line_at_review": 271,
@@ -2895,9 +2970,9 @@
     },
     {
       "command": "sheets datasource update",
-      "scope_boundary": "within_current_allowlist",
-      "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "scope_boundary": "additional_scope_review_required",
+      "paid_assessment": "not_established_additional_scope_review_required",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "sheets.spreadsheets.batchUpdate"
       ],
@@ -2906,8 +2981,15 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "BigQuery DataSourceSpec update on one data source via UpdateDataSourceRequest with field mask",
-      "constraint": "May incur BigQuery charges on Google-side execution; --billing-project honored, --project rejected; preflight target validation and reply identity check",
+      "constraint": "May incur BigQuery charges on Google-side execution; --billing-project honored, --project rejected; preflight target validation and reply identity check Official Connected Sheets guide requires bigquery.readonly in addition to ordinary Sheets scopes. Native connected-client factories request it, but it is not in the hosted consent allowlist. Method-level discovery scopes alone do not establish complete runtime authorization. Assess explicit optional admission without assuming paid-audit requirements; Google-side query execution also needs customer-project/billing controls.",
       "source_evidence": "internal/cmd/sheets_datasource_update.go:16 (submitConnectedSheetsWrite, validateConnectedSheetsUpdateTarget)",
+      "additional_scope_requirements": [
+        "https://www.googleapis.com/auth/bigquery.readonly"
+      ],
+      "additional_scope_evidence": "https://developers.google.com/workspace/sheets/api/guides/connected-sheets",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/sheets_datasource_update.go",
         "line_at_review": 26,
@@ -3291,14 +3373,19 @@
       "paid_assessment": "not_required_for_approved_scope_variant",
       "hostability": "ready_for_fixed_adapter",
       "google_methods": [
-        "drive.files.copy"
+        "drive.files.copy",
+        "slides.presentations.get"
       ],
       "scopes": [
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Drive copy of a presentation file after mimeType check, with optional title and parent",
-      "constraint": "Relies on drive.file grant to the source presentation; parent folder must also be app-accessible under drive.file; mime check enforces presentations only",
+      "constraint": "Relies on drive.file grant to the source presentation; parent folder must also be app-accessible under drive.file; mime check enforces presentations only Native copy mandatorily reads the new presentation through Presentations.Get; bind created-resource readback to the trusted copy result. Basic presentation file-copy is already possible with drive_copy and its explicit Drive grants, but full native summary/readback parity is not assumed.",
       "source_evidence": "internal/cmd/slides.go:316 (copyViaDrive helper, ExpectedMime application/vnd.google-apps.presentation)",
+      "existing_tool": "drive_copy",
+      "controller_notes": [
+        "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
+      ],
       "native_handler": {
         "file": "internal/cmd/slides.go",
         "line_at_review": 322,
