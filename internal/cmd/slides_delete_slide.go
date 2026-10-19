@@ -7,6 +7,7 @@ import (
 
 	"google.golang.org/api/slides/v1"
 
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -40,6 +41,7 @@ func (c *SlidesDeleteSlideCmd) Run(ctx context.Context, flags *RootFlags) error 
 		return err
 	}
 
+	ctx = googleapi.WithoutRetries(ctx)
 	slidesSvc, err := slidesService(ctx, account)
 	if err != nil {
 		return err

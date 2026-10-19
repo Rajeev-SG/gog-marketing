@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Slides: expose native slide new/duplicate/move/delete through exact `presentations.batchUpdate` methods, selected-deck/tool grants and chat approval. Preserve native zero indexes and predefined/exact layout choice; deletion requires destructive permission. All four mutation tools disable uncertain-response retries. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Docs: expose native text/paragraph formatting, page layout and section columns with exact document/tool write grants and chat approval. Preserve explicit false/zero and margin-only mode; no files, raw masks or persisted batches. All three commands disable mutation retries. Live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: add literal insert, range/anchor delete, default-body clear and first/all literal find-replace through native handlers, exact document grants and chat approval. Delete/clear/empty replacement require destructive authority. Text edits are single-attempt; clear bypasses sed's independent retry loop while preserving native body/no-op behavior. No files, stdin, markdown or arbitrary batch/sed inputs. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

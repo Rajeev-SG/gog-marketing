@@ -1930,6 +1930,7 @@ describe("chat Google tools and durable write approvals", () => {
     docTool?: string,
     analyticsTool?: string,
     taskTool?: string,
+    slidesTool?: string,
   ) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
@@ -1937,6 +1938,15 @@ describe("chat Google tools and durable write approvals", () => {
       __testToolRunner: {
         async execute(request) {
           requests.push(request);
+          if (slidesTool && request.nativeTool?.name === slidesTool) {
+            return {
+              status: "ok",
+              result: {
+                content: [{ type: "text", text: `${slidesTool} fixture` }],
+                structuredContent: { ok: true },
+              },
+            };
+          }
           return { status: "ok", result: { id: "fixture-result" } };
         },
       },
@@ -1969,22 +1979,27 @@ describe("chat Google tools and durable write approvals", () => {
     };
     await repo.saveToolGrants(tenantId, connectionId, [
       {
-        service: analyticsTool
-          ? "analytics"
-          : docTool
-            ? "docs"
-            : scriptTool
-              ? "appscript"
-              : "tasks",
-        toolName: analyticsTool ?? docTool ?? scriptTool ?? taskTool ?? "tasks_lists_create",
+        service: slidesTool
+          ? "slides"
+          : analyticsTool
+            ? "analytics"
+            : docTool
+              ? "docs"
+              : scriptTool
+                ? "appscript"
+                : "tasks",
+        toolName:
+          slidesTool ?? analyticsTool ?? docTool ?? scriptTool ?? taskTool ?? "tasks_lists_create",
         enabled: true,
-        allowDestructive: analyticsTool
-          ? analyticsTool === "analytics_retention_update"
-          : docTool
-            ? docTool !== "docs_find_range"
-            : taskTool
-              ? taskTool === "tasks_lists_delete"
-              : Boolean(scriptTool),
+        allowDestructive: slidesTool
+          ? slidesTool === "slides_delete_slide"
+          : analyticsTool
+            ? analyticsTool === "analytics_retention_update"
+            : docTool
+              ? docTool !== "docs_find_range"
+              : taskTool
+                ? taskTool === "tasks_lists_delete"
+                : Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -1994,20 +2009,22 @@ describe("chat Google tools and durable write approvals", () => {
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3600000).toISOString(),
-      granted_scopes: analyticsTool
-        ? ["https://www.googleapis.com/auth/analytics.edit"]
-        : docTool
-          ? ["https://www.googleapis.com/auth/documents"]
-          : scriptTool
-            ? [
-                "https://www.googleapis.com/auth/userinfo.email",
-                "https://www.googleapis.com/auth/script.projects",
-                "https://www.googleapis.com/auth/script.deployments",
-              ]
-            : [
-                "https://www.googleapis.com/auth/tasks",
-                "https://www.googleapis.com/auth/analytics.readonly",
-              ],
+      granted_scopes: slidesTool
+        ? ["https://www.googleapis.com/auth/presentations"]
+        : analyticsTool
+          ? ["https://www.googleapis.com/auth/analytics.edit"]
+          : docTool
+            ? ["https://www.googleapis.com/auth/documents"]
+            : scriptTool
+              ? [
+                  "https://www.googleapis.com/auth/userinfo.email",
+                  "https://www.googleapis.com/auth/script.projects",
+                  "https://www.googleapis.com/auth/script.deployments",
+                ]
+              : [
+                  "https://www.googleapis.com/auth/tasks",
+                  "https://www.googleapis.com/auth/analytics.readonly",
+                ],
     });
     await repo.upsertCredential({
       tenantId,
@@ -2046,6 +2063,17 @@ describe("chat Google tools and durable write approvals", () => {
         "properties/123",
         "property",
         "Property",
+        true,
+        "{}",
+      );
+    if (slidesTool)
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        "slides",
+        "selected-presentation",
+        "file",
+        "Selected presentation",
         true,
         "{}",
       );
@@ -2335,6 +2363,67 @@ describe("chat Google tools and durable write approvals", () => {
     expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
     expect(f.values.size).toBe(0);
   });
+  it.each([
+    {
+      name: "slides_new_slide",
+      args: { presentation_id: "selected-presentation", layout: "TITLE_AND_BODY" },
+    },
+    {
+      name: "slides_duplicate_slide",
+      args: { presentation_id: "selected-presentation", slide_id: "slide-1" },
+    },
+    {
+      name: "slides_move_slide",
+      args: { presentation_id: "selected-presentation", slide_id: "slide-1", to_index: 1 },
+    },
+    {
+      name: "slides_delete_slide",
+      args: { presentation_id: "selected-presentation", slide_id: "slide-1" },
+    },
+  ])(
+    "Slides lifecycle chat $name requires one-use exact-argument approval",
+    async ({ name, args }) => {
+      const f = await chatFixture(undefined, undefined, undefined, undefined, name);
+      const input = { ...args, connectionId: f.connectionId };
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      await f.approvals.request("call-1", name, input, f.session);
+      expect(
+        await f.approvals.respond("call-1", true, { ...f.session, userId: "foreign-user" }),
+      ).toBe(false);
+      expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+      await expect(
+        f.run(name, { ...input, presentation_id: "presentation-foreign-1" }),
+      ).rejects.toThrow("fresh approval");
+      if (name === "slides_move_slide")
+        await expect(f.run(name, { ...input, to_index: 2 })).rejects.toThrow("fresh approval");
+      if (name === "slides_new_slide")
+        await expect(f.run(name, { ...input, layout: "TITLE_ONLY" })).rejects.toThrow(
+          "fresh approval",
+        );
+      expect(await f.run(name, input)).toHaveProperty("structuredContent");
+      expect(f.requests).toHaveLength(1);
+      expect(f.requests[0]!.nativeTool).toMatchObject({
+        name,
+        allowWrite: true,
+        allowDestructive: name === "slides_delete_slide",
+        arguments: args,
+      });
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      await f.approvals.request("call-2", name, input, f.session);
+      await f.approvals.respond("call-2", true, f.session);
+      await f.repo.saveToolGrants(f.tenantId, f.connectionId, [
+        {
+          service: "slides",
+          toolName: name,
+          enabled: false,
+          allowDestructive: false,
+          allowBillable: false,
+        },
+      ]);
+      expect(await f.run(name, input, "call-2")).toHaveProperty("isError", true);
+      expect(f.requests).toHaveLength(1);
+    },
+  );
   it.each([
     {
       name: "tasks_lists_rename",
@@ -3540,6 +3629,38 @@ const workspaceWriteToolCases = [
     resourceArgument: "document_id",
     args: { document_id: "selected-deck", tab: "tab-1" },
     result: { updated: true },
+    allowDestructive: true,
+  },
+  {
+    toolName: "slides_new_slide",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: { presentation_id: "selected-deck", layout: "TITLE_AND_BODY", index: 0 },
+    result: { new_slide: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "slides_duplicate_slide",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: { presentation_id: "selected-deck", slide_id: "p:0", to_index: 0 },
+    result: { duplicated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "slides_move_slide",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: { presentation_id: "selected-deck", slide_id: "p:0", to_index: 0 },
+    result: { moved: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "slides_delete_slide",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: { presentation_id: "selected-deck", slide_id: "p:0" },
+    result: { deleted: true },
     allowDestructive: true,
   },
 ] as const;

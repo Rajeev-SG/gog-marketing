@@ -132,8 +132,8 @@ var nativeToolBindings = append([]NativeToolBinding{
 	[]NativeToolBinding{nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()},
 	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(),
 	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
-	nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(), nativeSheetsGeometryBindings(),
-	nativeSheetsRangeNoteBindings(),
+	nativeSlidesLifecycleBindings(), nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
+	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(),
 )...)
 
 var (
@@ -214,6 +214,10 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 	}
 
 	if invocation.Name == "slides_update_notes" && !auth.AllowDestructive {
+		return invalidf("destructive grant is disabled")
+	}
+
+	if invocation.Name == "slides_delete_slide" && !auth.AllowDestructive {
 		return invalidf("destructive grant is disabled")
 	}
 

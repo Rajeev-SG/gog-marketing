@@ -8713,6 +8713,156 @@
     }
   },
   {
+    "name": "slides_new_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Add a slide to a selected Google Slides presentation via gog slides new-slide. Omitted layout chooses the native BLANK default; layout and layout_id are mutually exclusive.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "description": "Optional zero-based insertion index.",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "layout": {
+            "description": "Optional predefined layout. Valid values: BLANK, CAPTION_ONLY, TITLE, TITLE_AND_BODY, TITLE_AND_TWO_COLUMNS, TITLE_ONLY, SECTION_HEADER, SECTION_TITLE_AND_DESCRIPTION, ONE_COLUMN_TEXT, MAIN_POINT, BIG_NUMBER.",
+            "type": "string"
+          },
+          "layout_id": {
+            "description": "Optional exact presentation layout object ID; mutually exclusive with layout.",
+            "type": "string"
+          },
+          "presentation_id": {
+            "description": "Selected presentation ID.",
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id"],
+        "type": "object"
+      },
+      "name": "slides_new_slide"
+    }
+  },
+  {
+    "name": "slides_duplicate_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Duplicate a slide in a selected Google Slides presentation via gog slides duplicate-slide.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "description": "Selected presentation ID.",
+            "type": "string"
+          },
+          "slide_id": {
+            "description": "Slide object ID to duplicate.",
+            "type": "string"
+          },
+          "to_index": {
+            "description": "Optional zero-based insertion index.",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_duplicate_slide"
+    }
+  },
+  {
+    "name": "slides_move_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Move a slide in a selected Google Slides presentation to a zero-based position via gog slides move-slide.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "description": "Selected presentation ID.",
+            "type": "string"
+          },
+          "slide_id": {
+            "description": "Slide object ID to move.",
+            "type": "string"
+          },
+          "to_index": {
+            "description": "Required zero-based insertion index.",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["presentation_id", "slide_id", "to_index"],
+        "type": "object"
+      },
+      "name": "slides_move_slide"
+    }
+  },
+  {
+    "name": "slides_delete_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a slide from a selected Google Slides presentation via gog slides delete-slide. The runner additionally requires destructive permission.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "description": "Selected presentation ID.",
+            "type": "string"
+          },
+          "slide_id": {
+            "description": "Slide object ID to delete.",
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_delete_slide"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",
