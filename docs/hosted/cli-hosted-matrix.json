@@ -21,18 +21,18 @@
     ],
     "prior_deferred_excluded": true
   },
-  "native_leaf_count": 353,
-  "hosted_tool_count": 180,
-  "total_hosted_catalog_count": 218,
+  "native_leaf_count": 357,
+  "hosted_tool_count": 184,
+  "total_hosted_catalog_count": 222,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 189,
-  "mapped_hosted_tool_count": 180,
+  "mapped_native_leaf_count": 193,
+  "mapped_hosted_tool_count": 184,
   "classifications": {
     "deferred": 5,
     "eligible_missing": 117,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 189,
+    "implemented_hosted_unverified": 193,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -143,11 +143,11 @@
     },
     {
       "service": "tasks",
-      "native_leaves": 11,
-      "hosted_tools": 11,
-      "mapped_native_leaves": 11,
+      "native_leaves": 15,
+      "hosted_tools": 15,
+      "mapped_native_leaves": 15,
       "classifications": {
-        "implemented_hosted_unverified": 11
+        "implemented_hosted_unverified": 15
       }
     }
   ],
@@ -9689,6 +9689,49 @@
     },
     {
       "service": "tasks",
+      "command": "lists delete",
+      "native_command": "gog tasks lists delete",
+      "hosted_tool": "tasks_lists_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "lists get",
+      "native_command": "gog tasks lists get",
+      "hosted_tool": "tasks_lists_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks",
+          "tasks.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
       "command": "lists list",
       "native_command": "gog tasks lists list",
       "hosted_tool": "tasks_lists",
@@ -9706,6 +9749,48 @@
         "destructive": false
       },
       "binding_evidence": "runner binding metadata; HTTP method unknown because binding omits static methods"
+    },
+    {
+      "service": "tasks",
+      "command": "lists rename",
+      "native_command": "gog tasks lists rename",
+      "hosted_tool": "tasks_lists_rename",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "tasks",
+      "command": "move",
+      "native_command": "gog tasks move",
+      "hosted_tool": "tasks_move",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "tasks"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "tasks",

@@ -1,5 +1,30 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## API-only Tasks list lifecycle and moving (19 October 2026)
+
+Typed native CLI, MCP and chat now expose tasks_lists_get/rename/delete and
+tasks_move. The current [Tasks discovery](https://tasks.googleapis.com/$discovery/rest?version=v1)
+and SDKv0.298.0 were checked for exact methods/scopes and destinationTasklist.
+GET uses tasks.readonly or tasks, writes tasks only; all are existing approved
+scopes. Account-level exact-tool authority covers accessible lists in the chosen
+Google account, not Drive-style per-file/list grants or cross-account access.
+
+Rename patches only title (1..1024 Unicode characters). List deletion is
+irreversible/cascading and requires destructive permission; @default is rejected
+locally, while Google also protects actual default lists. Move explicitly uses
+source/task IDs, optional destination in the same account, new parent/previous
+siblings. Omitted parent means top-level, previous means first position. Exact
+query binding prevents destinations/positions differing from signed arguments.
+Google still enforces repeating/assigned/completed-hidden task restrictions.
+All three mutations are single-attempt with native dry-run checks before service
+creation and one-use exact-argument chat approval/fresh grant checks. No title
+resolution can silently select another admitted path; no local files/raw bodies.
+
+Candidate222total/184active tools,357native leaves/193mapped,117previous
+CLI gaps unchanged. These four were absent from the CLI itself. Fixture evidence
+is not live Google acceptance; all remain unverified#97. No tasks, OAuth,
+credentials, grants, billing or deployment were changed in a real account.
+
 ## API-only gap closed: GA4 retention settings (19 October 2026)
 
 `analytics_retention_get` and `analytics_retention_update` add typed native CLI,

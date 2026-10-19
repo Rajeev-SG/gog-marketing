@@ -23,6 +23,7 @@ gog tasks (task) <command> [flags]
 - [gog tasks get](gog-tasks-get.md) - Get a task
 - [gog tasks list](gog-tasks-list.md) - List tasks
 - [gog tasks lists](gog-tasks-lists.md) - List task lists
+- [gog tasks move](gog-tasks-move.md) - Move/reorder/reparent a task, optionally across lists
 - [gog tasks raw](gog-tasks-raw.md) - Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption)
 - [gog tasks undo](gog-tasks-undo.md) - Mark task needs action
 - [gog tasks update](gog-tasks-update.md) - Update a task

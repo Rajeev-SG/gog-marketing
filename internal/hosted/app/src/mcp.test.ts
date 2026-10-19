@@ -1925,7 +1925,12 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
 
 // The in-product chat uses the very same MCP authorization/runner path, not an OAuth client.
 describe("chat Google tools and durable write approvals", () => {
-  async function chatFixture(scriptTool?: string, docTool?: string, analyticsTool?: string) {
+  async function chatFixture(
+    scriptTool?: string,
+    docTool?: string,
+    analyticsTool?: string,
+    taskTool?: string,
+  ) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({
@@ -1971,13 +1976,15 @@ describe("chat Google tools and durable write approvals", () => {
             : scriptTool
               ? "appscript"
               : "tasks",
-        toolName: analyticsTool ?? docTool ?? scriptTool ?? "tasks_lists_create",
+        toolName: analyticsTool ?? docTool ?? scriptTool ?? taskTool ?? "tasks_lists_create",
         enabled: true,
         allowDestructive: analyticsTool
           ? analyticsTool === "analytics_retention_update"
           : docTool
             ? docTool !== "docs_find_range"
-            : Boolean(scriptTool),
+            : taskTool
+              ? taskTool === "tasks_lists_delete"
+              : Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -2271,6 +2278,77 @@ describe("chat Google tools and durable write approvals", () => {
     expect(await f.run(name, input, "call-2")).toHaveProperty("isError", true);
     expect(f.requests).toHaveLength(1);
   });
+
+  it("Task-list metadata in chat is read-only and needs no approval", async () => {
+    const f = await chatFixture(undefined, undefined, undefined, "tasks_lists_get");
+    expect(
+      await f.run("tasks_lists_get", {
+        tasklist_id: "list-source-1234567890",
+        connectionId: f.connectionId,
+      }),
+    ).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(f.values.size).toBe(0);
+  });
+  it.each([
+    {
+      name: "tasks_lists_rename",
+      args: { tasklist_id: "list-source-1234567890", title: "Renamed" },
+    },
+    { name: "tasks_lists_delete", args: { tasklist_id: "list-source-1234567890" } },
+    {
+      name: "tasks_move",
+      args: {
+        tasklist_id: "list-source-1234567890",
+        task_id: "task-1",
+        parent: "parent-1",
+        previous: "previous-1",
+        destination_tasklist_id: "list-dest-1234567890",
+      },
+    },
+  ])(
+    "Tasks lifecycle chat $name requires one-use exact-argument approval",
+    async ({ name, args }) => {
+      const f = await chatFixture(undefined, undefined, undefined, name);
+      const input = { ...args, connectionId: f.connectionId };
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      await f.approvals.request("call-1", name, input, f.session);
+      expect(
+        await f.approvals.respond("call-1", true, { ...f.session, userId: "foreign-user" }),
+      ).toBe(false);
+      expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+      await expect(
+        f.run(name, { ...input, tasklist_id: "foreign-list-1234567890" }),
+      ).rejects.toThrow("fresh approval");
+      if (name === "tasks_move")
+        await expect(
+          f.run(name, { ...input, destination_tasklist_id: "foreign-list-1234567890" }),
+        ).rejects.toThrow("fresh approval");
+      expect(await f.run(name, input)).toHaveProperty("structuredContent");
+      expect(f.requests).toHaveLength(1);
+      expect(f.requests[0]!.nativeTool).toMatchObject({
+        name,
+        allowWrite: true,
+        allowDestructive: name === "tasks_lists_delete",
+        arguments: args,
+      });
+      await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+      await f.approvals.request("call-2", name, input, f.session);
+      await f.approvals.respond("call-2", true, f.session);
+      await f.repo.saveToolGrants(f.tenantId, f.connectionId, [
+        {
+          service: "tasks",
+          toolName: name,
+          enabled: false,
+          allowDestructive: false,
+          allowBillable: false,
+        },
+      ]);
+      expect(await f.run(name, input, "call-2")).toHaveProperty("isError", true);
+      expect(f.requests).toHaveLength(1);
+    },
+  );
 
   it("requires exact one-use approval, rejects changed arguments and concurrent replay", async () => {
     const f = await chatFixture();
@@ -4470,5 +4548,142 @@ it.each([
     const audit = JSON.stringify(await repo.listAudit(tenant.id, 10));
     expect(audit).not.toContain(ACCESS_TOKEN);
     expect(audit).not.toContain(REFRESH_TOKEN);
+  },
+);
+
+it.each([
+  {
+    name: "tasks_lists_get",
+    scope: "tasks.readonly",
+    write: false,
+    destructive: false,
+    args: { tasklist_id: "list-source-1234567890" },
+  },
+  {
+    name: "tasks_lists_get",
+    scope: "tasks",
+    write: false,
+    destructive: false,
+    args: { tasklist_id: "@default" },
+  },
+  {
+    name: "tasks_lists_rename",
+    scope: "tasks",
+    write: true,
+    destructive: false,
+    args: { tasklist_id: "list-source-1234567890", title: "Renamed" },
+  },
+  {
+    name: "tasks_lists_delete",
+    scope: "tasks",
+    write: true,
+    destructive: true,
+    args: { tasklist_id: "list-source-1234567890" },
+  },
+  {
+    name: "tasks_move",
+    scope: "tasks",
+    write: true,
+    destructive: false,
+    args: {
+      tasklist_id: "list-source-1234567890",
+      task_id: "task-1",
+      destination_tasklist_id: "list-dest-1234567890",
+      parent: "parent-1",
+      previous: "previous-1",
+    },
+  },
+])(
+  "Tasks account lifecycle $name with $scope retains tenant and tool authority",
+  async ({ name, scope, write, destructive, args }) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { id: "result" } };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_tasks_lifecycle");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-tasks-lifecycle",
+      "tasks@example.test",
+      "Tasks",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes: ["openid", "https://www.googleapis.com/auth/" + scope],
+    });
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    const token = await tokenFor("user_tasks_lifecycle");
+    const call = async () =>
+      rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          { name, arguments: { ...args, connectionId: connection.id } },
+          { token },
+        ),
+      );
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "tasks",
+        toolName: name,
+        enabled: true,
+        allowDestructive: destructive,
+        allowBillable: false,
+      },
+    ]);
+    expect((await call()).result.structuredContent).toEqual({ id: "result" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.nativeTool).toMatchObject({
+      name,
+      arguments: args,
+      allowWrite: write,
+      allowDestructive: destructive,
+    });
+    expect(requests[0]!.resourceType).toBe("");
+    expect(requests[0]!.resourceId).toBe("");
+    await repo.bootstrapTenant("user_tasks_foreign");
+    const foreign = await rpcJson(
+      await rpc(
+        env,
+        "tools/call",
+        { name, arguments: { ...args, connectionId: connection.id } },
+        { token: await tokenFor("user_tasks_foreign") },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "tasks",
+        toolName: name,
+        enabled: false,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+    expect((await call()).error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(1);
+    const serialized = JSON.stringify({ audit: await repo.listAudit(tenant.id, 10) });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
   },
 );

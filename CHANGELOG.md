@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Tasks: add task-list metadata get, title-only rename, irreversible list deletion and task move/reorder/reparent, including same-account destination lists. Use existing Tasks scopes/account tool grants and chat approval; default deletion is blocked, title limits preserved and mutation retries disabled. Explicit IDs only; no list-title lookup. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - GA4: add typed CLI, hosted MCP and chat retention-settings read/partial update using existing Analytics scopes and exact property/tool grants. Retention changes require destructive authority and chat approval; preserve explicit false, reject wildcard/raw updates and disable uncertain-write retries. Advanced event durations still require an existing GA4 360 property. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: add literal UTF-16 range search and named-range create/delete/plain-text replacement through native handlers, selected-document grants and existing scopes. Preserve ambiguity/revision checks, readback and one-use chat write approval; delete/empty clearing require destructive permission. No server-file or markdown inputs. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

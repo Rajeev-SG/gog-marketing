@@ -1,6 +1,7 @@
 package cmd
 
 type TasksCmd struct {
+	Move   TasksMoveCmd   `cmd:"" name:"move" help:"Move/reorder/reparent a task, optionally across lists"`
 	Lists  TasksListsCmd  `cmd:"" name:"lists" help:"List task lists"`
 	List   TasksListCmd   `cmd:"" name:"list" aliases:"ls" help:"List tasks"`
 	Get    TasksGetCmd    `cmd:"" name:"get" aliases:"info,show" help:"Get a task"`

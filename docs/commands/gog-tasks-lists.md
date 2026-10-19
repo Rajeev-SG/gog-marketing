@@ -17,7 +17,10 @@ gog tasks (task) lists <command>
 ## Subcommands
 
 - [gog tasks lists create](gog-tasks-lists-create.md) - Create a task list
+- [gog tasks lists delete](gog-tasks-lists-delete.md) - Delete a list and ALL its tasks irreversibly
+- [gog tasks lists get](gog-tasks-lists-get.md) - Get task-list metadata by ID
 - [gog tasks lists list](gog-tasks-lists-list.md) - List task lists
+- [gog tasks lists rename](gog-tasks-lists-rename.md) - Rename a task list by ID
 
 ## Flags
 

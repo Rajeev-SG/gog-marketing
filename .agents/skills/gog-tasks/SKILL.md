@@ -35,6 +35,7 @@ gog --readonly --account user@example.com tasks lists list --json --wrap-untrust
 | `get` | Get a task |
 | `list` | List tasks |
 | `lists` | List task lists |
+| `move` | Move/reorder/reparent a task, optionally across lists |
 | `raw` | Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption) |
 | `undo` | Mark task needs action |
 | `update` | Update a task |

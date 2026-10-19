@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 897.
+Generated pages: 901.
 
 ## Top-level Commands
 
@@ -915,7 +915,11 @@ Generated pages: 897.
     - [gog tasks list](gog-tasks-list.md) - List tasks
     - [gog tasks lists](gog-tasks-lists.md) - List task lists
       - [gog tasks lists create](gog-tasks-lists-create.md) - Create a task list
+      - [gog tasks lists delete](gog-tasks-lists-delete.md) - Delete a list and ALL its tasks irreversibly
+      - [gog tasks lists get](gog-tasks-lists-get.md) - Get task-list metadata by ID
       - [gog tasks lists list](gog-tasks-lists-list.md) - List task lists
+      - [gog tasks lists rename](gog-tasks-lists-rename.md) - Rename a task list by ID
+    - [gog tasks move](gog-tasks-move.md) - Move/reorder/reparent a task, optionally across lists
     - [gog tasks raw](gog-tasks-raw.md) - Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption)
     - [gog tasks undo](gog-tasks-undo.md) - Mark task needs action
     - [gog tasks update](gog-tasks-update.md) - Update a task
