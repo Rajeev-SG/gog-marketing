@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 151,
-  "total_hosted_catalog_count": 189,
+  "hosted_tool_count": 154,
+  "total_hosted_catalog_count": 192,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 159,
-  "mapped_hosted_tool_count": 151,
+  "mapped_native_leaf_count": 162,
+  "mapped_hosted_tool_count": 154,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 159,
-    "missing_requires_audit": 142,
+    "implemented_hosted_unverified": 162,
+    "missing_requires_audit": 139,
     "product_limited": 20
   },
   "by_service": [
@@ -68,11 +68,11 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 14,
-      "mapped_native_leaves": 18,
+      "hosted_tools": 17,
+      "mapped_native_leaves": 21,
       "classifications": {
-        "implemented_hosted_unverified": 18,
-        "missing_requires_audit": 52,
+        "implemented_hosted_unverified": 21,
+        "missing_requires_audit": 49,
         "product_limited": 2
       }
     },
@@ -1378,10 +1378,26 @@
       "service": "docs",
       "command": "footer list",
       "native_command": "gog docs footer list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_footer_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1414,10 +1430,26 @@
       "service": "docs",
       "command": "header list",
       "native_command": "gog docs header list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_header_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1785,10 +1817,26 @@
       "service": "docs",
       "command": "suggestions list",
       "native_command": "gog docs suggestions list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_suggestions_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",

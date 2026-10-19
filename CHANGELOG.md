@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: expose native header/footer inventories and pending suggestion reads, including optional tab selection, under exact selected-document/tool read grants. No header/footer or suggestion mutations; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Drive: add bounded revision metadata listing and selected-revision retrieval through native handlers, exact selected-file/tool grants and drive.file only. No content downloads, broad Drive scopes or arbitrary request options. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: add native tab creation (optional title, position, parent and icon), renaming and destructive deletion under exact selected-document/tool write grants. Fixture-tested, unverified live; no arbitrary batch requests or new OAuth scopes. (#96, #97, thanks @Rajeev-SG)
