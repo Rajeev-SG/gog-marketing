@@ -132,9 +132,17 @@ export async function completePicker(deps: ConnectDeps, session: ConnectSession,
   )
     throw new ConnectError("discovery_error", 502);
   for (const file of result.files) {
-    const services = ["drive", MIME_SERVICE[file.mime_type]].filter((value): value is string =>
-      Boolean(value),
-    );
+    const boundParent = [
+      "application/vnd.google-apps.document",
+      "application/vnd.google-apps.spreadsheet",
+      "application/vnd.google-apps.presentation",
+      "application/vnd.google-apps.form",
+    ].includes(file.mime_type);
+    const services = [
+      "drive",
+      MIME_SERVICE[file.mime_type],
+      ...(boundParent ? ["appscript"] : []),
+    ].filter((value): value is string => Boolean(value));
     for (const service of services)
       resources.push({
         service,

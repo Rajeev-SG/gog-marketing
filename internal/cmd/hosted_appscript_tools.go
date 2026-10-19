@@ -16,7 +16,7 @@ func hostedAppScriptProjectTools() []mcpToolSpec {
 			options = []mcp.ToolOption{mcp.WithString("title", mcp.Required())}
 		}
 		result = append(result, mcpToolSpec{
-			Name: "appscript_" + operation, Service: "appscript", Risk: risk, Description: "Run native Apps Script project " + operation + " with explicit account/tool grants and approved project scopes. No script execution, bound-file creation or local pull is exposed.", Options: options,
+			Name: "appscript_" + operation, Service: "appscript", Risk: risk, Description: "Run native Apps Script project " + operation + " with explicit account/tool grants and approved project scopes. Script execution is a separate capability; local downloads use the native pull command.", Options: options,
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
 				if operation == "create" {
 					title, err := requireMCPString(req, "title")
@@ -38,7 +38,7 @@ func hostedAppScriptProjectTools() []mcpToolSpec {
 		operation := operation
 		result = append(result, mcpToolSpec{
 			Name: "appscript_" + operation, Service: "appscript", Risk: mcpRiskRead,
-			Description: "Read native Apps Script " + operation + " by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. No script execution, project mutations, bound-file creation or local pull is exposed.",
+			Description: "Read native Apps Script " + operation + " by explicit script ID in the authorised Google account, under an account-level exact tool grant. No project asset grant is implied. This tool does not execute or mutate a project.",
 			Options: []mcp.ToolOption{
 				mcp.WithString("script_id", mcp.Required()),
 				mcp.WithInteger("max", mcp.Min(1), mcp.Max(100)),
@@ -71,5 +71,5 @@ func hostedAppScriptProjectTools() []mcpToolSpec {
 		})
 	}
 
-	return result
+	return append(result, hostedAppScriptManagementTools()...)
 }

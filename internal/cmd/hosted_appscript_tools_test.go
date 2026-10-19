@@ -9,8 +9,8 @@ import (
 
 func TestHostedAppScriptInventoryAdapterFlags(t *testing.T) {
 	specs := hostedAppScriptProjectTools()
-	if len(specs) != 5 {
-		t.Fatalf("Apps Script adapter changed from the approved five-tool surface: %d", len(specs))
+	if len(specs) != 9 {
+		t.Fatalf("Apps Script adapter unexpected tool count: %d", len(specs))
 	}
 
 	for _, operation := range []string{"deployments", "versions"} {
@@ -45,6 +45,31 @@ func TestHostedAppScriptInventoryAdapterFlags(t *testing.T) {
 			Arguments: map[string]any{"max": 2},
 		}}); err == nil {
 			t.Fatalf("%s accepted an empty script ID", name)
+		}
+	}
+}
+
+func TestHostedAppScriptManagementAdapterArguments(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args map[string]any
+		want []string
+	}{
+		{"appscript_bound_create", map[string]any{"title": "Bound", "parent_id": "parent123"}, []string{"appscript", "bound-create", "--title=Bound", "--parent-id=parent123"}},
+		{"appscript_version_create", map[string]any{"script_id": "script123", "description": "release"}, []string{"appscript", "version-create", "--description=release", "--", "script123"}},
+		{"appscript_deployment_create", map[string]any{"script_id": "script123", "version_number": 7}, []string{"appscript", "deployment-create", "--version-number=7", "--description=", "--manifest-file-name=", "--", "script123"}},
+	} {
+		for _, spec := range hostedAppScriptManagementTools() {
+			if spec.Name != tc.name {
+				continue
+			}
+			got, err := spec.BuildArgs(mcp.CallToolRequest{Params: mcp.CallToolParams{Arguments: tc.args}})
+			if err != nil || strings.Join(got, "\x00") != strings.Join(tc.want, "\x00") {
+				t.Fatalf("%s: %v %v", tc.name, got, err)
+			}
+			if _, err := spec.BuildArgs(mcp.CallToolRequest{}); err == nil {
+				t.Fatalf("%s accepted missing arguments", tc.name)
+			}
 		}
 	}
 }

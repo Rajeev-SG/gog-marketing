@@ -12,14 +12,18 @@ import (
 )
 
 type AppScriptCmd struct {
-	Get     AppScriptGetCmd     `cmd:"" name:"get" aliases:"info,show" help:"Get Apps Script project metadata"`
-	Content AppScriptContentCmd `cmd:"" name:"content" aliases:"cat" help:"Get Apps Script project content"`
-	Run     AppScriptRunCmd     `cmd:"" name:"run" help:"Run a deployed Apps Script function"`
-	Create  AppScriptCreateCmd  `cmd:"" name:"create" aliases:"new" help:"Create an Apps Script project"`
+	BoundCreate AppScriptBoundCreateCmd `cmd:"" name:"bound-create" help:"Create an Apps Script project bound to an explicit parent file"`
+	Get         AppScriptGetCmd         `cmd:"" name:"get" aliases:"info,show" help:"Get Apps Script project metadata"`
+	Content     AppScriptContentCmd     `cmd:"" name:"content" aliases:"cat" help:"Get Apps Script project content"`
+	Run         AppScriptRunCmd         `cmd:"" name:"run" help:"Run a deployed Apps Script function"`
+	Create      AppScriptCreateCmd      `cmd:"" name:"create" aliases:"new" help:"Create an Apps Script project"`
 
-	Pull        AppScriptPullCmd        `cmd:"" name:"pull" help:"Pull an Apps Script project into a local directory"`
-	Deployments AppScriptDeploymentsCmd `cmd:"" name:"deployments" aliases:"list-deployments" help:"List deployments"`
-	Versions    AppScriptVersionsCmd    `cmd:"" name:"versions" aliases:"list-versions" help:"List versions"`
+	Push             AppScriptPushCmd             `cmd:"" name:"push" help:"Replace all project HEAD files from a local directory or inline JSON"`
+	VersionCreate    AppScriptVersionCreateCmd    `cmd:"" name:"version-create" help:"Create an immutable project version"`
+	DeploymentCreate AppScriptDeploymentCreateCmd `cmd:"" name:"deployment-create" help:"Create a deployment of an immutable version"`
+	Pull             AppScriptPullCmd             `cmd:"" name:"pull" help:"Pull an Apps Script project into a local directory"`
+	Deployments      AppScriptDeploymentsCmd      `cmd:"" name:"deployments" aliases:"list-deployments" help:"List deployments"`
+	Versions         AppScriptVersionsCmd         `cmd:"" name:"versions" aliases:"list-versions" help:"List versions"`
 }
 
 type AppScriptGetCmd struct {

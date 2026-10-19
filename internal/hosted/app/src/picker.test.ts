@@ -85,7 +85,7 @@ describe("Picker account/session and verified-file grants", () => {
     };
   });
   afterEach(() => db.close());
-  it("uses authoritative Forms MIME to create disabled form grants", async () => {
+  it("uses authoritative Forms MIME to create disabled form and bound-script parent grants", async () => {
     deps.tools!.verifyFiles = async (request) => ({
       status: "ok",
       files: request.ids.map((id) => ({
@@ -110,7 +110,7 @@ describe("Picker account/session and verified-file grants", () => {
         .filter((grant) => grant.resourceId === "selected-form")
         .map((grant) => grant.service)
         .sort(),
-    ).toEqual(["drive", "forms"]);
+    ).toEqual(["appscript", "drive", "forms"]);
     expect(grants.every((grant) => !grant.enabled)).toBe(true);
   });
 

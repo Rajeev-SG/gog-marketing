@@ -100,12 +100,16 @@ Generated from `gog schema --json`.
     - [`gog api describe <api> <version> [<method>] [flags]`](commands/gog-api-describe.md) - Describe a Discovery API or method
     - [`gog api list [flags]`](commands/gog-api-list.md) - List Google Discovery APIs
   - [`gog appscript (script,apps-script) <command> [flags]`](commands/gog-appscript.md) - Google Apps Script
+    - [`gog appscript (script,apps-script) bound-create --title=STRING --parent-id=STRING`](commands/gog-appscript-bound-create.md) - Create an Apps Script project bound to an explicit parent file
     - [`gog appscript (script,apps-script) content (cat) <scriptId>`](commands/gog-appscript-content.md) - Get Apps Script project content
     - [`gog appscript (script,apps-script) create (new) --title=STRING [flags]`](commands/gog-appscript-create.md) - Create an Apps Script project
+    - [`gog appscript (script,apps-script) deployment-create --version-number=INT-64 <scriptId> [flags]`](commands/gog-appscript-deployment-create.md) - Create a deployment of an immutable version
     - [`gog appscript (script,apps-script) deployments (list-deployments) <scriptId> [flags]`](commands/gog-appscript-deployments.md) - List deployments
     - [`gog appscript (script,apps-script) get (info,show) <scriptId>`](commands/gog-appscript-get.md) - Get Apps Script project metadata
     - [`gog appscript (script,apps-script) pull <scriptId> <dir> [flags]`](commands/gog-appscript-pull.md) - Pull an Apps Script project into a local directory
+    - [`gog appscript (script,apps-script) push <scriptId> [flags]`](commands/gog-appscript-push.md) - Replace all project HEAD files from a local directory or inline JSON
     - [`gog appscript (script,apps-script) run <scriptId> <function> [flags]`](commands/gog-appscript-run.md) - Run a deployed Apps Script function
+    - [`gog appscript (script,apps-script) version-create <scriptId> [flags]`](commands/gog-appscript-version-create.md) - Create an immutable project version
     - [`gog appscript (script,apps-script) versions (list-versions) <scriptId> [flags]`](commands/gog-appscript-versions.md) - List versions
   - [`gog auth <command> [flags]`](commands/gog-auth.md) - Auth and credentials
     - [`gog auth add <email> [flags]`](commands/gog-auth-add.md) - Authorize a Google Account or Google Workspace account and store a refresh token

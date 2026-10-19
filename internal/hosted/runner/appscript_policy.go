@@ -62,5 +62,5 @@ func nativeAppScriptProjectBindings() []NativeToolBinding {
 		})
 	}
 
-	return result
+	return append(result, nativeAppScriptManagementBindings()...)
 }
