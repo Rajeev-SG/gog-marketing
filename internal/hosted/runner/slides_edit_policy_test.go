@@ -244,21 +244,29 @@ func TestNativeSlidesEditsPersistScopedMutations(t *testing.T) {
 				t.Fatalf("page selection/preservation: %v", state.text)
 			}
 
+			// Arrange a matching external edit so object selection is independently discriminating.
+			state.text["shape:two"] = "Launch outside"
+			state.revision++
+
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "launch", "replacement": "Done", "object_id": "shape:one"}, nil)
 
-			if state.text["shape:one"] != "Done 🚀 Done" || state.text["shape:two"] != "Page outside" {
+			if state.text["shape:one"] != "Done 🚀 Done" || state.text["shape:two"] != "Launch outside" {
 				t.Fatalf("object UTF16 edits/preservation: %v", state.text)
 			}
 
+			// Deletion must also preserve matching text outside the selected object.
+			state.text["shape:two"] = "Done outside"
+			state.revision++
+
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "Done", "replacement": "", "object_id": "shape:one"}, func(a *ToolAuthorization) { a.AllowDestructive = true })
 
-			if state.text["shape:one"] != " 🚀 " || state.text["shape:two"] != "Page outside" {
+			if state.text["shape:one"] != " 🚀 " || state.text["shape:two"] != "Done outside" {
 				t.Fatalf("empty replacement/preservation: %v", state.text)
 			}
 
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": " ", "replacement": "_", "all": true}, nil)
 
-			if state.text["shape:one"] != "_🚀_" || state.text["shape:two"] != "Page_outside" {
+			if state.text["shape:one"] != "_🚀_" || state.text["shape:two"] != "Done_outside" {
 				t.Fatalf("whole-deck literal replace: %v", state.text)
 			}
 
