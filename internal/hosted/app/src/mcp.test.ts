@@ -3376,6 +3376,24 @@ it.each([
 
 it.each([
   {
+    toolName: "sheets_chart_get",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", chart_id: 73 },
+  },
+  {
+    toolName: "sheets_named_ranges_get",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", name_or_id: "range-1" },
+  },
+  {
+    toolName: "sheets_table_get",
+    service: "sheets",
+    resourceArgument: "spreadsheet_id",
+    args: { spreadsheet_id: "selected-resource", table_id: "table-1" },
+  },
+  {
     toolName: "sheets_chart_list",
     service: "sheets",
     resourceArgument: "spreadsheet_id",

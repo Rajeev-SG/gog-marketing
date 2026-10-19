@@ -6294,6 +6294,98 @@
     }
   },
   {
+    "name": "sheets_chart_get",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a single chart definition from a hosted Google Sheets spreadsheet by chart ID.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "chart_id": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "chart_id"],
+        "type": "object"
+      },
+      "name": "sheets_chart_get"
+    }
+  },
+  {
+    "name": "sheets_named_ranges_get",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a single named range from a hosted Google Sheets spreadsheet by name or ID.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name_or_id": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "name_or_id"],
+        "type": "object"
+      },
+      "name": "sheets_named_ranges_get"
+    }
+  },
+  {
+    "name": "sheets_table_get",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read a single table definition from a hosted Google Sheets spreadsheet by table ID or name.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "table_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "table_id"],
+        "type": "object"
+      },
+      "name": "sheets_table_get"
+    }
+  },
+  {
     "name": "sheets_freeze",
     "service": "sheets",
     "resource_type": "file",

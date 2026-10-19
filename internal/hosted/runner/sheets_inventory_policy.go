@@ -2,7 +2,7 @@ package runner
 
 import "net/http"
 
-// Native Sheets inventory is read-only. The five inventory tools read one
+// Native Sheets inventory and selected-object reads are read-only. These tools read one
 // selected spreadsheet through an account-level exact tool grant and a
 // per-file resource grant. Native handlers use only Spreadsheets.Get on the
 // selected id with fixed metadata fields. The spreadsheet id is bound by the
@@ -11,7 +11,7 @@ import "net/http"
 // paths are needed.
 func nativeSheetsInventoryBindings() []NativeToolBinding {
 	names := []string{
-		"sheets_chart_list",
+		"sheets_chart_list", "sheets_chart_get", "sheets_named_ranges_get", "sheets_table_get",
 		"sheets_named_ranges_list",
 		"sheets_table_list",
 		"sheets_banding_list",

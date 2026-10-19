@@ -1,5 +1,24 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Sheets selected-object detail candidate (19 October 2026)
+
+`sheets_chart_get`, `sheets_named_ranges_get` and `sheets_table_get` reuse native
+GET handlers against one explicitly granted spreadsheet. A positive int32 chart
+ID selects the full chart definition. Named-range and table selectors preserve
+native exact-ID precedence, case-insensitive names and ambiguity errors. Only
+fixed metadata fields are requested; no grid data, arbitrary masks or writes.
+The native chart GET now uses its execution context for cancellation/deadlines.
+
+Only `spreadsheets.readonly`, `spreadsheets` or `drive.file` are admitted.
+Official Sheets v4 discovery checked 19 October 2026 confirms the GET scopes
+and chart ID int32 type. Exact tool/file grants and tenant isolation remain
+mandatory; only GET on the selected spreadsheet metadata endpoint is admitted.
+
+Candidate totals: **195 / 157 active tools**, **165 mapped native leaves**,
+**136 requiring method/scope/resource audit**. All three tools remain
+**unverified live** under #97; no deployment, real Google acceptance, credential,
+OAuth or billing change is claimed.
+
 ## Native Docs segment/suggestion reads candidate (19 October 2026)
 
 `docs_header_list`, `docs_footer_list` and `docs_suggestions_list` reuse the
