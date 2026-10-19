@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 229,
-  "active_tool_count": 191,
+  "total_catalog_count": 233,
+  "active_tool_count": 195,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -2311,6 +2311,40 @@
     },
     {
       "service": "slides",
+      "tool": "slides_delete_slide",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_duplicate_slide",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
       "tool": "slides_info",
       "write": false,
       "destructive_binding_flag": false,
@@ -2355,6 +2389,40 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_move_slide",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_new_slide",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
