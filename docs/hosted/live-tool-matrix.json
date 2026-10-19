@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 211,
-  "active_tool_count": 173,
+  "total_catalog_count": 212,
+  "active_tool_count": 174,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -624,6 +624,23 @@
       ],
       "http_methods": [
         "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "appscript",
+      "tool": "appscript_run",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "documents",
+        "spreadsheets",
+        "userinfo.email"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"

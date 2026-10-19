@@ -1055,6 +1055,29 @@ export async function handleToolCall(
     return toolExecutionError(id, reconnect ? "needs_reconnect" : "execution_unavailable");
   }
 
+  // This explicitly granted account-wide capability is not a selected-file
+  // sandbox. Never send a token that could bypass native BigQuery billing guards.
+  if (name === "appscript_run") {
+    const billableScope = grantedScopes.includes("https://www.googleapis.com/auth/bigquery");
+    if (!resolved.toolGrant.allowDestructive || billableScope) {
+      await writeToolAudit(
+        repo,
+        session,
+        resolved.connection.id,
+        "deny",
+        resolvedIdentifiers,
+        latencyMs(),
+        "permission_denied",
+      );
+      return billableScope
+        ? toolExecutionError(id, "script_execution_scope_blocked", {
+            instruction:
+              "Use a connection without BigQuery scope; arbitrary scripts cannot enforce max-bytes-billed.",
+          })
+        : toolCallDenial(id, "grant_denied");
+    }
+  }
+
   let outcome: ToolExecutionOutcome;
   try {
     outcome = await toolRunner.execute({

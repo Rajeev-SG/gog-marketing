@@ -1925,7 +1925,7 @@ describe("MCP quota, abuse limits, and observability (#67)", () => {
 
 // The in-product chat uses the very same MCP authorization/runner path, not an OAuth client.
 describe("chat Google tools and durable write approvals", () => {
-  async function chatFixture() {
+  async function chatFixture(scriptTool?: string) {
     const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({
@@ -1964,10 +1964,10 @@ describe("chat Google tools and durable write approvals", () => {
     };
     await repo.saveToolGrants(tenantId, connectionId, [
       {
-        service: "tasks",
-        toolName: "tasks_lists_create",
+        service: scriptTool ? "appscript" : "tasks",
+        toolName: scriptTool ?? "tasks_lists_create",
         enabled: true,
-        allowDestructive: false,
+        allowDestructive: Boolean(scriptTool),
         allowBillable: false,
       },
     ]);
@@ -1977,10 +1977,16 @@ describe("chat Google tools and durable write approvals", () => {
       refresh_token: REFRESH_TOKEN,
       token_type: "Bearer",
       expiry: new Date(Date.now() + 3600000).toISOString(),
-      granted_scopes: [
-        "https://www.googleapis.com/auth/tasks",
-        "https://www.googleapis.com/auth/analytics.readonly",
-      ],
+      granted_scopes: scriptTool
+        ? [
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/script.projects",
+            "https://www.googleapis.com/auth/script.deployments",
+          ]
+        : [
+            "https://www.googleapis.com/auth/tasks",
+            "https://www.googleapis.com/auth/analytics.readonly",
+          ],
     });
     await repo.upsertCredential({
       tenantId,
@@ -1989,6 +1995,17 @@ describe("chat Google tools and durable write approvals", () => {
       nonce: encrypted.nonce,
       keyVersion: Number(encrypted.keyVersion),
     });
+    if (scriptTool === "appscript_bound_create")
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        "appscript",
+        "parent-1",
+        "file",
+        "Parent",
+        true,
+        "{}",
+      );
     const tools = await googleTools(env, repo, session, approvals, authorize);
     const run = async (name: string, input: Record<string, unknown>, id = "call-1") =>
       tools[name]!.execute!(input, {
@@ -2044,6 +2061,44 @@ describe("chat Google tools and durable write approvals", () => {
     expect(f.requests).toHaveLength(1);
     expect(f.requests[0]!.tenantId).toBe(f.tenantId);
     expect(JSON.stringify(read)).not.toContain(ACCESS_TOKEN);
+  });
+
+  it.each([
+    {
+      name: "appscript_run",
+      args: { deployment_id: "deployment-1", function: "sum", params_json: "[1,2]" },
+    },
+    { name: "appscript_create", args: { title: "Script" } },
+    { name: "appscript_bound_create", args: { title: "Bound", parent_id: "parent-1" } },
+    {
+      name: "appscript_push",
+      args: {
+        script_id: "script-1",
+        files_json: JSON.stringify([{ name: "appsscript", type: "JSON", source: "{}" }]),
+      },
+    },
+    { name: "appscript_version_create", args: { script_id: "script-1", description: "release" } },
+    { name: "appscript_deployment_create", args: { script_id: "script-1", version_number: 7 } },
+  ])("Apps Script chat $name requires exact one-use approval", async ({ name, args }) => {
+    const f = await chatFixture(name);
+    const input = { ...args, connectionId: f.connectionId };
+    expect(f.tools).toHaveProperty(name);
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    expect(f.requests).toHaveLength(0);
+    await f.approvals.request("call-1", name, input, f.session);
+    expect(
+      await f.approvals.respond("call-1", true, { ...f.session, userId: "foreign-user" }),
+    ).toBe(false);
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    await expect(f.run(name, { ...input, connectionId: "foreign-connection" })).rejects.toThrow(
+      "fresh approval",
+    );
+    const result = await f.run(name, input);
+    expect(result).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]!.nativeTool).toMatchObject({ name, allowWrite: true, arguments: args });
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    expect(f.requests).toHaveLength(1);
   });
 
   it("requires exact one-use approval, rejects changed arguments and concurrent replay", async () => {
@@ -3953,5 +4008,111 @@ it.each([
     ]);
     expect((await call()).error.data.detail).toBe("grant_denied");
     expect(requests).toHaveLength(1);
+  },
+);
+
+it.each([
+  { destructive: false, bigquery: false, expected: "grant_denied" },
+  { destructive: true, bigquery: true, expected: "script_execution_scope_blocked" },
+  { destructive: true, bigquery: false, expected: "allowed" },
+])(
+  "Apps Script execution enforces token and destructive authority $expected",
+  async ({ destructive, bigquery, expected }) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { operation: { done: true, response: { result: 3 } } } };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const tenant = await repo.bootstrapTenant("user_script_execution");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-script-executor",
+      "script@example.test",
+      "Scripts",
+      "[]",
+    );
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const granted_scopes = [
+      "openid",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/documents",
+      ...(bigquery ? ["https://www.googleapis.com/auth/bigquery"] : []),
+    ];
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3600000).toISOString(),
+      granted_scopes,
+    });
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      {
+        service: "appscript",
+        toolName: "appscript_run",
+        enabled: true,
+        allowDestructive: destructive,
+        allowBillable: bigquery,
+      },
+    ]);
+    const args = {
+      deployment_id: "deployment-1",
+      function: "sum",
+      params_json: "[1,2]",
+      connectionId: connection.id,
+    };
+    const token = await tokenFor("user_script_execution");
+    const call = async () =>
+      rpcJson(await rpc(env, "tools/call", { name: "appscript_run", arguments: args }, { token }));
+    const body = await call();
+    if (expected === "allowed") {
+      expect(body.result.structuredContent.operation.response.result).toBe(3);
+      expect(requests).toHaveLength(1);
+      expect(requests[0]!.nativeTool).toMatchObject({
+        name: "appscript_run",
+        allowWrite: true,
+        allowDestructive: true,
+        arguments: { deployment_id: "deployment-1", function: "sum", params_json: "[1,2]" },
+      });
+      expect(requests[0]!.nativeTool!.scopes).toEqual(granted_scopes);
+      await repo.bootstrapTenant("foreign_script_executor");
+      const foreign = await rpcJson(
+        await rpc(
+          env,
+          "tools/call",
+          { name: "appscript_run", arguments: args },
+          { token: await tokenFor("foreign_script_executor") },
+        ),
+      );
+      expect(foreign.error.data.detail).toBe("grant_denied");
+      await repo.saveToolGrants(tenant.id, connection.id, [
+        {
+          service: "appscript",
+          toolName: "appscript_run",
+          enabled: false,
+          allowDestructive: false,
+          allowBillable: false,
+        },
+      ]);
+      expect((await call()).error.data.detail).toBe("grant_denied");
+      expect(requests).toHaveLength(1);
+    } else {
+      expect(body.error.data.detail ?? body.error.data.reason).toBe(expected);
+      expect(requests).toHaveLength(0);
+    }
+    const serialized = JSON.stringify({ body, audit: await repo.listAudit(tenant.id, 10) });
+    expect(serialized).not.toContain(ACCESS_TOKEN);
+    expect(serialized).not.toContain(REFRESH_TOKEN);
   },
 );

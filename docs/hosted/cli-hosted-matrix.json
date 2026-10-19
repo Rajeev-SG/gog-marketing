@@ -22,15 +22,15 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 351,
-  "hosted_tool_count": 173,
-  "total_hosted_catalog_count": 211,
+  "hosted_tool_count": 174,
+  "total_hosted_catalog_count": 212,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 181,
-  "mapped_hosted_tool_count": 173,
+  "mapped_native_leaf_count": 182,
+  "mapped_hosted_tool_count": 174,
   "classifications": {
     "deferred": 5,
-    "excluded": 21,
-    "implemented_hosted_unverified": 181,
+    "excluded": 20,
+    "implemented_hosted_unverified": 182,
     "missing_requires_audit": 124,
     "product_limited": 20
   },
@@ -47,11 +47,10 @@
     {
       "service": "appscript",
       "native_leaves": 11,
-      "hosted_tools": 9,
-      "mapped_native_leaves": 9,
+      "hosted_tools": 10,
+      "mapped_native_leaves": 10,
       "classifications": {
-        "excluded": 1,
-        "implemented_hosted_unverified": 9,
+        "implemented_hosted_unverified": 10,
         "product_limited": 1
       }
     },
@@ -991,10 +990,24 @@
       "service": "appscript",
       "command": "run",
       "native_command": "gog appscript run",
-      "hosted_tool": null,
-      "status": "excluded",
+      "hosted_tool": "appscript_run",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Apps Script execution remains policy-excluded pending transitive-scope audit"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "spreadsheets",
+          "userinfo.email"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "appscript",

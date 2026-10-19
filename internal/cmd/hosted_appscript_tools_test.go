@@ -9,7 +9,7 @@ import (
 
 func TestHostedAppScriptInventoryAdapterFlags(t *testing.T) {
 	specs := hostedAppScriptProjectTools()
-	if len(specs) != 9 {
+	if len(specs) != 10 {
 		t.Fatalf("Apps Script adapter unexpected tool count: %d", len(specs))
 	}
 

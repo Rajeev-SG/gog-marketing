@@ -184,11 +184,7 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 		return invalidf("destructive grant is disabled")
 	}
 
-	if err := validateAdminReplacement(invocation); err != nil {
-		return err
-	}
-
-	if err := validateNativeNoteClear(invocation); err != nil {
+	if err := validateSupplementalToolAuthorization(invocation); err != nil {
 		return err
 	}
 
@@ -591,4 +587,14 @@ func (s *Server) verifyNativeDriveTrash(ctx context.Context, req *Request) outco
 	}
 
 	return outcome{}
+}
+
+func validateSupplementalToolAuthorization(invocation *ToolInvocation) error {
+	for _, check := range []func(*ToolInvocation) error{validateAdminReplacement, validateNativeNoteClear, validateAppScriptExecution} {
+		if err := check(invocation); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

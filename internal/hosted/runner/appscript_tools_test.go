@@ -70,6 +70,6 @@ func TestNativeAppsScriptProjectOperationsNeverExecuteScript(t *testing.T) {
 
 	execution := call("appscript_run", "script.projects", map[string]any{"script_id": "project-1"})
 	if execution.OK || calls.Load() != before {
-		t.Fatal("script execution was indirectly exposed")
+		t.Fatal("management-only permission admitted execution")
 	}
 }

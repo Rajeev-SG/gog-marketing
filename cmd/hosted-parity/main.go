@@ -479,8 +479,6 @@ func classifyMissing(service, command string) (string, string) {
 		return "excluded", "arbitrary Forms passthrough is outside fixed hosted tool policy"
 	case "appscript pull":
 		return "product_limited", "the native command writes a local filesystem tree, which the hosted boundary does not expose"
-	case "appscript run":
-		return "excluded", "Apps Script execution remains policy-excluded pending transitive-scope audit"
 	case "bigquery query":
 		return "product_limited", "SQL jobs require a customer billing project, max-bytes-billed and explicit billable approval before hosting"
 	}

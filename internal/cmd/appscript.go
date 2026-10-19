@@ -116,7 +116,7 @@ func (c *AppScriptContentCmd) Run(ctx context.Context, flags *RootFlags) error {
 }
 
 type AppScriptRunCmd struct {
-	ScriptID string `arg:"" name:"scriptId" help:"Script ID"`
+	ScriptID string `arg:"" name:"scriptId" help:"API-executable deployment ID (legacy script ID where supported)"`
 	Function string `arg:"" name:"function" help:"Function name to run"`
 	Params   string `name:"params" help:"JSON array of function parameters" default:"[]"`
 	DevMode  bool   `name:"dev-mode" help:"Run latest saved code if you own the script"`
@@ -139,6 +139,10 @@ func (c *AppScriptRunCmd) Run(ctx context.Context, flags *RootFlags) error {
 	params, err := parseJSONArray(c.Params)
 	if err != nil {
 		return err
+	}
+
+	if dryRunErr := dryRunExit(ctx, flags, "appscript.run", map[string]any{"deployment_id": scriptID, "function": function, "parameter_count": len(params), "dev_mode": c.DevMode}); dryRunErr != nil {
+		return dryRunErr
 	}
 
 	svc, err := appScriptService(ctx, account)
