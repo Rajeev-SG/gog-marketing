@@ -2665,6 +2665,229 @@ it.each(docsReadToolNames)(
   },
 );
 
+const slidesReadToolCases = [
+  {
+    toolName: "slides_info",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: { presentation_id: "selected-deck" },
+    result: { presentationId: "selected-deck" },
+  },
+  {
+    toolName: "slides_read_slide",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: {
+      presentation_id: "selected-deck",
+      slide_id: "p:0",
+      detail: true,
+    },
+    result: { presentationId: "selected-deck" },
+  },
+  {
+    toolName: "slides_locate",
+    service: "slides",
+    resourceArgument: "presentation_id",
+    args: {
+      presentation_id: "selected-deck",
+      text: "launch",
+      all: true,
+    },
+    result: { presentationId: "selected-deck" },
+  },
+] as const;
+
+it.each(slidesReadToolCases)(
+  "Slides hosted reads: $toolName enforces file grants and tenant isolation",
+  async ({ toolName, service, resourceArgument, args, result }) => {
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result };
+        },
+      },
+    });
+    const repo = new HostedRepository(env.DB as unknown as Database);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+
+    const tenant = await repo.bootstrapTenant("user_slides_files");
+    const connection = await repo.createConnection(
+      tenant.id,
+      "google-user_slides_files",
+      "user_slides_files@google.example.test",
+      "Slides account",
+      "[]",
+    );
+    const googleScope =
+      toolName === "slides_info"
+        ? "https://www.googleapis.com/auth/drive.file"
+        : "https://www.googleapis.com/auth/presentations.readonly";
+    const credential: StoredGoogleCredential = {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3_600_000).toISOString(),
+      granted_scopes: ["openid", googleScope],
+    };
+    const encrypted = await cipher.encrypt(tenant.id, connection.id, credential);
+    await repo.upsertCredential({
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+
+    const otherTenant = await repo.bootstrapTenant("user_slides_other");
+    const otherConnection = await repo.createConnection(
+      otherTenant.id,
+      "google-user_slides_other",
+      "user_slides_other@google.example.test",
+      "Other slides account",
+      "[]",
+    );
+    const otherEncrypted = await cipher.encrypt(otherTenant.id, otherConnection.id, credential);
+    await repo.upsertCredential({
+      tenantId: otherTenant.id,
+      connectionId: otherConnection.id,
+      ciphertext: otherEncrypted.ciphertext,
+      nonce: otherEncrypted.nonce,
+      keyVersion: Number(otherEncrypted.keyVersion),
+    });
+    await repo.upsertResourceGrant(
+      otherTenant.id,
+      otherConnection.id,
+      service,
+      "other-deck",
+      "file",
+      "Other deck",
+      true,
+      "{}",
+    );
+    await repo.saveToolGrants(otherTenant.id, otherConnection.id, [
+      {
+        service,
+        toolName,
+        enabled: true,
+        allowDestructive: false,
+        allowBillable: false,
+      },
+    ]);
+
+    const token = await tokenFor("user_slides_files");
+    const call = (overrides: Record<string, unknown> = {}) =>
+      rpc(
+        env,
+        "tools/call",
+        {
+          name: toolName,
+          arguments: { ...args, ...overrides },
+        },
+        { token },
+      );
+    const readResult = async (response: Response | Promise<Response>) => rpcJson(await response);
+
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      { service, toolName, enabled: true, allowDestructive: false, allowBillable: false },
+    ]);
+    const beforeGrant = await readResult(await call());
+    expect(beforeGrant.error.data.detail).toBe("grant_denied");
+    expect(requests).toHaveLength(0);
+
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      service,
+      "selected-deck",
+      "file",
+      "Selected deck",
+      true,
+      "{}",
+    );
+    const ok = await readResult(await call());
+    expect(ok.result.structuredContent).toEqual(result);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]!.resourceType).toBe("file");
+    expect(requests[0]!.resourceId).toBe("selected-deck");
+    expect(requests[0]!.nativeTool!.name).toBe(toolName);
+    expect(requests[0]!.nativeTool!.arguments).toEqual(args);
+    expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
+    expect(requests[0]!.nativeTool!.scopes).toContain(googleScope);
+    if (toolName === "slides_info") {
+      expect(requests[0]!.nativeTool!.scopes).not.toContain(
+        "https://www.googleapis.com/auth/presentations.readonly",
+      );
+    }
+    expect(requests[0]!.tenantId).toBe(tenant.id);
+    expect(requests[0]!.connectionId).toBe(connection.id);
+    expect(requests[0]!.service).toBe(service);
+
+    const foreignBefore = requests.length;
+    const foreign = await readResult(
+      rpc(
+        env,
+        "tools/call",
+        { name: toolName, arguments: { ...args, [resourceArgument]: "other-deck" } },
+        { token },
+      ),
+    );
+    expect(foreign.error.data.detail).toBe("grant_denied");
+    expect(requests.length).toBe(foreignBefore);
+
+    const crossBefore = requests.length;
+    const cross = await readResult(
+      rpc(
+        env,
+        "tools/call",
+        {
+          name: toolName,
+          arguments: args,
+          connectionId: otherConnection.id,
+        },
+        { token },
+      ),
+    );
+    expect(cross.error.data.reason).toBe("policy_denied");
+    expect(JSON.stringify(cross)).toMatch(/grant_denied|connection_not_found/);
+    expect(requests.length).toBe(crossBefore);
+
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      service,
+      "selected-deck",
+      "file",
+      "Selected deck",
+      false,
+      "{}",
+    );
+    const disabledBefore = requests.length;
+    const disabled = await readResult(await call());
+    expect(disabled.error.data.detail).toBe("grant_denied");
+    expect(requests.length).toBe(disabledBefore);
+
+    await repo.upsertResourceGrant(
+      tenant.id,
+      connection.id,
+      service,
+      "selected-deck",
+      "file",
+      "Selected deck",
+      true,
+      "{}",
+    );
+    await repo.saveToolGrants(tenant.id, connection.id, [
+      { service, toolName, enabled: false, allowDestructive: false, allowBillable: false },
+    ]);
+    const disabledToolBefore = requests.length;
+    const disabledTool = await readResult(await call());
+    expect(disabledTool.error.data.detail).toBe("grant_denied");
+    expect(requests.length).toBe(disabledToolBefore);
+  },
+);
+
 it.each([
   {
     toolName: "drive_comments_list",

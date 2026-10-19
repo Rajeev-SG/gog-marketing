@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Slides: add selected-presentation metadata, slide reads and literal UTF-16 text locate through existing native handlers and exact tool/file grants. `slides_info` requires `drive.file` for its actual Drive metadata check; slide/page IDs do not create extra resource grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Docs: add selected-document structure, headings, paragraphs, tables, images and named-range inventories through existing typed read handlers and exact tool/file grants. Fixed default views only; no new OAuth scopes, mutations, downloads or automatic grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Sheets: add explicitly selected-tab row/column freeze-unfreeze and tab reordering through native handlers, exact write-tool/file grants and existing approval controls. Zero values remain literal, unspecified freeze fields stay unchanged, and no duplication or arbitrary batch requests are exposed. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)

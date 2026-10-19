@@ -1,5 +1,37 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Selected-presentation read candidate (19 October 2026)
+
+Three fixed-schema reads reuse native `slides info`, `slides read-slide` and
+`slides locate`: `slides_info`, `slides_read_slide` and `slides_locate`. Each
+uses one granted `presentation_id`; slide and page IDs remain local
+selectors and never create additional resource grants. `slides_read_slide`
+issues one native `Presentations.Get`; `slides_locate` uses the same one-get
+model with UTF-16-aware literal matching locally. Optional CLI variants are
+limited to `detail`, page, case, all/occurrence and fail-empty. There is no
+regex, local-file access, downloads, unrelated external fetch or arbitrary request.
+
+`slides_info` actually calls Drive Files.Get first, then Slides
+Presentations.Get. It rejects anything that is not a Google presentation and
+admits only `drive.file`; presentations scopes do not authorize the Drive call.
+The other two reads admit `presentations.readonly`, `presentations` or
+`drive.file` for one exact GET `/v1/presentations/<selected-id>`. Method/path
+guards pin valid host/path pairs and deny cross-product requests. Official
+Slides v1 and Drive v3 discovery checked 19 October 2026 supports these method
+scopes.
+
+Signed native fixtures use actual SDK types and guarded Slides plus Drive
+fakes. Coverage includes split-run matching for `p:0` and `shape:one`, detail
+output, default/all/occurrence/page/case locate behavior and permission,
+tenant and invalid-selector denials before Google. D1/Clerk cases enforce the
+selected encrypted `drive.file` connection, resource/tool isolation and foreign
+connection denials. All three tools remain **unverified live** under #97; #96
+remains pre-closed and untouched. No deployment, consent, credentials, Google
+grants, billing configuration or ordinary CLI behavior changed.
+
+Candidate totals: **178 tools / 140 active**, **142 mapped native leaves**,
+**159 leaves requiring method/scope/resource audit**.
+
 ## Docs structure inventory candidate (19 October 2026)
 
 Six fixed-schema reads reuse native `docs structure`, `headings list`,

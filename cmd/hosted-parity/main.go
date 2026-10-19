@@ -51,6 +51,7 @@ var commandToHosted = map[string]string{
 	"docs tabs list":                      "docs_list_tabs",
 	"docs cat":                            "docs_get",
 	"slides list-slides":                  "slides_list_slides",
+	"slides read-slide":                   "slides_read_slide",
 	"docs named-range list":               "docs_named_range_list",
 	"slides update-notes":                 "slides_update_notes",
 	"tasks lists list":                    "tasks_lists",
