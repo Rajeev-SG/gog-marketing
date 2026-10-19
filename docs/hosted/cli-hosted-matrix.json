@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 149,
-  "total_hosted_catalog_count": 187,
+  "hosted_tool_count": 151,
+  "total_hosted_catalog_count": 189,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 157,
-  "mapped_hosted_tool_count": 149,
+  "mapped_native_leaf_count": 159,
+  "mapped_hosted_tool_count": 151,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 157,
-    "missing_requires_audit": 144,
+    "implemented_hosted_unverified": 159,
+    "missing_requires_audit": 142,
     "product_limited": 20
   },
   "by_service": [
@@ -79,13 +79,13 @@
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 6,
-      "mapped_native_leaves": 6,
+      "hosted_tools": 8,
+      "mapped_native_leaves": 8,
       "classifications": {
         "deferred": 5,
         "excluded": 18,
-        "implemented_hosted_unverified": 6,
-        "missing_requires_audit": 15,
+        "implemented_hosted_unverified": 8,
+        "missing_requires_audit": 13,
         "product_limited": 3
       }
     },
@@ -2448,19 +2448,47 @@
       "service": "drive",
       "command": "revisions get",
       "native_command": "gog drive revisions get",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_revisions_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
       "command": "revisions list",
       "native_command": "gog drive revisions list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "drive_revisions_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",

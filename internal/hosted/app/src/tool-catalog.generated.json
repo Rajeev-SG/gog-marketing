@@ -5909,6 +5909,71 @@
     }
   },
   {
+    "name": "drive_revisions_list",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List one bounded page of revision metadata for an explicitly granted Drive file. Returns a next-page token when available; no content downloads or automatic page traversal.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "max_results": {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_token": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_revisions_list"
+    }
+  },
+  {
+    "name": "drive_revisions_get",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read metadata for one explicit revision of an explicitly granted Drive file. Returned export links are metadata only and are not fetched.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "revision_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "revision_id"],
+        "type": "object"
+      },
+      "name": "drive_revisions_get"
+    }
+  },
+  {
     "name": "drive_comments_list",
     "service": "drive",
     "resource_type": "file",

@@ -123,7 +123,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), append(nativeSlidesReadBindings(), append(nativeSlidesEditBindings(), append(nativeFormsQuestionBindings(), nativeDocsTabBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), append(nativeSlidesReadBindings(), append(nativeSlidesEditBindings(), append(nativeFormsQuestionBindings(), append(nativeDocsTabBindings(), nativeDriveRevisionBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -329,6 +329,12 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if request.Header.Get("X-HTTP-Method-Override") != "" || request.Header.Get("X-Goog-User-Project") != "" || request.URL.RawQuery != "" && request.URL.Query().Has("access_token") {
 			return native.ErrDenied
+		}
+
+		if invocation.Name == "drive_revisions_list" || invocation.Name == "drive_revisions_get" {
+			if alt, present := request.URL.Query()["alt"]; present && (len(alt) != 1 || alt[0] != "json") {
+				return native.ErrDenied
+			}
 		}
 
 		path := request.URL.Path
