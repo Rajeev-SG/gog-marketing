@@ -1,5 +1,28 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Docs structure inventory candidate (19 October 2026)
+
+Six fixed-schema reads reuse native `docs structure`, `headings list`,
+`paragraphs list`, `tables list`, `images list` and `named-range list`:
+`docs_structure`, `docs_headings_list`, `docs_paragraphs_list`,
+`docs_tables_list`, `docs_images_list` and `docs_named_range_list`.
+Only the selected `document_id` is exposed. Native default document views
+are preserved; optional tab/all-tabs selectors and full CLI-option parity are
+not claimed. Existing metadata and tab-list tool behavior is unchanged.
+
+Each uses GET `/v1/documents/<selected-id>` with exact account/tool/file grants.
+Official Docs v1 discovery checked 19 October 2026 admits
+`documents.readonly`, `documents` or `drive.file`; broader Drive scopes are not
+admitted. There are no content mutations, image downloads, external fetches or
+automatic grants. Signed native fixtures exercise real structured outputs,
+all three scopes and permission/tenant denials; D1/Clerk cases cover each tool.
+
+Candidate totals: **175 tools / 137 active**, **139 mapped native leaves**,
+**162 leaves requiring method/scope/resource audit**. All six tools remain
+**unverified live** under #97. Missing-functionality scope #96 is not complete
+despite its pre-existing closed state. No product deployment, consent,
+credentials, Google grants, billing settings or ordinary CLI behavior changed.
+
 ## Selected-tab layout candidate (18 October 2026)
 
 - `sheets_freeze` reuses native `sheets freeze` with an explicitly required sheet

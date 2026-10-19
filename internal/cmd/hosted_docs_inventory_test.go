@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"errors"
-	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -17,7 +17,11 @@ func TestHostedDocsInventoryTools(t *testing.T) {
 	for _, tool := range tools {
 		names = append(names, tool.Name)
 	}
-	if !reflect.DeepEqual(names, []string{"docs_info", "docs_list_tabs"}) {
+	if !slices.Equal(names, []string{
+		"docs_info", "docs_list_tabs", "docs_structure", "docs_headings_list",
+		"docs_paragraphs_list", "docs_tables_list", "docs_images_list",
+		"docs_named_range_list",
+	}) {
 		t.Fatalf("unexpected tool names: %v", names)
 	}
 	for _, tool := range tools {
@@ -44,6 +48,12 @@ func TestHostedDocsInventoryTools(t *testing.T) {
 	}{
 		{"docs_info", "1AbC_d-e-2", []string{"docs", "info", "--", "1AbC_d-e-2"}},
 		{"docs_list_tabs", "1AbC_d-e-2", []string{"docs", "list-tabs", "--", "1AbC_d-e-2"}},
+		{"docs_structure", "1AbC_d-e-2", []string{"docs", "structure", "--", "1AbC_d-e-2"}},
+		{"docs_headings_list", "1AbC_d-e-2", []string{"docs", "headings", "list", "--", "1AbC_d-e-2"}},
+		{"docs_paragraphs_list", "1AbC_d-e-2", []string{"docs", "paragraphs", "list", "--", "1AbC_d-e-2"}},
+		{"docs_tables_list", "1AbC_d-e-2", []string{"docs", "tables", "list", "--", "1AbC_d-e-2"}},
+		{"docs_images_list", "1AbC_d-e-2", []string{"docs", "images", "list", "--", "1AbC_d-e-2"}},
+		{"docs_named_range_list", "1AbC_d-e-2", []string{"docs", "named-range", "list", "--", "1AbC_d-e-2"}},
 	}
 	byName := map[string]mcpToolSpec{}
 	for _, tool := range tools {
@@ -57,7 +67,7 @@ func TestHostedDocsInventoryTools(t *testing.T) {
 			if err != nil {
 				t.Fatalf("BuildArgs() error = %v, want nil", err)
 			}
-			if !reflect.DeepEqual(argv, tc.argv) {
+			if !slices.Equal(argv, tc.argv) {
 				t.Errorf("argv = %v, want %v", argv, tc.argv)
 			}
 		})

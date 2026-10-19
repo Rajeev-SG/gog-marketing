@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add selected-document structure, headings, paragraphs, tables, images and named-range inventories through existing typed read handlers and exact tool/file grants. Fixed default views only; no new OAuth scopes, mutations, downloads or automatic grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: add explicitly selected-tab row/column freeze-unfreeze and tab reordering through native handlers, exact write-tool/file grants and existing approval controls. Zero values remain literal, unspecified freeze fields stay unchanged, and no duplication or arbitrary batch requests are exposed. Fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Sheets: add selected-spreadsheet chart, named-range, table, banding and conditional-format inventories through existing typed read handlers and exact tool/file grants. No mutations, arbitrary field masks or OAuth changes; fixture-tested, live verification pending. (#96, #97, thanks @Rajeev-SG)

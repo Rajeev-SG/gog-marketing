@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -15,10 +16,11 @@ var errHostedDocsInventoryID = errors.New("invalid document id")
 // prevents flag interpretation.
 var hostedDocsResourceIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
 
-// hostedDocsInventoryTools registers the two fixed read-only inventory tools
-// for the docs service. Both build the existing docs CLI info/list-tabs
-// commands against a single selected document id. The caller never chooses
-// the host, method, path or command shape, and there is no generic proxy path.
+// hostedDocsInventoryTools registers the fixed read-only inventory tools for
+// the docs service. Each builds one existing docs CLI read command against a
+// single selected document id. The caller never chooses the host, method,
+// path, command shape or optional CLI selectors; there is no generic proxy
+// path.
 func hostedDocsInventoryTools() []mcpToolSpec {
 	build := func(command string) func(mcp.CallToolRequest) ([]string, error) {
 		return func(req mcp.CallToolRequest) ([]string, error) {
@@ -29,7 +31,8 @@ func hostedDocsInventoryTools() []mcpToolSpec {
 			if err := validateHostedDocsInventoryID(id); err != nil {
 				return nil, err
 			}
-			return []string{"docs", command, "--", id}, nil
+			parts := append([]string{"docs"}, strings.Split(command, " ")...)
+			return append(parts, "--", id), nil
 		}
 	}
 	return []mcpToolSpec{
@@ -44,6 +47,42 @@ func hostedDocsInventoryTools() []mcpToolSpec {
 			Description: "List tab identifiers, titles, indexes and hierarchy for one explicitly granted Google document under an exact account/tool/file read grant.",
 			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
 			BuildArgs:   build("list-tabs"),
+		},
+		{
+			Name: "docs_structure", Service: "docs", Risk: mcpRiskRead,
+			Description: "Show numbered default-tab structure for one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("structure"),
+		},
+		{
+			Name: "docs_headings_list", Service: "docs", Risk: mcpRiskRead,
+			Description: "List headings in the default tab of one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("headings list"),
+		},
+		{
+			Name: "docs_paragraphs_list", Service: "docs", Risk: mcpRiskRead,
+			Description: "List paragraphs in the default tab of one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("paragraphs list"),
+		},
+		{
+			Name: "docs_tables_list", Service: "docs", Risk: mcpRiskRead,
+			Description: "List native tables in the default tab of one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("tables list"),
+		},
+		{
+			Name: "docs_images_list", Service: "docs", Risk: mcpRiskRead,
+			Description: "List images in the default tab of one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("images list"),
+		},
+		{
+			Name: "docs_named_range_list", Service: "docs", Risk: mcpRiskRead,
+			Description: "List named ranges across one explicitly granted Google document under an exact account/tool/file read grant.",
+			Options:     []mcp.ToolOption{mcp.WithString("document_id", mcp.Required())},
+			BuildArgs:   build("named-range list"),
 		},
 	}
 }

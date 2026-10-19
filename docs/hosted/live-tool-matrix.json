@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 169,
-  "active_tool_count": 131,
+  "total_catalog_count": 175,
+  "active_tool_count": 137,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -727,6 +727,42 @@
     },
     {
       "service": "docs",
+      "tool": "docs_headings_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_images_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_info",
       "write": false,
       "destructive_binding_flag": false,
@@ -746,6 +782,78 @@
     {
       "service": "docs",
       "tool": "docs_list_tabs",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_named_range_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_paragraphs_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_structure",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_tables_list",
       "write": false,
       "destructive_binding_flag": false,
       "resource_model": "file",

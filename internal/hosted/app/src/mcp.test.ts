@@ -2481,7 +2481,18 @@ it("routes GA4 account inventory and gated property listing without granting ret
   expect(requests).toHaveLength(2);
 });
 
-it.each(["docs_info", "docs_list_tabs"])(
+const docsReadToolNames = [
+  "docs_info",
+  "docs_list_tabs",
+  "docs_structure",
+  "docs_headings_list",
+  "docs_paragraphs_list",
+  "docs_tables_list",
+  "docs_images_list",
+  "docs_named_range_list",
+];
+
+it.each(docsReadToolNames)(
   "docs tool %s enforces per-file grants and tenant scoping",
   async (toolName) => {
     const requests: ToolExecutionRequest[] = [];
@@ -2601,6 +2612,7 @@ it.each(["docs_info", "docs_list_tabs"])(
     expect(requests[0]!.resourceId).toBe("selected-doc");
     expect(requests[0]!.nativeTool!.name).toBe(toolName);
     expect(requests[0]!.nativeTool!.arguments).toEqual({ document_id: "selected-doc" });
+    expect(requests[0]!.nativeTool!.allowWrite).toBe(false);
     expect(requests[0]!.tenantId).toBe(tenant.id);
     expect(requests[0]!.connectionId).toBe(connection.id);
 

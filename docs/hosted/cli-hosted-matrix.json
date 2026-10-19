@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 131,
-  "total_hosted_catalog_count": 169,
+  "hosted_tool_count": 137,
+  "total_hosted_catalog_count": 175,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 133,
-  "mapped_hosted_tool_count": 131,
+  "mapped_native_leaf_count": 139,
+  "mapped_hosted_tool_count": 137,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 133,
-    "missing_requires_audit": 168,
+    "implemented_hosted_unverified": 139,
+    "missing_requires_audit": 162,
     "product_limited": 20
   },
   "by_service": [
@@ -68,11 +68,11 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 5,
-      "mapped_native_leaves": 6,
+      "hosted_tools": 11,
+      "mapped_native_leaves": 12,
       "classifications": {
-        "implemented_hosted_unverified": 6,
-        "missing_requires_audit": 64,
+        "implemented_hosted_unverified": 12,
+        "missing_requires_audit": 58,
         "product_limited": 2
       }
     },
@@ -1391,19 +1391,51 @@
       "service": "docs",
       "command": "headings list",
       "native_command": "gog docs headings list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_headings_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
       "command": "images list",
       "native_command": "gog docs images list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_images_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1567,10 +1599,26 @@
       "service": "docs",
       "command": "named-range list",
       "native_command": "gog docs named-range list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_named_range_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1594,10 +1642,26 @@
       "service": "docs",
       "command": "paragraphs list",
       "native_command": "gog docs paragraphs list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_paragraphs_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1648,10 +1712,26 @@
       "service": "docs",
       "command": "structure",
       "native_command": "gog docs structure",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_structure",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1747,10 +1827,26 @@
       "service": "docs",
       "command": "tables list",
       "native_command": "gog docs tables list",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_tables_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
