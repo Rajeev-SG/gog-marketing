@@ -2482,6 +2482,9 @@ it("routes GA4 account inventory and gated property listing without granting ret
 });
 
 const docsReadToolNames = [
+  "docs_header_list",
+  "docs_footer_list",
+  "docs_suggestions_list",
   "docs_info",
   "docs_list_tabs",
   "docs_structure",

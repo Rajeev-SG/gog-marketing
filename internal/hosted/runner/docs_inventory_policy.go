@@ -13,7 +13,7 @@ func nativeDocsInventoryBindings() []NativeToolBinding {
 	names := []string{
 		"docs_info", "docs_list_tabs", "docs_structure", "docs_headings_list",
 		"docs_paragraphs_list", "docs_tables_list", "docs_images_list",
-		"docs_named_range_list",
+		"docs_named_range_list", "docs_header_list", "docs_footer_list", "docs_suggestions_list",
 	}
 
 	bindings := make([]NativeToolBinding, 0, len(names))

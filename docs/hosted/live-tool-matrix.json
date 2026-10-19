@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 189,
-  "active_tool_count": 151,
+  "total_catalog_count": 192,
+  "active_tool_count": 154,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -747,6 +747,24 @@
     },
     {
       "service": "docs",
+      "tool": "docs_footer_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -759,6 +777,24 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_header_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {
@@ -890,6 +926,24 @@
     {
       "service": "docs",
       "tool": "docs_structure",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "documents.readonly",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_suggestions_list",
       "write": false,
       "destructive_binding_flag": false,
       "resource_model": "file",

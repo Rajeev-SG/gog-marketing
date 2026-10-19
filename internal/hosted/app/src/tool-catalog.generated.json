@@ -5909,6 +5909,96 @@
     }
   },
   {
+    "name": "docs_header_list",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List headers of the selected docs document. By default headers are returned across all tabs; an optional tab restricts the listing to that tab.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_header_list"
+    }
+  },
+  {
+    "name": "docs_footer_list",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List footers of the selected docs document. By default footers are returned across all tabs; an optional tab restricts the listing to that tab.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_footer_list"
+    }
+  },
+  {
+    "name": "docs_suggestions_list",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "List suggestions of the selected docs document. By default the first tab is used; an optional tab resolves the listing within the selected document.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_suggestions_list"
+    }
+  },
+  {
     "name": "drive_revisions_list",
     "service": "drive",
     "resource_type": "file",

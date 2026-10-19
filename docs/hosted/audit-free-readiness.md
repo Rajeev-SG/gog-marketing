@@ -1,5 +1,24 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Docs segment/suggestion reads candidate (19 October 2026)
+
+`docs_header_list`, `docs_footer_list` and `docs_suggestions_list` reuse the
+native GET handlers for one explicitly granted document. Optional tab title/ID
+selection remains native: header/footer defaults enumerate all tabs plus legacy
+segments; suggestions default to the first-tab representation and use inline
+suggestion view. An explicit tab resolves only within the selected document.
+No header/footer creation, deletion or suggestion acceptance is exposed.
+
+Only `documents.readonly`, `documents` or `drive.file` are admitted. Official
+Docs v1 discovery checked 19 October 2026 confirms these GET scopes. Exact
+selected-document/tool grants and existing tenant isolation remain mandatory.
+No additional hosts, arbitrary request selectors, new scopes or mutations.
+
+Candidate totals: **192 / 154 active tools**, **162 mapped native leaves**,
+**139 requiring method/scope/resource audit**. All three tools remain
+**unverified live** under #97; no product deployment or Google acceptance is
+claimed.
+
 ## Native Drive revision metadata candidate (19 October 2026)
 
 `drive_revisions_list` and `drive_revisions_get` reuse native revision metadata
