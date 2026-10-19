@@ -2324,6 +2324,129 @@
     }
   },
   {
+    "name": "tasks_lists_get",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Get full metadata for one explicit task-list ID or @default in the connected Google account, under exact account-level tool authority. No title lookup or Drive grants.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_lists_get"
+    }
+  },
+  {
+    "name": "tasks_lists_rename",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Rename one explicit task list; title-only patch preserves other fields. Requires exact account-level write-tool authority; chat requires one-use exact-argument approval. Single-attempt mutation, no title lookup.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "tasklist_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "title"],
+        "type": "object"
+      },
+      "name": "tasks_lists_rename"
+    }
+  },
+  {
+    "name": "tasks_lists_delete",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Irreversibly delete a non-default task list and ALL its tasks in the connected Google account. Requires destructive exact-tool authority and chat one-use approval. @default is rejected locally; Google enforces actual default-list protection. No automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id"],
+        "type": "object"
+      },
+      "name": "tasks_lists_delete"
+    }
+  },
+  {
+    "name": "tasks_move",
+    "service": "tasks",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Move/reorder/reparent a task, optionally into another accessible list in the SAME connected Google account. Omit parent for top-level and previous for first position; parent/previous refer to the destination list when supplied. Requires exact account-level write-tool authority and one-use chat approval; no per-list Drive grant is implied. Google enforces assigned/repeating/hidden task limitations. No implicit list-title lookup or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "destination_tasklist_id": {
+            "type": "string"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "previous": {
+            "type": "string"
+          },
+          "task_id": {
+            "type": "string"
+          },
+          "tasklist_id": {
+            "type": "string"
+          }
+        },
+        "required": ["tasklist_id", "task_id"],
+        "type": "object"
+      },
+      "name": "tasks_move"
+    }
+  },
+  {
     "name": "analytics_datastreams_list",
     "service": "analytics",
     "resource_type": "property",

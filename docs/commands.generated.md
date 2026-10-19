@@ -854,7 +854,11 @@ Generated from `gog schema --json`.
     - [`gog tasks (task) list (ls) <tasklistId> [flags]`](commands/gog-tasks-list.md) - List tasks
     - [`gog tasks (task) lists <command>`](commands/gog-tasks-lists.md) - List task lists
       - [`gog tasks (task) lists create (add,new) <title> ...`](commands/gog-tasks-lists-create.md) - Create a task list
+      - [`gog tasks (task) lists delete <tasklistId>`](commands/gog-tasks-lists-delete.md) - Delete a list and ALL its tasks irreversibly
+      - [`gog tasks (task) lists get <tasklistId>`](commands/gog-tasks-lists-get.md) - Get task-list metadata by ID
       - [`gog tasks (task) lists list [flags]`](commands/gog-tasks-lists-list.md) - List task lists
+      - [`gog tasks (task) lists rename <tasklistId> <title>`](commands/gog-tasks-lists-rename.md) - Rename a task list by ID
+    - [`gog tasks (task) move <tasklistId> <taskId> [flags]`](commands/gog-tasks-move.md) - Move/reorder/reparent a task, optionally across lists
     - [`gog tasks (task) raw <tasklistId> <taskId> [flags]`](commands/gog-tasks-raw.md) - Dump raw Google Tasks API response as JSON (Tasks.Get; lossless; for scripting and LLM consumption)
     - [`gog tasks (task) undo (uncomplete,undone) <tasklistId> <taskId>`](commands/gog-tasks-undo.md) - Mark task needs action
     - [`gog tasks (task) update (edit,set) <tasklistId> <taskId> [flags]`](commands/gog-tasks-update.md) - Update a task

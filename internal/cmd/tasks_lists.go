@@ -12,6 +12,9 @@ import (
 )
 
 type TasksListsCmd struct {
+	Get    TasksListsGetCmd    `cmd:"" name:"get" help:"Get task-list metadata by ID"`
+	Rename TasksListsRenameCmd `cmd:"" name:"rename" help:"Rename a task list by ID"`
+	Delete TasksListsDeleteCmd `cmd:"" name:"delete" help:"Delete a list and ALL its tasks irreversibly"`
 	List   TasksListsListCmd   `cmd:"" default:"withargs" help:"List task lists"`
 	Create TasksListsCreateCmd `cmd:"" name:"create" help:"Create a task list" aliases:"add,new"`
 }

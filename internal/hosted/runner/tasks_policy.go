@@ -58,5 +58,5 @@ func nativeTasksItemBindings() []NativeToolBinding {
 		})
 	}
 
-	return result
+	return append(result, nativeTasksLifecycleBindings()...)
 }

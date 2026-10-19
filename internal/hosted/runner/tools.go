@@ -403,10 +403,8 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			return err
 		}
 
-		if binding.Service == "youtube" {
-			if err := admitYouTubePlaylistQuery(invocation, request); err != nil {
-				return err
-			}
+		if err := admitScopedToolQuery(binding, invocation, request); err != nil {
+			return err
 		}
 
 		if !binding.Write && len(binding.methods) == 0 && request.Method != http.MethodGet && request.Method != http.MethodHead {
