@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add literal insert, range/anchor delete, default-body clear and first/all literal find-replace through native handlers, exact document grants and chat approval. Delete/clear/empty replacement require destructive authority. Text edits are single-attempt; clear bypasses sed's independent retry loop while preserving native body/no-op behavior. No files, stdin, markdown or arbitrary batch/sed inputs. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Tasks: add task-list metadata get, title-only rename, irreversible list deletion and task move/reorder/reparent, including same-account destination lists. Use existing Tasks scopes/account tool grants and chat approval; default deletion is blocked, title limits preserved and mutation retries disabled. Explicit IDs only; no list-title lookup. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - GA4: add typed CLI, hosted MCP and chat retention-settings read/partial update using existing Analytics scopes and exact property/tool grants. Retention changes require destructive authority and chat approval; preserve explicit false, reject wildcard/raw updates and disable uncertain-write retries. Advanced event durations still require an existing GA4 360 property. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

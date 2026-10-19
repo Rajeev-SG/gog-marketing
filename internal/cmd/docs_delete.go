@@ -9,6 +9,7 @@ import (
 	"google.golang.org/api/docs/v1"
 
 	"github.com/openclaw/gogcli/internal/docsedit"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -69,6 +70,8 @@ func (c *DocsDeleteCmd) Run(ctx context.Context, kctx *kong.Context, flags *Root
 	if batchErr := validateDocsBatchTarget(ctx, flags, c.Batch, docID); batchErr != nil {
 		return batchErr
 	}
+
+	ctx = googleapi.WithoutRetries(ctx)
 
 	svc, err := requireDocsService(ctx, flags)
 	if err != nil {
@@ -168,5 +171,57 @@ func (c *DocsClearCmd) Run(ctx context.Context, flags *RootFlags) error {
 	}); err != nil {
 		return err
 	}
-	return (&DocsSedCmd{DocID: docID, Expression: `s/^$//`}).Run(ctx, flags)
+	// The sed executor has an independent retry loop; clear uses one typed write.
+	ctx = googleapi.WithoutRetries(ctx)
+	svc, err := requireDocsService(ctx, flags)
+	if err != nil {
+		return err
+	}
+	doc, err := svc.Documents.Get(docID).Context(ctx).Do()
+	if err != nil {
+		return err
+	}
+	bodyEnd := int64(2)
+	if doc.Body != nil && len(doc.Body.Content) > 0 {
+		bodyEnd = doc.Body.Content[len(doc.Body.Content)-1].EndIndex
+		if bodyEnd < 2 {
+			bodyEnd = 2
+		}
+	}
+	// Preserve native clear's no-op for whitespace-only bodies.
+	isEmpty := true
+	if doc.Body != nil {
+		for _, element := range doc.Body.Content {
+			if element.Table != nil {
+				isEmpty = false
+				break
+			}
+			if element.Paragraph != nil {
+				for _, part := range element.Paragraph.Elements {
+					if part.TextRun != nil && strings.TrimSpace(part.TextRun.Content) != "" {
+						isEmpty = false
+						break
+					}
+				}
+			}
+			if !isEmpty {
+				break
+			}
+		}
+	}
+	if isEmpty {
+		return sedOutputOK(ctx, ui.FromContext(ctx), docID, sedOutputKV{"cleared", 0})
+	}
+	deleteEnd := bodyEnd - 1
+	if deleteEnd < 2 {
+		return sedOutputOK(ctx, ui.FromContext(ctx), docID, sedOutputKV{"cleared", 0})
+	}
+	_, err = svc.Documents.BatchUpdate(docID, &docs.BatchUpdateDocumentRequest{
+		WriteControl: docsRequiredRevisionWriteControl(doc.RevisionId),
+		Requests:     []*docs.Request{{DeleteContentRange: &docs.DeleteContentRangeRequest{Range: &docs.Range{StartIndex: 1, EndIndex: deleteEnd}}}},
+	}).Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("clearing document: %w", err)
+	}
+	return sedOutputOK(ctx, ui.FromContext(ctx), docID, sedOutputKV{"cleared", deleteEnd - 1})
 }

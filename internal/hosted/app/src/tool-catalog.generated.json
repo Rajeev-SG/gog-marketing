@@ -6531,6 +6531,181 @@
     }
   },
   {
+    "name": "docs_insert",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Insert nonempty literal plain text at a UTF-16 index, a literal anchor or native append position in one selected document/tab/segment. Header/footer/footnote indexes may start at zero. Preserves native ambiguity and revision checks; exact write-tool/file authority and one-use chat approval. No files/stdin/markdown/persisted batch or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_insert"
+    }
+  },
+  {
+    "name": "docs_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a UTF-16 start/end range or a literal anchored range in one selected document/tab/segment. Exact write-tool/file and destructive authority required, plus one-use chat approval. Preserves ambiguity/revision checks and native final-newline handling; no file/batch inputs or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "end": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "start": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_delete"
+    }
+  },
+  {
+    "name": "docs_clear",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Clear the native default document body while preserving its final newline and other tabs/headers/footers. No tab selector is exposed because native clear targets the legacy/default body. Exact write-tool/file and destructive authority required; chat uses one-use approval. Single-attempt typed request; no arbitrary sed expressions.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_clear"
+    }
+  },
+  {
+    "name": "docs_find_replace",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Replace literal text with literal inline plain text, all matches by default or first only, optionally on a selected tab. Preserves native case/tab behavior; exact write-tool/file grants and chat one-use approval. Empty replacement additionally requires destructive authority. No markdown, files, stdin or automatic retries; native replace-all does not provide a revision precondition, first-only does.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "find": {
+            "type": "string"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "replacement": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "find", "replacement"],
+        "type": "object"
+      },
+      "name": "docs_find_replace"
+    }
+  },
+  {
     "name": "drive_revisions_list",
     "service": "drive",
     "resource_type": "file",

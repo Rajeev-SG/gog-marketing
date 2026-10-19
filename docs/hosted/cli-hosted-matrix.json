@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 357,
-  "hosted_tool_count": 184,
-  "total_hosted_catalog_count": 222,
+  "hosted_tool_count": 188,
+  "total_hosted_catalog_count": 226,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 193,
-  "mapped_hosted_tool_count": 184,
+  "mapped_native_leaf_count": 198,
+  "mapped_hosted_tool_count": 188,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 117,
+    "eligible_missing": 112,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 193,
+    "implemented_hosted_unverified": 198,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,12 +68,12 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 21,
-      "mapped_native_leaves": 25,
+      "hosted_tools": 25,
+      "mapped_native_leaves": 30,
       "classifications": {
-        "eligible_missing": 43,
+        "eligible_missing": 38,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 25
+        "implemented_hosted_unverified": 30
       }
     },
     {
@@ -1445,10 +1445,26 @@
       "service": "docs",
       "command": "clear",
       "native_command": "gog docs clear",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive exact-document operation; docs_sed.go runPositionalInsert treats s/^$// as whole-body clear and builds DeleteContentRange; preserve final newline and tab semantics."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1802,10 +1818,26 @@
       "service": "docs",
       "command": "delete",
       "native_command": "gog docs delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Range indices are computed from a prior get of the same selected document; supports dry-run and batch-queue gating; destructive edit on one granted file only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1861,10 +1893,26 @@
       "service": "docs",
       "command": "edit",
       "native_command": "gog docs edit",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_find_replace",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Alias of native DocsFindReplaceCmd, which is ALSO not yet hosted; not an implemented hosted variant. One future fixed find-replace adapter can cover both native command leaves."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1969,10 +2017,26 @@
       "service": "docs",
       "command": "find-replace",
       "native_command": "gog docs find-replace",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_find_replace",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema calls only; multiple round trips for multi-match replacements (re-read between edits); dry-run and plain replaceAll paths both use the same two documented methods"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2280,10 +2344,26 @@
       "service": "docs",
       "command": "insert",
       "native_command": "gog docs insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Content from arg/--file/stdin resolved locally before requests; markdown and --batch are mutually exclusive; segments accept plain text only; all writes are batchUpdate on one granted document"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {

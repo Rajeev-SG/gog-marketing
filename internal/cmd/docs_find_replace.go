@@ -9,6 +9,7 @@ import (
 	"google.golang.org/api/docs/v1"
 
 	"github.com/openclaw/gogcli/internal/docsedit"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -62,6 +63,8 @@ func (c *DocsFindReplaceCmd) Run(ctx context.Context, flags *RootFlags) error {
 	}); dryRunErr != nil {
 		return dryRunErr
 	}
+
+	ctx = googleapi.WithoutRetries(ctx)
 
 	svc, err := requireDocsService(ctx, flags)
 	if err != nil {
