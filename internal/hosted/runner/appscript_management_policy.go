@@ -26,6 +26,24 @@ func nativeAppScriptManagementBindings() []NativeToolBinding {
 		})
 	}
 
+	result = append(result, NativeToolBinding{
+		Name: "appscript_deployment_delete", Service: "appscript", Write: true, destructive: true,
+		hosts: []string{"script.googleapis.com"}, methods: []string{http.MethodDelete}, scopes: []string{"script.deployments"}, paths: exactPaths("", ""),
+		argumentPaths: func(args map[string]any) ([]string, error) {
+			scriptID, _ := args["script_id"].(string)
+			if !fileResourceID.MatchString(scriptID) {
+				return nil, invalidf("invalid script project ID")
+			}
+
+			deploymentID, _ := args["deployment_id"].(string)
+			if !fileResourceID.MatchString(deploymentID) {
+				return nil, invalidf("invalid deployment ID")
+			}
+
+			return []string{"/v1/projects/" + scriptID + "/deployments/" + deploymentID}, nil
+		},
+	})
+
 	return append(result, NativeToolBinding{
 		Name: "appscript_bound_create", Service: "appscript", ResourceType: resourceTypeFile, ResourceArgument: "parent_id", Write: true,
 		hosts: []string{"script.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"script.projects"}, paths: exactPaths("", ""), argumentPaths: func(map[string]any) ([]string, error) { return []string{"/v1/projects"}, nil },

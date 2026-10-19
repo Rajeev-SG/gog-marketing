@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Apps Script: add native and hosted deployment deletion, with exact project/deployment DELETE guards, existing deployment scope, destructive permission and one-use chat approval. Native confirmation and no-retry semantics remain enforced. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - GA4: add native metadata retrieval and hosted `analytics_metadata_get` for an explicitly enabled property, using Analytics Data API read scopes and exact property/tool grants. No new OAuth scopes; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Slides: expose native slide new/duplicate/move/delete through exact `presentations.batchUpdate` methods, selected-deck/tool grants and chat approval. Preserve native zero indexes and predefined/exact layout choice; deletion requires destructive permission. All four mutation tools disable uncertain-response retries. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

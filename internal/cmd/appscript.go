@@ -22,6 +22,7 @@ type AppScriptCmd struct {
 	Push             AppScriptPushCmd             `cmd:"" name:"push" help:"Replace all project HEAD files from a local directory or inline JSON"`
 	VersionCreate    AppScriptVersionCreateCmd    `cmd:"" name:"version-create" help:"Create an immutable project version"`
 	DeploymentCreate AppScriptDeploymentCreateCmd `cmd:"" name:"deployment-create" help:"Create a deployment of an immutable version"`
+	DeploymentDelete AppScriptDeploymentDeleteCmd `cmd:"" name:"deployment-delete" help:"Delete a deployment of an immutable version"`
 	Pull             AppScriptPullCmd             `cmd:"" name:"pull" help:"Pull an Apps Script project into a local directory"`
 	Deployments      AppScriptDeploymentsCmd      `cmd:"" name:"deployments" aliases:"list-deployments" help:"List deployments"`
 	Versions         AppScriptVersionsCmd         `cmd:"" name:"versions" aliases:"list-versions" help:"List versions"`

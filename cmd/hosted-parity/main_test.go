@@ -49,14 +49,14 @@ func canonicalMatrix(t *testing.T) parityMatrix {
 func TestBaselineMatrix(t *testing.T) {
 	matrix := canonicalMatrix(t)
 
-	if matrix.NativeLeafCount != 358 {
-		t.Fatalf("native leaf count = %d, want 358", matrix.NativeLeafCount)
+	if matrix.NativeLeafCount != 359 {
+		t.Fatalf("native leaf count = %d, want 359", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 196 || matrix.TotalHostedCatalogCount != 234 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 196/234/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 197 || matrix.TotalHostedCatalogCount != 235 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 197/235/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 206 || matrix.MappedHostedToolCount != 196 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 206/196", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 207 || matrix.MappedHostedToolCount != 197 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 207/197", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 32, "appscript": 10, "bigquery": 6, "docs": 28, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
+	for service, count := range map[string]int{"analytics": 32, "appscript": 11, "bigquery": 6, "docs": 28, "drive": 8, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {

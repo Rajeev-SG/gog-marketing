@@ -5126,6 +5126,36 @@
     }
   },
   {
+    "name": "appscript_deployment_delete",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Permanently delete a single Apps Script deployment by exact project and deployment ID. Account-wide destructive grant: any deployment under any project the account can access may be removed, cannot be undone, and may break existing web app or API executable consumers. Requires explicit account-level exact-tool destructive permission and one-use chat approval; does not run the script.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "deployment_id": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          }
+        },
+        "required": ["script_id", "deployment_id"],
+        "type": "object"
+      },
+      "name": "appscript_deployment_delete"
+    }
+  },
+  {
     "name": "appscript_run",
     "service": "appscript",
     "resource_type": "",

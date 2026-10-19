@@ -1,5 +1,20 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Apps Script deployment deletion (19 October 2026)
+
+`appscript_deployment_delete` reuses native `appscript deployment-delete` with
+strict project/deployment IDs and a fixed DELETE to the exact selected pair.
+It uses the existing `script.deployments` scope and an account-wide exact-tool
+write/destructive grant, not a selected-project sandbox. Chat requires exact
+one-use approval. Deletion may break existing web/API consumers and is not
+retried after an uncertain response. Native dry-run/confirmation happen before
+service creation. No script function is executed.
+
+Candidate has 235 total/197 active tools, 359 native leaves/207 mapped and 105
+eligible missing. Deployment update and hosted local-download delivery remain
+separate work. Fixture results are not live acceptance; no deployment, OAuth,
+credential or billing changes were made. Real Google verification remains #97.
+
 ## GA4 property metadata (19 October 2026)
 
 `analytics_metadata_get` uses the native metadata command and a fixed GET to

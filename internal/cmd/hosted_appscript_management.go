@@ -72,5 +72,27 @@ func hostedAppScriptManagementTools() []mcpToolSpec {
 				return []string{"appscript", "deployment-create", "--version-number=" + strconv.Itoa(v), "--description=" + req.GetString("description", ""), "--manifest-file-name=" + req.GetString("manifest_file_name", ""), "--", id}, nil
 			},
 		},
+		{
+			Name: "appscript_deployment_delete", Service: "appscript", Risk: mcpRiskWrite,
+			Description: "Permanently delete a single Apps Script deployment by exact project and deployment ID. Account-wide destructive grant: any deployment under any project the account can access may be removed, cannot be undone, and may break existing web app or API executable consumers. Requires explicit account-level exact-tool destructive permission and one-use chat approval; does not run the script.",
+			Options:     []mcp.ToolOption{mcp.WithString("script_id", mcp.Required()), mcp.WithString("deployment_id", mcp.Required())},
+			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+				scriptID, err := requireMCPString(req, "script_id")
+				if err != nil {
+					return nil, err
+				}
+				if !hostedDocsResourceIDPattern.MatchString(scriptID) {
+					return nil, fmt.Errorf("invalid script project ID")
+				}
+				deploymentID, err := requireMCPString(req, "deployment_id")
+				if err != nil {
+					return nil, err
+				}
+				if !hostedDocsResourceIDPattern.MatchString(deploymentID) {
+					return nil, fmt.Errorf("invalid deployment ID")
+				}
+				return []string{"appscript", "deployment-delete", "--", scriptID, deploymentID}, nil
+			},
+		},
 	}
 }

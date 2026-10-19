@@ -109,6 +109,7 @@ Generated from `gog schema --json`.
     - [`gog appscript (script,apps-script) content (cat) <scriptId>`](commands/gog-appscript-content.md) - Get Apps Script project content
     - [`gog appscript (script,apps-script) create (new) --title=STRING [flags]`](commands/gog-appscript-create.md) - Create an Apps Script project
     - [`gog appscript (script,apps-script) deployment-create --version-number=INT-64 <scriptId> [flags]`](commands/gog-appscript-deployment-create.md) - Create a deployment of an immutable version
+    - [`gog appscript (script,apps-script) deployment-delete <scriptId> <deploymentId>`](commands/gog-appscript-deployment-delete.md) - Delete a deployment of an immutable version
     - [`gog appscript (script,apps-script) deployments (list-deployments) <scriptId> [flags]`](commands/gog-appscript-deployments.md) - List deployments
     - [`gog appscript (script,apps-script) get (info,show) <scriptId>`](commands/gog-appscript-get.md) - Get Apps Script project metadata
     - [`gog appscript (script,apps-script) pull <scriptId> <dir> [flags]`](commands/gog-appscript-pull.md) - Pull an Apps Script project into a local directory

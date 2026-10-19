@@ -70,10 +70,10 @@ describe("explicit executable tool permissions", () => {
 
   it("does not turn enabled assets/consent into write authority; saves exact choices", async () => {
     const view = await toolPermissionView(repo, session, connectionId);
-    expect(view.tools).toHaveLength(234);
+    expect(view.tools).toHaveLength(235);
     expect(
       view.tools.filter((tool) => !(slidesLifecycleTools as readonly string[]).includes(tool.name)),
-    ).toHaveLength(230);
+    ).toHaveLength(231);
     expect(view.tools.every((tool) => !tool.enabled)).toBe(true);
     const tenant = (await repo.getTenant(session.tenantId))!;
     expect(await policyTools(repo, tenant)).toEqual([]);
