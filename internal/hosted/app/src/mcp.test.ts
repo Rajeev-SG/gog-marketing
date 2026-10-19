@@ -3183,6 +3183,18 @@ it.each(workspaceWriteToolCases)(
 
 it.each([
   {
+    toolName: "drive_revisions_list",
+    service: "drive",
+    resourceArgument: "file_id",
+    args: { file_id: "selected-resource" },
+  },
+  {
+    toolName: "drive_revisions_get",
+    service: "drive",
+    resourceArgument: "file_id",
+    args: { file_id: "selected-resource", revision_id: "revision-1" },
+  },
+  {
     toolName: "drive_comments_list",
     service: "drive",
     resourceArgument: "file_id",

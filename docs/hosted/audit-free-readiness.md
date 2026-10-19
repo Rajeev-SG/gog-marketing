@@ -1,5 +1,23 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Drive revision metadata candidate (19 October 2026)
+
+`drive_revisions_list` and `drive_revisions_get` reuse native revision metadata
+handlers for one explicitly granted file. Listing exposes a bounded page size
+and opaque next-page token; retrieval requires an explicit revision ID. Neither
+exposes all-pages mode, content downloads, arbitrary fields or request options.
+Returned export links are metadata only; the runner never follows them.
+
+Only `drive.file` is admitted. Official Drive v3 discovery checked 19 October
+2026 confirms both GET methods support it. Broader Drive scopes remain excluded.
+Exact file/tool grants and tenant isolation remain mandatory; list/get GET paths
+are fixed to the selected file/revision, and media responses are denied.
+No mutation, credential, OAuth or billing change is introduced.
+
+Candidate totals: **189 / 151 active tools**, **159 mapped native leaves**,
+**142 requiring method/scope/resource audit**. Both tools remain **unverified
+live** under #97; no deployment or real Google acceptance is claimed.
+
 ## Native Docs tab management candidate (19 October 2026)
 
 Three fixed-schema adapters reuse native `docs tabs add/rename/delete` and
