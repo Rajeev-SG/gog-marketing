@@ -2888,7 +2888,7 @@ it.each(slidesReadToolCases)(
   },
 );
 
-const slidesWriteToolCases = [
+const workspaceWriteToolCases = [
   {
     toolName: "slides_replace_text",
     service: "slides",
@@ -2947,10 +2947,34 @@ const slidesWriteToolCases = [
     result: { updated: true },
     allowDestructive: false,
   },
+  {
+    toolName: "forms_add_question",
+    service: "forms",
+    resourceArgument: "form_id",
+    args: { form_id: "selected-deck", title: "Question", type: "text", required: true },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "forms_move_question",
+    service: "forms",
+    resourceArgument: "form_id",
+    args: { form_id: "selected-deck", old_index: 0, new_index: 1 },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "forms_delete_question",
+    service: "forms",
+    resourceArgument: "form_id",
+    args: { form_id: "selected-deck", index: 0 },
+    result: { updated: true },
+    allowDestructive: true,
+  },
 ] as const;
 
-it.each(slidesWriteToolCases)(
-  "Slides hosted writes: $toolName enforces file grants, scopes, and tenant isolation",
+it.each(workspaceWriteToolCases)(
+  "Workspace hosted writes: $toolName enforces file grants, scopes, and tenant isolation",
   async ({ toolName, service, resourceArgument, args, result, allowDestructive }) => {
     const requests: ToolExecutionRequest[] = [];
     const env = await createEnv({

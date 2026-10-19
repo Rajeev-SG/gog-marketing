@@ -4414,6 +4414,178 @@
     }
   },
   {
+    "name": "forms_add_question",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Adds a question to an existing Google Form: type (text/paragraph/radio/checkbox/dropdown/scale/date/time, default text), choices, quiz grading, position, scale bounds/labels, and date/time options.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "correct": {
+            "description": "Correct answer value(s) for quiz grading",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "description": {
+            "description": "Question description/help text",
+            "type": "string"
+          },
+          "duration": {
+            "description": "Ask for duration instead of time (time type)",
+            "type": "boolean"
+          },
+          "form_id": {
+            "description": "Opaque Google Drive file ID of the form",
+            "type": "string"
+          },
+          "include_time": {
+            "description": "Include time picker (date type)",
+            "type": "boolean"
+          },
+          "include_year": {
+            "description": "Include year field (date type)",
+            "type": "boolean"
+          },
+          "index": {
+            "description": "0-based position to insert at; omit to append",
+            "minimum": -1,
+            "type": "integer"
+          },
+          "options": {
+            "description": "Choice options in order (radio/checkbox/dropdown)",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "points": {
+            "description": "Quiz points (must be positive when correct is set)",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "required": {
+            "description": "Whether an answer is required",
+            "type": "boolean"
+          },
+          "scale_high": {
+            "description": "Scale maximum value: 2 through 10",
+            "maximum": 10,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "scale_high_label": {
+            "description": "Label for the high end of the scale",
+            "type": "string"
+          },
+          "scale_low": {
+            "description": "Scale minimum value: 0 or 1",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "scale_low_label": {
+            "description": "Label for the low end of the scale",
+            "type": "string"
+          },
+          "title": {
+            "description": "Question title/text",
+            "type": "string"
+          },
+          "type": {
+            "description": "Question type (default text)",
+            "enum": ["text", "paragraph", "radio", "checkbox", "dropdown", "scale", "date", "time"],
+            "type": "string"
+          }
+        },
+        "required": ["form_id", "title"],
+        "type": "object"
+      },
+      "name": "forms_add_question"
+    }
+  },
+  {
+    "name": "forms_move_question",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Moves an existing question in a Google Form from old_index to new_index (both 0-based).",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "description": "Opaque Google Drive file ID of the form",
+            "type": "string"
+          },
+          "new_index": {
+            "description": "Target 0-based question position",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "old_index": {
+            "description": "Current 0-based question position",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["form_id", "old_index", "new_index"],
+        "type": "object"
+      },
+      "name": "forms_move_question"
+    }
+  },
+  {
+    "name": "forms_delete_question",
+    "service": "forms",
+    "resource_type": "file",
+    "resource_argument": "form_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Destructively deletes the question at index from an existing Google Form; requires write permission to the form, enforced by the runner approval gates.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "form_id": {
+            "description": "Opaque Google Drive file ID of the form",
+            "type": "string"
+          },
+          "index": {
+            "description": "0-based question position to delete",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["form_id", "index"],
+        "type": "object"
+      },
+      "name": "forms_delete_question"
+    }
+  },
+  {
     "name": "forms_create_blank",
     "service": "forms",
     "resource_type": "",

@@ -58,6 +58,7 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedAdSenseAccountTools()...)
 	tools = append(tools, hostedSitesTools()...)
 	tools = append(tools, hostedFormsTools()...)
+	tools = append(tools, hostedFormsQuestionTools()...)
 	tools = append(tools, hostedFormsCreateTools()...)
 	tools = append(tools, hostedAppScriptProjectTools()...)
 	tools = append(tools, hostedAnalyticsInventoryTools()...)

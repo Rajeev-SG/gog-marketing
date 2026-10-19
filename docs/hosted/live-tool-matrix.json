@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 181,
-  "active_tool_count": 143,
+  "total_catalog_count": 184,
+  "active_tool_count": 146,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -982,6 +982,24 @@
     },
     {
       "service": "forms",
+      "tool": "forms_add_question",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
       "tool": "forms_create_blank",
       "write": true,
       "destructive_binding_flag": false,
@@ -991,6 +1009,24 @@
         "forms.body"
       ],
       "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_delete_question",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "GET",
         "POST"
       ],
       "http_methods_known": true,
@@ -1010,6 +1046,23 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "forms",
+      "tool": "forms_move_question",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "form_id",
+      "accepted_scopes": [
+        "drive.file",
+        "forms.body"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
