@@ -123,7 +123,18 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), append(nativeSlidesReadBindings(), append(nativeSlidesEditBindings(), append(nativeSlidesLifecycleBindings(), append(nativeFormsQuestionBindings(), append(nativeDocsTabBindings(), append(nativeDriveRevisionBindings(), append(nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, slices.Concat(
+	nativeTasksItemBindings(), nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings(), nativeAnalyticsMetadataBindings(),
+	nativeSearchConsoleBindings(), nativeContactsBindings(), nativeCalendarEventBindings(), nativeDriveLabelsBindings(),
+	nativeMeetSpaceBindings(), nativeAdSenseAccountBindings(), nativeFormsBindings(), nativeFormsCreateBindings(),
+	nativeAppScriptProjectBindings(), nativeChatBindings(), nativeClassroomCourseBindings(), nativeYouTubePlaylistBindings(),
+	nativePhotosLibraryBindings(), nativeBigQueryReadBindings(), nativeTagManagerBindings(), nativeSheetsBindings(),
+	[]NativeToolBinding{nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()},
+	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(),
+	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
+	nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
+	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(),
+)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)

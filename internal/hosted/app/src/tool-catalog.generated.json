@@ -3383,6 +3383,34 @@
     }
   },
   {
+    "name": "analytics_metadata_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read GA4 Analytics Data API dimension and metric metadata for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly; broader analytics is outside the hosted allowlist. No account-wide access, raw HTTP, alternate hosts or retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "description": "GA4 property in properties/ID form with a positive numeric ID",
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_metadata_get"
+    }
+  },
+  {
     "name": "searchconsole_sites_get",
     "service": "searchconsole",
     "resource_type": "site",

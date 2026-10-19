@@ -91,6 +91,8 @@ Generated from `gog schema --json`.
       - [`gog analytics (ga) keyevents (key-events) get (info,show) <keyevent>`](commands/gog-analytics-keyevents-get.md)
       - [`gog analytics (ga) keyevents (key-events) list (ls) <property> [flags]`](commands/gog-analytics-keyevents-list.md)
       - [`gog analytics (ga) keyevents (key-events) update <keyevent> [flags]`](commands/gog-analytics-keyevents-update.md)
+    - [`gog analytics (ga) metadata <command>`](commands/gog-analytics-metadata.md) - GA4 Analytics Data API metadata
+      - [`gog analytics (ga) metadata get <property>`](commands/gog-analytics-metadata-get.md) - Read GA4 Analytics Data API metadata for one property
     - [`gog analytics (ga) properties <command>`](commands/gog-analytics-properties.md) - GA4 properties
       - [`gog analytics (ga) properties get (info,show) <property>`](commands/gog-analytics-properties-get.md)
       - [`gog analytics (ga) properties list (ls) [flags]`](commands/gog-analytics-properties-list.md)
