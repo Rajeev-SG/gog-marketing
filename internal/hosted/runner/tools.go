@@ -123,7 +123,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	{Name: "calendar_events", Service: "calendar", ResourceType: "calendar", ResourceArgument: "calendar_id", hosts: []string{"www.googleapis.com"}, paths: func(id string) []string {
 		return []string{"/calendar/v3/calendars/" + id, "/calendar/v3/calendars/" + id + "/events", "/calendar/v3/users/me/settings/timezone"}
 	}, scopes: []string{"calendar.readonly", "calendar"}},
-}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
+}, append(append(nativeTasksItemBindings(), append(nativeAnalyticsAdminBindings(), nativeAnalyticsInventoryBindings()...)...), append(nativeSearchConsoleBindings(), append(nativeContactsBindings(), append(nativeCalendarEventBindings(), append(nativeDriveLabelsBindings(), append(nativeMeetSpaceBindings(), append(nativeAdSenseAccountBindings(), append(append(nativeFormsBindings(), nativeFormsCreateBindings()...), append(nativeAppScriptProjectBindings(), append(nativeChatBindings(), append(nativeClassroomCourseBindings(), append(nativeYouTubePlaylistBindings(), append(nativePhotosLibraryBindings(), append(nativeBigQueryReadBindings(), append(nativeTagManagerBindings(), append(append(nativeSheetsBindings(), nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()), append(nativeSheetsCreateBindings(), append(nativeDocsSlidesCreateBindings(), append(nativeDocsInventoryBindings(), append(nativeCommentsWatchReadBindings(), append(nativeSheetsInventoryBindings(), append(nativeSheetsLayoutBindings(), nativeSlidesReadBindings()...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)...)
 
 var (
 	fileResourceID           = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
@@ -346,6 +346,19 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 
 		if invocation.Name == "analytics_properties_list" {
 			if err := admitAnalyticsPropertyInventory(invocation, request); err != nil {
+				return native.ErrDenied
+			}
+		}
+
+		// slides_info uses paired Drive/Slides endpoints. Keep the host/path
+		// pairs strict: Drive host cannot read presentation endpoints and
+		// Slides host cannot read Drive metadata.
+		if invocation.Name == "slides_info" {
+			host := request.URL.Hostname()
+			switch {
+			case host == nativeSlidesDriveHost && path != paths[0]:
+				return native.ErrDenied
+			case host == nativeSlidesHost && path != paths[1]:
 				return native.ErrDenied
 			}
 		}

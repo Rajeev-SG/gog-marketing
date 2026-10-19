@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 175,
-  "active_tool_count": 137,
+  "total_catalog_count": 178,
+  "active_tool_count": 140,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -1539,6 +1539,22 @@
     },
     {
       "service": "slides",
+      "tool": "slides_info",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
       "tool": "slides_list_slides",
       "write": false,
       "destructive_binding_flag": false,
@@ -1551,6 +1567,42 @@
       ],
       "http_methods": [],
       "http_methods_known": false,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_locate",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations",
+        "presentations.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "slides",
+      "tool": "slides_read_slide",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "accepted_scopes": [
+        "drive.file",
+        "presentations",
+        "presentations.readonly"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
     },
     {

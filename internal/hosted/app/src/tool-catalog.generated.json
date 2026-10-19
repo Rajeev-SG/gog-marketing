@@ -5934,6 +5934,113 @@
     }
   },
   {
+    "name": "slides_info",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read metadata for one explicitly granted Google Slides presentation. Confirms the selected Drive file is a Google presentation, then returns native presentation metadata under an exact account/tool/file read grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id"],
+        "type": "object"
+      },
+      "name": "slides_info"
+    }
+  },
+  {
+    "name": "slides_read_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read speaker notes, text, images and tables for one selected slide in an explicitly granted Google Slides presentation. Optional detail adds normalized element geometry, text runs/styles, paragraphs and table cells.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "type": "boolean"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_read_slide"
+    }
+  },
+  {
+    "name": "slides_locate",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Locate literal text with UTF-16 indexes in an explicitly granted Google Slides presentation. Supports one selected page, case sensitivity, all matches or a one-based occurrence. Text is preserved literally; empty text is rejected and no regex or additional requests are made.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "type": "boolean"
+          },
+          "fail_empty": {
+            "type": "boolean"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "page_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "text"],
+        "type": "object"
+      },
+      "name": "slides_locate"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",
