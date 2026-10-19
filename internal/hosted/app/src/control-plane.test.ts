@@ -222,7 +222,7 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(done.status).toBe(200);
     expect(await done.json()).toEqual({ selectedCount: 1, rejectedCount: 0 });
     const grants = await repo.listResourceGrants(tenant.id, connection.id);
-    expect(grants.map((grant) => grant.service)).toEqual(["docs", "drive"]);
+    expect(grants.map((grant) => grant.service)).toEqual(["appscript", "docs", "drive"]);
     expect(grants.every((grant) => !grant.enabled)).toBe(true);
   });
 
