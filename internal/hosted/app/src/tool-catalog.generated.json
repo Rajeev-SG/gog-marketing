@@ -6041,6 +6041,125 @@
     }
   },
   {
+    "name": "slides_skip_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Write to Google Slides (write/slides tool grant): skip (hide) a slide via gog slides skip-slide.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "description": "Presentation ID.",
+            "type": "string"
+          },
+          "slide_id": {
+            "description": "Slide (page) ID to skip.",
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_skip_slide"
+    }
+  },
+  {
+    "name": "slides_unskip_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Write to Google Slides (write/slides tool grant): unskip (show) a previously skipped slide via gog slides unskip-slide.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "description": "Presentation ID.",
+            "type": "string"
+          },
+          "slide_id": {
+            "description": "Slide (page) ID to unskip.",
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_unskip_slide"
+    }
+  },
+  {
+    "name": "slides_replace_text",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Write to Google Slides (write/slides tool grant): replace text via gog slides replace-text. Exactly one mode is required: all slides (--all), specific page IDs (--page), or a single object (--object). An empty replacement deletes matching text and additionally requires the destructive permission; the runner enforces this.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "description": "Replace in every slide. Mutually exclusive with page_ids and object_id.",
+            "type": "boolean"
+          },
+          "find": {
+            "description": "Text to find. Must be non-empty; spaces are valid.",
+            "type": "string"
+          },
+          "match_case": {
+            "description": "Match the find text case-sensitively.",
+            "type": "boolean"
+          },
+          "object_id": {
+            "description": "Single object ID to restrict the replacement to. Mutually exclusive with all and page_ids.",
+            "type": "string"
+          },
+          "page_ids": {
+            "description": "Page IDs to restrict the replacement to. Mutually exclusive with all and object_id.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "presentation_id": {
+            "description": "Presentation ID.",
+            "type": "string"
+          },
+          "replacement": {
+            "description": "Replacement text. May be empty to delete matching text (requires destructive permission).",
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "find", "replacement"],
+        "type": "object"
+      },
+      "name": "slides_replace_text"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",

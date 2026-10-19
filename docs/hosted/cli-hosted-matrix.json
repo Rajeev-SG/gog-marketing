@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 140,
-  "total_hosted_catalog_count": 178,
+  "hosted_tool_count": 143,
+  "total_hosted_catalog_count": 181,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 142,
-  "mapped_hosted_tool_count": 140,
+  "mapped_native_leaf_count": 145,
+  "mapped_hosted_tool_count": 143,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 142,
-    "missing_requires_audit": 159,
+    "implemented_hosted_unverified": 145,
+    "missing_requires_audit": 156,
     "product_limited": 20
   },
   "by_service": [
@@ -124,11 +124,11 @@
     {
       "service": "slides",
       "native_leaves": 47,
-      "hosted_tools": 6,
-      "mapped_native_leaves": 6,
+      "hosted_tools": 9,
+      "mapped_native_leaves": 9,
       "classifications": {
-        "implemented_hosted_unverified": 6,
-        "missing_requires_audit": 38,
+        "implemented_hosted_unverified": 9,
+        "missing_requires_audit": 35,
         "product_limited": 3
       }
     },
@@ -4111,19 +4111,50 @@
       "service": "slides",
       "command": "replace-text",
       "native_command": "gog slides replace-text",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "slides_replace_text",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
       "command": "skip-slide",
       "native_command": "gog slides skip-slide",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "slides_skip_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
@@ -4246,10 +4277,25 @@
       "service": "slides",
       "command": "unskip-slide",
       "native_command": "gog slides unskip-slide",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "slides_unskip_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Slides: add explicit all/page/object literal text replacement and selected-slide skip/unskip through existing native handlers and exact write-tool/file grants. Empty replacement additionally requires destructive permission; raw text, UTF-16 object edits and explicit false values are preserved. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Slides: add selected-presentation metadata, slide reads and literal UTF-16 text locate through existing native handlers and exact tool/file grants. `slides_info` requires `drive.file` for its actual Drive metadata check; slide/page IDs do not create extra resource grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: add selected-document structure, headings, paragraphs, tables, images and named-range inventories through existing typed read handlers and exact tool/file grants. Fixed default views only; no new OAuth scopes, mutations, downloads or automatic grants. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

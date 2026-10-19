@@ -69,7 +69,7 @@ func hostedSlidesEditTools() []mcpToolSpec {
 // unskip-slide: slides <verb> -- <presentation_id> <slide_id>.
 func hostedSlidesSlideToggleArgs(verb string) func(mcp.CallToolRequest) ([]string, error) {
 	return func(req mcp.CallToolRequest) ([]string, error) {
-		presentationID, err := hostedSlidesReadTool(req, "presentation_id")
+		presentationID, err := hostedSlidesReadTool(req)
 		if err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func hostedSlidesSlideToggleArgs(verb string) func(mcp.CallToolRequest) ([]strin
 // slides replace-text [--match-case] [--all | --page=ID... | --object=ID] --
 // <presentation_id> <find> <replacement>.
 func hostedSlidesReplaceTextArgs(req mcp.CallToolRequest) ([]string, error) {
-	presentationID, err := hostedSlidesReadTool(req, "presentation_id")
+	presentationID, err := hostedSlidesReadTool(req)
 	if err != nil {
 		return nil, err
 	}

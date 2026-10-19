@@ -1,5 +1,31 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Explicit Slides edits candidate (19 October 2026)
+
+- `slides_replace_text` reuses native `slides replace-text`, preserving exactly
+  one explicit selection: `all=true`, nonempty `page_ids`, or `object_id`.
+  Find/replacement text is literal, including whitespace and Unicode. Empty
+  replacement is supported only with the separate destructive permission.
+- `slides_skip_slide` and `slides_unskip_slide` reuse native visibility handlers
+  on one explicitly selected slide; unskip serializes false explicitly.
+
+All three require exact enabled tool/file write authority and existing approval
+controls. Only `presentations` or `drive.file` are admitted, not readonly scopes.
+Skip/unskip POST only to the selected presentation's `:batchUpdate`; object
+replacement may first GET that same presentation and preserves its revision
+check. No implicit presentation-wide selection, raw batch body, source file,
+external fetch, new OAuth scope or data-source operation is exposed.
+
+Signed native fixtures decode actual outgoing request kinds, independently
+apply UTF-16 deletion/insertion and replacements, and verify scope preservation
+plus skip/unskip state. Missing/foreign/disabled grants, readonly scopes and
+empty replacement without destructive permission fail before Google. Six
+D1/Clerk cases verify write/destructive snapshots and tenant/resource isolation.
+All three tools are **unverified live** under #97; there is no product deployment
+or real Google mutation claim. Candidate totals: **181 / 143 active tools**,
+**145 mapped native leaves**, **156 requiring method/scope/resource audit**.
+The existing closed state of #96 is not completion evidence and is untouched.
+
 ## Selected-presentation read candidate (19 October 2026)
 
 Three fixed-schema reads reuse native `slides info`, `slides read-slide` and
