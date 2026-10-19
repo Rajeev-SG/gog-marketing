@@ -5801,6 +5801,114 @@
     }
   },
   {
+    "name": "docs_add_tab",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Add a new tab to a Google Doc under an explicit account-level write-tool grant. An omitted or empty title generates an automatic title; an omitted or empty parent tab places the tab at the root; an omitted or empty icon emoji means no icon.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "icon_emoji": {
+            "description": "Optional emoji for the tab; empty or omitted means no icon.",
+            "type": "string"
+          },
+          "index": {
+            "description": "Optional zero-based insertion position.",
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "parent_tab": {
+            "description": "Optional parent tab title or ID; empty or omitted places the tab at the root.",
+            "type": "string"
+          },
+          "title": {
+            "description": "Optional literal tab title; empty or omitted auto-titles the tab.",
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_add_tab"
+    }
+  },
+  {
+    "name": "docs_rename_tab",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Rename an existing tab in a Google Doc under an explicit account-level write-tool grant. The tab and new title are matched literally by title or ID.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "tab", "title"],
+        "type": "object"
+      },
+      "name": "docs_rename_tab"
+    }
+  },
+  {
+    "name": "docs_delete_tab",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Delete a tab from a Google Doc by title or ID. This destructive action requires a separate destructive permission grant in addition to the write-tool grant, and the deleted tab content cannot be recovered.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "tab"],
+        "type": "object"
+      },
+      "name": "docs_delete_tab"
+    }
+  },
+  {
     "name": "drive_comments_list",
     "service": "drive",
     "resource_type": "file",

@@ -1,5 +1,25 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Docs tab management candidate (19 October 2026)
+
+Three fixed-schema adapters reuse native `docs tabs add/rename/delete` and
+map their direct aliases: `docs_add_tab`, `docs_rename_tab`, `docs_delete_tab`.
+Creation preserves optional title, sibling index, parent and emoji icon; omitted
+fields retain native defaults. Rename resolves the selected tab by ID/title and
+updates only its title. Delete requires destructive permission before Google.
+Provider deletion semantics include descendants; no automatic grants are added.
+
+Exact selected-document/tool write authority and existing approvals are required.
+Only `documents` or `drive.file` write scopes are admitted. Metadata GET and
+batchUpdate POST are restricted to the selected document. No arbitrary batch,
+external image, markdown replacement, new scope or deployment is introduced.
+
+Signed SDK fixtures persist root/nested tab creation, index zero, rename and
+delete while asserting hierarchy/icon/sibling preservation and authorization
+denials. These fixtures are not real Google acceptance. All three tools remain
+**unverified live** under #97. Candidate totals: **187 / 149 active tools**,
+**157 mapped native leaves**, **144 requiring method/scope/resource audit**.
+
 ## Native Forms questions candidate (19 October 2026)
 
 Three fixed-schema adapters reuse native `forms questions add/move/delete`

@@ -70,6 +70,7 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedSheetsCreateTools()...)
 	tools = append(tools, hostedDocsSlidesCreateTools()...)
 	tools = append(tools, hostedDocsInventoryTools()...)
+	tools = append(tools, hostedDocsTabTools()...)
 	tools = append(tools, hostedCommentsWatchReadTools()...)
 	tools = append(tools, hostedSheetsInventoryTools()...)
 	tools = append(tools, hostedSheetsLayoutTools()...)
