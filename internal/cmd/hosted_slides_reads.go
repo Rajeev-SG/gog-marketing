@@ -19,12 +19,12 @@ var (
 // page selectors have a separate rule because colon namespacing is valid there.
 var hostedSlidesReadIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{1,256}$`)
 
-func hostedSlidesReadTool(req mcp.CallToolRequest, argument string) (string, error) {
-	value, err := requireMCPString(req, argument)
+func hostedSlidesReadTool(req mcp.CallToolRequest) (string, error) {
+	value, err := requireMCPString(req, "presentation_id")
 	if err != nil {
 		return "", err
 	}
-	if value != req.GetString(argument, "") || !hostedSlidesReadIDPattern.MatchString(value) {
+	if value != req.GetString("presentation_id", "") || !hostedSlidesReadIDPattern.MatchString(value) {
 		return "", errHostedSlidesReadID
 	}
 	return value, nil
@@ -37,7 +37,7 @@ func hostedSlidesReadTools() []mcpToolSpec {
 			Description: "Read metadata for one explicitly granted Google Slides presentation. Confirms the selected Drive file is a Google presentation, then returns native presentation metadata under an exact account/tool/file read grant.",
 			Options:     []mcp.ToolOption{mcp.WithString("presentation_id", mcp.Required())},
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
-				id, err := hostedSlidesReadTool(req, "presentation_id")
+				id, err := hostedSlidesReadTool(req)
 				if err != nil {
 					return nil, err
 				}
@@ -53,7 +53,7 @@ func hostedSlidesReadTools() []mcpToolSpec {
 				mcp.WithBoolean("detail"),
 			},
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
-				id, err := hostedSlidesReadTool(req, "presentation_id")
+				id, err := hostedSlidesReadTool(req)
 				if err != nil {
 					return nil, err
 				}
@@ -89,7 +89,7 @@ func hostedSlidesReadTools() []mcpToolSpec {
 				mcp.WithBoolean("fail_empty"),
 			},
 			BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
-				id, err := hostedSlidesReadTool(req, "presentation_id")
+				id, err := hostedSlidesReadTool(req)
 				if err != nil {
 					return nil, err
 				}
