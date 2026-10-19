@@ -81,6 +81,7 @@ func admitTasksMoveQuery(invocation *ToolInvocation, request *http.Request) erro
 	if queryErr != nil {
 		return native.ErrDenied
 	}
+
 	for key, values := range query {
 		if len(values) != 1 {
 			return native.ErrDenied
