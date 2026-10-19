@@ -158,6 +158,11 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	if err != nil {
 		return nil, ErrHostedToolExecution
 	}
+	if spec.Name == "forms_add_question" {
+		if configureErr := configureHostedFormsQuestionSlices(parser); configureErr != nil {
+			return nil, configureErr
+		}
+	}
 	command, err := parser.Parse(args)
 	if err != nil {
 		return nil, ErrHostedToolInput

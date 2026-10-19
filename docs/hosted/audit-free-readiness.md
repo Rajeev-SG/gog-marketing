@@ -9,6 +9,8 @@ Creation preserves text/paragraph/radio/checkbox/dropdown/scale/date/time,
 required answers, ordered choices, quiz answers/points, append/explicit position,
 description, scale labels/bounds and date/time flags. Pure native planning
 validates the input; no arbitrary item JSON or file/source input is accepted.
+Hosted choice/answer arrays retain literal commas and backslashes through a
+Forms-add-only parser setting; ordinary CLI comma parsing remains unchanged.
 
 Exact enabled form/tool write authority and existing approvals are required.
 Deletion additionally requires destructive permission before any Google call.

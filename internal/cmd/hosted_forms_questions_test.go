@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"slices"
 	"testing"
 
@@ -63,5 +64,32 @@ func TestHostedFormsQuestionRejectsInvalidInput(t *testing.T) {
 		if _, err := byName[test.name].BuildArgs(req); err == nil {
 			t.Fatalf("%s accepted %v", test.name, test.args)
 		}
+	}
+}
+
+func TestHostedFormsQuestionArraysDoNotChangeOrdinaryCLI(t *testing.T) {
+	args := []string{"forms", "questions", "add", "--title=Q", "--type=radio", "--option=Sales, EMEA", "--option=R&D\\, Team", "--correct=R&D\\, Team", "--points=3", "--", "selected-form"}
+	parser, cli, err := newParserWithWriters("hosted array fixture", io.Discard, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configureErr := configureHostedFormsQuestionSlices(parser); configureErr != nil {
+		t.Fatal(configureErr)
+	}
+	if _, parseErr := parser.Parse(args); parseErr != nil {
+		t.Fatal(parseErr)
+	}
+	if !slices.Equal(cli.Forms.Questions.Add.Options, []string{"Sales, EMEA", "R&D\\, Team"}) || !slices.Equal(cli.Forms.Questions.Add.Correct, []string{"R&D\\, Team"}) {
+		t.Fatalf("hosted literal arrays changed: %q / %q", cli.Forms.Questions.Add.Options, cli.Forms.Questions.Add.Correct)
+	}
+	ordinary, normal, err := newParserWithWriters("ordinary array fixture", io.Discard, io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ordinary.Parse(args); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(normal.Forms.Questions.Add.Options, []string{"Sales", " EMEA", "R&D, Team"}) {
+		t.Fatalf("ordinary CLI grammar changed: %q", normal.Forms.Questions.Add.Options)
 	}
 }

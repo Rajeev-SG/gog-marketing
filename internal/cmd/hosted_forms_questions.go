@@ -6,6 +6,7 @@ import (
 	"math"
 	"strconv"
 
+	"github.com/alecthomas/kong"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -288,4 +289,37 @@ func hostedFormsQuestionTools() []mcpToolSpec {
 			BuildArgs: hostedFormsDeleteQuestionArgs,
 		},
 	}
+}
+
+// Hosted arrays already carry element boundaries; only this fresh parser's
+// Forms add flags must bypass the ordinary CLI comma-slice grammar.
+func configureHostedFormsQuestionSlices(parser *kong.Kong) error {
+	node := parser.Model.Node
+	for _, name := range []string{"forms", "questions", "add"} {
+		var found *kong.Node
+		for _, child := range node.Children {
+			if child.Name == name {
+				found = child
+				break
+			}
+		}
+		if found == nil {
+			return ErrHostedToolExecution
+		}
+		node = found
+	}
+	count := 0
+	for _, flag := range node.Flags {
+		if flag.Name != "option" && flag.Name != "correct" {
+			continue
+		}
+		tag := *flag.Tag
+		tag.Sep = -1
+		flag.Tag = &tag
+		count++
+	}
+	if count != 2 {
+		return ErrHostedToolExecution
+	}
+	return nil
 }

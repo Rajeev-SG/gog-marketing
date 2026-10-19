@@ -28,6 +28,7 @@ func TestNativeFormsQuestionsPersistSelectedItems(t *testing.T) {
 			expectedRequired := true
 			expectedIndex := 0
 			expectedGrade := false
+			optionValues := []string{"A", "B"}
 			h := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
 				engine.NativeServices.Forms = func(ctx context.Context, account string) (*formsapi.Service, error) {
 					if account != "owner@example.com" || authclient.AccessTokenFromContext(ctx) != "synthetic-ephemeral-token" || !googleapi.NoInputFromContext(ctx) {
@@ -110,7 +111,7 @@ func TestNativeFormsQuestionsPersistSelectedItems(t *testing.T) {
 										kind = "dropdown"
 									}
 
-									if len(q.ChoiceQuestion.Options) != 2 || q.ChoiceQuestion.Options[0].Value != "A" || q.ChoiceQuestion.Options[1].Value != "B" {
+									if len(q.ChoiceQuestion.Options) != 2 || q.ChoiceQuestion.Options[0].Value != optionValues[0] || q.ChoiceQuestion.Options[1].Value != optionValues[1] {
 										return nil, errFormsQuestionFixture
 									}
 								case q.ScaleQuestion != nil:
@@ -138,7 +139,7 @@ func TestNativeFormsQuestionsPersistSelectedItems(t *testing.T) {
 									return nil, errFormsQuestionFixture
 								}
 
-								if expectedGrade && (q.Grading == nil || q.Grading.PointValue != 3 || q.Grading.CorrectAnswers == nil || len(q.Grading.CorrectAnswers.Answers) != 1 || q.Grading.CorrectAnswers.Answers[0].Value != "B") {
+								if expectedGrade && (q.Grading == nil || q.Grading.PointValue != 3 || q.Grading.CorrectAnswers == nil || len(q.Grading.CorrectAnswers.Answers) != 1 || q.Grading.CorrectAnswers.Answers[0].Value != optionValues[1]) {
 									return nil, errFormsQuestionFixture
 								}
 								create.Item.ItemId = fmt.Sprintf("created-%d", posts)
@@ -233,8 +234,9 @@ func TestNativeFormsQuestionsPersistSelectedItems(t *testing.T) {
 				}
 			}
 			expectedKind, expectedIndex, expectedGrade = "radio", 0, true
+			optionValues = []string{"Sales, EMEA", `R&D\, Team`}
 
-			quiz := map[string]any{"form_id": "selected-form", "title": "Quiz", "type": "radio", "required": true, "options": []string{"A", "B"}, "correct": []string{"B"}, "points": 3, "index": 0}
+			quiz := map[string]any{"form_id": "selected-form", "title": "Quiz", "type": "radio", "required": true, "options": optionValues, "correct": []string{optionValues[1]}, "points": 3, "index": 0}
 			if r := call("forms_add_question", quiz, false, nil); !r.OK {
 				t.Fatal(r.Body)
 			}
