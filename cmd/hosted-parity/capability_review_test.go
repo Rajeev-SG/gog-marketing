@@ -157,13 +157,57 @@ func TestConnectedSheetsScopeAndBillingAreNotOrdinaryAdapterReadiness(t *testing
 func TestReviewedMultiCallInventoriesRetainRequiredMethods(t *testing.T) {
 	for command, required := range map[string][]string{
 		"drive sync push": {"drive.files.list", "drive.files.get", "drive.files.create", "drive.files.update"},
-		"slides copy":     {"drive.files.copy", "slides.presentations.get"},
+		"slides copy":     {"drive.files.get", "drive.files.copy"},
 	} {
 		review := reviewedCapabilities[command]
 		for _, method := range required {
 			if !slices.Contains(review.GoogleMethods, method) {
 				t.Fatalf("%s omits mandatory native RPC %s", command, method)
 			}
+		}
+	}
+}
+
+func TestSlidesCopyEvidenceMatchesActualSharedHelper(t *testing.T) {
+	file, err := parser.ParseFile(token.NewFileSet(), "../../internal/cmd/drive_copy.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual := map[string]bool{}
+	found := false
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if !ok || fn.Name.Name != "copyViaDrive" {
+			continue
+		}
+		found = true
+		ast.Inspect(fn.Body, func(node ast.Node) bool {
+			call, ok := node.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			selector, ok := call.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			collection, ok := selector.X.(*ast.SelectorExpr)
+			if !ok || collection.Sel.Name != "Files" {
+				return true
+			}
+			actual["drive.files."+strings.ToLower(selector.Sel.Name)] = true
+			return true
+		})
+	}
+	if !found || len(actual) == 0 {
+		t.Fatal("shared native copy helper not inspected")
+	}
+	recorded := reviewedCapabilities["slides copy"].GoogleMethods
+	if len(recorded) != len(actual) {
+		t.Fatalf("recorded=%v actual native helper methods=%v", recorded, actual)
+	}
+	for _, method := range recorded {
+		if !actual[method] {
+			t.Errorf("inventory invented RPC %s not present in copyViaDrive", method)
 		}
 	}
 }

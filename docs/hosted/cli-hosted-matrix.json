@@ -7336,14 +7336,14 @@
         "paid_assessment": "not_required_for_approved_scope_variant",
         "hostability": "ready_for_fixed_adapter",
         "google_methods": [
-          "drive.files.copy",
-          "slides.presentations.get"
+          "drive.files.get",
+          "drive.files.copy"
         ],
         "scopes": [
           "https://www.googleapis.com/auth/drive.file"
         ],
         "resource_model": "Drive copy of a presentation file after mimeType check, with optional title and parent",
-        "constraint": "Relies on drive.file grant to the source presentation; parent folder must also be app-accessible under drive.file; mime check enforces presentations only Native copy mandatorily reads the new presentation through Presentations.Get; bind created-resource readback to the trusted copy result. Basic presentation file-copy is already possible with drive_copy and its explicit Drive grants, but full native summary/readback parity is not assumed.",
+        "constraint": "SlidesCopyCmd delegates to copyViaDrive: source Files.Get validates MIME type, then Files.Copy copies that same selected source. There is NO Presentations.Get or created-resource readback. Default-root copy is scope-eligible; an optional destination parent needs separate authority. Basic presentation file-copy is already available with drive_copy and its explicit Drive grants; native formatter/argument identity is not assumed.",
         "source_evidence": "internal/cmd/slides.go:316 (copyViaDrive helper, ExpectedMime application/vnd.google-apps.presentation)",
         "existing_tool": "drive_copy",
         "controller_notes": [
@@ -7361,7 +7361,7 @@
       "hosted_tool": null,
       "status": "eligible_missing",
       "live_verified": false,
-      "classification_reason": "Relies on drive.file grant to the source presentation; parent folder must also be app-accessible under drive.file; mime check enforces presentations only Native copy mandatorily reads the new presentation through Presentations.Get; bind created-resource readback to the trusted copy result. Basic presentation file-copy is already possible with drive_copy and its explicit Drive grants, but full native summary/readback parity is not assumed."
+      "classification_reason": "SlidesCopyCmd delegates to copyViaDrive: source Files.Get validates MIME type, then Files.Copy copies that same selected source. There is NO Presentations.Get or created-resource readback. Default-root copy is scope-eligible; an optional destination parent needs separate authority. Basic presentation file-copy is already available with drive_copy and its explicit Drive grants; native formatter/argument identity is not assumed."
     },
     {
       "service": "slides",
