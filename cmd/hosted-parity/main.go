@@ -45,6 +45,7 @@ var commandToHosted = map[string]string{
 	"appscript version-create":            "appscript_version_create",
 	"appscript deployment-create":         "appscript_deployment_create",
 	"appscript deployment-delete":         "appscript_deployment_delete",
+	"appscript deployment-update":         "appscript_deployment_update",
 	"forms add-question":                  "forms_add_question",
 	"forms questions add":                 "forms_add_question",
 	"forms move-question":                 "forms_move_question",

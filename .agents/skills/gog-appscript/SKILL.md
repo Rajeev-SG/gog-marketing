@@ -33,6 +33,7 @@ gog --readonly --account user@example.com appscript --help
 | `create` | Create an Apps Script project |
 | `deployment-create` | Create a deployment of an immutable version |
 | `deployment-delete` | Delete a deployment of an immutable version |
+| `deployment-update` | Update an existing deployment to an immutable version, preserving omitted configuration |
 | `deployments` | List deployments |
 | `get` | Get Apps Script project metadata |
 | `pull` | Pull an Apps Script project into a local directory |

@@ -2154,6 +2154,19 @@ describe("chat Google tools and durable write approvals", () => {
       name: "appscript_deployment_delete",
       args: { script_id: "script-1", deployment_id: "deployment-1" },
     },
+    {
+      name: "appscript_deployment_update",
+      args: { script_id: "script-1", deployment_id: "deployment-1", version_number: 2 },
+    },
+    {
+      name: "appscript_deployment_update",
+      args: {
+        script_id: "script-1",
+        deployment_id: "deployment-1",
+        version_number: 2,
+        description: "",
+      },
+    },
   ])("Apps Script chat $name requires exact one-use approval", async ({ name, args }) => {
     const f = await chatFixture(name);
     const input = { ...args, connectionId: f.connectionId };
@@ -4482,6 +4495,12 @@ it.each([
     scope: "script.deployments",
     destructive: true,
     args: { script_id: "script123", deployment_id: "deployment123" },
+  },
+  {
+    name: "appscript_deployment_update",
+    scope: "script.deployments",
+    destructive: true,
+    args: { script_id: "script123", deployment_id: "deployment123", version_number: 2 },
   },
 ])(
   "Apps Script management $name requires exact account authority",

@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Apps Script: add native and hosted deployment update to an immutable version, preserving omitted description/manifest settings and supporting explicit description clearing. Exact deployment GET/PUT, account-wide destructive permission, one-use chat approval and no-retry behavior remain enforced. No concurrency precondition is available. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Apps Script: add native and hosted deployment deletion, with exact project/deployment DELETE guards, existing deployment scope, destructive permission and one-use chat approval. Native confirmation and no-retry semantics remain enforced. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - GA4: add native metadata retrieval and hosted `analytics_metadata_get` for an explicitly enabled property, using Analytics Data API read scopes and exact property/tool grants. No new OAuth scopes; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

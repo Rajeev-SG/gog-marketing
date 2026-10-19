@@ -5156,6 +5156,47 @@
     }
   },
   {
+    "name": "appscript_deployment_update",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Repoint an existing Apps Script deployment to the supplied immutable version, optionally changing its description and manifest file name. Account-wide destructive grant: any deployment under any project the account can access may be modified, and the change applies immediately to web app or API executable consumers. Requires explicit account-level exact-tool destructive permission and one-use chat approval. Omitted optional fields are preserved as-is; the deployment configuration is fetched (GET) and then replaced (PUT) with the merged result. There is no concurrency precondition, so simultaneous edits by others may be overwritten; failed calls are not retried to avoid uncertain partial updates; this never executes the script.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "deployment_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "manifest_file_name": {
+            "type": "string"
+          },
+          "script_id": {
+            "type": "string"
+          },
+          "version_number": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": ["script_id", "deployment_id", "version_number"],
+        "type": "object"
+      },
+      "name": "appscript_deployment_update"
+    }
+  },
+  {
     "name": "appscript_run",
     "service": "appscript",
     "resource_type": "",

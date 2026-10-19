@@ -44,6 +44,7 @@ func appScriptDeploymentUpdateServer(t *testing.T, getCount, putCount *int, chec
 func TestAppScriptDeploymentUpdateSuccess(t *testing.T) {
 	var getCount, putCount int
 	srv := appScriptDeploymentUpdateServer(t, &getCount, &putCount, func(t *testing.T, _ *http.Request, body string) {
+		t.Helper()
 		var req struct {
 			DeploymentConfig struct {
 				ScriptId         string   `json:"scriptId"`
@@ -80,6 +81,7 @@ func TestAppScriptDeploymentUpdateSuccess(t *testing.T) {
 func TestAppScriptDeploymentUpdateOmittedFieldsPreserved(t *testing.T) {
 	var getCount, putCount int
 	srv := appScriptDeploymentUpdateServer(t, &getCount, &putCount, func(t *testing.T, _ *http.Request, body string) {
+		t.Helper()
 		var cfg struct {
 			DeploymentConfig struct {
 				Description      string `json:"description"`
@@ -107,6 +109,7 @@ func TestAppScriptDeploymentUpdateOmittedFieldsPreserved(t *testing.T) {
 func TestAppScriptDeploymentUpdateExplicitEmptyDescription(t *testing.T) {
 	var getCount, putCount int
 	srv := appScriptDeploymentUpdateServer(t, &getCount, &putCount, func(t *testing.T, _ *http.Request, body string) {
+		t.Helper()
 		var raw struct {
 			DeploymentConfig struct {
 				Description *string `json:"description"`
@@ -130,6 +133,7 @@ func TestAppScriptDeploymentUpdateExplicitEmptyDescription(t *testing.T) {
 func TestAppScriptDeploymentUpdateExplicitManifestReplacement(t *testing.T) {
 	var getCount, putCount int
 	srv := appScriptDeploymentUpdateServer(t, &getCount, &putCount, func(t *testing.T, _ *http.Request, body string) {
+		t.Helper()
 		var cfg struct {
 			DeploymentConfig struct {
 				ManifestFileName string `json:"manifestFileName"`

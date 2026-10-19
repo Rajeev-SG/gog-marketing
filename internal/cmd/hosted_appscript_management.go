@@ -94,5 +94,6 @@ func hostedAppScriptManagementTools() []mcpToolSpec {
 				return []string{"appscript", "deployment-delete", "--", scriptID, deploymentID}, nil
 			},
 		},
+		hostedAppScriptDeploymentUpdateTool(),
 	}
 }
