@@ -3189,6 +3189,77 @@
     }
   },
   {
+    "name": "analytics_retention_get",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Read GA4 event/user retention settings for one explicitly enabled property. Requires exact tool/property authority and analytics.readonly or analytics.edit; no account-wide access.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_retention_get"
+    }
+  },
+  {
+    "name": "analytics_retention_update",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Partially change GA4 retention settings on one explicitly enabled property. Shortening retention can irreversibly delete historical data. Requires analytics.edit, exact tool/property write and destructive permission; chat requires one-use exact-argument approval. Only supplied fields change; false is preserved. Advanced event durations require an existing GA4 360 property. No wildcard mask, raw JSON, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "event_data_retention": {
+            "enum": [
+              "TWO_MONTHS",
+              "FOURTEEN_MONTHS",
+              "TWENTY_SIX_MONTHS",
+              "THIRTY_EIGHT_MONTHS",
+              "FIFTY_MONTHS"
+            ],
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          },
+          "reset_user_data_on_new_activity": {
+            "type": "boolean"
+          },
+          "user_data_retention": {
+            "enum": ["TWO_MONTHS", "FOURTEEN_MONTHS"],
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_retention_update"
+    }
+  },
+  {
     "name": "searchconsole_sites_get",
     "service": "searchconsole",
     "resource_type": "site",

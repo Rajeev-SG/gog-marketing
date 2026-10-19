@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 894.
+Generated pages: 897.
 
 ## Top-level Commands
 
@@ -156,6 +156,9 @@ Generated pages: 894.
       - [gog analytics properties get](gog-analytics-properties-get.md)
       - [gog analytics properties list](gog-analytics-properties-list.md)
     - [gog analytics report](gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
+    - [gog analytics retention](gog-analytics-retention.md) - GA4 retention settings
+      - [gog analytics retention get](gog-analytics-retention-get.md) - Read GA4 retention settings for one property
+      - [gog analytics retention update](gog-analytics-retention-update.md) - Change GA4 retention settings; shortening retention can irreversibly delete historical data
   - [gog api](gog-api.md) - Google Discovery APIs and generic method calls
     - [gog api call](gog-api-call.md) - Call a Discovery-described API method
     - [gog api describe](gog-api-describe.md) - Describe a Discovery API or method

@@ -1,5 +1,29 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## API-only gap closed: GA4 retention settings (19 October 2026)
+
+`analytics_retention_get` and `analytics_retention_update` add typed native CLI,
+hosted and chat access to the property singleton. The current official
+[Admin v1beta discovery](https://analyticsadmin.googleapis.com/$discovery/rest?version=v1beta)
+requires analytics.readonly or analytics.edit for GET, analytics.edit for PATCH.
+Existing approved scopes and exact property/tool grants suffice; no paid
+assessment or new consent scope is introduced. This capability was absent from
+both the native command tree and hosted catalogue, demonstrating why CLI parity
+was not complete API coverage.
+
+Update accepts only explicit event/user durations and an optional reset boolean;
+false is preserved on the wire. Only supplied snake-case mask fields change.
+All updates require destructive authority because retention shortening can
+irreversibly remove historical events, plus one-use exact-argument chat approval.
+The request is single-attempt, including through the production retry transport.
+No raw JSON, wildcard masks, server files or arbitrary property paths are exposed.
+User durations are two/fourteen months; extended event durations require an
+existing GA4 360 property and Google still enforces its edition/role limits.
+
+Candidate catalogue218total/180active,353native leaves/189mapped. This is
+fixture engineering evidence, not live acceptance; both remain unverified#97.
+No live settings, OAuth, credentials, grants, billing or deployment were changed.
+
 ## Docs literal range search and named-range edits (19 October 2026)
 
 `docs_find_range`, `docs_named_range_create`, `docs_named_range_delete` and

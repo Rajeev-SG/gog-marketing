@@ -27,6 +27,8 @@ export const CHAT_GOOGLE_TOOLS = new Set([
   "analytics_properties_get",
   "analytics_report",
   "analytics_datastreams_list",
+  "analytics_retention_get",
+  "analytics_retention_update",
   "searchconsole_sites_list",
   "searchconsole_query",
   "searchconsole_inspect",
