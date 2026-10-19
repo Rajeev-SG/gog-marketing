@@ -238,22 +238,22 @@ func TestNativeSlidesEditsPersistScopedMutations(t *testing.T) {
 				t.Fatal("explicit false unskip not persisted")
 			}
 
+			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "Launch", "replacement": "Page", "page_ids": []string{"p:1"}}, nil)
+
+			if state.text["shape:one"] != "Launch 🚀 launch" || state.text["shape:two"] != "Page outside" {
+				t.Fatalf("page selection/preservation: %v", state.text)
+			}
+
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "launch", "replacement": "Done", "object_id": "shape:one"}, nil)
 
-			if state.text["shape:one"] != "Done 🚀 Done" || state.text["shape:two"] != "Launch outside" {
+			if state.text["shape:one"] != "Done 🚀 Done" || state.text["shape:two"] != "Page outside" {
 				t.Fatalf("object UTF16 edits/preservation: %v", state.text)
 			}
 
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "Done", "replacement": "", "object_id": "shape:one"}, func(a *ToolAuthorization) { a.AllowDestructive = true })
 
-			if state.text["shape:one"] != " 🚀 " || state.text["shape:two"] != "Launch outside" {
-				t.Fatalf("empty replacement/preservation: %v", state.text)
-			}
-
-			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": "Launch", "replacement": "Page", "page_ids": []string{"p:1"}}, nil)
-
 			if state.text["shape:one"] != " 🚀 " || state.text["shape:two"] != "Page outside" {
-				t.Fatalf("page selection/preservation: %v", state.text)
+				t.Fatalf("empty replacement/preservation: %v", state.text)
 			}
 
 			good("slides_replace_text", map[string]any{"presentation_id": "selected-deck", "find": " ", "replacement": "_", "all": true}, nil)
