@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Sheets: expose fixed-size/auto-fit row and column resizing plus merge/unmerge via native handlers and exact selected-file/tool write grants. Merge additionally requires destructive permission; native range/type semantics and zero indexes are preserved. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Sheets: expose selected-range notes, hyperlinks, user-entered/effective formatting and cell/table-derived validation reads through native handlers and exact tool/file grants. Preserve named-range handling and execution cancellation; returned links are not fetched. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Sheets: add selected chart, named-range and table detail reads through native handlers, exact tool/file grants and existing read scopes. Preserve native ID/name resolution and chart-request cancellation; no arbitrary metadata proxy or mutations. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
