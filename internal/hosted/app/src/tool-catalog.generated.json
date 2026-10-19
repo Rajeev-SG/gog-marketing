@@ -6706,6 +6706,237 @@
     }
   },
   {
+    "name": "docs_format",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Format native document text/paragraphs, first/all literal matches or default whole body, optionally on a tab/header/footer/footnote. Boolean false clears bold/italic/underline/strike; paragraph pointer booleans and zero spacing/indents are preserved. Empty link clears it; links are set, not fetched. Native style/conflict validation retained. Exact document/tool write grants and one-use chat approval; no files/raw masks/batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "alignment": {
+            "type": "string"
+          },
+          "bg_color": {
+            "type": "string"
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "bullet_preset": {
+            "type": "string"
+          },
+          "bullet_style": {
+            "enum": ["unordered", "ordered", "none"],
+            "type": "string"
+          },
+          "code_style": {
+            "enum": ["apply"],
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "font_family": {
+            "type": "string"
+          },
+          "font_size": {
+            "type": "number"
+          },
+          "heading_level": {
+            "maximum": 6,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "indent_end": {
+            "type": "number"
+          },
+          "indent_first_line": {
+            "type": "number"
+          },
+          "indent_start": {
+            "type": "number"
+          },
+          "italic": {
+            "type": "boolean"
+          },
+          "keep_lines_together": {
+            "type": "boolean"
+          },
+          "keep_with_next": {
+            "type": "boolean"
+          },
+          "line_spacing": {
+            "type": "number"
+          },
+          "link": {
+            "type": "string"
+          },
+          "match": {
+            "type": "string"
+          },
+          "match_all": {
+            "type": "boolean"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "named_style": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "space_above": {
+            "type": "number"
+          },
+          "space_below": {
+            "type": "number"
+          },
+          "spacing_mode": {
+            "type": "string"
+          },
+          "strikethrough": {
+            "type": "boolean"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text_color": {
+            "type": "string"
+          },
+          "underline": {
+            "type": "boolean"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_format"
+    }
+  },
+  {
+    "name": "docs_page_layout",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Set native paged/pageless layout, named/custom size or margins on an exact document/tab. Dimension strings accept pt/in/cm/mm including zero margins. Margin-only updates preserve existing mode; with no fields native default is pageless. Exact write-tool/document grants and one-use chat approval; no wildcard/raw requests or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "layout": {
+            "enum": ["pageless", "pages", "paged"],
+            "type": "string"
+          },
+          "margin_bottom": {
+            "type": "string"
+          },
+          "margin_left": {
+            "type": "string"
+          },
+          "margin_right": {
+            "type": "string"
+          },
+          "margin_top": {
+            "type": "string"
+          },
+          "page_height": {
+            "type": "string"
+          },
+          "page_size": {
+            "type": "string"
+          },
+          "page_width": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_page_layout"
+    }
+  },
+  {
+    "name": "docs_section_columns",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Set one-to-three columns and none/between separator at a UTF-16 index, literal anchor or native end position in one document/tab. Native body placement, ambiguity, table exclusion and revision checks retained. Exact write-tool/document grants and one-use chat approval; no segments/files/persisted batch or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "at_end": {
+            "type": "boolean"
+          },
+          "count": {
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "separator": {
+            "enum": ["none", "between"],
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "count"],
+        "type": "object"
+      },
+      "name": "docs_section_columns"
+    }
+  },
+  {
     "name": "drive_revisions_list",
     "service": "drive",
     "resource_type": "file",

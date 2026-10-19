@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/kong"
 	"google.golang.org/api/docs/v1"
 
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -28,6 +29,7 @@ type DocsPageLayoutCmd struct {
 }
 
 func (c *DocsPageLayoutCmd) Run(ctx context.Context, kctx *kong.Context, flags *RootFlags) error {
+	ctx = googleapi.WithoutRetries(ctx)
 	u := ui.FromContext(ctx)
 	docID := strings.TrimSpace(c.DocID)
 	if docID == "" {

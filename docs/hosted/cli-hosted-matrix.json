@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 357,
-  "hosted_tool_count": 188,
-  "total_hosted_catalog_count": 226,
+  "hosted_tool_count": 191,
+  "total_hosted_catalog_count": 229,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 198,
-  "mapped_hosted_tool_count": 188,
+  "mapped_native_leaf_count": 201,
+  "mapped_hosted_tool_count": 191,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 112,
+    "eligible_missing": 109,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 198,
+    "implemented_hosted_unverified": 201,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,12 +68,12 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 25,
-      "mapped_native_leaves": 30,
+      "hosted_tools": 28,
+      "mapped_native_leaves": 33,
       "classifications": {
-        "eligible_missing": 38,
+        "eligible_missing": 35,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 30
+        "implemented_hosted_unverified": 33
       }
     },
     {
@@ -2151,10 +2151,26 @@
       "service": "docs",
       "command": "format",
       "native_command": "gog docs format",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_format",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Match ranges computed locally from a prior get; WriteControl with required revision for batch mode; fixed request schemas only; fix prior 'requires_audit' label"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2865,10 +2881,26 @@
       "service": "docs",
       "command": "page-layout",
       "native_command": "gog docs page-layout",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_page_layout",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Requires per-file drive.file grant for selected docs; WriteControl revision guard recommended"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -3012,10 +3044,26 @@
       "service": "docs",
       "command": "section-columns",
       "native_command": "gog docs section-columns",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_section_columns",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema only; placement resolution via get, revision guard via WriteControl"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {

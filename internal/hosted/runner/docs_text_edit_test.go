@@ -227,7 +227,7 @@ func TestDocsTextEditExactHTTPGuard(t *testing.T) {
 }
 
 func TestNativeDocsTextEditsSingleAttemptThroughGuard(t *testing.T) {
-	for _, name := range []string{"docs_insert", "docs_delete", "docs_clear", "docs_find_replace"} {
+	for _, name := range []string{"docs_insert", "docs_delete", "docs_clear", "docs_find_replace", "docs_format", "docs_page_layout", "docs_section_columns"} {
 		t.Run(name, func(t *testing.T) {
 			var effects atomic.Int64
 			harness := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
@@ -253,6 +253,13 @@ func TestNativeDocsTextEditsSingleAttemptThroughGuard(t *testing.T) {
 			args := map[string]any{"document_id": "selected-doc"}
 
 			switch name {
+			case "docs_format":
+				args["bold"] = false
+			case "docs_page_layout":
+				args["margin_left"] = "0"
+			case "docs_section_columns":
+				args["count"] = 2
+				args["index"] = 1
 			case "docs_insert":
 				args["text"] = "X"
 				args["index"] = 1

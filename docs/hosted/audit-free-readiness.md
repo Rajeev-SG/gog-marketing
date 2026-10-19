@@ -1,5 +1,21 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Native Docs formatting and layout (19 October 2026)
+
+Candidate tools `docs_format`, `docs_page_layout` and `docs_section_columns`
+reuse typed native commands under existing documents/drive.file scopes, selected
+file/tool write grants and one-use exact-argument chat approval. Explicit false
+clears text styles; zero spacing/indents and false paragraph keep flags survive.
+Margin-only updates do not reset page mode. Columns retain native body-placement,
+ambiguity and anchor/end revision controls (not explicit-index placement);
+formatting/page layout do not promise
+new revision guarantees. No files, stdin, persisted batches or raw masks.
+
+All three commands suppress retries before service creation; uncertain failures
+must not be automatically replayed. Candidate has 229 total/191 active tools,
+357 native leaves/201 mapped,109 eligible missing. Live Google acceptance remains
+pending under #97. No OAuth, grant, credential, billing or deployment change.
+
 ## Native Docs literal text editing (19 October 2026)
 
 `docs_insert`, `docs_delete`, `docs_clear` and `docs_find_replace` reuse native

@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 226,
-  "active_tool_count": 188,
+  "total_catalog_count": 229,
+  "active_tool_count": 191,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -948,6 +948,24 @@
     },
     {
       "service": "docs",
+      "tool": "docs_format",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -1144,6 +1162,24 @@
     },
     {
       "service": "docs",
+      "tool": "docs_page_layout",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_paragraphs_list",
       "write": false,
       "destructive_binding_flag": false,
@@ -1163,6 +1199,24 @@
     {
       "service": "docs",
       "tool": "docs_rename_tab",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "documents",
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET",
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_section_columns",
       "write": true,
       "destructive_binding_flag": false,
       "resource_model": "file",

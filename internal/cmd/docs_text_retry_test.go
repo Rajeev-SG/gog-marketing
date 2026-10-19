@@ -19,6 +19,9 @@ import (
 
 func TestDocsTextCommandsDoNotReplayUncertainWrites(t *testing.T) {
 	for _, args := range [][]string{
+		{"format", "selected-doc", "--no-bold"},
+		{"page-layout", "selected-doc", "--margin-left=0"},
+		{"section-columns", "selected-doc", "--count=2", "--index=1"},
 		{"insert", "selected-doc", "X", "--index=1"},
 		{"delete", "selected-doc", "--start=1", "--end=2"},
 		{"clear", "selected-doc"},

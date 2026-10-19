@@ -9,6 +9,7 @@ import (
 	"google.golang.org/api/docs/v1"
 
 	"github.com/openclaw/gogcli/internal/docsedit"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/outfmt"
 	"github.com/openclaw/gogcli/internal/ui"
 )
@@ -217,6 +218,7 @@ func (c *DocsHorizontalRuleCmd) Run(ctx context.Context, kctx *kong.Context, fla
 }
 
 func (c *DocsSectionColumnsCmd) Run(ctx context.Context, kctx *kong.Context, flags *RootFlags) error {
+	ctx = googleapi.WithoutRetries(ctx)
 	if c.Count < 1 || c.Count > 3 {
 		return usage("--count must be between 1 and 3")
 	}

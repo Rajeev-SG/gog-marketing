@@ -2158,6 +2158,9 @@ describe("chat Google tools and durable write approvals", () => {
   });
 
   it.each([
+    { name: "docs_format", args: { document_id: "selected-doc", bold: false } },
+    { name: "docs_page_layout", args: { document_id: "selected-doc", margin_left: "0" } },
+    { name: "docs_section_columns", args: { document_id: "selected-doc", count: 2, index: 1 } },
     { name: "docs_insert", args: { document_id: "selected-doc", text: "Hi", index: 1 } },
     { name: "docs_delete", args: { document_id: "selected-doc", start: 1, end: 3 } },
     { name: "docs_clear", args: { document_id: "selected-doc" } },
@@ -3225,6 +3228,30 @@ it.each(slidesReadToolCases)(
 );
 
 const workspaceWriteToolCases = [
+  {
+    toolName: "docs_format",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", bold: false },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_page_layout",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", margin_left: "0" },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_section_columns",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", count: 2, index: 1 },
+    result: { updated: true },
+    allowDestructive: false,
+  },
   {
     toolName: "docs_insert",
     service: "docs",
