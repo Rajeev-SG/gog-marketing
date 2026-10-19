@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- GA4: add native metadata retrieval and hosted `analytics_metadata_get` for an explicitly enabled property, using Analytics Data API read scopes and exact property/tool grants. No new OAuth scopes; fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Slides: expose native slide new/duplicate/move/delete through exact `presentations.batchUpdate` methods, selected-deck/tool grants and chat approval. Preserve native zero indexes and predefined/exact layout choice; deletion requires destructive permission. All four mutation tools disable uncertain-response retries. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Docs: expose native text/paragraph formatting, page layout and section columns with exact document/tool write grants and chat approval. Preserve explicit false/zero and margin-only mode; no files, raw masks or persisted batches. All three commands disable mutation retries. Live verification pending. (#96, #97, thanks @Rajeev-SG)

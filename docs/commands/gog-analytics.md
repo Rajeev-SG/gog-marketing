@@ -22,6 +22,7 @@ gog analytics (ga) <command> [flags]
 - [gog analytics datastreams](gog-analytics-datastreams.md) - GA4 data streams
 - [gog analytics googleads-links](gog-analytics-googleads-links.md) - GA4 Google Ads links
 - [gog analytics keyevents](gog-analytics-keyevents.md) - GA4 key events
+- [gog analytics metadata](gog-analytics-metadata.md) - GA4 Analytics Data API metadata
 - [gog analytics properties](gog-analytics-properties.md) - GA4 properties
 - [gog analytics report](gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
 - [gog analytics retention](gog-analytics-retention.md) - GA4 retention settings

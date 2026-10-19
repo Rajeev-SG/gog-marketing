@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 233,
-  "active_tool_count": 195,
+  "total_catalog_count": 234,
+  "active_tool_count": 196,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -458,6 +458,22 @@
       ],
       "http_methods": [
         "PATCH"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_metadata_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "GET"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
