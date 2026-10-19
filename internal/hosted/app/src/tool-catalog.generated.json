@@ -4904,6 +4904,40 @@
     }
   },
   {
+    "name": "appscript_run",
+    "service": "appscript",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Execute a deployed Apps Script function with JSON parameters. Enabling this exact account-level tool with destructive permission authorizes arbitrary script effects across the selected Google account within ALL scopes of that connection; selected-file grants do NOT sandbox script code. Chat additionally requires one-use exact-argument write approval. Tokens carrying BigQuery scope are rejected because arbitrary scripts cannot enforce max-bytes-billed. Requires an API-executable deployment, same standard Cloud project as the OAuth client, enabled Apps Script API and all scopes required by the entire script. Use deployment ID, not project ID; development/HEAD mode is not exposed.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "deployment_id": {
+            "type": "string"
+          },
+          "function": {
+            "type": "string"
+          },
+          "params_json": {
+            "default": "[]",
+            "type": "string"
+          }
+        },
+        "required": ["deployment_id", "function"],
+        "type": "object"
+      },
+      "name": "appscript_run"
+    }
+  },
+  {
     "name": "analytics_accounts",
     "service": "analytics",
     "resource_type": "",

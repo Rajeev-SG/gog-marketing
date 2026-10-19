@@ -1,5 +1,44 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Apps Script execution candidate (19 October 2026)
+
+`appscript_run` invokes the native `appscript run` handler for an explicit
+API-executable **deployment ID**, function and literal JSON parameter array.
+Development/HEAD mode is not exposed. Native run now honours dry-run without
+creating a service or making a Google request. All ten Apps Script tools are
+available in chat only when their existing exact tool/resource grants allow it;
+all six writes use the existing durable, exact-argument, one-use approval gate.
+
+Execution is deliberately an **account-wide capability**, disabled by default.
+Enabling the exact tool with destructive authority authorises script effects
+across the selected account within every OAuth scope of that connection.
+Selected-file grants do not sandbox arbitrary script code, and no such claim is
+made. Ordinary file tools retain their existing file restrictions. Restricted
+and unknown OAuth scopes remain rejected by the existing allowlist.
+
+Both the Worker and signed Go runner reject execution using a token carrying
+`bigquery`, even if billable permission is enabled: arbitrary code cannot enforce
+the native maximum-bytes-billed safeguards. Use a connection without that scope.
+No OAuth scope, credential or existing permission is silently changed.
+
+The current [official Scripts.Run discovery](https://script.googleapis.com/$discovery/rest?version=v1)
+and [execution guide](https://developers.google.com/apps-script/api/how-tos/execute)
+were checked on 19 October 2026. They require an API-executable deployment,
+shared **standard** Cloud project between the script and caller OAuth client,
+Apps Script API enablement and caller authorisation for every scope used by the
+entire script. Responses/parameters must use basic JSON data. These setup and
+scope requirements are not a blanket paid security-assessment requirement.
+Each run disables the existing production retry transport before service creation
+and retains that setting through guarded request contexts. A 503 after effects
+is surfaced after one attempt, never replayed automatically. Cancelling a request
+is not proof that remote execution stopped; do not retry an uncertain write.
+
+Candidate totals: **212 / 174 active tools**, **182 mapped native leaves**,
+**124 requiring method/scope/resource audit**. Signed runner/HTTP, D1 denial,
+tenant/permission and chat approval tests are fixture evidence only. This tool
+and management additions remain **unverified live** under #97; no live scripts,
+OAuth prompts, permissions changes or product deployment were performed.
+
 ## Native Sheets named-range/note writes candidate (19 October 2026)
 
 `sheets_named_ranges_add`, `sheets_named_ranges_update`,
@@ -620,7 +659,7 @@ additional scopes on explicit opt-in, not promised callable operations.
 | `forms` | `forms.body.readonly forms.responses.readonly drive.file` | `forms.body` | **untested** | Native selected-form get/update/publish and response list/get use verified file/tool grants; unpublish requires destructive permission. Picker MIME mapping and fixture persistence/denials pass. Creation/questions/watches and real acceptance pending | [Google](https://developers.google.com/workspace/forms/api/guides/apps-script-setup) |
 | `sites` | `drive.file` | No existing service write scope requested | **untested** | Native sites_get/sites_url now use enabled Picker-selected file grants, drive.file and exact GET admission; fixture resource/scope denials pass. Global Drive-backed inventory/search excluded; multi-file URL authorization and live Picker/Sites acceptance pending | [Google](https://developers.google.com/workspace/drive/api/guides/api-specific-auth) |
 | `meet` | `meetings.space.readonly` | `meetings.space.created meetings.space.settings` | **untested** | Native space create/get/update/end use account/tool grants, canonical space paths, method scopes and destructive end permission; fixture config persistence/scope denials pass. History/participants, account prerequisites and live acceptance pending | [Google](https://developers.google.com/workspace/meet/api/guides/authenticate-authorize) |
-| `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Native project get/content/create use account/tool grants, method scopes and exact project admission; fixture reads/create/denials pass. Function execution stays excluded pending target-scope audit; deployments/versions/bound-file/pull adapters and live acceptance pending | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
+| `appscript` | `script.projects.readonly script.deployments.readonly script.processes` | `script.projects script.deployments` | **untested** | Native project get/content/create use account/tool grants, method scopes and exact project admission; fixture reads/create/denials pass. Hosted execution, source push, versions, deployments and selected-parent bound creation now have fixed adapters; execution requires explicit account-wide destructive authority and no BigQuery scope. Pull remains local CLI; all live acceptance pending | [Google](https://developers.google.com/apps-script/api/how-tos/execute) |
 | `analytics` | `analytics.readonly` | `analytics.edit` | **untested** | Native property/report reads and data-stream/key-event CRUD, custom-dimension/custom-metric management and GA4 Ads-link CRUD routed with selected-property grants and method scopes; fixture persistence/scope/destructive/file-reference denials pass. Native custom-dimension/custom-metric list/get/create/update/archive and GA4 Google Ads-link CRUD are now included under analytics scopes, with destructive archive/delete grants. Bounded account-summary and selected-account property inventory are fixture-tested; live acceptance pending | [Google](https://developers.google.com/analytics/devguides/config/admin/v1/rest) |
 | `searchconsole` | `webmasters.readonly` | `webmasters` | **untested** | Eight native site/query/sitemap/inspection tools routed with URL-prefix/domain site grants and method scopes; fixture submission/read-back/deletion and foreign URL/encoding denials pass. Cross-site sitemap authorization, richer query options and live acceptance pending | [Google](https://developers.google.com/webmaster-tools/v1/how-tos/authorizing) |
 | `tagmanager` | `tagmanager.readonly` | `tagmanager.edit.containers tagmanager.edit.containerversions tagmanager.publish tagmanager.delete.containers` | **untested** | `tagmanager_versions_publish` uses the existing native handler, canonical enabled-container grants, publish scope and destructive permission; compiler failures are errors. Fixture execution/denial tests pass; all 34 existing native commands now have fixed bindings, exact selected account/container admission and method scopes; native fixture operations and denials pass; live GTM workflow acceptance pending | [Google](https://developers.google.com/tag-platform/tag-manager/api/v2/authorization) |
@@ -824,8 +863,9 @@ and creates this grant disabled, never silently authorising it. Hosted push
 accepts literal files JSON only, subject to the existing request-size limit; local
 directory reads and downloads remain CLI-only (`push --dir`, `pull`).
 
-Hosted arbitrary execution is separate unfinished capability work, not a blanket
-paid-audit prerequisite. Native `appscript run` already exists. Google's execution
+At the management-only checkpoint, hosted arbitrary execution was separate work.
+The execution candidate above now supersedes that limitation; paid audits are not
+a blanket prerequisite. Native `appscript run` already exists. Google's execution
 API requires an API-executable deployment, the same standard Cloud project for
 script and caller, API enablement, and caller authorisation for every scope of the
 entire script. Arbitrary execution must not imply permission to bypass selected-file

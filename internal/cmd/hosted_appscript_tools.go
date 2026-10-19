@@ -71,5 +71,6 @@ func hostedAppScriptProjectTools() []mcpToolSpec {
 		})
 	}
 
-	return append(result, hostedAppScriptManagementTools()...)
+	result = append(result, hostedAppScriptManagementTools()...)
+	return append(result, hostedAppScriptExecutionTool())
 }
