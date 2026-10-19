@@ -183,6 +183,7 @@ func TestNativeDocsFormatLayoutPayload(t *testing.T) {
 					}
 
 					wantStart := float64(1)
+
 					if _, indexed := args["index"]; !indexed {
 						if _, anchored := args["at"]; !anchored {
 							wantStart = 4
