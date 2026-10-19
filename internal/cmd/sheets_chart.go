@@ -118,6 +118,7 @@ func (c *SheetsChartGetCmd) Run(ctx context.Context, flags *RootFlags) error {
 
 	resp, err := svc.Spreadsheets.Get(spreadsheetID).
 		Fields("sheets(charts,properties(sheetId,title))").
+		Context(ctx).
 		Do()
 	if err != nil {
 		return err
