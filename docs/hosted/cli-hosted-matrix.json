@@ -21,18 +21,18 @@
     ],
     "prior_deferred_excluded": true
   },
-  "native_leaf_count": 359,
-  "hosted_tool_count": 197,
-  "total_hosted_catalog_count": 235,
+  "native_leaf_count": 360,
+  "hosted_tool_count": 198,
+  "total_hosted_catalog_count": 236,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 207,
-  "mapped_hosted_tool_count": 197,
+  "mapped_native_leaf_count": 208,
+  "mapped_hosted_tool_count": 198,
   "classifications": {
     "deferred": 5,
     "eligible_missing": 105,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 207,
+    "implemented_hosted_unverified": 208,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -47,12 +47,12 @@
     },
     {
       "service": "appscript",
-      "native_leaves": 12,
-      "hosted_tools": 11,
-      "mapped_native_leaves": 11,
+      "native_leaves": 13,
+      "hosted_tools": 12,
+      "mapped_native_leaves": 12,
       "classifications": {
         "implementation_design_required": 1,
-        "implemented_hosted_unverified": 11
+        "implemented_hosted_unverified": 12
       }
     },
     {
@@ -998,6 +998,28 @@
         ],
         "http_methods": [
           "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "appscript",
+      "command": "deployment-update",
+      "native_command": "gog appscript deployment-update",
+      "hosted_tool": "appscript_deployment_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "script.deployments"
+        ],
+        "http_methods": [
+          "GET",
+          "PUT"
         ],
         "http_methods_known": true,
         "destructive": true

@@ -44,6 +44,8 @@ func nativeAppScriptManagementBindings() []NativeToolBinding {
 		},
 	})
 
+	result = append(result, nativeAppScriptDeploymentUpdateBinding())
+
 	return append(result, NativeToolBinding{
 		Name: "appscript_bound_create", Service: "appscript", ResourceType: resourceTypeFile, ResourceArgument: "parent_id", Write: true,
 		hosts: []string{"script.googleapis.com"}, methods: []string{http.MethodPost}, scopes: []string{"script.projects"}, paths: exactPaths("", ""), argumentPaths: func(map[string]any) ([]string, error) { return []string{"/v1/projects"}, nil },

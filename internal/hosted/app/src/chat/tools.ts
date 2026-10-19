@@ -93,6 +93,7 @@ export const CHAT_GOOGLE_TOOLS = new Set([
   "appscript_deployments",
   "appscript_deployment_create",
   "appscript_deployment_delete",
+  "appscript_deployment_update",
   "appscript_run",
   "chat_spaces_list",
   "chat_messages_send",

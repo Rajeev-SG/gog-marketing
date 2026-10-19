@@ -1,5 +1,25 @@
 # Audit-free hosted readiness — #79 / #52 / #58
 
+## Apps Script deployment update (19 October 2026)
+
+`appscript_deployment_update` reuses native `appscript deployment-update` to
+repoint an existing deployment to an explicit positive immutable version. Omitted
+description/manifest settings are preserved from a preflight GET; explicit empty
+description is serialized to clear it, while blank manifests are rejected.
+The same exact deployment path permits only GET and PUT under the existing
+`script.deployments` scope, account-wide exact-tool write/destructive authority
+and one-use exact-argument chat approval. It is not a selected-project sandbox.
+
+Dry-run/confirmation precede service creation. Uncertain writes are not retried.
+Read/modify/write has no API revision precondition: simultaneous edits may be
+overwritten. Changing deployment configuration may affect existing web/API
+consumers; the command does not call a script function itself.
+
+Candidate has 236 total/198 active tools, 360 native leaves/208 mapped and 105
+eligible missing. Hosted local-download delivery remains separate work.
+Fixture results do not prove live Google acceptance; no deployment, OAuth,
+credential or billing changes were made. Real Google verification remains #97.
+
 ## Apps Script deployment deletion (19 October 2026)
 
 `appscript_deployment_delete` reuses native `appscript deployment-delete` with
