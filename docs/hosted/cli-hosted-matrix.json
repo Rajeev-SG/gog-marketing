@@ -22,16 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 347,
-  "hosted_tool_count": 146,
-  "total_hosted_catalog_count": 184,
+  "hosted_tool_count": 149,
+  "total_hosted_catalog_count": 187,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 151,
-  "mapped_hosted_tool_count": 146,
+  "mapped_native_leaf_count": 157,
+  "mapped_hosted_tool_count": 149,
   "classifications": {
     "deferred": 5,
     "excluded": 21,
-    "implemented_hosted_unverified": 151,
-    "missing_requires_audit": 150,
+    "implemented_hosted_unverified": 157,
+    "missing_requires_audit": 144,
     "product_limited": 20
   },
   "by_service": [
@@ -68,11 +68,11 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 11,
-      "mapped_native_leaves": 12,
+      "hosted_tools": 14,
+      "mapped_native_leaves": 18,
       "classifications": {
-        "implemented_hosted_unverified": 12,
-        "missing_requires_audit": 58,
+        "implemented_hosted_unverified": 18,
+        "missing_requires_audit": 52,
         "product_limited": 2
       }
     },
@@ -1104,10 +1104,26 @@
       "service": "docs",
       "command": "add-tab",
       "native_command": "gog docs add-tab",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_add_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1283,10 +1299,26 @@
       "service": "docs",
       "command": "delete-tab",
       "native_command": "gog docs delete-tab",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_delete_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1676,10 +1708,26 @@
       "service": "docs",
       "command": "rename-tab",
       "native_command": "gog docs rename-tab",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_rename_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1852,19 +1900,51 @@
       "service": "docs",
       "command": "tabs add",
       "native_command": "gog docs tabs add",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_add_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
       "command": "tabs delete",
       "native_command": "gog docs tabs delete",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_delete_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -1895,10 +1975,26 @@
       "service": "docs",
       "command": "tabs rename",
       "native_command": "gog docs tabs rename",
-      "hosted_tool": null,
-      "status": "missing_requires_audit",
+      "hosted_tool": "docs_rename_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "no reviewed policy classification exists; audit required before implementation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",

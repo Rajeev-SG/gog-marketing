@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add native tab creation (optional title, position, parent and icon), renaming and destructive deletion under exact selected-document/tool write grants. Fixture-tested, unverified live; no arbitrary batch requests or new OAuth scopes. (#96, #97, thanks @Rajeev-SG)
+
 - Hosted Forms: add native question creation across all eight types and quiz grading, selected-question moving and destructive deletion under exact tool/file write permissions. Append and zero indexes preserve native semantics; no arbitrary item JSON, publishing or watch mutations. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Hosted Slides: add explicit all/page/object literal text replacement and selected-slide skip/unskip through existing native handlers and exact write-tool/file grants. Empty replacement additionally requires destructive permission; raw text, UTF-16 object edits and explicit false values are preserved. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)

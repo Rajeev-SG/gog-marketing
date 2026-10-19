@@ -2971,6 +2971,30 @@ const workspaceWriteToolCases = [
     result: { updated: true },
     allowDestructive: true,
   },
+  {
+    toolName: "docs_add_tab",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", title: "New tab", index: 0 },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_rename_tab",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", tab: "tab-1", title: "Renamed" },
+    result: { updated: true },
+    allowDestructive: false,
+  },
+  {
+    toolName: "docs_delete_tab",
+    service: "docs",
+    resourceArgument: "document_id",
+    args: { document_id: "selected-deck", tab: "tab-1" },
+    result: { updated: true },
+    allowDestructive: true,
+  },
 ] as const;
 
 it.each(workspaceWriteToolCases)(
