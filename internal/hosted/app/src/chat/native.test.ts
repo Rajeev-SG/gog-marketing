@@ -230,6 +230,8 @@ type Frame = {
   id?: string;
   type?: string;
   done?: boolean;
+  continuation?: boolean;
+  outcome?: string;
   error?: boolean;
   success?: boolean;
   result?: unknown;
@@ -475,6 +477,43 @@ it("persists native write approval over reconnect and never dispatches an unappr
     selectedKey: "xing-free",
   });
   expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
+  // Finish the denial continuation before seeding the next provider response.
+  const deniedContinuation = frame(
+    socket,
+    (value) =>
+      value.type === "cf_agent_use_chat_response" &&
+      value.continuation === true &&
+      value.done === true &&
+      value.error !== true &&
+      value.outcome === undefined,
+  );
+  let denialCompleted = false;
+  void deniedContinuation.then(
+    () => {
+      denialCompleted = true;
+    },
+    () => {},
+  );
+  for (const terminal of [
+    { outcome: "error" },
+    { outcome: "recovering" },
+    { outcome: "aborted" },
+    { error: true },
+  ]) {
+    socket.dispatchEvent(
+      new MessageEvent("message", {
+        data: JSON.stringify({
+          type: "cf_agent_use_chat_response",
+          continuation: true,
+          done: true,
+          ...terminal,
+        }),
+      }),
+    );
+  }
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(denialCompleted).toBe(false);
+  expect(nextToolCall).toBeNull();
   // Native approval denial must settle the original tool, not execute it.
   socket.send(
     JSON.stringify({
@@ -487,6 +526,7 @@ it("persists native write approval over reconnect and never dispatches an unappr
   await expect
     .poll(async () => JSON.stringify(await history(path, sessionCookie)))
     .toContain("output-denied");
+  await deniedContinuation;
   const after = await db
     .prepare("SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'")
     .first<{ count: number }>();
