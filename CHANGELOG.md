@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Security gates: add pinned local Gitleaks/zizmor PR checks and nightly Semgrep/OSV/Trivy source, dependency, config and local-image scans. Keep source private and CodeQL deferred; retain precise fixture/workflow exceptions with expiry and report unresolved dependency findings rather than silently suppressing them. (#106, #110, thanks @Rajeev-SG)
+
 - Hosted workspace UX: add a marketer-first public entry, branded invitation/session/outage states, native Clerk sign-in framing, ordered onboarding and searchable service-grouped exact-tool permissions. Preserve account/file boundaries, explicit write/destructive consent and API errors; compact chat model details and keep mobile empty conversations readable. Fixture-tested, with live authentication acceptance separate. (#107, #110, thanks @Rajeev-SG)
 
 - Hosted chat: add a per-conversation model selector with openrouter/free default, curated free alternatives, preserved history/drafts/Google approvals, strict privacy and no automatic paid fallback. Count provider steps with atomic shared/tenant request, token and cost budgets. Paid models require explicit owner opt-in, verified existing provider hard caps and configured budgets; no production settings are changed. Fixture-verified native RPC/D1/SDK and mobile/desktop selector behavior; live provider acceptance remains separate. (#108, #110, thanks @Rajeev-SG)

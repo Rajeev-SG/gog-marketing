@@ -31,10 +31,14 @@ python3 - "$OUT_DIR/semgrep-test.json" <<'PY'
 import json
 import sys
 
-results = json.load(open(sys.argv[1]))["results"]
+report = json.load(open(sys.argv[1]))
+if report.get("errors"):
+    raise SystemExit(f"Semgrep fixture errors: {report.get('errors')}")
+results = report["results"]
 rules = sorted(result["check_id"] for result in results)
 expected = [
-    "go.dynamic-external-command",
+    "go.http-command-injection",
+    "go.http-command-injection",
     "typescript.direct-code-execution",
 ]
 if rules != expected:

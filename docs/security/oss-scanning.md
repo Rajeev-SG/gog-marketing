@@ -98,3 +98,19 @@ hiding the source findings.
   not add file-wide audit disables or unexplained suppressions.
 - Prefer a precise fix or a scoped exception with evidence and expiry.
 
+
+## Source-rule triage
+
+The initial constant-only command rule incorrectly treated ten intentionally
+configured process paths as vulnerabilities: bootstrap helpers use the stable
+signed executable; auth setup selects gcloud by OS; MCP/tenant subprocesses use
+the current executable; renderers come from validated local configuration;
+browser opening uses a fixed OS map; provider preflight checks its fixed CLI
+allowlist before exec. No untrusted executable selection was found at these
+callsites. Rather than add file-wide exceptions or refactor safe behavior, the
+rule now targets HTTP input reaching process executables or sh/bash command
+text. Fixtures require both injected cases to be reported and trusted-config /
+non-shell argument cases to remain clean. The direct-TypeScript-execution rule
+is unchanged. These are bounded intraprocedural checks, not comprehensive SAST
+or proof that all other input sources are safe; the targeted audit and native
+boundary tests remain necessary. No production source finding is suppressed.

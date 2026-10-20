@@ -1,14 +1,24 @@
 rules:
-  - id: go.dynamic-external-command
+  - id: go.http-command-injection
     languages: [go]
     severity: ERROR
-    message: External command name must be a compile-time constant.
-    patterns:
-      - pattern-either:
-          - pattern: exec.Command($CMD, ...)
-          - pattern: exec.CommandContext($CTX, $CMD, ...)
-      - pattern-not: exec.Command("...", ...)
-      - pattern-not: exec.CommandContext($CTX, "...", ...)
+    message: Untrusted HTTP input controls an executable or shell command.
+    mode: taint
+    pattern-sources:
+      - pattern: $REQ.FormValue(...)
+      - pattern: $REQ.PostFormValue(...)
+      - pattern: $REQ.URL.Query().Get(...)
+      - pattern: $REQ.Header.Get(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec.Command($CMD, ...)
+              - pattern: exec.CommandContext($CTX, $CMD, ...)
+              - pattern: exec.Command("sh", "-c", $CMD, ...)
+              - pattern: exec.CommandContext($CTX, "sh", "-c", $CMD, ...)
+              - pattern: exec.Command("bash", "-c", $CMD, ...)
+              - pattern: exec.CommandContext($CTX, "bash", "-c", $CMD, ...)
+          - focus-metavariable: $CMD
     metadata:
       category: security
       technology: [go]
