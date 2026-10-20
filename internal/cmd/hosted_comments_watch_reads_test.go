@@ -57,9 +57,9 @@ func TestDriveCommentsListOptions(t *testing.T) {
 
 func TestDriveCommentsListMaxLimits(t *testing.T) {
 	spec := commentsWatchSpecByName(t, "drive_comments_list")
-	for _, max := range []float64{0, 101, -1, 1.5} {
-		if _, err := spec.BuildArgs(commentsWatchRequestWithArgs(t, spec, map[string]any{"file_id": "abc123", "max": max})); err == nil {
-			t.Fatalf("max=%v: expected error", max)
+	for _, maxResults := range []float64{0, 101, -1, 1.5} {
+		if _, err := spec.BuildArgs(commentsWatchRequestWithArgs(t, spec, map[string]any{"file_id": "abc123", "max": maxResults})); err == nil {
+			t.Fatalf("max=%v: expected error", maxResults)
 		}
 	}
 	argv, err := spec.BuildArgs(commentsWatchRequestWithArgs(t, spec, map[string]any{"file_id": "abc123", "max": float64(1)}))
