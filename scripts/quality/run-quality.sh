@@ -2,7 +2,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-knip_version="6.42.1"
+knip_version="6.42.0"
 jscpd_version="5.4.1"
 
 run_knip() {

@@ -23,7 +23,7 @@ Verified on 2026-10-20:
 
 | Tool | Version | License | Authority checked |
 | --- | --- | --- | --- |
-| Knip | 6.42.1 | ISC | `npm view knip version license`, `npm dist-tags.latest`, and <https://knip.dev/reference/configuration.html> |
+| Knip | 6.42.0 | ISC | `npm view knip@6.42.0 version license engines`, publish time older than the existing 24-hour release-age policy, and <https://knip.dev/reference/configuration.html> |
 | jscpd | 5.4.1 | MIT | `npm view jscpd version license`, `npm dist-tags.latest`, `jscpd --help`, and <https://github.com/kucherenko/jscpd> |
 
 ## Entry-point accounting

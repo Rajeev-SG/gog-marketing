@@ -1,7 +1,7 @@
 internal/cmd/controlplane_security_test.go:generic-api-key:12
 internal/hosted/app/e2e/fixture-server.mjs:generic-api-key:15
 internal/hosted/app/src/chat/integration.test.ts:generic-api-key:58
-internal/hosted/app/src/chat/native.test.ts:generic-api-key:70
+internal/hosted/app/src/chat/native.test.ts:generic-api-key:72
 internal/hosted/app/src/connect.test.ts:generic-api-key:832
 internal/hosted/app/src/control-plane.test.ts:generic-api-key:33
 internal/hosted/app/src/control-plane.test.ts:generic-api-key:539
