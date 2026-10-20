@@ -37,7 +37,7 @@ export interface GoogleEndpoints {
   revokeUrl: string;
 }
 
-export const DEFAULT_GOOGLE_ENDPOINTS: GoogleEndpoints = {
+const DEFAULT_GOOGLE_ENDPOINTS: GoogleEndpoints = {
   authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
   tokenUrl: "https://oauth2.googleapis.com/token",
   userinfoUrl: "https://openidconnect.googleapis.com/v1/userinfo",

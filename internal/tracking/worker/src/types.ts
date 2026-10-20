@@ -11,20 +11,3 @@ export interface PixelPayload {
   s: string; // subject hash (first 6 chars)
   t: number; // sent timestamp (unix)
 }
-
-export interface OpenRecord {
-  id: number;
-  tracking_id: string;
-  recipient: string;
-  subject_hash: string;
-  sent_at: string;
-  opened_at: string;
-  ip: string;
-  user_agent: string;
-  country: string | null;
-  region: string | null;
-  city: string | null;
-  timezone: string | null;
-  is_bot: number;
-  bot_type: string | null;
-}

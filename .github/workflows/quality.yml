@@ -1,0 +1,38 @@
+name: quality
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/quality.yml
+      - internal/hosted/app/**
+      - internal/hosted/state/**
+      - internal/tracking/worker/**
+      - scripts/quality/**
+      - docs/quality/**
+      - Makefile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "26"
+      - name: Enable Corepack (pnpm)
+        run: |
+          npm install --global corepack@0.36.0
+          corepack enable
+          corepack prepare pnpm@11.27.1 --activate
+      - name: Static and duplicate quality gates
+        run: make quality

@@ -74,7 +74,7 @@ function serviceChoiceRow(service: string): string {
 }
 
 /** Grouped consent markup: Workspace and Marketing fieldsets, one card per service. */
-export function consentGroupsMarkup(): string {
+function consentGroupsMarkup(): string {
   return CONSENT_GROUPS.map(
     (group) =>
       '<fieldset class="service-consent-group" data-consent-group="' +

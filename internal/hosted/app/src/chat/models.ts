@@ -1,9 +1,9 @@
 import type { OpenRouterChatSettings } from "@openrouter/ai-sdk-provider";
 
 export const DEFAULT_CHAT_MODEL = "openrouter/free";
-export const DEFAULT_CHAT_MODEL_KEY = "free-router";
+const DEFAULT_CHAT_MODEL_KEY = "free-router";
 export const MAX_MODEL_OUTPUT_TOKENS = 2048;
-export const MAX_MODEL_INPUT_BYTES = 500_000;
+const MAX_MODEL_INPUT_BYTES = 500_000;
 
 export interface ChatModelEnv {
   CHAT_OWNER_USER_ID?: string;
