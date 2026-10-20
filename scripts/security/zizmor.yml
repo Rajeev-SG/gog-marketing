@@ -19,4 +19,4 @@ rules:
       - ci.yml:213
 
       # Same pinned Corepack bootstrap as CI; trusted owner, read-only job, no persisted credentials.
-      - quality.yml:40
+      - quality.yml:44

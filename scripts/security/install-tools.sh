@@ -37,7 +37,7 @@ download_binary() {
   fi
 
   local archive
-  archive="$(mktemp "${TMPDIR:-/tmp}/gog-security-${name}.XXXXXX")"
+  archive="$DOWNLOAD_DIR/$name.archive"
   curl --fail --silent --show-error --location --output "$archive" "$url"
   local actual
   actual="$(sha256 "$archive")"
@@ -58,8 +58,9 @@ download_archive() {
   fi
 
   local archive extract_dir
-  archive="$(mktemp "${TMPDIR:-/tmp}/gog-security-${name}.XXXXXX")"
-  extract_dir="$(mktemp -d "${TMPDIR:-/tmp}/gog-security-${name}-dir.XXXXXX")"
+  archive="$DOWNLOAD_DIR/$name.archive"
+  extract_dir="$DOWNLOAD_DIR/$name-extract"
+  mkdir -p "$extract_dir"
   curl --fail --silent --show-error --location --output "$archive" "$url"
   local actual
   actual="$(sha256 "$archive")"
@@ -112,6 +113,11 @@ case "$OS" in
     exit 2
     ;;
 esac
+
+# Each invocation owns one directory, cleaned on success or failure. CI points
+# TMPDIR at RUNNER_TEMP, so interrupted jobs also get Actions lifecycle cleanup.
+DOWNLOAD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/gog-security-install.XXXXXX")"
+trap 'rm -rf -- "$DOWNLOAD_DIR"' EXIT
 
 download_archive gitleaks 8.30.1 "$GITLEAKS_URL" "$GITLEAKS_SHA" gitleaks
 download_archive zizmor 1.31.1 "$ZIZMOR_URL" "$ZIZMOR_SHA" zizmor

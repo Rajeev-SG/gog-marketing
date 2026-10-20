@@ -144,7 +144,7 @@ Existing per-location ignores use the actual1-based primary locations, not the
 previous off-by-one / step-header lines. No rule or severity class is disabled.
 
 There are13 precise workflow exceptions: the12 legacy findings above and the
-prepared quality workflow's pinned Corepack bootstrap at quality.yml:40 (same
+prepared quality workflow's pinned Corepack bootstrap at quality.yml:44 (same
 known low-severity install pattern as CI, trusted owner/same-repository source,
 read-only permissions, no persisted checkout credentials). Existing expiry and
 review-on-edit requirements apply. Corrected plain-mode checks, not raw SARIF
@@ -175,3 +175,16 @@ No actual credential, workflow dispatch or image publication was used.
 Final full CI and the bounded review of scan introduction remain required.
 Native authenticated-browser/Google/provider and production acceptance are
 external boundaries, not implied by these source/image checks.
+
+Both security jobs use the existing Oracle disk-backed RUNNER_TEMP for TMPDIR
+and GOTMPDIR. Installer downloads/extraction live in one invocation-owned child
+and are removed by an EXIT trap, including failure paths. Actions also cleans
+the job directory. Local repeated cold-install proof is not a claim that the
+new Oracle workflow has already run; its automatic PR check remains required.
+
+Local repair verification repeated cold fast-tool installation twice and a cold
+all-tool installation once with a dedicated TMPDIR: no temporary child remained.
+A corrupt-download transport returned checksum-mismatch exit1 and also left
+TMPDIR empty. Existing artifact checksums and installed-tool directories are
+unchanged. The same disk-backed environment pattern is applied to the prepared
+quality job, moving its already-reviewed Corepack exception to line44.
