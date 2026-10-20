@@ -383,21 +383,24 @@ function Chat({
               role="region"
               aria-label="Conversation"
               tabIndex={0}
+              autoScroll={chat.messages.length > 0}
+              scrollToBottomOnInitialize={chat.messages.length > 0}
+              scrollToBottomOnThreadSwitch={chat.messages.length > 0}
             >
               <ThreadPrimitive.Empty>
                 <section className="empty">
-                  <span className="eyebrow">SPACE TO THINK</span>
-                  <h2>What are we working on?</h2>
+                  <span className="eyebrow">YOUR NEXT CAMPAIGN</span>
+                  <h2>What needs moving forward?</h2>
                   <p>
-                    Draft something, untangle a problem, or explore an idea.
+                    Draft a brief, work through results, or prepare a client handoff.
                     <br />
                     Your sent messages are saved as you go.
                   </p>
                   <div className="suggestions">
                     {[
-                      "Help me sharpen a campaign brief",
-                      "Explain a tricky idea simply",
-                      "Turn my notes into a clear plan",
+                      "Help me draft a campaign brief",
+                      "Summarise my campaign results",
+                      "Outline a client presentation",
                     ].map((prompt) => (
                       <ThreadPrimitive.Suggestion
                         key={prompt}
@@ -438,7 +441,7 @@ function Chat({
               <ComposerPrimitive.Root className="composer" data-keyboard-focus={keyboardFocus}>
                 <ComposerPrimitive.Input
                   aria-label="Message"
-                  placeholder="Ask anything, or bring an idea…"
+                  placeholder="Ask about a campaign, brief or report…"
                   disabled={!connected}
                   maxLength={8000}
                   rows={2}
@@ -895,7 +898,7 @@ function App() {
           <div className="brand">
             gog-marketing<span> / private assistant</span>
           </div>
-          <h1>Workspace unavailable</h1>
+          <h1>Your workspace is temporarily unavailable</h1>
           <p role="alert">{message}</p>
           <button type="button" onClick={() => window.location.reload()}>
             Retry connection
@@ -911,10 +914,16 @@ function App() {
             gog-marketing<span> / private assistant</span>
           </div>
           <span className="eyebrow">INVITATION REQUIRED</span>
-          <h1>Workspace unavailable</h1>
-          <p role="alert">{message || "Chat is available only to invited users."}</p>
-          <a className="signin-link" href="/">
-            Home
+          <h1>This account is not invited yet</h1>
+          <p role="alert">
+            {message ||
+              "Chat is available only to invited accounts. Ask your workspace administrator for access; signing in alone does not enable private features."}
+          </p>
+          <a className="signin-link" href="/request-access">
+            About beta access
+          </a>
+          <a className="quiet" href="/sign-in?switch=1&returnTo=%2Fchat">
+            Use another account
           </a>
         </section>
       </main>

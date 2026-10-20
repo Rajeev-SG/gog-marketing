@@ -14,13 +14,6 @@ import { assertHostedScopes } from "./scopes.js";
 export const ANALYTICS_PROPERTY_READ = "analytics_property_read" as const;
 export const NATIVE_TOOL_CALL = "tool_call" as const;
 
-export interface AnalyticsPropertyResult {
-  name: string;
-  displayName: string;
-  timeZone: string;
-  currencyCode: string;
-}
-
 export interface ToolExecutionRequest {
   tenantId: string;
   connectionId: string;
@@ -40,7 +33,7 @@ export interface ToolExecutionRequest {
   };
 }
 
-export interface RunnerResponseDiagnostics {
+interface RunnerResponseDiagnostics {
   runnerStatus: number;
   runnerBodyJson: boolean;
   /**

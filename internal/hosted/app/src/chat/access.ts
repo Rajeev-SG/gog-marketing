@@ -17,7 +17,6 @@
  * internal tenant id, so clients never learn the raw tenant identifier.
  */
 import { defaultChatModelKey, selectChatModel, type ChatModelEnv } from "./models.js";
-export { DEFAULT_CHAT_MODEL } from "./models.js";
 import type { McpEnv } from "../mcp.js";
 import { createClerkClient } from "@clerk/backend";
 import { HostedRepository } from "../../../state/src/repository.js";
@@ -90,7 +89,7 @@ export async function verifyActiveClerkSession(
   }
 }
 
-export interface ChatSession {
+interface ChatSession {
   userId: string;
   sessionId: string;
   tenant: Tenant;

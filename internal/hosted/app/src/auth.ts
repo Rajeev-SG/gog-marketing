@@ -55,7 +55,7 @@ export type BearerAuthOutcome =
   | { kind: "unauthenticated"; reason?: BearerAuthFailureReason }
   | { kind: "error"; status: number; message: string };
 
-export type BearerAuthFailureReason = "invalid_token" | "opaque_token_unsupported";
+type BearerAuthFailureReason = "invalid_token" | "opaque_token_unsupported";
 
 export interface ClerkEnv {
   CLERK_SECRET_KEY?: string;
@@ -76,7 +76,7 @@ function buildClient(config: AuthConfig): ClerkClient {
   });
 }
 
-export function buildOptions(config: AuthConfig): Record<string, unknown> {
+function buildOptions(config: AuthConfig): Record<string, unknown> {
   const opts: Record<string, unknown> = {
     authorizedParties: config.authorizedParties,
   };
@@ -173,7 +173,7 @@ function audienceMatches(value: unknown, expected: string): boolean {
  * The Clerk user ID is used directly from `requestState.toAuth().userId`;
  * no other identity source is accepted.
  */
-export async function resolveTenant(repo: HostedRepository, clerkUserId: string): Promise<Tenant> {
+async function resolveTenant(repo: HostedRepository, clerkUserId: string): Promise<Tenant> {
   return repo.bootstrapTenant(clerkUserId);
 }
 

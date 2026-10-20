@@ -1,0 +1,22 @@
+# Exact-location baseline. Remove entries when the corresponding workflow is
+# updated. Maintenance owner: Rajeev-SG. Expiry: 2027-01-20.
+rules:
+  artipacked:
+    ignore:
+      - ci.yml:35
+      - ci.yml:81
+      - ci.yml:121
+      - ci.yml:143
+      - ci.yml:175
+      - ci.yml:207
+      - docker.yml:44
+      - pages.yml:34
+      - release-unified.yml:26
+  adhoc-packages:
+    ignore:
+      - ci.yml:149
+      - ci.yml:181
+      - ci.yml:213
+
+      # Same pinned Corepack bootstrap as CI; trusted owner, read-only job, no persisted credentials.
+      - quality.yml:44

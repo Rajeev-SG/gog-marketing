@@ -101,7 +101,7 @@ export type ConnectErrorCode =
   | "discovery_error"
   | "internal_error";
 
-export const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
+const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
   operator_config_missing: "Google connection is not configured by the operator yet.",
   consent_denied: "Google consent was denied, so the account was not connected.",
   invalid_request: "The Google connection request was invalid.",
@@ -131,7 +131,7 @@ export const CONNECT_ERROR_MESSAGES: Record<ConnectErrorCode, string> = {
 };
 
 /** Map a connect error to the audit-safe stable error code allowlist. */
-export function auditSafeError(code: ConnectErrorCode): string {
+function auditSafeError(code: ConnectErrorCode): string {
   switch (code) {
     case "consent_denied":
     case "callback_wrong_tenant":

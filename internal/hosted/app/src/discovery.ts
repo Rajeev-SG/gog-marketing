@@ -11,16 +11,16 @@
 
 import { signRunnerCapabilityJwt, type NativeIdentityProvider } from "./runner-auth.js";
 
-export type RunnerServiceState = "ok" | "unavailable" | "unsupported" | "error";
+type RunnerServiceState = "ok" | "unavailable" | "unsupported" | "error";
 
-export interface RunnerServiceStatus {
+interface RunnerServiceStatus {
   state: RunnerServiceState;
   detail: string;
   resourceCount: number;
   checkedAt: string;
 }
 
-export interface DiscoveredResource {
+interface DiscoveredResource {
   service: string;
   resourceType: string;
   resourceId: string;
@@ -29,7 +29,7 @@ export interface DiscoveredResource {
   metadata: Record<string, string>;
 }
 
-export type DiscoveryOutcomeStatus = "ok" | "empty" | "unavailable" | "error";
+type DiscoveryOutcomeStatus = "ok" | "empty" | "unavailable" | "error";
 
 export interface DiscoveryOutcome {
   status: DiscoveryOutcomeStatus;

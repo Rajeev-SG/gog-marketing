@@ -42,15 +42,15 @@ import {
   type ToolExecutionOutcome,
 } from "./tool-runner.js";
 
-export const MCP_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
+const MCP_PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"] as const;
 const CURRENT_MCP_PROTOCOL_VERSION = MCP_PROTOCOL_VERSIONS[0];
 const JSONRPC_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
 } as const;
-export const DEFAULT_MCP_TOOL_CALL_DAILY_LIMIT = 100;
-export const DEFAULT_MCP_REQUESTS_PER_MINUTE_LIMIT = 60;
+const DEFAULT_MCP_TOOL_CALL_DAILY_LIMIT = 100;
+const DEFAULT_MCP_REQUESTS_PER_MINUTE_LIMIT = 60;
 const TOOL_CALL_QUOTA_COUNTER = "mcp_tool_calls";
 const REQUEST_RATE_LIMITED_CODE = -32029;
 
@@ -213,7 +213,7 @@ async function hashIp(ip: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}): Response {
+function jsonResponse(body: unknown, status = 200, headers: HeadersInit = {}): Response {
   return Response.json(body, {
     status,
     headers: { ...JSONRPC_HEADERS, ...Object.fromEntries(new Headers(headers)) },
@@ -242,7 +242,7 @@ function sseResponse(body: unknown): Response {
   });
 }
 
-export function canonicalMcpUrl(env: McpEnv): string | null {
+function canonicalMcpUrl(env: McpEnv): string | null {
   try {
     const url = new URL((env.GOG_HOSTED_CANONICAL_ORIGIN ?? "").trim());
     if (url.protocol !== "https:" || (url.pathname !== "/" && url.pathname !== "")) return null;

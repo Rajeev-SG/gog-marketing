@@ -117,33 +117,44 @@ export function ModelSelector({
       ),
       createElement(
         "p",
-        { className: "model-status", id: "chat-model-status", role: "status" },
+        {
+          className:
+            "model-status" +
+            (settings && connected && !loading && !busy && !running ? " model-status-idle" : ""),
+          id: "chat-model-status",
+          role: "status",
+        },
         status,
       ),
       settings &&
         createElement(
-          "p",
-          { className: "model-details" },
-          createElement("span", null, "Current model: " + settings.model),
-          settings.lastModelId &&
-            createElement("span", null, "Last routed model: " + settings.lastModelId),
+          "details",
+          { className: "model-more" },
+          createElement("summary", null, "Model details and usage limits"),
           createElement(
-            "span",
-            null,
-            "Request limits: " +
-              settings.limits.tenantRequestsPerDay +
-              " requests/day · " +
-              settings.limits.tenantTokensPerDay.toLocaleString() +
-              " tokens/day · service-wide " +
-              settings.limits.globalRequestsPerDay +
-              " requests/day",
+            "p",
+            { className: "model-details" },
+            createElement("span", null, "Current model: " + settings.model),
+            settings.lastModelId &&
+              createElement("span", null, "Last routed model: " + settings.lastModelId),
+            createElement(
+              "span",
+              null,
+              "Request limits: " +
+                settings.limits.tenantRequestsPerDay +
+                " requests/day · " +
+                settings.limits.tenantTokensPerDay.toLocaleString() +
+                " tokens/day · service-wide " +
+                settings.limits.globalRequestsPerDay +
+                " requests/day",
+            ),
           ),
-        ),
-      selected &&
-        createElement(
-          "p",
-          { className: "model-description", id: "chat-model-description" },
-          selected.description,
+          selected &&
+            createElement(
+              "p",
+              { className: "model-description", id: "chat-model-description" },
+              selected.description,
+            ),
         ),
       error && createElement("p", { className: "model-error", role: "alert" }, error),
       error &&

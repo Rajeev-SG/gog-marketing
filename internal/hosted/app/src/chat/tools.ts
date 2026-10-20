@@ -8,7 +8,7 @@ import { executableTool } from "../tool-permissions.js";
 import { HostedRepository } from "../../../state/src/repository.js";
 
 // A bounded starter surface, not CLI parity. These are existing fixed runner mappings.
-export const CHAT_GOOGLE_TOOLS = new Set([
+const CHAT_GOOGLE_TOOLS = new Set([
   "drive_get",
   "drive_permissions",
   "drive_audit_sharing",

@@ -1,5 +1,5 @@
 /** Canonical application destinations shared by the hosted settings shell and chat. */
-export const PRODUCT_NAVIGATION = [
+const PRODUCT_NAVIGATION = [
   {
     id: "home",
     label: "Home",

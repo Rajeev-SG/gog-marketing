@@ -454,7 +454,7 @@ describe("integrated chat identity boundary", () => {
   it("preserves a valid thread deep link through sign-in without reflecting unsafe input", async () => {
     const id = "00000000-0000-4000-8000-000000000001";
     const response = await worker.fetch(new Request(origin + "/chat?thread=" + id), env);
-    expect(await response.text()).toContain("fallbackRedirectUrl: '/chat?thread=" + id + "'");
+    expect(await response.text()).toContain('"fallbackRedirectUrl":"/chat?thread=' + id + '"');
     const invalid = await worker.fetch(
       new Request(origin + "/chat?thread=" + encodeURIComponent("');alert(1)//")),
       env,

@@ -64,6 +64,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.1.2
         version: 6.1.2(@rolldown/plugin-babel@0.2.4(@babel/core@8.0.7)(@babel/runtime@7.29.10)(rolldown@1.2.12)(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(yaml@2.9.1)))(vite@8.3.4(@types/node@26.6.4)(esbuild@0.28.2)(yaml@2.9.1))
+      axe-core:
+        specifier: 4.14.0
+        version: 4.14.0
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
@@ -2122,6 +2125,10 @@ packages:
         optional: true
       redis:
         optional: true
+
+  axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
+    engines: {node: '>=4'}
 
   bail@2.0.2:
     resolution: {integrity: sha512-0xO6mYd7JB2YesxDKplafRpsiOzPt9V02ddPCLbY1xYGPOX24NTyN50qnUxgCPcSoYMhKpAuBTjQoRZCAkUDRw==}
@@ -5102,6 +5109,8 @@ snapshots:
       secure-json-parse: 4.1.1
     optionalDependencies:
       ai: 7.0.138(zod@4.6.7)
+
+  axe-core@4.14.0: {}
 
   bail@2.0.2: {}
 

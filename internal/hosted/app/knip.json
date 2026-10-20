@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["e2e/playwright.config.ts", "e2e/fixture-server.mjs", "e2e/*.spec.ts"],
+  "project": ["src/**/*", "e2e/**/*.ts", "e2e/*.mjs"],
+  "ignoreDependencies": ["@playwright/test", "axe-core"]
+}
