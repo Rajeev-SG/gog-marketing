@@ -2,7 +2,7 @@
 
 ## 0.41.1 - Unreleased
 
-- Hosted security: patch pgx protocol/SQL advisories with5.9.2, HTTP/2 advisories with x/net0.60.0, and Go runtime advisories with a1.27.3 toolchain/digest-pinned container build. Malformed pgx decoder regressions fail on the old package and pass after upgrade; server-side decoder exposure is not claimed for this PostgreSQL-client app. No production deploy or module language-minimum increase. (#106, #110, thanks @Rajeev-SG)
+- Hosted security: patch pgx protocol/SQL advisories with5.9.2, HTTP/2 advisories with x/net0.60.0, compression advisories with1.18.7, Node build/test dependency advisories with bounded patch pins, and Go runtime advisories with a1.27.3 toolchain/digest-pinned container build plus compatible pinned lint tools. Malformed pgx decoder regressions fail on the old package and pass after upgrade; server-side decoder exposure is not claimed for this PostgreSQL-client app. No production deploy or module language-minimum increase. (#106, #110, thanks @Rajeev-SG)
 
 - Hosted security: patch the transitive MCP OAuth credential-forwarding advisory with agents0.28.1 and patched MCP peers; keep remote MCP management inaccessible to chat clients. Native-runtime regression covers denied inherited management/lifecycle RPCs and private routes while retaining model/history access. No production settings or Google scopes change. (#106, #110, thanks @Rajeev-SG)
 

@@ -54,7 +54,8 @@ advisories GO-2026-4771/4772, the low-severity simple-protocol dollar-quote SQL
 advisory GO-2026-5004, x/net0.59.0 HTTP/2 advisories and Go1.27.1 runtime
 advisories. Upgrade pgx to5.9.2 (fixes all three), x/net to0.60.0 and the repository
 toolchain plus both digest-pinned Go container builders to1.27.3. The Go1.26.0
-language minimum remains unchanged; no other module versions changed.
+language minimum remains unchanged. A subsequent bounded update also patches
+compress to1.18.7 for GO-2026-5841 (s2 dictionary out-of-bounds read).
 
 `TestPgxProtocolSecurityMalformedDecode` reproduces old-version panics for a
 short FunctionCall and negative Bind/FunctionCall argument lengths, then passes
@@ -74,3 +75,26 @@ checksums; Go stable-release feed and official multi-platform Docker manifest.
 The source release endpoint for pgx5.9.0 returned404; the fixed5.9.2 module/tag
 is verified by the official proxy (commit0aeabbcf11d859229c1f0b20e710d3596c76bf27).
 Final full CI, fresh image/dependency scans and bounded review remain gates.
+
+## Final dependency/tooling preparation
+
+- Dev/build/test dependency paths (Wrangler/Miniflare/Vite/Vitest), not production
+  Worker APIs, carry the observed npm advisories. Pin sharp0.35.5 and undici7.29.1
+  in app/E2E/state workspaces, sharp0.35.5 and source-map-js1.2.2 in tracking.
+  Tracking's existing undici8.10.2 pin is preserved. pnpm11 overrides belong in
+  workspace YAML, not ignored package.json fields. Build/age policies remain.
+- Semantic lockfile comparison found no changed package families outside sharp
+  (including its platform binaries), undici and source-map-js. Patched MCP
+  client2.3.1/SDK1.32.1 remain present. All four frozen installs, app372/state77/
+  tracking15 tests, E2E5 tests and the relevant builds/typechecks pass.
+- The patched Go1.27.2/1.27.3 export format is unreadable by the original pinned
+  linter. Do not downgrade runtime security or disable a gate: use official
+  golangci-lint2.15.0 and x/tools(goimports/deadcode)0.52.0, installed in this
+  worktree's own ignored .tools, not the shared integration tools or rig config.
+  Lint then passes with zero issues. Only new regression-fixture formatting and
+  one existing test-local variable shadowing the builtin max needed adjustment.
+- GO-2026-5932 concerns unmaintained x/crypto/openpgp packages, not all x/crypto.
+  The production `go list -deps ./...` graph has773 packages and no OpenPGP
+  import. Native OSV Go call analysis is used to distinguish reachability
+  without a global vulnerability ignore. Fresh scan/image results and full
+  final-candidate CI/review remain required before integration.

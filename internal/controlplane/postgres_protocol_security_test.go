@@ -31,6 +31,7 @@ func TestPgxProtocolSecurityRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Encode() error = %v", err)
 		}
+
 		if encoded[0] != 'B' {
 			t.Fatalf("unexpected message type = %q", encoded[0])
 		}
@@ -39,6 +40,7 @@ func TestPgxProtocolSecurityRoundTrip(t *testing.T) {
 		if err := decoded.Decode(encoded[5:]); err != nil {
 			t.Fatalf("Decode() error = %v", err)
 		}
+
 		if decoded.DestinationPortal != original.DestinationPortal ||
 			decoded.PreparedStatement != original.PreparedStatement ||
 			len(decoded.ParameterFormatCodes) != 1 || decoded.ParameterFormatCodes[0] != 0 ||
@@ -62,13 +64,16 @@ func TestPgxProtocolSecurityRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Encode() error = %v", err)
 		}
+
 		if encoded[0] != 'F' {
 			t.Fatalf("unexpected message type = %q", encoded[0])
 		}
+
 		var decoded pgproto3.FunctionCall
 		if err := decoded.Decode(encoded[5:]); err != nil {
 			t.Fatalf("Decode() error = %v", err)
 		}
+
 		if decoded.Function != original.Function ||
 			len(decoded.ArgFormatCodes) != 1 || decoded.ArgFormatCodes[0] != 0 ||
 			len(decoded.Arguments) != 1 || !bytes.Equal(decoded.Arguments[0], original.Arguments[0]) ||
@@ -92,18 +97,20 @@ func TestPgxProtocolSecurityMalformedDecode(t *testing.T) {
 				// Replace the first parameter's length with -2. The value and
 				// trailing result-format count are intentionally omitted.
 				body = append(body, 0xff, 0xff, 0xff, 0xfe)
+
 				return (&pgproto3.Bind{}).Decode(body)
 			},
 		},
 		{
 			name: "function call rejects a negative argument length",
 			decode: func() error {
-				body := make([]byte, 4)
-				binary.BigEndian.PutUint32(body, 1234)
+				body := make([]byte, 0, 12)
+				body = binary.BigEndian.AppendUint32(body, 1234)
 				body = append(body, 0, 0) // zero format codes
 				body = append(body, 0, 1) // one argument
 				// Replace that argument's length with -2; no value follows.
 				body = append(body, 0xff, 0xff, 0xff, 0xfe)
+
 				return (&pgproto3.FunctionCall{}).Decode(body)
 			},
 		},
@@ -132,8 +139,10 @@ func bindBody(destinationPortal, preparedStatement string, formatCodeCount, para
 	body = append(body, preparedStatement...)
 	body = append(body, 0)
 	body = binary.BigEndian.AppendUint16(body, uint16(formatCodeCount))
+
 	for i := 0; i < formatCodeCount; i++ {
 		body = binary.BigEndian.AppendUint16(body, 0)
 	}
+
 	return binary.BigEndian.AppendUint16(body, uint16(parameterCount))
 }
