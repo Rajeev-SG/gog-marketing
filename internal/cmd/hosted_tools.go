@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/openclaw/gogcli/internal/app"
@@ -185,24 +186,18 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 			return nil, configureErr
 		}
 	}
+
 	if spec.Name == "docs_sed" {
-		node := parser.Model.Node
-		for _, name := range []string{"docs", "sed"} {
-			for _, child := range node.Children {
-				if child.Name == name {
-					node = child
-					break
-				}
-			}
-		}
-		for _, flag := range node.Flags {
-			if flag.Name == "expressions" {
-				tag := *flag.Tag
-				tag.Sep = -1
-				flag.Tag = &tag
-			}
+		if configureErr := configureHostedLiteralSlice(parser, []string{"docs", "sed"}, "expressions"); configureErr != nil {
+			return nil, configureErr
 		}
 	}
+	if spec.Name == "sheets_validation_set" {
+		if configureErr := configureHostedLiteralSlice(parser, []string{"sheets", "validation", "set"}, "value"); configureErr != nil {
+			return nil, configureErr
+		}
+	}
+
 	command, err := parser.Parse(args)
 	if err != nil {
 		return nil, ErrHostedToolInput
@@ -287,4 +282,31 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 		return result, nil
 	}
 	return output.String(), nil
+}
+
+// Preserve each already-validated JSON value rather than applying CLI CSV rules.
+func configureHostedLiteralSlice(parser *kong.Kong, path []string, flagName string) error {
+	node := parser.Model.Node
+	for _, name := range path {
+		var found *kong.Node
+		for _, child := range node.Children {
+			if child.Name == name {
+				found = child
+				break
+			}
+		}
+		if found == nil {
+			return ErrHostedToolExecution
+		}
+		node = found
+	}
+	for _, flag := range node.Flags {
+		if flag.Name == flagName {
+			tag := *flag.Tag
+			tag.Sep = -1
+			flag.Tag = &tag
+			return nil
+		}
+	}
+	return ErrHostedToolExecution
 }

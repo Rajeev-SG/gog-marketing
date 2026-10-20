@@ -359,7 +359,8 @@ func hostedSheetsRemainingDataSource(data []byte) bool {
 }
 
 func hostedSheetsRemainingUnsafeFormula(text string) bool {
-	return strings.HasPrefix(strings.TrimSpace(text), "=") && hostedSheetsRemainingCrossFileFormula.MatchString(text)
+	trimmed := strings.TrimSpace(text)
+	return (strings.HasPrefix(trimmed, "=") || strings.HasPrefix(trimmed, "+")) && hostedSheetsRemainingCrossFileFormula.MatchString(trimmed)
 }
 
 func hostedSheetsRemainingJSONFormula(raw string) bool {

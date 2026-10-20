@@ -43,3 +43,22 @@ func TestHostedDocsDriveRemainingArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestHostedSedBoundsParsedStructuralCounts(t *testing.T) {
+	for _, test := range []struct {
+		expression string
+		allowed    bool
+	}{
+		{"s/abc/abc{cols=2}/", true},
+		{"s/abc/abc{cols=1000000000}/", false},
+		{"s/abc/prefix{cols=1000000000 t=styled}/", false},
+	} {
+		parsed, err := parseFullExpr(test.expression)
+		if err != nil {
+			t.Fatalf("fixture must parse before admission: %v", err)
+		}
+		if err = validateHostedSedStructuralLimits(parsed); (err == nil) != test.allowed {
+			t.Fatalf("wrong structural admission for %s: %v", test.expression, err)
+		}
+	}
+}

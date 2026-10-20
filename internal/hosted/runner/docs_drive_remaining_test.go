@@ -300,3 +300,57 @@ func TestNativeSedMultiImageDoesNotReplayUncertainWrite(t *testing.T) {
 		t.Fatalf("internal image retry replayed: posts=%d %s", posts, result.Body)
 	}
 }
+
+func TestNativeSedStructuralExpansionAdmission(t *testing.T) {
+	for _, test := range []struct {
+		expression string
+		allowed    bool
+	}{
+		{"s/abc/abc{cols=2}/", true},
+		{"s/abc/abc{cols=1000000000}/", false},
+		{"s/abc/prefix{cols=1000000000 t=styled}/", false},
+	} {
+		t.Run(test.expression, func(t *testing.T) {
+			calls, columns := 0, 0
+			h := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+				engine.NativeServices.Docs = func(ctx context.Context, _ string) (*docs.Service, error) {
+					base := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+						calls++
+						body := `{"documentId":"selected-file","revisionId":"rev-1","body":{"content":[{"startIndex":1,"endIndex":5,"paragraph":{"elements":[{"startIndex":1,"endIndex":5,"textRun":{"content":"abc\n"}}]}}]}}`
+
+						if r.Method == http.MethodPost {
+							var batch docs.BatchUpdateDocumentRequest
+							if err := json.NewDecoder(r.Body).Decode(&batch); err != nil {
+								t.Fatal(err)
+							}
+
+							for _, request := range batch.Requests {
+								if request.UpdateSectionStyle != nil {
+									columns = len(request.UpdateSectionStyle.SectionStyle.ColumnProperties)
+								}
+							}
+							body = `{"documentId":"selected-file","replies":[{}]}`
+						}
+
+						return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+					})
+
+					return docs.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, base)}))
+				}
+			})
+			auth := ToolAuthorization{Service: "docs", AllowedTools: []string{"docs_sed"}, Scopes: []string{"https://www.googleapis.com/auth/drive.file"}, AllowWrite: true, AllowDestructive: true, Resource: &ResourceGrantInput{Service: "docs", ResourceType: "file", ResourceID: "selected-file", Enabled: true}}
+			body := nativeToolBody(t, func(req *Request) {
+				req.Tool = &ToolInvocation{Name: "docs_sed", Arguments: map[string]any{"document_id": "selected-file", "expressions": []any{test.expression}}, Authorization: auth}
+			})
+
+			result := postExecute(t, h.server, signInvocation(t, body, func(claims map[string]any) { claims["operation"] = OperationToolCall }), body)
+			if test.allowed {
+				if !result.OK || columns != 2 {
+					t.Fatalf("valid structural edit failed: columns=%d %s", columns, result.Body)
+				}
+			} else if result.OK || calls != 0 {
+				t.Fatalf("oversized structural expansion reached native execution: calls=%d %s", calls, result.Body)
+			}
+		})
+	}
+}

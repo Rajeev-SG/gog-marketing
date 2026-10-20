@@ -173,3 +173,14 @@ func TestHostedSheetsRemainingFormulaSemanticParity(t *testing.T) {
 		}
 	}
 }
+
+func TestHostedSheetsRemainingPlusFormulaSemantics(t *testing.T) {
+	for _, raw := range []string{`"+IMPORTRANGE(\"other\",\"A1\")"`, `[["\u002bIMPO\u0052TRANGE(\"other\",\"A1\")"]]`} {
+		if !hostedSheetsRemainingJSONFormula(raw) {
+			t.Fatalf("plus formula escaped guard: %s", raw)
+		}
+	}
+	if _, err := hostedSheetsRemainingValue(`[["+IMPORTRANGE(\"foreign\",\"A1\")"]]`, "rows"); err != nil {
+		t.Fatalf("RAW append must retain literal plus text: %v", err)
+	}
+}

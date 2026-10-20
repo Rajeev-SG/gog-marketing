@@ -146,6 +146,11 @@ var (
 	crossFileFormula         = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
 )
 
+func isCrossFileFormulaValue(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	return (strings.HasPrefix(trimmed, "=") || strings.HasPrefix(trimmed, "+")) && crossFileFormula.MatchString(trimmed)
+}
+
 func nativeBinding(name string) (NativeToolBinding, bool) {
 	for _, binding := range nativeToolBindings {
 		if binding.Name == name {
@@ -240,7 +245,7 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 			for _, row := range rows {
 				for _, value := range row {
 					text, isText := value.(string)
-					if isText && strings.HasPrefix(strings.TrimSpace(text), "=") && crossFileFormula.MatchString(text) {
+					if isText && isCrossFileFormulaValue(text) {
 						return invalidf("secondary file grant is required")
 					}
 				}

@@ -192,13 +192,22 @@ func hostedDocsSedRemainingArgs(req mcp.CallToolRequest) ([]string, error) {
 		return nil, errHostedDocsNamedEditArgument
 	}
 	args := []string{"docs", "sed"}
+	totalBytes := 0
 	for _, value := range raw {
 		expression, valid := value.(string)
 		if !valid || len(expression) == 0 || len(expression) > 65536 {
 			return nil, errHostedDocsNamedEditArgument
 		}
-		if _, parseErr := parseFullExpr(expression); parseErr != nil {
+		totalBytes += len(expression)
+		if totalBytes > 262144 {
+			return nil, errHostedDocsNamedEditArgument
+		}
+		parsed, parseErr := parseFullExpr(expression)
+		if parseErr != nil {
 			return nil, parseErr
+		}
+		if limitErr := validateHostedSedStructuralLimits(parsed); limitErr != nil {
+			return nil, limitErr
 		}
 		args = append(args, "--expressions="+expression)
 	}
@@ -207,4 +216,25 @@ func hostedDocsSedRemainingArgs(req mcp.CallToolRequest) ([]string, error) {
 		return nil, err
 	}
 	return append(args, "--", id), nil
+}
+
+// Parsing a small expression must not authorize unbounded structural allocation.
+func validateHostedSedStructuralLimits(expression sedExpr) error {
+	validateBrace := func(brace *braceExpr) bool {
+		return brace == nil || (brace.Cols >= 0 && brace.Cols <= 3 && len(brace.InlineSpans) <= 100)
+	}
+	if !validateBrace(expression.brace) || len(expression.braceSpans) > 100 {
+		return errHostedDocsNamedEditArgument
+	}
+	for _, span := range expression.braceSpans {
+		if span != nil && !validateBrace(span.Expr) {
+			return errHostedDocsNamedEditArgument
+		}
+	}
+	for _, table := range []*tableCreateSpec{parseTableCreate(expression.replacement), parseTableFromPipes(expression.replacement)} {
+		if table != nil && (table.rows < 1 || table.rows > 100 || table.cols < 1 || table.cols > 26) {
+			return errHostedDocsNamedEditArgument
+		}
+	}
+	return nil
 }

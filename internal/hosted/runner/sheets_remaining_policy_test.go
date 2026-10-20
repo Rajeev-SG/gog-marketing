@@ -365,3 +365,57 @@ func TestNativeSheetsRemainingDynamicPath(t *testing.T) {
 		t.Error("unrelated tool handled")
 	}
 }
+
+func TestNativeSheetsValidationPreservesLiteralComma(t *testing.T) {
+	const formula = "=AND(A1>0,A1<10)"
+	writes := 0
+	h := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.Sheets = func(ctx context.Context, _ string) (*sheets.Service, error) {
+			base := nativeFixtureTransport(func(r *http.Request) (*http.Response, error) {
+				body := sheetsDetailFixture
+
+				if r.Method == http.MethodPost {
+					writes++
+
+					var batch sheets.BatchUpdateSpreadsheetRequest
+					if err := json.NewDecoder(r.Body).Decode(&batch); err != nil {
+						t.Fatal(err)
+					}
+
+					if len(batch.Requests) != 1 || batch.Requests[0].SetDataValidation == nil {
+						t.Fatalf("wrong validation request %+v", batch)
+					}
+
+					values := batch.Requests[0].SetDataValidation.Rule.Condition.Values
+					if len(values) != 1 || values[0].UserEnteredValue != formula {
+						t.Fatalf("validation formula split or corrupted: %+v", values)
+					}
+					body = `{"spreadsheetId":"selected-sheet","replies":[{}]}`
+				}
+
+				return &http.Response{StatusCode: 200, Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(body)), Request: r}, nil
+			})
+
+			return sheets.NewService(ctx, option.WithHTTPClient(&http.Client{Transport: googleapi.GuardedTransport(ctx, base)}))
+		}
+	})
+
+	result := callSheetsDetail(t, h, "sheets_validation_set", map[string]any{"spreadsheet_id": "selected-sheet", "range": "Revenue Tab!D1:D3", "type": "CUSTOM_FORMULA", "value": formula}, "drive.file", func(a *ToolAuthorization) { a.AllowWrite = true })
+	if !result.OK || writes != 1 {
+		t.Fatalf("literal formula failed: writes=%d %s", writes, result.Body)
+	}
+}
+
+func TestNativeSheetsRemainingRejectsPlusPrefixedImports(t *testing.T) {
+	calls := 0
+
+	h := newHarness(t, func(engine *Engine, _ *recordedDiscoverer) {
+		engine.NativeServices.Sheets = func(context.Context, string) (*sheets.Service, error) { calls++; return nil, errSlidesRemainingFixture }
+	})
+	for _, data := range []string{`[{"range":"Revenue Tab!A1","values":[["+IMPORTRANGE(\"foreign\",\"A1\")"]]}]`, `[{"range":"Revenue Tab!A1","values":[["\u002bIMPO\u0052TRANGE(\"foreign\",\"A1\")"]]}]`} {
+		result := callSheetsDetail(t, h, "sheets_batch_update", map[string]any{"spreadsheet_id": "selected-sheet", "data_json": data}, "drive.file", func(a *ToolAuthorization) { a.AllowWrite = true })
+		if result.OK || calls != 0 {
+			t.Fatalf("plus-prefixed foreign formula admitted: calls=%d %s", calls, result.Body)
+		}
+	}
+}
