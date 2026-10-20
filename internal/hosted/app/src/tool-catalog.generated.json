@@ -9532,6 +9532,2790 @@
     }
   },
   {
+    "name": "docs_cell_style",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs cell-style on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "background_color": {
+            "type": "string"
+          },
+          "bold": {
+            "type": "boolean"
+          },
+          "border_all": {
+            "type": "string"
+          },
+          "border_bottom": {
+            "type": "string"
+          },
+          "border_left": {
+            "type": "string"
+          },
+          "border_right": {
+            "type": "string"
+          },
+          "border_top": {
+            "type": "string"
+          },
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "col_span": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_align": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "italic": {
+            "type": "boolean"
+          },
+          "padding_all": {
+            "type": "string"
+          },
+          "padding_bottom": {
+            "type": "string"
+          },
+          "padding_left": {
+            "type": "string"
+          },
+          "padding_right": {
+            "type": "string"
+          },
+          "padding_top": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "row_span": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table_index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "text_color": {
+            "type": "string"
+          },
+          "underline": {
+            "type": "boolean"
+          }
+        },
+        "required": ["document_id", "row", "col"],
+        "type": "object"
+      },
+      "name": "docs_cell_style"
+    }
+  },
+  {
+    "name": "docs_cell_update",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs cell-update on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "append": {
+            "type": "boolean"
+          },
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table_index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["document_id", "row", "col", "content"],
+        "type": "object"
+      },
+      "name": "docs_cell_update"
+    }
+  },
+  {
+    "name": "docs_table_column_width",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs table-column-width on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "evenly_distributed": {
+            "type": "boolean"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table_index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "width": {
+            "maximum": 100000,
+            "minimum": 5,
+            "type": "number"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_table_column_width"
+    }
+  },
+  {
+    "name": "docs_table_row_style",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs table-row style on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "min_height": {
+            "type": "string"
+          },
+          "prevent_overflow": {
+            "type": "boolean"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_table_row_style"
+    }
+  },
+  {
+    "name": "docs_update",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs update on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "occurrence": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "replace_range": {
+            "type": "string"
+          },
+          "segment": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_update"
+    }
+  },
+  {
+    "name": "docs_copy",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs copy on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "title"],
+        "type": "object"
+      },
+      "name": "docs_copy"
+    }
+  },
+  {
+    "name": "docs_raw",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Fixed native docs raw on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "all_tabs": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_raw"
+    }
+  },
+  {
+    "name": "drive_raw",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive raw on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_raw"
+    }
+  },
+  {
+    "name": "drive_url",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive url on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_url"
+    }
+  },
+  {
+    "name": "drive_mkdir",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "parent_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive mkdir on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "parent_id": {
+            "type": "string"
+          }
+        },
+        "required": ["parent_id", "name"],
+        "type": "object"
+      },
+      "name": "drive_mkdir"
+    }
+  },
+  {
+    "name": "drive_share",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive share on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "discoverable": {
+            "type": "boolean"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "notify": {
+            "type": "boolean"
+          },
+          "role": {
+            "enum": ["reader", "writer", "commenter"],
+            "type": "string"
+          },
+          "to": {
+            "enum": ["anyone", "user", "domain"],
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "to"],
+        "type": "object"
+      },
+      "name": "drive_share"
+    }
+  },
+  {
+    "name": "drive_unshare",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive unshare on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "permission_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "permission_id"],
+        "type": "object"
+      },
+      "name": "drive_unshare"
+    }
+  },
+  {
+    "name": "drive_bulk_remove_public",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive bulk remove-public on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id"],
+        "type": "object"
+      },
+      "name": "drive_bulk_remove_public"
+    }
+  },
+  {
+    "name": "drive_bulk_update_role",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native drive bulk update-role on one selected resource. Exact tool/resource grants required; writes are single-attempt. Permission mutations require destructive authority. Inline bounded values only; no files/stdin, arbitrary API bodies, masks, destination folders or folder traversal. Bulk variants are forced to the selected file. Raw responses keep native redaction and hosted output limits; links are not followed. Native flag/placement/revision validators retained. Not in the chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "type": "string"
+          },
+          "from": {
+            "enum": ["reader", "writer", "commenter"],
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "to": {
+            "enum": ["reader", "writer", "commenter"],
+            "type": "string"
+          },
+          "type": {
+            "enum": ["user", "group", "domain", "anyone"],
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "from", "to"],
+        "type": "object"
+      },
+      "name": "drive_bulk_update_role"
+    }
+  },
+  {
+    "name": "docs_sed",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Apply bounded inline native sed expressions to one selected document, retaining native regex, formatting, structural and table semantics. Exact write/destructive tool and document grants required. No expression files/stdin, arbitrary API requests or automatic retries; Google performs any requested public image-URI fetch, not the runner. Partial failure is not retried. Not in chat starter allowlist.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "expressions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "expressions"],
+        "type": "object"
+      },
+      "name": "docs_sed"
+    }
+  },
+  {
+    "name": "slides_bullets",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native bullets on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "object_id": {
+            "type": "string"
+          },
+          "off": {
+            "type": "boolean"
+          },
+          "on": {
+            "type": "boolean"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "preset": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id", "range"],
+        "type": "object"
+      },
+      "name": "slides_bullets"
+    }
+  },
+  {
+    "name": "slides_copy",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native copy on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "title"],
+        "type": "object"
+      },
+      "name": "slides_copy"
+    }
+  },
+  {
+    "name": "slides_element_alt_text",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element alt-text on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id"],
+        "type": "object"
+      },
+      "name": "slides_element_alt_text"
+    }
+  },
+  {
+    "name": "slides_element_create_line",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element create-line on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "enum": ["STRAIGHT", "BENT", "CURVED"],
+            "type": "string"
+          },
+          "height": {
+            "type": "number"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          },
+          "unit": {
+            "enum": ["PT", "EMU"],
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_element_create_line"
+    }
+  },
+  {
+    "name": "slides_element_create_shape",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element create-shape on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "type": "number"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "unit": {
+            "enum": ["PT", "EMU"],
+            "type": "string"
+          },
+          "width": {
+            "type": "number"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_element_create_shape"
+    }
+  },
+  {
+    "name": "slides_element_delete",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element delete on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "object_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_ids"],
+        "type": "object"
+      },
+      "name": "slides_element_delete"
+    }
+  },
+  {
+    "name": "slides_element_group",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element group on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "group_id": {
+            "type": "string"
+          },
+          "object_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_ids"],
+        "type": "object"
+      },
+      "name": "slides_element_group"
+    }
+  },
+  {
+    "name": "slides_element_style",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element style on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "fill_color": {
+            "type": "string"
+          },
+          "fill_transparent": {
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": ["shape", "line"],
+            "type": "string"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "outline_color": {
+            "type": "string"
+          },
+          "outline_dash": {
+            "enum": ["SOLID", "DOT", "DASH", "DASH_DOT", "LONG_DASH", "LONG_DASH_DOT"],
+            "type": "string"
+          },
+          "outline_transparent": {
+            "type": "boolean"
+          },
+          "outline_weight": {
+            "type": "number"
+          },
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id"],
+        "type": "object"
+      },
+      "name": "slides_element_style"
+    }
+  },
+  {
+    "name": "slides_element_transform",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element transform on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "apply_mode": {
+            "enum": ["RELATIVE", "ABSOLUTE"],
+            "type": "string"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "rotate": {
+            "type": "number"
+          },
+          "scale_x": {
+            "type": "number"
+          },
+          "scale_y": {
+            "type": "number"
+          },
+          "shear_x": {
+            "type": "number"
+          },
+          "shear_y": {
+            "type": "number"
+          },
+          "translate_x": {
+            "type": "number"
+          },
+          "translate_y": {
+            "type": "number"
+          },
+          "unit": {
+            "enum": ["PT", "EMU"],
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id"],
+        "type": "object"
+      },
+      "name": "slides_element_transform"
+    }
+  },
+  {
+    "name": "slides_element_ungroup",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element ungroup on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "group_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "group_ids"],
+        "type": "object"
+      },
+      "name": "slides_element_ungroup"
+    }
+  },
+  {
+    "name": "slides_element_z_order",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native element z-order on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "object_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "enum": ["BRING_TO_FRONT", "BRING_FORWARD", "SEND_BACKWARD", "SEND_TO_BACK"],
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_ids", "operation"],
+        "type": "object"
+      },
+      "name": "slides_element_z_order"
+    }
+  },
+  {
+    "name": "slides_insert_text",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native insert-text on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "insertion_index": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "replace": {
+            "type": "boolean"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id", "text"],
+        "type": "object"
+      },
+      "name": "slides_insert_text"
+    }
+  },
+  {
+    "name": "slides_link",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native link on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "clear": {
+            "type": "boolean"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "object_id", "range"],
+        "type": "object"
+      },
+      "name": "slides_link"
+    }
+  },
+  {
+    "name": "slides_paragraph_style",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native paragraph-style on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "align": {
+            "type": "string"
+          },
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "direction": {
+            "type": "string"
+          },
+          "indent_end": {
+            "type": "number"
+          },
+          "indent_first_line": {
+            "type": "number"
+          },
+          "indent_start": {
+            "type": "number"
+          },
+          "line_spacing": {
+            "type": "number"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "space_above": {
+            "type": "number"
+          },
+          "space_below": {
+            "type": "number"
+          }
+        },
+        "required": ["presentation_id", "object_id"],
+        "type": "object"
+      },
+      "name": "slides_paragraph_style"
+    }
+  },
+  {
+    "name": "slides_raw",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Native raw on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id"],
+        "type": "object"
+      },
+      "name": "slides_raw"
+    }
+  },
+  {
+    "name": "slides_replace_slide",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native replace-slide on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "notes": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id", "url"],
+        "type": "object"
+      },
+      "name": "slides_replace_slide"
+    }
+  },
+  {
+    "name": "slides_style_text",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native style-text on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "bold": {
+            "type": "boolean"
+          },
+          "font": {
+            "type": "string"
+          },
+          "italic": {
+            "type": "boolean"
+          },
+          "no_bold": {
+            "type": "boolean"
+          },
+          "no_italic": {
+            "type": "boolean"
+          },
+          "no_underline": {
+            "type": "boolean"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "size": {
+            "type": "number"
+          },
+          "text_color": {
+            "type": "string"
+          },
+          "underline": {
+            "type": "boolean"
+          }
+        },
+        "required": ["presentation_id", "object_id", "range"],
+        "type": "object"
+      },
+      "name": "slides_style_text"
+    }
+  },
+  {
+    "name": "slides_thumbnail",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Native thumbnail on one explicitly granted presentation, with exact tool/resource authority. Native object/range/style/revision validation retained. Writes are single-attempt; element deletion and image replacement require destructive permission. Inline inputs only; no files/stdin, destination folder, arbitrary API body or thumbnail download. Public HTTPS image URLs are fetched by Google, not this runner. Not in chat starter allowlist; live verification pending.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "format": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "size": {
+            "type": "string"
+          },
+          "slide_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id"],
+        "type": "object"
+      },
+      "name": "slides_thumbnail"
+    }
+  },
+  {
+    "name": "slides_table_border_style",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native border style. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "border_color": {
+            "type": "string"
+          },
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "col_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "dash": {
+            "enum": ["SOLID", "DOT", "DASH", "DASH_DOT", "LONG_DASH", "LONG_DASH_DOT"],
+            "type": "string"
+          },
+          "position": {
+            "default": "ALL",
+            "enum": [
+              "ALL",
+              "BOTTOM",
+              "INNER",
+              "INNER_HORIZONTAL",
+              "INNER_VERTICAL",
+              "LEFT",
+              "OUTER",
+              "RIGHT",
+              "TOP"
+            ],
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "row_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          },
+          "transparent": {
+            "type": "boolean"
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_border_style"
+    }
+  },
+  {
+    "name": "slides_table_cell_style",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native cell style. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "bold": {
+            "type": "boolean"
+          },
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "content_align": {
+            "enum": ["TOP", "MIDDLE", "BOTTOM"],
+            "type": "string"
+          },
+          "fill_color": {
+            "type": "string"
+          },
+          "fill_transparent": {
+            "type": "boolean"
+          },
+          "font": {
+            "type": "string"
+          },
+          "italic": {
+            "type": "boolean"
+          },
+          "no_bold": {
+            "type": "boolean"
+          },
+          "no_italic": {
+            "type": "boolean"
+          },
+          "no_underline": {
+            "type": "boolean"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "size": {
+            "type": "number"
+          },
+          "table_object_id": {
+            "type": "string"
+          },
+          "text_color": {
+            "type": "string"
+          },
+          "underline": {
+            "type": "boolean"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_cell_style"
+    }
+  },
+  {
+    "name": "slides_table_column_delete",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native column delete. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_column_delete"
+    }
+  },
+  {
+    "name": "slides_table_column_insert",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native column insert. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "count": {
+            "default": 1,
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "right": {
+            "type": "boolean"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_column_insert"
+    }
+  },
+  {
+    "name": "slides_table_column_size",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native column size. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "table_object_id": {
+            "type": "string"
+          },
+          "width": {
+            "minimum": 32,
+            "type": "number"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "col", "width"],
+        "type": "object"
+      },
+      "name": "slides_table_column_size"
+    }
+  },
+  {
+    "name": "slides_table_create",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native create. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cols": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "rows": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "slide_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "slide_id", "rows", "cols"],
+        "type": "object"
+      },
+      "name": "slides_table_create"
+    }
+  },
+  {
+    "name": "slides_table_merge",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native merge. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "col_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "row_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_merge"
+    }
+  },
+  {
+    "name": "slides_table_row_delete",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native row delete. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row"],
+        "type": "object"
+      },
+      "name": "slides_table_row_delete"
+    }
+  },
+  {
+    "name": "slides_table_row_insert",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native row insert. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "below": {
+            "type": "boolean"
+          },
+          "count": {
+            "default": 1,
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row"],
+        "type": "object"
+      },
+      "name": "slides_table_row_insert"
+    }
+  },
+  {
+    "name": "slides_table_row_size",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native row size. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row", "height"],
+        "type": "object"
+      },
+      "name": "slides_table_row_size"
+    }
+  },
+  {
+    "name": "slides_table_unmerge",
+    "service": "slides",
+    "resource_type": "file",
+    "resource_argument": "presentation_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Update one explicitly granted presentation via native unmerge. Native revision, table and range checks remain enforced; exact write-tool/file authority is required. No generic requests, files or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "col_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "presentation_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "row_span": {
+            "default": 1,
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "table_object_id": {
+            "type": "string"
+          }
+        },
+        "required": ["presentation_id", "table_object_id", "row", "col"],
+        "type": "object"
+      },
+      "name": "slides_table_unmerge"
+    }
+  },
+  {
+    "name": "sheets_copy",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets copy on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "title"],
+        "type": "object"
+      },
+      "name": "sheets_copy"
+    }
+  },
+  {
+    "name": "sheets_banding_clear",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets banding clear on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "id"],
+        "type": "object"
+      },
+      "name": "sheets_banding_clear"
+    }
+  },
+  {
+    "name": "sheets_banding_set",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets banding set on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "row_properties_json": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "row_properties_json"],
+        "type": "object"
+      },
+      "name": "sheets_banding_set"
+    }
+  },
+  {
+    "name": "sheets_batch_update",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets batch-update on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "data_json": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "data_json"],
+        "type": "object"
+      },
+      "name": "sheets_batch_update"
+    }
+  },
+  {
+    "name": "sheets_chart_create",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets chart create on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "sheet": {
+            "type": "string"
+          },
+          "spec_json": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "spec_json", "sheet"],
+        "type": "object"
+      },
+      "name": "sheets_chart_create"
+    }
+  },
+  {
+    "name": "sheets_chart_delete",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets chart delete on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "chart_id": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "chart_id"],
+        "type": "object"
+      },
+      "name": "sheets_chart_delete"
+    }
+  },
+  {
+    "name": "sheets_chart_update",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets chart update on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "chart_id": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "spec_json": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "chart_id", "spec_json"],
+        "type": "object"
+      },
+      "name": "sheets_chart_update"
+    }
+  },
+  {
+    "name": "sheets_conditional_format_add",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets conditional-format add on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "expr": {
+            "type": "string"
+          },
+          "format_json": {
+            "type": "string"
+          },
+          "index": {
+            "type": "integer"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "type", "format_json"],
+        "type": "object"
+      },
+      "name": "sheets_conditional_format_add"
+    }
+  },
+  {
+    "name": "sheets_conditional_format_clear",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets conditional-format clear on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "sheet", "index"],
+        "type": "object"
+      },
+      "name": "sheets_conditional_format_clear"
+    }
+  },
+  {
+    "name": "sheets_copy_paste",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets copy-paste on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dest": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "transpose": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "source", "dest"],
+        "type": "object"
+      },
+      "name": "sheets_copy_paste"
+    }
+  },
+  {
+    "name": "sheets_delete_dimension",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets delete-dimension on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimension": {
+            "type": "string"
+          },
+          "end": {
+            "type": "integer"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "start": {
+            "type": "integer"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "target", "dimension"],
+        "type": "object"
+      },
+      "name": "sheets_delete_dimension"
+    }
+  },
+  {
+    "name": "sheets_duplicate_tab",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets duplicate-tab on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer"
+          },
+          "new_name": {
+            "type": "string"
+          },
+          "source_tab": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "source_tab", "new_name"],
+        "type": "object"
+      },
+      "name": "sheets_duplicate_tab"
+    }
+  },
+  {
+    "name": "sheets_filter_set",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets filter set on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_filter_set"
+    }
+  },
+  {
+    "name": "sheets_find_replace",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets find-replace on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "find": {
+            "type": "string"
+          },
+          "match_case": {
+            "type": "boolean"
+          },
+          "match_entire": {
+            "type": "boolean"
+          },
+          "replace": {
+            "type": "string"
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "find", "replace", "sheet"],
+        "type": "object"
+      },
+      "name": "sheets_find_replace"
+    }
+  },
+  {
+    "name": "sheets_format",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets format on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "format_json": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "format_json"],
+        "type": "object"
+      },
+      "name": "sheets_format"
+    }
+  },
+  {
+    "name": "sheets_insert",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets insert on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "after": {
+            "type": "boolean"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "dimension": {
+            "type": "string"
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "start": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["spreadsheet_id", "sheet", "dimension", "start"],
+        "type": "object"
+      },
+      "name": "sheets_insert"
+    }
+  },
+  {
+    "name": "sheets_links_set",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets links set on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cell": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "cell", "url", "text"],
+        "type": "object"
+      },
+      "name": "sheets_links_set"
+    }
+  },
+  {
+    "name": "sheets_raw",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets raw on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "include_grid_data": {
+            "type": "boolean"
+          },
+          "sheet": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id"],
+        "type": "object"
+      },
+      "name": "sheets_raw"
+    }
+  },
+  {
+    "name": "sheets_table_create",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets table create on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "columns_json": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "name", "columns_json"],
+        "type": "object"
+      },
+      "name": "sheets_table_create"
+    }
+  },
+  {
+    "name": "sheets_table_append",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets table append on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "table_id": {
+            "type": "string"
+          },
+          "values_json": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "table_id", "values_json"],
+        "type": "object"
+      },
+      "name": "sheets_table_append"
+    }
+  },
+  {
+    "name": "sheets_table_clear",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets table clear on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "table_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "table_id"],
+        "type": "object"
+      },
+      "name": "sheets_table_clear"
+    }
+  },
+  {
+    "name": "sheets_table_delete",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets table delete on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "table_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "table_id"],
+        "type": "object"
+      },
+      "name": "sheets_table_delete"
+    }
+  },
+  {
+    "name": "sheets_validation_clear",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets validation clear on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "filtered_rows_included": {
+            "type": "boolean"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range"],
+        "type": "object"
+      },
+      "name": "sheets_validation_clear"
+    }
+  },
+  {
+    "name": "sheets_validation_set",
+    "service": "sheets",
+    "resource_type": "file",
+    "resource_argument": "spreadsheet_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Fixed native Sheets validation set on one selected spreadsheet. Writes require approval; deletion and replacement may discard data. Inline typed inputs only.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "filtered_rows_included": {
+            "type": "boolean"
+          },
+          "range": {
+            "type": "string"
+          },
+          "spreadsheet_id": {
+            "type": "string"
+          },
+          "strict": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        },
+        "required": ["spreadsheet_id", "range", "type"],
+        "type": "object"
+      },
+      "name": "sheets_validation_set"
+    }
+  },
+  {
     "name": "photos_list",
     "service": "photos",
     "resource_type": "",

@@ -457,7 +457,7 @@
       ],
       "resource_model": "Apps Script project source content (Content + File resources) fetched by script ID, materialized as local script files in the target directory",
       "constraint": "Local project download is ALREADY supported by CLI pull and source JSON by appscript_content. Hosted pull must not write arbitrary server directories; any downloadable archive needs bounded artifact/local-client materialization. No paid assessment barrier.",
-      "source_evidence": "internal/cmd/appscript_pull.go:26 (Run), requireAppScriptService + svc.Projects.GetContent(scriptID).Context(ctx).Do(); prior product_limited label not corroborated by any missing allowlisted scope \u2014 script.projects.readonly is approved and the operation is a fixed-schema read plus local file write",
+      "source_evidence": "internal/cmd/appscript_pull.go:26 (Run), requireAppScriptService + svc.Projects.GetContent(scriptID).Context(ctx).Do(); prior product_limited label not corroborated by any missing allowlisted scope — script.projects.readonly is approved and the operation is a fixed-schema read plus local file write",
       "existing_tool": "appscript_content",
       "controller_notes": [
         "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
@@ -1056,7 +1056,7 @@
       "command": "docs insert-file-chip",
       "scope_boundary": "within_current_allowlist",
       "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "drive.files.get",
         "docs.documents.batchUpdate",
@@ -1067,13 +1067,16 @@
         "https://www.googleapis.com/auth/documents"
       ],
       "resource_model": "Reads Drive file metadata (id,name,mimeType,webViewLink) then inserts RichLink chip into the doc",
-      "constraint": "Drive read restricted to operator-supplied fileId under drive.file; no sharing grants created",
-      "source_evidence": "internal/cmd/docs_smart_chips.go:29 (DocsInsertFileChipCmd.Run, driveSvc.Files.Get + docs.Request{InsertRichLink})",
+      "constraint": "A chip reads a second caller-supplied Drive file before mutating the document. ToolAuthorization carries exactly one ResourceGrantInput and existing argumentPaths is computed from one signed selected resource. A drive.file OAuth grant is not an explicit secondary-file tool grant. Requires signed secondary-resource grants and fresh Worker/D1/runner admission; do not allow the second file ID solely from model arguments.",
+      "source_evidence": "internal/cmd/docs_smart_chips.go (DocsInsertFileChipCmd.Run); internal/hosted/runner/tools.go (ToolAuthorization, nativeRequestGuard)",
       "native_handler": {
         "file": "internal/cmd/docs_smart_chips.go",
         "line_at_review": 85,
         "receiver": "DocsInsertFileChipCmd"
-      }
+      },
+      "controller_notes": [
+        "2026-10-20 implementation-boundary review: authorization-design blocker, not a new OAuth scope or paid Google assessment. Retained outside implemented/live-verified counts."
+      ]
     },
     {
       "command": "docs insert-footnote",
@@ -1136,7 +1139,7 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "URL source inserts directly; local-file source uploads to Drive and temporarily makes the file public so Docs can fetch it",
-      "constraint": "URL path is fixed-schema and adapter-ready; local-file path delegates to runURL/runFile (methods inferred, not proven in shown code) and requires an explicit confirm for temporary anynononymous sharing \u2014 grant lifecycle (upload \u2192 share \u2192 insert \u2192 revoke/cleanup) must be designed before hosting; not a paid-audit requirement",
+      "constraint": "URL path is fixed-schema and adapter-ready; local-file path delegates to runURL/runFile (methods inferred, not proven in shown code) and requires an explicit confirm for temporary anynononymous sharing — grant lifecycle (upload → share → insert → revoke/cleanup) must be designed before hosting; not a paid-audit requirement",
       "source_evidence": "internal/cmd/docs_insert_image.go:23 (DocsInsertImageCmd.Run; confirmDestructiveChecked for temporary public share; delegation to c.runURL/c.runFile unproven)",
       "native_handler": {
         "file": "internal/cmd/docs_insert_image.go",
@@ -1360,7 +1363,7 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Uploads replacement image to Drive then batchUpdate ReplaceImage/InlineObject; local-file path uploads via Drive, URL path fetched by Docs",
-      "constraint": "Local-file variant temporarily shares the uploaded image publicly (permissions anyone) before delete \u2014 changes file grants; needs a transport design that avoids or tightly scopes/confirms that grant change",
+      "constraint": "Local-file variant temporarily shares the uploaded image publicly (permissions anyone) before delete — changes file grants; needs a transport design that avoids or tightly scopes/confirms that grant change",
       "source_evidence": "docs_replace_image.go:17 (confirmDestructiveChecked public share; replaceImageFile/replaceImageURL)",
       "native_handler": {
         "file": "internal/cmd/docs_replace_image.go",
@@ -2428,7 +2431,7 @@
         "https://www.googleapis.com/auth/forms.body"
       ],
       "resource_model": "Watch resource bound to a form, targeting a Cloud Pub/Sub topic with an event type",
-      "constraint": "Typed official-API call, but depends on an external Pub/Sub topic (topicName, push delivery) \u2014 watch delivery infrastructure must be designed before hostability; prior requires_audit label treated as unreviewed-engineering note, not a paid-assessment requirement Customer Pub/Sub destination, event-export authority and any recurring infrastructure cost require explicit tenant configuration/approval; the scopes themselves are approved, not a paid-assessment blocker.",
+      "constraint": "Typed official-API call, but depends on an external Pub/Sub topic (topicName, push delivery) — watch delivery infrastructure must be designed before hostability; prior requires_audit label treated as unreviewed-engineering note, not a paid-assessment requirement Customer Pub/Sub destination, event-export authority and any recurring infrastructure cost require explicit tenant configuration/approval; the scopes themselves are approved, not a paid-assessment blocker.",
       "source_evidence": "internal/cmd/forms_watch.go:22 (Forms.Watches.Create with CloudPubsubTopic topicName + eventType; dry-run gate present)",
       "controller_notes": [
         "Controller resolved native helper/behavior and checked official method scopes; worker classification is not authoritative."
@@ -3421,7 +3424,7 @@
       "command": "slides create-from-template",
       "scope_boundary": "within_current_allowlist",
       "paid_assessment": "not_required_for_approved_scope_variant",
-      "hostability": "ready_for_fixed_adapter",
+      "hostability": "requires_resource_or_transport_design",
       "google_methods": [
         "drive.files.copy",
         "slides.presentations.batchUpdate"
@@ -3431,13 +3434,16 @@
         "https://www.googleapis.com/auth/presentations"
       ],
       "resource_model": "Copies a template presentation via Drive, verifies presentation mimeType, then applies fixed ReplaceAllText batchUpdate requests",
-      "constraint": "Template file must be within the drive.file grant (user-selected); replacement request set is deterministically built; partial-failure path leaves copy created and warns rather than auto-deleting",
-      "source_evidence": "internal/cmd/slides_create_from_template.go:18 (driveSvc.Files.Copy with SupportsAllDrives, Presentations.BatchUpdate with buildTemplateReplacementRequests)",
+      "constraint": "Native template creation performs Drive Files.Copy, reads created.Id from that response, then Slides batchUpdate on that newly created presentation. Static signed selected-file admission cannot authorize the new ID from caller arguments, nor may it wildcard all presentation writes. Requires invocation-bound creation receipt/resource admission and failure/recovery handling for the copy-plus-edit operation. Plain selected-file Slides copy remains implemented separately.",
+      "source_evidence": "internal/cmd/slides_create_from_template.go (Run, created.Id and Presentations.BatchUpdate); internal/hosted/runner/tools.go (ToolAuthorization, nativeRequestGuard)",
       "native_handler": {
         "file": "internal/cmd/slides_create_from_template.go",
         "line_at_review": 27,
         "receiver": "SlidesCreateFromTemplateCmd"
-      }
+      },
+      "controller_notes": [
+        "2026-10-20 implementation-boundary review: authorization-design blocker, not a new OAuth scope or paid Google assessment. Retained outside implemented/live-verified counts."
+      ]
     },
     {
       "command": "slides delete-slide",
@@ -3675,7 +3681,7 @@
         "https://www.googleapis.com/auth/drive.file"
       ],
       "resource_model": "Exports presentation to pptx/pdf via Drive export into a local output path",
-      "constraint": "Binary local-file output needs transport/output design; overwrite check retained; prior product_limited reclassified \u2014 not an audit matter",
+      "constraint": "Binary local-file output needs transport/output design; overwrite check retained; prior product_limited reclassified — not an audit matter",
       "source_evidence": "internal/cmd/slides.go:85 via exportViaDrive/drive.files.export",
       "native_handler": {
         "file": "internal/cmd/slides.go",

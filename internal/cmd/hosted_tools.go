@@ -93,6 +93,10 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedSlidesReadTools()...)
 	tools = append(tools, hostedSlidesEditTools()...)
 	tools = append(tools, hostedSlidesLifecycleTools()...)
+	tools = append(tools, hostedDocsDriveRemainingTools()...)
+	tools = append(tools, hostedSlidesRemainingTools()...)
+	tools = append(tools, hostedSlidesTableRemainingTools()...)
+	tools = append(tools, hostedSheetsRemainingTools()...)
 	return append(tools, hostedPhotosLibraryTools()...)
 }
 
@@ -181,6 +185,24 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 			return nil, configureErr
 		}
 	}
+	if spec.Name == "docs_sed" {
+		node := parser.Model.Node
+		for _, name := range []string{"docs", "sed"} {
+			for _, child := range node.Children {
+				if child.Name == name {
+					node = child
+					break
+				}
+			}
+		}
+		for _, flag := range node.Flags {
+			if flag.Name == "expressions" {
+				tag := *flag.Tag
+				tag.Sep = -1
+				flag.Tag = &tag
+			}
+		}
+	}
 	command, err := parser.Parse(args)
 	if err != nil {
 		return nil, ErrHostedToolInput
@@ -215,6 +237,12 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	ctx = authclient.WithAccessToken(ctx, options.AccessToken)
 	ctx = authclient.WithQuotaProject(ctx, options.QuotaProject)
 	ctx = googleapi.WithRequestGuard(ctx, options.RequestGuard)
+	for _, candidate := range append(append(append(hostedDocsDriveRemainingTools(), hostedSlidesRemainingTools()...), hostedSlidesTableRemainingTools()...), hostedSheetsRemainingTools()...) {
+		if candidate.Name == spec.Name && spec.Risk == mcpRiskWrite {
+			ctx = googleapi.WithoutRetries(ctx)
+			break
+		}
+	}
 	if spec.Risk == mcpRiskWrite && (strings.HasPrefix(spec.Name, "docs_comments_") || strings.HasPrefix(spec.Name, "drive_comments_")) {
 		ctx = googleapi.WithoutRetries(ctx)
 	}

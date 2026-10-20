@@ -13,6 +13,7 @@ import (
 	gapi "google.golang.org/api/googleapi"
 	"google.golang.org/api/slides/v1"
 
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/ui"
 )
 
@@ -286,7 +287,7 @@ func batchUpdateSlidesImageRequests(ctx context.Context, svc *slides.Service, pr
 			return nil
 		}
 		lastErr = err
-		if attempt >= len(docsImageInsertRetryDelays) || !isRetryableSlidesImageRequestError(err) {
+		if googleapi.RetriesDisabled(ctx) || attempt >= len(docsImageInsertRetryDelays) || !isRetryableSlidesImageRequestError(err) {
 			return lastErr
 		}
 		if err := waitDocsImageInsertRetry(ctx, docsImageInsertRetryDelays[attempt]); err != nil {

@@ -11,6 +11,7 @@ import (
 	"google.golang.org/api/docs/v1"
 
 	"github.com/openclaw/gogcli/internal/docssed"
+	"github.com/openclaw/gogcli/internal/googleapi"
 	"github.com/openclaw/gogcli/internal/ui"
 )
 
@@ -102,6 +103,9 @@ func literalReplacement(repl string) string {
 }
 
 func (c *DocsSedCmd) Run(ctx context.Context, flags *RootFlags) error {
+	if flags != nil && flags.hostedExecution {
+		ctx = googleapi.WithoutRetries(ctx)
+	}
 	u := ui.FromContext(ctx)
 
 	id := strings.TrimSpace(c.DocID)
@@ -474,6 +478,9 @@ func (c *DocsSedCmd) runBatch(ctx context.Context, u *ui.UI, account, id string,
 		case <-time.After(500 * time.Millisecond):
 		}
 		if singleErr := c.runSingle(ctx, u, account, id, ie.expr); singleErr != nil {
+			if googleapi.RetriesDisabled(ctx) {
+				return fmt.Errorf("expression %d (image): %w", ie.index+1, singleErr)
+			}
 			// Retry once after a longer pause (image fetch can be flaky under load)
 			select {
 			case <-ctx.Done():
