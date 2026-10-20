@@ -38,6 +38,7 @@ export interface ChatModelPolicy {
   free: boolean;
   promptMicroUsdPerMillion: number;
   completionMicroUsdPerMillion: number;
+  unavailableReason?: string;
 }
 const MODELS: readonly ChatModelPolicy[] = Object.freeze([
   {
@@ -45,6 +46,16 @@ const MODELS: readonly ChatModelPolicy[] = Object.freeze([
     id: DEFAULT_CHAT_MODEL,
     label: "Automatic · Free",
     description: "OpenRouter chooses an eligible free model with tool support.",
+    free: true,
+    promptMicroUsdPerMillion: 0,
+    completionMicroUsdPerMillion: 0,
+  },
+  {
+    key: "xing-free",
+    id: "xingchen-agi/xing4.0-29b-a4b:free",
+    label: "Xing 4.0 · Free",
+    description:
+      "A tool-capable free alternative with a listed zero-data-retention provider. No paid fallback.",
     free: true,
     promptMicroUsdPerMillion: 0,
     completionMicroUsdPerMillion: 0,
@@ -58,6 +69,8 @@ const MODELS: readonly ChatModelPolicy[] = Object.freeze([
     free: true,
     promptMicroUsdPerMillion: 0,
     completionMicroUsdPerMillion: 0,
+    unavailableReason:
+      "No zero-data-retention provider is currently listed for this free model. Choose Automatic or Xing Free.",
   },
   {
     key: "nemotron-free",
@@ -67,6 +80,8 @@ const MODELS: readonly ChatModelPolicy[] = Object.freeze([
     free: true,
     promptMicroUsdPerMillion: 0,
     completionMicroUsdPerMillion: 0,
+    unavailableReason:
+      "No zero-data-retention provider is currently listed for this free model. Choose Automatic or Xing Free.",
   },
   {
     key: "gpt41-mini",
@@ -160,7 +175,10 @@ export function availableChatModels(
             "/UTC month. Reservations are conservative ceilings, not a bill."
           : ""),
     free: model.free,
-    enabled: model.free || (paidModelConfigured(env, userId) && verifiedProviderCap),
+    enabled:
+      !model.unavailableReason &&
+      (model.free || (paidModelConfigured(env, userId) && verifiedProviderCap)),
+    ...(model.unavailableReason ? { disabledReason: model.unavailableReason } : {}),
     ...(!model.free && !(paidModelConfigured(env, userId) && verifiedProviderCap)
       ? { disabledReason: modelFailureMessage("paid_not_enabled") }
       : {}),
@@ -175,6 +193,7 @@ export function selectChatModel(
   const model =
     typeof key === "string" ? MODELS.find((candidate) => candidate.key === key) : undefined;
   if (!model) throw new ChatModelError("model_not_allowed");
+  if (model.unavailableReason) throw new ChatModelError("privacy");
   if (!model.free && !(paidModelConfigured(env, userId) && verifiedProviderCap))
     throw new ChatModelError("paid_not_enabled");
   return model;

@@ -211,6 +211,17 @@ disabled, and errors never trigger an automatic model or paid fallback.
 
 Privacy remains `zdr: true`, `data_collection: deny`, strict parameter support,
 and zero prompt/completion/request/image/audio price filters for free models.
+On2026-10-20, unauthenticated GETs to OpenRouter official
+[`endpoints/zdr`](https://openrouter.ai/api/v1/endpoints/zdr) and model endpoint
+metadata listed Phala/Xing4.0 Free with tool support and zero prompt/completion
+prices. Neither curated MiniMax/Nemotron free variant had a listed ZDR endpoint,
+so those choices remain visible but disabled. Existing saved keys are not silently
+replaced; users can explicitly choose Automatic or Xing Free. No inference or
+key access was used for this check; provider capacity and live end-to-end success
+remain unverified. Curated availability is a dated snapshot, not a runtime health
+promise. Re-evaluate the catalogue when providers change; never relax privacy to
+make a choice appear available.
+
 A free model may have no privacy-compatible endpoint or available capacity;
 that produces a visible, zero-paid fallback error rather than relaxed privacy.
 Provider limits may be lower than these local ceilings. These are shared free

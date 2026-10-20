@@ -84,7 +84,7 @@ it("counts every actual SDK request across model choices and stops at the applic
     )
     .run();
   const failures: ModelFailure[] = [];
-  const other = selectChatModel("minimax-free", {}, "owner");
+  const other = selectChatModel("xing-free", {}, "owner");
   const second = createOpenRouter({
     apiKey: "synthetic",
     fetch: budgetedModelFetch(
