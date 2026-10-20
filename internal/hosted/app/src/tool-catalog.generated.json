@@ -6805,6 +6805,705 @@
     }
   },
   {
+    "name": "docs_insert_footnote",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-footnote. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_insert_footnote"
+    }
+  },
+  {
+    "name": "docs_insert_horizontal_rule",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-horizontal-rule. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_insert_horizontal_rule"
+    }
+  },
+  {
+    "name": "docs_insert_page_break",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-page-break. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_insert_page_break"
+    }
+  },
+  {
+    "name": "docs_insert_section_break",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-section-break. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "type": {
+            "enum": ["next-page", "continuous"],
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_insert_section_break"
+    }
+  },
+  {
+    "name": "docs_insert_table",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-table. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "cols": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "rows": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "rows", "cols"],
+        "type": "object"
+      },
+      "name": "docs_insert_table"
+    }
+  },
+  {
+    "name": "docs_insert_person",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-person. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "email"],
+        "type": "object"
+      },
+      "name": "docs_insert_person"
+    }
+  },
+  {
+    "name": "docs_insert_date_chip",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native insert-date-chip. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "date": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "format": {
+            "enum": ["abbreviated", "full", "iso"],
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "date"],
+        "type": "object"
+      },
+      "name": "docs_insert_date_chip"
+    }
+  },
+  {
+    "name": "docs_header_create",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native header create. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_header_create"
+    }
+  },
+  {
+    "name": "docs_footer_create",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native footer create. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at_end": {
+            "type": "boolean"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "index": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "text"],
+        "type": "object"
+      },
+      "name": "docs_footer_create"
+    }
+  },
+  {
+    "name": "docs_header_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native header delete. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "segment_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "segment_id"],
+        "type": "object"
+      },
+      "name": "docs_header_delete"
+    }
+  },
+  {
+    "name": "docs_footer_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Edit one explicitly granted document via native footer delete. Inline values only; exact write-tool/file authority and one-use chat approval. Segment deletion also requires destructive authority. Native revision and placement checks remain enforced; no local files, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "segment_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "segment_id"],
+        "type": "object"
+      },
+      "name": "docs_footer_delete"
+    }
+  },
+  {
+    "name": "docs_table_row_insert",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-row insert within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_table_row_insert"
+    }
+  },
+  {
+    "name": "docs_table_row_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-row delete within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "row": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "row"],
+        "type": "object"
+      },
+      "name": "docs_table_row_delete"
+    }
+  },
+  {
+    "name": "docs_table_column_insert",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-column insert within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_table_column_insert"
+    }
+  },
+  {
+    "name": "docs_table_column_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-column delete within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "col": {
+            "maximum": 2147483647,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "col"],
+        "type": "object"
+      },
+      "name": "docs_table_column_delete"
+    }
+  },
+  {
+    "name": "docs_table_merge",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-merge within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "range": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "range"],
+        "type": "object"
+      },
+      "name": "docs_table_merge"
+    }
+  },
+  {
+    "name": "docs_table_unmerge",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-unmerge within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "cell": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "cell"],
+        "type": "object"
+      },
+      "name": "docs_table_unmerge"
+    }
+  },
+  {
+    "name": "docs_table_row_pin_header",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native table-row pin-header within one explicitly granted document. Native table/merged-cell validation and revision checks retained. Exact write grant plus one-use chat approval; row/column deletion also requires destructive permission. No files, raw request bodies, persisted batches or automatic retries.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "rows": {
+            "maximum": 2147483647,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tab": {
+            "type": "string"
+          },
+          "table": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "rows"],
+        "type": "object"
+      },
+      "name": "docs_table_row_pin_header"
+    }
+  },
+  {
     "name": "docs_format",
     "service": "docs",
     "resource_type": "file",

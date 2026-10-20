@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 360 {
 		t.Fatalf("native leaf count = %d, want 360", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 201 || matrix.TotalHostedCatalogCount != 239 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 201/239/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 219 || matrix.TotalHostedCatalogCount != 257 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 219/257/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 211 || matrix.MappedHostedToolCount != 201 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 211/201", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 229 || matrix.MappedHostedToolCount != 219 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 229/219", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 32, "appscript": 12, "bigquery": 6, "docs": 28, "drive": 11, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
+	for service, count := range map[string]int{"analytics": 32, "appscript": 12, "bigquery": 6, "docs": 46, "drive": 11, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {
@@ -204,5 +204,45 @@ func TestGeneratedMatrixIsReproducibleAndCheckedIn(t *testing.T) {
 	generated := append(bytes.Clone(first), '\n')
 	if !bytes.Equal(generated, checkedIn) {
 		t.Fatal("docs/hosted/cli-hosted-matrix.json drifted; regenerate it")
+	}
+}
+
+func TestDocsStructuralTableBatchMapped(t *testing.T) {
+	matrix := canonicalMatrix(t)
+	expected := map[string]string{
+		"insert-footnote":        "docs_insert_footnote",
+		"insert-horizontal-rule": "docs_insert_horizontal_rule",
+		"insert-page-break":      "docs_insert_page_break",
+		"insert-section-break":   "docs_insert_section_break",
+		"insert-table":           "docs_insert_table",
+		"insert-person":          "docs_insert_person",
+		"insert-date-chip":       "docs_insert_date_chip",
+		"header create":          "docs_header_create",
+		"header delete":          "docs_header_delete",
+		"footer create":          "docs_footer_create",
+		"footer delete":          "docs_footer_delete",
+		"table-row insert":       "docs_table_row_insert",
+		"table-row delete":       "docs_table_row_delete",
+		"table-column insert":    "docs_table_column_insert",
+		"table-column delete":    "docs_table_column_delete",
+		"table-merge":            "docs_table_merge",
+		"table-unmerge":          "docs_table_unmerge",
+		"table-row pin-header":   "docs_table_row_pin_header",
+	}
+	for _, leaf := range matrix.Leaves {
+		if leaf.Service != "docs" {
+			continue
+		}
+		tool, exists := expected[leaf.Command]
+		if !exists {
+			continue
+		}
+		if leaf.HostedTool == nil || *leaf.HostedTool != tool || leaf.Status != "implemented_hosted_unverified" || leaf.LiveVerified {
+			t.Errorf("incorrect structural/table mapping: %+v", leaf)
+		}
+		delete(expected, leaf.Command)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("missing structural/table operations: %v", expected)
 	}
 }

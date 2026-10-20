@@ -21,6 +21,7 @@ func nativeDocsInventoryBindings() []NativeToolBinding {
 
 	bindings = append(bindings, nativeDocsNamedEditBindings()...)
 	bindings = append(bindings, nativeDocsTextEditBindings()...)
+	bindings = append(bindings, nativeDocsStructuralBindings()...)
 
 	return append(bindings, nativeDocsFormatLayoutBindings()...)
 }
