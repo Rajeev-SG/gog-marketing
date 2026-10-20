@@ -6,14 +6,14 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 360 visible native leaves in the 11 active services
-and 201 active hosted tools (239 total). It maps 201 hosted tools across 211
+and 219 active hosted tools (257 total). It maps 219 hosted tools across 229
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 211 implemented/unverified hosted
-leaves, 102 reviewed eligible missing, 39 requiring resource/transport/billing
+also map direct and grouped aliases. Counts are: 229 implemented/unverified hosted
+leaves, 84 reviewed eligible missing, 39 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.
@@ -106,3 +106,18 @@ underlying Google APIs. Fully mapped CLI services are not claimed to have full
 Google API coverage. API-only methods and batch request types absent from the
 native command tree remain a separate discovery pass, not implicitly excluded
 as requiring paid assessments.
+
+## Docs structural/table batch
+
+Eighteen existing eligible native leaves now have fixed-schema hosted adapters:
+header/footer create/delete, footnote, horizontal/page/section breaks, blank-table
+insertion, person/date chips, table row/column insert/delete, merge/unmerge and
+pinned headers. Inputs are inline, bounded and delegated to native validators;
+local files, stdin and persisted batches are not exposed. Existing placement,
+table and revision checks are retained (not every native operation has a revision
+precondition). Each invocation requires its exact tool and selected-document
+write grants; row/column/segment deletion additionally requires destructive
+permission. Chat uses the existing exact-argument one-use write approval path.
+All new adapters disable uncertain-write retries. Signed-runner fixtures prove
+request shapes, selected-file/tool/scope denials, destructive denials and no
+replay after a simulated 503. These are not live Google acceptance results.

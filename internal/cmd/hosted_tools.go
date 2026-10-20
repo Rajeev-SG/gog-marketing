@@ -77,6 +77,8 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedDocsSegmentReadTools()...)
 	tools = append(tools, hostedDocsNamedEditTools()...)
 	tools = append(tools, hostedDocsTextEditTools()...)
+	tools = append(tools, hostedDocsStructuralTools()...)
+	tools = append(tools, hostedDocsTableTools()...)
 	tools = append(tools, hostedDocsFormatLayoutTools()...)
 	tools = append(tools, hostedDriveRevisionTools()...)
 	tools = append(tools, hostedDrivePermissionReadTools()...)
@@ -212,6 +214,12 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	ctx = authclient.WithAccessToken(ctx, options.AccessToken)
 	ctx = authclient.WithQuotaProject(ctx, options.QuotaProject)
 	ctx = googleapi.WithRequestGuard(ctx, options.RequestGuard)
+	// New structural adapters must not replay uncertain multi-step mutations.
+	switch spec.Name {
+	case "docs_insert_footnote", "docs_insert_horizontal_rule", "docs_insert_page_break", "docs_insert_section_break", "docs_insert_table", "docs_insert_person", "docs_insert_date_chip", "docs_header_create", "docs_footer_create", "docs_header_delete", "docs_footer_delete", "docs_table_row_insert", "docs_table_row_delete", "docs_table_column_insert", "docs_table_column_delete", "docs_table_merge", "docs_table_unmerge", "docs_table_row_pin_header":
+		ctx = googleapi.WithoutRetries(ctx)
+	}
+
 	ctx = outfmt.WithMode(ctx, outfmt.Mode{JSON: true})
 	u, err := ui.New(ui.Options{Stdout: &output, Stderr: io.Discard, Color: "never"})
 	if err != nil {

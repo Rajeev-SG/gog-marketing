@@ -35,6 +35,21 @@ var activeServices = []string{
 // commandToHosted contains only reviewed naming bridges that are not produced
 // by the exact-name rule below. The canonical catalog remains authoritative.
 var commandToHosted = map[string]string{
+	"docs insert-footnote":        "docs_insert_footnote",
+	"docs insert-horizontal-rule": "docs_insert_horizontal_rule",
+	"docs insert-page-break":      "docs_insert_page_break",
+	"docs insert-section-break":   "docs_insert_section_break",
+	"docs insert-table":           "docs_insert_table",
+	"docs insert-person":          "docs_insert_person",
+	"docs insert-date-chip":       "docs_insert_date_chip",
+	"docs table-row insert":       "docs_table_row_insert",
+	"docs table-row delete":       "docs_table_row_delete",
+	"docs table-column insert":    "docs_table_column_insert",
+	"docs table-column delete":    "docs_table_column_delete",
+	"docs table-merge":            "docs_table_merge",
+	"docs table-unmerge":          "docs_table_unmerge",
+	"docs table-row pin-header":   "docs_table_row_pin_header",
+
 	"docs find-replace":                   "docs_find_replace",
 	"docs edit":                           "docs_find_replace",
 	"tasks lists get":                     "tasks_lists_get",

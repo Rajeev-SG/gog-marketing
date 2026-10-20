@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 360,
-  "hosted_tool_count": 201,
-  "total_hosted_catalog_count": 239,
+  "hosted_tool_count": 219,
+  "total_hosted_catalog_count": 257,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 211,
-  "mapped_hosted_tool_count": 201,
+  "mapped_native_leaf_count": 229,
+  "mapped_hosted_tool_count": 219,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 102,
+    "eligible_missing": 84,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 211,
+    "implemented_hosted_unverified": 229,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,12 +68,12 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 28,
-      "mapped_native_leaves": 33,
+      "hosted_tools": 46,
+      "mapped_native_leaves": 51,
       "classifications": {
-        "eligible_missing": 35,
+        "eligible_missing": 17,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 33
+        "implemented_hosted_unverified": 51
       }
     },
     {
@@ -2130,10 +2130,26 @@
       "service": "docs",
       "command": "footer create",
       "native_command": "gog docs footer create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_footer_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Segment text sourced from arg, --file, or stdin; placement planning done locally before the fixed-schema request; fix prior 'requires_audit' label"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2161,10 +2177,26 @@
       "service": "docs",
       "command": "footer delete",
       "native_command": "gog docs footer delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_footer_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive but scoped to a single granted document's footer; fix prior 'requires_audit' label"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -2264,10 +2296,26 @@
       "service": "docs",
       "command": "header create",
       "native_command": "gog docs header create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_header_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Same helper path as footer create; placement planned locally; no raw endpoints"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2295,10 +2343,26 @@
       "service": "docs",
       "command": "header delete",
       "native_command": "gog docs header delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_header_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Single-document destructive edit with dry-run support; fix prior 'requires_audit' label"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -2473,10 +2537,26 @@
       "service": "docs",
       "command": "insert-date-chip",
       "native_command": "gog docs insert-date-chip",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_date_chip",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed YYYY-MM-DD date + normalized format enum; no user enumeration or sharing change; prior requires_audit label re-evaluated as unfounded"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2536,10 +2616,26 @@
       "service": "docs",
       "command": "insert-footnote",
       "native_command": "gog docs insert-footnote",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_footnote",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "WriteControl required-revision guard preserved; partial-failure path (footnote created but not populated) returns explicit error; table-target rejected"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2567,10 +2663,26 @@
       "service": "docs",
       "command": "insert-horizontal-rule",
       "native_command": "gog docs insert-horizontal-rule",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_horizontal_rule",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed two-request composition via shared runDocsBodyMutation helper; dry-run payload auditable"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2632,10 +2744,26 @@
       "service": "docs",
       "command": "insert-page-break",
       "native_command": "gog docs insert-page-break",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_page_break",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Batch queue path (queueDocsBatchRequests) and WriteControl revision guard preserved; in-table target rejected"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2663,10 +2791,26 @@
       "service": "docs",
       "command": "insert-person",
       "native_command": "gog docs insert-person",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_person",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Email is operator-supplied, not enumerated; no directory API call; fixed schema"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2694,10 +2838,26 @@
       "service": "docs",
       "command": "insert-section-break",
       "native_command": "gog docs insert-section-break",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_section_break",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Section type constrained by normalizeDocsSectionType; shared mutation helper preserves revision guard"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -2725,10 +2885,26 @@
       "service": "docs",
       "command": "insert-table",
       "native_command": "gog docs insert-table",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_insert_table",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Rows/cols \u003e=1 enforced; end-index resolution requires one doc get; no external fetch"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -3238,10 +3414,26 @@
       "service": "docs",
       "command": "table-column delete",
       "native_command": "gog docs table-column delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_column_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema; table/tab index resolution via docs.documents.get"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3269,10 +3461,26 @@
       "service": "docs",
       "command": "table-column insert",
       "native_command": "gog docs table-column insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_column_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema; parseDocsTableInsertAt is local validation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3331,10 +3539,26 @@
       "service": "docs",
       "command": "table-merge",
       "native_command": "gog docs table-merge",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_merge",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema range parsing; merge semantics need bounded range validation only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3362,10 +3586,26 @@
       "service": "docs",
       "command": "table-row delete",
       "native_command": "gog docs table-row delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_row_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema; destructive but scoped to selected document file grant"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3393,10 +3633,26 @@
       "service": "docs",
       "command": "table-row insert",
       "native_command": "gog docs table-row insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_row_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "--values-json path requires returned revision ID for WriteControl; merged-cell boundary checks are local"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3424,10 +3680,26 @@
       "service": "docs",
       "command": "table-row pin-header",
       "native_command": "gog docs table-row pin-header",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_row_pin_header",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema count validation (\u003e=0, \u003c= table rows) is local"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3486,10 +3758,26 @@
       "service": "docs",
       "command": "table-unmerge",
       "native_command": "gog docs table-unmerge",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_unmerge",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema unmerge request path only; revision ID concurrency check and dry-run inherited from runDocsTableMergeCommand/executeDocsTableRequests; selected-file (drive.file) variant applicable"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",

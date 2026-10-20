@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs: add 18 selected-document structural and table editing operations: headers/footers, footnotes, breaks, blank tables, person/date chips, row/column insertion/deletion, merge/unmerge and pinned headers. Exact tool/file grants and chat approval remain required; deletion requires destructive authority. Inline inputs only and uncertain writes are not retried. Fixture-tested, unverified live. (#97, thanks @Rajeev-SG)
+
 - Hosted Drive: expose native permission listing, sharing audit and user-permission audit for one explicitly granted file under existing drive.file scope. Preserve pagination and local user/domain filtering; reject folder enumeration, alternate file paths and media downloads. Chat reads require no write approval and recheck fresh authority. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
 
 - Apps Script: add native and hosted deployment update to an immutable version, preserving omitted description/manifest settings and supporting explicit description clearing. Exact deployment GET/PUT, account-wide destructive permission, one-use chat approval and no-retry behavior remain enforced. No concurrency precondition is available. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
