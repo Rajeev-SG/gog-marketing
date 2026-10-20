@@ -898,7 +898,7 @@ function App() {
           <div className="brand">
             gog-marketing<span> / private assistant</span>
           </div>
-          <h1>This account is not invited yet</h1>
+          <h1>Your workspace is temporarily unavailable</h1>
           <p role="alert">{message}</p>
           <button type="button" onClick={() => window.location.reload()}>
             Retry connection

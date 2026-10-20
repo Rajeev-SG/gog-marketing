@@ -627,6 +627,29 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     expect(apiBody.error).not.toContain("user_suspended");
   });
 
+  it("lets inactive tenants switch accounts without exposing protected content", async () => {
+    for (const status of ["suspended", "deleted"]) {
+      const env = await createNativeEnv();
+      const user = "user_switch_" + status;
+      await authenticatedRequest(`${ORIGIN}/`, user, env);
+      await (env.DB as unknown as Database)
+        .prepare("UPDATE hosted_tenants SET status = ?1 WHERE clerk_user_id = ?2")
+        .bind(status, user)
+        .run();
+      const response = await authenticatedRequest(
+        `${ORIGIN}/sign-in?switch=1&returnTo=%2Fchat`,
+        user,
+        env,
+      );
+      expect(response.status).toBe(200);
+      const html = await response.text();
+      expect(html).toContain('id="switch-signout"');
+      expect(html).not.toContain('id="tool-workspace"');
+      expect(html).not.toContain(user);
+      expect((await authenticatedRequest(`${ORIGIN}/api/tenant`, user, env)).status).toBe(403);
+    }
+  });
+
   it("denies access for deleted tenants and recovers when the tenant is reactivated", async () => {
     const env = await createNativeEnv();
     await authenticatedRequest(`${ORIGIN}/`, "user_deleted", env);

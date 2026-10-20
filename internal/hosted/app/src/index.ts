@@ -224,6 +224,25 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   switch (outcome.kind) {
     case "authenticated": {
       const { session } = outcome;
+      // Account recovery is public UI, not admission to an inactive workspace.
+      if (
+        path === "/sign-in" &&
+        (url.searchParams.get("switch") === "1" || url.searchParams.get("expired") === "1")
+      ) {
+        const config = buildHtmlConfig(env);
+        const headers = new Headers(outcome.headers);
+        headers.set("Content-Type", "text/html; charset=utf-8");
+        for (const [name, value] of Object.entries(securityHeaders(config.clerkDomain)))
+          headers.set(name, value);
+        return new Response(
+          renderSignIn(
+            config,
+            safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined),
+            true,
+          ),
+          { headers },
+        );
+      }
       if (session.tenant.status !== "active") {
         if (isBrowserGoogleCallback(request, path)) {
           return browserCallbackNotice(

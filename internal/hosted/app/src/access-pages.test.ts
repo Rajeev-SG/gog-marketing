@@ -1,3 +1,4 @@
+import vm from "node:vm";
 import { expect, it } from "vitest";
 import {
   renderLanding,
@@ -52,4 +53,49 @@ it("retains native Clerk with brand appearance, bounded retry and literal safe r
     expect(safeWorkspaceReturn(bad)).toBe("/");
     expect(renderSignIn(config, bad)).not.toContain('"fallbackRedirectUrl":"' + bad + '"');
   }
+});
+
+it("exposes sign-in retry after a stalled SDK without late mounting", async () => {
+  const nodes = new Map<string, { hidden: boolean; addEventListener: () => void }>();
+  const element = (id: string) => {
+    if (!nodes.has(id)) nodes.set(id, { hidden: id !== "sign-in", addEventListener: () => {} });
+    return nodes.get(id)!;
+  };
+  let load: (() => Promise<void>) | undefined;
+  let timeout: (() => void) | undefined;
+  let resolveLoad: (() => void) | undefined;
+  let mounted = false;
+  const context = vm.createContext({
+    document: { getElementById: element },
+    window: {
+      addEventListener: (_event: string, fn: () => Promise<void>) => {
+        load = fn;
+      },
+    },
+    Clerk: {
+      load: () =>
+        new Promise<void>((resolve) => {
+          resolveLoad = resolve;
+        }),
+      mountSignIn: () => {
+        mounted = true;
+      },
+    },
+    setTimeout: (fn: () => void, ms: number) => {
+      expect(ms).toBe(15000);
+      timeout = fn;
+      return 1;
+    },
+    clearTimeout: () => {},
+  });
+  vm.runInContext("window.Clerk=Clerk", context);
+  const script = renderSignIn(config).match(/<script>([\s\S]*?)<\/script>/)![1];
+  vm.runInContext(script, context);
+  const pending = load!();
+  timeout!();
+  expect(element("signin-error").hidden).toBe(false);
+  expect(element("sign-in").hidden).toBe(true);
+  resolveLoad!();
+  await pending;
+  expect(mounted).toBe(false);
 });
