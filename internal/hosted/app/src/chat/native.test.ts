@@ -83,14 +83,28 @@ beforeAll(async () => {
               url.pathname === "/api/v1/chat/completions"
             ) {
               providerCalls++;
-              expect(
-                ((await request.clone().json()) as { provider: unknown }).provider,
-              ).toMatchObject({ data_collection: "deny", zdr: true });
+              const payload = (await request.clone().json()) as {
+                provider: unknown;
+                model: string;
+                models?: unknown;
+              };
+              expect(payload.provider).toMatchObject({
+                data_collection: "deny",
+                zdr: true,
+                allow_fallbacks: false,
+                max_price: { prompt: 0, completion: 0, request: 0, image: 0, audio: 0 },
+              });
+              expect(payload.models).toBeUndefined();
+              expect([
+                "openrouter/free",
+                "minimax/minimax-m3.1-flash:free",
+                "nvidia/nemotron-3.5-lightning:free",
+              ]).toContain(payload.model);
               const chunk = {
                 id: "fixture-reply",
                 object: "chat.completion.chunk",
                 created: 1,
-                model: "openai/gpt-4.1-mini",
+                model: "minimax/minimax-m3.1-flash:free",
               };
               if (nextToolCall) {
                 const call = nextToolCall;
@@ -216,6 +230,7 @@ type Frame = {
   done?: boolean;
   error?: boolean;
   success?: boolean;
+  result?: unknown;
   messages?: { id: string; metadata?: { gogStopped?: boolean } }[];
 };
 
@@ -299,7 +314,8 @@ async function turn(socket: Socket, id: string, messages: unknown[]) {
       init: { method: "POST", body: JSON.stringify({ messages, trigger: "submit-message" }) },
     }),
   );
-  expect(await done).not.toHaveProperty("error", true);
+  const result = await done;
+  expect(result, JSON.stringify(result)).not.toHaveProperty("error", true);
 }
 
 it("keeps native streams/history intact while excluding silent revoked and expired recipients", async () => {
@@ -445,11 +461,17 @@ it("persists native write approval over reconnect and never dispatches an unappr
   const messages = await history(path, sessionCookie);
   expect(JSON.stringify(messages)).toContain("approval-requested");
   expect(JSON.stringify(messages)).toContain("native-write-approval");
+  expect((await modelRpc(socket, "selectModel", ["minimax-free"])).success).toBe(true);
+  expect(await history(path, sessionCookie)).toEqual(messages);
+
   const before = await db
     .prepare("SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'")
     .first<{ count: number }>();
   socket.close();
   socket = await open(path, sessionCookie);
+  expect((await modelRpc(socket, "modelSettings")).result).toMatchObject({
+    selectedKey: "minimax-free",
+  });
   expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
   // Native approval denial must settle the original tool, not execute it.
   socket.send(
@@ -683,4 +705,137 @@ it("admits two independent native cohort tenants and rejects foreign or revoked 
 
   sessionUsers.delete("sess_native_cohort_a");
   sessionUsers.delete("sess_native_cohort_b");
+});
+
+async function modelRpc(socket: Socket, method: string, args: unknown[] = []) {
+  const id = "model-rpc-" + crypto.randomUUID();
+  const response = frame(socket, (value) => value.id === id);
+  socket.send(JSON.stringify({ type: "rpc", id, method, args }));
+  return response;
+}
+
+it("persists allowed model selection per thread, rejects paid/forged choices, and keeps native history over reconnect", async () => {
+  const sessionCookie = await cookieFor("sess-native-models");
+  const headers = { Cookie: sessionCookie, Origin: origin, "Content-Type": "application/json" };
+  const paths: string[] = [];
+  for (const title of ["Model thread A", "Model thread B"]) {
+    const created = await mf.dispatchFetch(origin + "/api/chat/threads", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ title }),
+    });
+    expect(created.status).toBe(201);
+    const { thread } = (await created.json()) as { thread: { id: string } };
+    const meta = await mf.dispatchFetch(origin + "/api/chat/session?thread=" + thread.id, {
+      headers,
+    });
+    paths.push(
+      origin + "/agents/chat/" + ((await meta.json()) as { conversation: string }).conversation,
+    );
+  }
+  const a = await open(paths[0], sessionCookie),
+    b = await open(paths[1], sessionCookie);
+  const initial = await modelRpc(a, "modelSettings");
+  expect(initial.success).toBe(true);
+  expect(initial.result).toMatchObject({ selectedKey: "free-router", model: "openrouter/free" });
+  const before = providerCalls;
+  for (const choice of ["gpt41-mini", "openai/gpt-4.1-mini", "forged-model"]) {
+    expect((await modelRpc(a, "selectModel", [choice])).success).toBe(false);
+  }
+  expect(providerCalls).toBe(before);
+  const selected = await modelRpc(a, "selectModel", ["minimax-free"]);
+  expect(selected.success).toBe(true);
+  expect(selected.result).toMatchObject({
+    selectedKey: "minimax-free",
+    model: "minimax/minimax-m3.1-flash:free",
+  });
+  expect((await modelRpc(b, "modelSettings")).result).toMatchObject({ selectedKey: "free-router" });
+  await turn(a, "model-selected-turn", [
+    {
+      id: "model-user",
+      role: "user",
+      parts: [{ type: "text", text: "Keep this history while switching models" }],
+    },
+  ]);
+  const saved = await history(paths[0], sessionCookie);
+  expect(saved).toHaveLength(2);
+  a.close();
+  const reconnected = await open(paths[0], sessionCookie);
+  const persisted = await modelRpc(reconnected, "modelSettings");
+  expect(persisted.result).toMatchObject({
+    selectedKey: "minimax-free",
+    lastModelId: "minimax/minimax-m3.1-flash:free",
+  });
+  expect((await modelRpc(reconnected, "selectModel", ["nemotron-free"])).success).toBe(true);
+  expect(await history(paths[0], sessionCookie)).toEqual(saved);
+  revoked.add("sess-native-models");
+  const ended = closed(reconnected);
+  reconnected.send(
+    JSON.stringify({
+      type: "rpc",
+      id: "revoked-model-change",
+      method: "selectModel",
+      args: ["free-router"],
+    }),
+  );
+  expect(await ended).toBe(4401);
+  b.close();
+});
+
+it("enforces application-wide provider request limits before dispatch without losing the sent message", async () => {
+  const sessionCookie = await cookieFor("sess-native-model-limit");
+  const headers = { Cookie: sessionCookie, Origin: origin, "Content-Type": "application/json" };
+  const created = await mf.dispatchFetch(origin + "/api/chat/threads", {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ title: "Limited model conversation" }),
+  });
+  expect(created.status).toBe(201);
+  const { thread } = (await created.json()) as { thread: { id: string } };
+  const meta = await mf.dispatchFetch(origin + "/api/chat/session?thread=" + thread.id, {
+    headers,
+  });
+  const path =
+    origin + "/agents/chat/" + ((await meta.json()) as { conversation: string }).conversation;
+  const socket = await open(path, sessionCookie);
+  const db = await mf.getD1Database("DB");
+  await db
+    .prepare(
+      `INSERT INTO hosted_rate_limit_counters(scope_kind,scope_key,period,value,updated_at) VALUES('tenant','gog-chat:global',?1,50,?2) ON CONFLICT(scope_kind,scope_key,period) DO UPDATE SET value=50`,
+    )
+    .bind("model-requests-day:" + Math.floor(Date.now() / 86400000), new Date().toISOString())
+    .run();
+  const before = providerCalls;
+  const response = frame(
+    socket,
+    (value) =>
+      value.type === "cf_agent_use_chat_response" &&
+      value.id === "model-limit-turn" &&
+      !!value.error,
+  );
+  socket.send(
+    JSON.stringify({
+      type: "cf_agent_use_chat_request",
+      id: "model-limit-turn",
+      init: {
+        method: "POST",
+        body: JSON.stringify({
+          messages: [
+            {
+              id: "limited-user",
+              role: "user",
+              parts: [{ type: "text", text: "A saved but limited request" }],
+            },
+          ],
+          trigger: "submit-message",
+        }),
+      },
+    }),
+  );
+  expect(await response).toHaveProperty("error", true);
+  expect(providerCalls).toBe(before);
+  expect(JSON.stringify(await history(path, sessionCookie))).toContain(
+    "A saved but limited request",
+  );
+  socket.close();
 });

@@ -16,13 +16,15 @@
  * Conversation names are server-derived opaque SHA-256 digests of the
  * internal tenant id, so clients never learn the raw tenant identifier.
  */
+import { defaultChatModelKey, selectChatModel, type ChatModelEnv } from "./models.js";
+export { DEFAULT_CHAT_MODEL } from "./models.js";
 import type { McpEnv } from "../mcp.js";
 import { createClerkClient } from "@clerk/backend";
 import { HostedRepository } from "../../../state/src/repository.js";
 import type { Tenant } from "../../../state/src/types.js";
 import { authenticate, type AuthOutcome, type ClerkEnv } from "../auth.js";
 
-export interface ChatEnv extends ClerkEnv, McpEnv {
+export interface ChatEnv extends ClerkEnv, McpEnv, ChatModelEnv {
   /** Exact Clerk user id of the single permitted chat owner. Required. */
   CHAT_OWNER_USER_ID?: string;
   /**
@@ -33,7 +35,7 @@ export interface ChatEnv extends ClerkEnv, McpEnv {
   CHAT_COHORT_USER_IDS?: string;
   /** OpenRouter secret key; model calls fail closed without it. */
   OPENROUTER_API_KEY?: string;
-  /** OpenRouter model; defaults to DEFAULT_CHAT_MODEL. */
+  /** Legacy preference: only curated free IDs can set the initial model. Paid selection requires explicit owner/budget authorization. */
   OPENROUTER_MODEL?: string;
   /** Durable Object namespace bound by index/worker entrypoints. */
   Chat?: DurableObjectNamespace;
@@ -41,12 +43,9 @@ export interface ChatEnv extends ClerkEnv, McpEnv {
   ASSETS?: Fetcher;
 }
 
-export const DEFAULT_CHAT_MODEL = "openai/gpt-4.1-mini";
-
 /** Safe model identifier: operator-configured chat model or the default. */
 export function chatModelIdentifier(env: ChatEnv): string {
-  const configured = (env.OPENROUTER_MODEL ?? "").trim();
-  return configured || DEFAULT_CHAT_MODEL;
+  return selectChatModel(defaultChatModelKey(env), env, "").id;
 }
 
 export type ClerkSessionCheck =

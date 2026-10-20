@@ -395,6 +395,118 @@ footer {
   color: #526557;
   margin: 8px 3px;
 }
+.model-selector {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 800px;
+  width: 100%;
+  margin: 10px auto 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-card);
+  display: grid;
+  gap: 10px;
+}
+.model-selector-main {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  display: grid;
+  gap: 8px;
+}
+.model-select-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.model-select-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.model-select-field select {
+  flex: 1 1 220px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-card);
+  color: var(--text);
+  font-size: 13px;
+}
+.model-select-field select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.model-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.model-free {
+  background: var(--status-ok-soft);
+  color: var(--status-ok);
+}
+.model-paid {
+  background: var(--status-warn-soft);
+  color: var(--status-warn);
+}
+.model-status {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.model-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.model-description {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.model-error {
+  margin: 0;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+  font-size: 12px;
+}
+.model-confirm {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--action-soft);
+}
+.model-confirm p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+}
+.model-confirm strong {
+  color: var(--text);
+}
+.model-confirm .approval-actions button {
+  min-height: 36px;
+  background: var(--surface-card);
+  border-color: var(--border-strong);
+}
 .turn-note {
   border-top: 1px solid #ced5c1;
   padding-top: 8px;
@@ -690,4 +802,15 @@ footer {
   width: 100%;
   margin-block: 4px;
   font-size: 13px;
+}
+
+.model-details span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.model-select-field select:focus,
+.model-select-field select:focus-visible {
+  outline: 2px solid var(--action);
+  outline-offset: 2px;
 }

@@ -42,7 +42,7 @@ authentication and live session status checks happen server-side. No
 browser-supplied identity can select another conversation. Drafts are tab-local
 and account-scoped.
 
-The model defaults to `openai/gpt-4.1-mini`. Limits remain 10 model starts per
+The model defaults to `openrouter/free`. Each conversation saves its server-validated model choice; the selector also offers curated free tool-capable alternatives. `OPENROUTER_MODEL` can only select a curated free initial preference, never authorize a paid model. Limits remain 10 model starts per
 minute, 100 per UTC day, and 1,000 per UTC calendar month per tenant; creating
 threads or changing sessions cannot multiply those allowances. Current legacy
 daily usage is conservatively carried into the new monthly counter. Requests
@@ -88,7 +88,7 @@ must never fall back to the frontend's HTML. Existing Google OAuth callback,
 connection, grant and external `/mcp` routes retain their original behaviour.
 
 See the operator runbook for provisioning `OPENROUTER_API_KEY`, setting
-`CHAT_OWNER_USER_ID`/`OPENROUTER_MODEL`, optionally setting
+`CHAT_OWNER_USER_ID`, optionally setting
 `CHAT_COHORT_USER_IDS`, preserving existing Worker variables, and deploying.
 Never copy `.dev.vars`, `.owner-access.txt`, credentials or
 standalone conversation data into this repository or its public assets.
@@ -191,3 +191,55 @@ public `/agents` URLs or exposed as browser-callable methods.
 Google verification preparation is in [google-verification/README.md](google-verification/README.md).
 It distinguishes checked console facts, prepared drafts and genuine owner/external
 gates. Do not call Testing status or draft legal text Google production approval.
+
+## Model selection and hard limits (#108)
+
+The staged code defaults to `openrouter/free`; it does not deploy or silently
+change the existing production owner/model configuration. Model IDs are owned by
+the server catalogue, not browser text. Switching preserves messages, drafts,
+thread identity and one-use Google approvals. Choices are thread-scoped, while
+budgets are tenant/application-wide and never reset on model/thread switches.
+
+Every actual OpenRouter completion HTTP request—including native tool steps and
+approval continuations—reserves capacity atomically in existing D1 rate counters:
+10/minute, 100/UTC day and 1000/UTC month per tenant; 20/minute and 50/UTC day for
+the application; 2 million reserved tokens/day per tenant and 10 million/day for
+the application. Request tokens are conservatively reserved from serialized UTF-8
+bytes plus framing and the 2048-token output cap, not billed-token telemetry.
+Failed/cancelled requests can retain conservative reservations. SDK retries are
+disabled, and errors never trigger an automatic model or paid fallback.
+
+Privacy remains `zdr: true`, `data_collection: deny`, strict parameter support,
+and zero prompt/completion/request/image/audio price filters for free models.
+A free model may have no privacy-compatible endpoint or available capacity;
+that produces a visible, zero-paid fallback error rather than relaxed privacy.
+Provider limits may be lower than these local ceilings. These are shared free
+allowances, not a claim of unlimited production capacity.
+
+Paid models are disabled by default and hidden from non-owner users. The
+configured owner can opt in only when all these server-side conditions hold:
+
+- `CHAT_PAID_MODELS_ENABLED=true`;
+- positive integer `CHAT_TENANT_MONTHLY_BUDGET_MICRO_USD` and
+  `CHAT_GLOBAL_MONTHLY_BUDGET_MICRO_USD` (one USD = 1000000 micro-USD);
+- a read-only `GET /api/v1/key` preflight verifies an **existing** finite monthly
+  or lifetime key ceiling no higher than the smaller configured tenant/app cap,
+  with BYOK spend included and remaining capacity;
+- the request passes atomic tenant/global monthly cost reservations, fixed text
+  model/provider and per-unit price ceilings, token bounds, and fresh live Clerk
+  and thread authorization before dispatch.
+
+No key, credit, subscription, provider or production setting is changed by this
+feature. Using one shared key deliberately means the provider ceiling may be
+stricter than the application ceiling. The paid selection requires an additional
+explicit UI confirmation; the backend checks apply even if the UI is bypassed.
+Key-limit/price-policy checks fail closed. The only paid choice is the curated
+non-reasoning GPT-4.1 Mini OpenAI endpoint; media, caching directives, web-search
+plugins and model-fallback lists are not accepted in completion payloads.
+
+Validation uses real native Workerd/Agents RPC and D1 with explicit synthetic
+Clerk/OpenRouter fixtures, installed SDK request serialization, and isolated
+browser interaction of the real selector component at 390/1280px. This is not
+live OpenRouter or Google verification. Strict free-provider availability,
+production key-limit configuration and real-user production acceptance remain
+operator-dependent; never claim a paid call or deployment from fixture success.
