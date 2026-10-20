@@ -214,7 +214,13 @@ export function renderSignIn(
         rootBox: { width: "100%" },
         cardBox: { width: "100%", boxShadow: "none" },
         card: { boxShadow: "none", border: 0, padding: 0 },
-        headerTitle: { fontSize: "1.25rem", lineHeight: "1.4", letterSpacing: "normal", margin: 0 },
+        // The shared access-page h1 rule otherwise outranks Clerk's generated class.
+        headerTitle: {
+          fontSize: "1.25rem !important",
+          lineHeight: "1.4 !important",
+          letterSpacing: "normal !important",
+          margin: "0 !important",
+        },
         headerSubtitle: { fontSize: "0.875rem", lineHeight: "1.5" },
         footerAction: { display: "none" },
       },

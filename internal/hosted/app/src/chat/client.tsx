@@ -441,7 +441,7 @@ function Chat({
               </div>
               {chat.error && (
                 <p role="alert" className="error">
-                  {chat.error.message || "The response failed. Please try again."}
+                  {safeModelFailureMessage(chat.error.message)}
                 </p>
               )}
               <ComposerPrimitive.Root className="composer" data-keyboard-focus={keyboardFocus}>

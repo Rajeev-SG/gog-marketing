@@ -86,10 +86,10 @@ it("clears the loader before native mount and constrains the provider heading ty
       ) => {
         expect(target.textContent).toBe("");
         expect(options.appearance.elements.headerTitle).toMatchObject({
-          fontSize: "1.25rem",
-          lineHeight: "1.4",
-          letterSpacing: "normal",
-          margin: 0,
+          fontSize: "1.25rem !important",
+          lineHeight: "1.4 !important",
+          letterSpacing: "normal !important",
+          margin: "0 !important",
         });
         expect(options.appearance.elements.headerSubtitle.fontSize).toBe("0.875rem");
         mounted = true;
