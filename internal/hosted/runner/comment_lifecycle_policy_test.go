@@ -133,15 +133,18 @@ func TestCommentLifecycleHTTPGuard(t *testing.T) {
 			}
 
 			good := "https://" + host + path
+
 			if binding.Name == "docs_comments_locate" {
 				wrongHost := "docs.googleapis.com"
 				if host == wrongHost {
 					wrongHost = nativeDocsSlidesDriveHost
 				}
+
 				crossed, crossErr := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://"+wrongHost+path, nil)
 				if crossErr != nil {
 					t.Fatal(crossErr)
 				}
+
 				if crossErr = guard(crossed); crossErr == nil {
 					t.Fatal("locate admitted host/path cross product")
 				}
