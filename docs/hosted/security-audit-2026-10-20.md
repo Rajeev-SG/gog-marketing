@@ -46,3 +46,31 @@ regression. The new native management test passes independently. Final affected
 lint/type/build/app checks, bounded Standards+Spec review and exact-head GitHub CI
 still gate integration. External live Clerk/Google/MCP/provider and production
 acceptance remain separate; no live compromise/rotation conclusion is inferred.
+
+## Subsequent OSS dependency findings / bounded fixes
+
+The local OSV/Trivy baseline exposed pgx5.7.6 critical upstream decoder
+advisories GO-2026-4771/4772, the low-severity simple-protocol dollar-quote SQL
+advisory GO-2026-5004, x/net0.59.0 HTTP/2 advisories and Go1.27.1 runtime
+advisories. Upgrade pgx to5.9.2 (fixes all three), x/net to0.60.0 and the repository
+toolchain plus both digest-pinned Go container builders to1.27.3. The Go1.26.0
+language minimum remains unchanged; no other module versions changed.
+
+`TestPgxProtocolSecurityMalformedDecode` reproduces old-version panics for a
+short FunctionCall and negative Bind/FunctionCall argument lengths, then passes
+with the patched module. Positive encoded Bind/FunctionCall round-trips and the
+entire local control-plane package also pass. These directly exercise upstream
+**server-side** protocol decoders. The app is a PostgreSQL client and does not
+expose Backend.Receive to untrusted clients; no remote app-exploitability claim
+is made. Production SQL uses fixed parameterized queries, not attacker-authored
+dollar-quoted simple-protocol templates. The compatible package patch is still
+preferred to retaining an affected dependency.
+
+Authority: official Go vulnerability JSONs at
+<https://vuln.go.dev/ID/GO-2026-4771.json>,
+<https://vuln.go.dev/ID/GO-2026-4772.json>,
+<https://vuln.go.dev/ID/GO-2026-5004.json>; official Go module proxy versions and
+checksums; Go stable-release feed and official multi-platform Docker manifest.
+The source release endpoint for pgx5.9.0 returned404; the fixed5.9.2 module/tag
+is verified by the official proxy (commit0aeabbcf11d859229c1f0b20e710d3596c76bf27).
+Final full CI, fresh image/dependency scans and bounded review remain gates.
