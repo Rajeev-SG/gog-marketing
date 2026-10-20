@@ -95,16 +95,14 @@ beforeAll(async () => {
                 max_price: { prompt: 0, completion: 0, request: 0, image: 0, audio: 0 },
               });
               expect(payload.models).toBeUndefined();
-              expect([
-                "openrouter/free",
-                "minimax/minimax-m3.1-flash:free",
-                "nvidia/nemotron-3.5-lightning:free",
-              ]).toContain(payload.model);
+              expect(["openrouter/free", "xingchen-agi/xing4.0-29b-a4b:free"]).toContain(
+                payload.model,
+              );
               const chunk = {
                 id: "fixture-reply",
                 object: "chat.completion.chunk",
                 created: 1,
-                model: "minimax/minimax-m3.1-flash:free",
+                model: "xingchen-agi/xing4.0-29b-a4b:free",
               };
               if (nextToolCall) {
                 const call = nextToolCall;
@@ -461,7 +459,7 @@ it("persists native write approval over reconnect and never dispatches an unappr
   const messages = await history(path, sessionCookie);
   expect(JSON.stringify(messages)).toContain("approval-requested");
   expect(JSON.stringify(messages)).toContain("native-write-approval");
-  expect((await modelRpc(socket, "selectModel", ["minimax-free"])).success).toBe(true);
+  expect((await modelRpc(socket, "selectModel", ["xing-free"])).success).toBe(true);
   expect(await history(path, sessionCookie)).toEqual(messages);
 
   const before = await db
@@ -470,7 +468,7 @@ it("persists native write approval over reconnect and never dispatches an unappr
   socket.close();
   socket = await open(path, sessionCookie);
   expect((await modelRpc(socket, "modelSettings")).result).toMatchObject({
-    selectedKey: "minimax-free",
+    selectedKey: "xing-free",
   });
   expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
   // Native approval denial must settle the original tool, not execute it.
@@ -739,15 +737,21 @@ it("persists allowed model selection per thread, rejects paid/forged choices, an
   expect(initial.success).toBe(true);
   expect(initial.result).toMatchObject({ selectedKey: "free-router", model: "openrouter/free" });
   const before = providerCalls;
-  for (const choice of ["gpt41-mini", "openai/gpt-4.1-mini", "forged-model"]) {
+  for (const choice of [
+    "gpt41-mini",
+    "openai/gpt-4.1-mini",
+    "forged-model",
+    "minimax-free",
+    "nemotron-free",
+  ]) {
     expect((await modelRpc(a, "selectModel", [choice])).success).toBe(false);
   }
   expect(providerCalls).toBe(before);
-  const selected = await modelRpc(a, "selectModel", ["minimax-free"]);
+  const selected = await modelRpc(a, "selectModel", ["xing-free"]);
   expect(selected.success).toBe(true);
   expect(selected.result).toMatchObject({
-    selectedKey: "minimax-free",
-    model: "minimax/minimax-m3.1-flash:free",
+    selectedKey: "xing-free",
+    model: "xingchen-agi/xing4.0-29b-a4b:free",
   });
   expect((await modelRpc(b, "modelSettings")).result).toMatchObject({ selectedKey: "free-router" });
   await turn(a, "model-selected-turn", [
@@ -763,10 +767,10 @@ it("persists allowed model selection per thread, rejects paid/forged choices, an
   const reconnected = await open(paths[0], sessionCookie);
   const persisted = await modelRpc(reconnected, "modelSettings");
   expect(persisted.result).toMatchObject({
-    selectedKey: "minimax-free",
-    lastModelId: "minimax/minimax-m3.1-flash:free",
+    selectedKey: "xing-free",
+    lastModelId: "xingchen-agi/xing4.0-29b-a4b:free",
   });
-  expect((await modelRpc(reconnected, "selectModel", ["nemotron-free"])).success).toBe(true);
+  expect((await modelRpc(reconnected, "selectModel", ["free-router"])).success).toBe(true);
   expect(await history(paths[0], sessionCookie)).toEqual(saved);
   revoked.add("sess-native-models");
   const ended = closed(reconnected);

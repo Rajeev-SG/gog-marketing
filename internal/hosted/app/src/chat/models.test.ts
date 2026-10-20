@@ -18,7 +18,12 @@ const env = {
 };
 it("uses a server-owned free default, hides paid from cohorts and rejects forged model ids", () => {
   expect(DEFAULT_CHAT_MODEL).toBe("openrouter/free");
-  expect(availableChatModels({}, "cohort").map((x) => x.free)).toEqual([true, true, true]);
+  expect(availableChatModels({}, "cohort").every((x) => x.free)).toBe(true);
+  expect(
+    availableChatModels({}, "cohort")
+      .filter((x) => x.enabled)
+      .map((x) => x.key),
+  ).toEqual(["free-router", "xing-free"]);
   expect(availableChatModels(env, "owner").find((x) => !x.free)?.enabled).toBe(false);
   expect(() => selectChatModel("openai/gpt-4.1-mini", env, "owner", true)).toThrow();
   expect(() => selectChatModel("gpt41-mini", env, "cohort", true)).toThrow();
@@ -111,4 +116,22 @@ it("rejects relaxed privacy, media, forged fallback and uncapped paid routing be
   );
   expect(reservation.paid).toBe(true);
   expect(reservation.costMicroUsd).toBeGreaterThan(0);
+});
+
+it("disables known privacy-incompatible free choices without relaxing policy or silently changing a thread", () => {
+  for (const key of ["minimax-free", "nemotron-free"]) {
+    const choice = availableChatModels({}, "cohort").find((model) => model.key === key);
+    expect(choice).toMatchObject({ key, free: true, enabled: false });
+    expect(choice?.disabledReason).toContain("zero-data-retention");
+    expect(() => selectChatModel(key, {}, "cohort")).toThrow("No eligible provider");
+  }
+  const model = selectChatModel("xing-free", {}, "cohort");
+  expect(model.id).toBe("xingchen-agi/xing4.0-29b-a4b:free");
+  expect(modelProviderSettings(model).provider).toMatchObject({
+    zdr: true,
+    data_collection: "deny",
+    allow_fallbacks: false,
+    require_parameters: true,
+    max_price: { prompt: 0, completion: 0, request: 0, image: 0, audio: 0 },
+  });
 });
