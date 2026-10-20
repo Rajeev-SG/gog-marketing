@@ -21,7 +21,7 @@
     "@assistant-ui/react-markdown": "0.14.21",
     "@cloudflare/ai-chat": "0.12.1",
     "@openrouter/ai-sdk-provider": "3.1.0",
-    "agents": "0.28.0",
+    "agents": "0.28.1",
     "ai": "7.0.138",
     "react": "19.3.0",
     "react-dom": "19.3.0",
