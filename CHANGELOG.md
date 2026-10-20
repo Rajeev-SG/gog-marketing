@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted security: patch the transitive MCP OAuth credential-forwarding advisory with agents0.28.1 and patched MCP peers; keep remote MCP management inaccessible to chat clients. Native-runtime regression covers denied inherited management/lifecycle RPCs and private routes while retaining model/history access. No production settings or Google scopes change. (#106, #110, thanks @Rajeev-SG)
+
 - Hosted chat: add a per-conversation model selector with openrouter/free default, curated free alternatives, preserved history/drafts/Google approvals, strict privacy and no automatic paid fallback. Count provider steps with atomic shared/tenant request, token and cost budgets. Paid models require explicit owner opt-in, verified existing provider hard caps and configured budgets; no production settings are changed. Fixture-verified native RPC/D1/SDK and mobile/desktop selector behavior; live provider acceptance remains separate. (#108, #110, thanks @Rajeev-SG)
 
 - Hosted workspace: finish 68 remaining eligible Docs/Drive/Sheets/Slides operations in a coherent batch, preserving typed native handlers, selected-file and exact-tool grants, destructive approvals, existing scopes and no-replay writes. Includes structured editing, same-file table/value operations, raw reads, sharing and file workflows. Precisely classify two authorization-design blockers (Docs secondary file chips and copy-then-edit Slides templates); no eligible inventory is left unexplained. Fixture-tested, unverified live; chat starter allowlist unchanged. (#97, #110, thanks @Rajeev-SG)
