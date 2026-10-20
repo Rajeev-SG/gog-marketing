@@ -9,6 +9,8 @@ import (
 
 	"google.golang.org/api/docs/v1"
 	gapi "google.golang.org/api/googleapi"
+
+	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
 var errExecutorTestPermanent = errors.New("permanent")
@@ -281,4 +283,16 @@ func queuedError(errs []error, call int) error {
 	}
 
 	return errs[call]
+}
+
+func TestExecutorWithoutRetriesPreservesUncertainWrite(t *testing.T) {
+	t.Parallel()
+	failure := &gapi.Error{Code: 503, Message: "uncertain write"}
+	backend := &fakeDocumentBackend{updateErrors: []error{failure, nil}}
+	executor := NewExecutor(backend)
+
+	_, err := executor.BatchUpdate(googleapi.WithoutRetries(context.Background()), "selected-doc", []*docs.Request{{InsertText: &docs.InsertTextRequest{Text: "once"}}})
+	if !errors.Is(err, failure) || backend.updateCalls != 1 {
+		t.Fatalf("write replayed: calls=%d err=%v", backend.updateCalls, err)
+	}
 }

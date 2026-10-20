@@ -52,11 +52,11 @@ func TestBaselineMatrix(t *testing.T) {
 	if matrix.NativeLeafCount != 360 {
 		t.Fatalf("native leaf count = %d, want 360", matrix.NativeLeafCount)
 	}
-	if matrix.HostedToolCount != 233 || matrix.TotalHostedCatalogCount != 271 || matrix.ExcludedHostedToolCount != 38 {
-		t.Fatalf("hosted counts = %d/%d/%d, want 233/271/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
+	if matrix.HostedToolCount != 301 || matrix.TotalHostedCatalogCount != 339 || matrix.ExcludedHostedToolCount != 38 {
+		t.Fatalf("hosted counts = %d/%d/%d, want 301/339/38", matrix.HostedToolCount, matrix.TotalHostedCatalogCount, matrix.ExcludedHostedToolCount)
 	}
-	if matrix.MappedNativeLeafCount != 243 || matrix.MappedHostedToolCount != 233 {
-		t.Fatalf("mapped counts = %d native leaves/%d tools, want 243/233", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
+	if matrix.MappedNativeLeafCount != 311 || matrix.MappedHostedToolCount != 301 {
+		t.Fatalf("mapped counts = %d native leaves/%d tools, want 311/301", matrix.MappedNativeLeafCount, matrix.MappedHostedToolCount)
 	}
 	if matrix.Classifications["unclassified"] != 0 || len(matrix.UnmappedHostedTools) != 0 {
 		t.Fatalf("matrix has unclassified native commands or unmapped hosted tools: %+v/%v", matrix.Classifications, matrix.UnmappedHostedTools)
@@ -90,7 +90,7 @@ func TestEveryActiveHostedToolMapped(t *testing.T) {
 			t.Fatalf("%s %s claims live verification", leaf.Service, leaf.Command)
 		}
 	}
-	for service, count := range map[string]int{"analytics": 32, "appscript": 12, "bigquery": 6, "docs": 54, "drive": 17, "forms": 10, "searchconsole": 8, "sheets": 32, "slides": 13, "tagmanager": 34, "tasks": 15} {
+	for service, count := range map[string]int{"analytics": 32, "appscript": 12, "bigquery": 6, "docs": 62, "drive": 24, "forms": 10, "searchconsole": 8, "sheets": 56, "slides": 42, "tagmanager": 34, "tasks": 15} {
 		found := 0
 		for name := range mapped {
 			if len(name) > len(service)+1 && name[:len(service)+1] == service+"_" {
@@ -244,5 +244,28 @@ func TestDocsStructuralTableBatchMapped(t *testing.T) {
 	}
 	if len(expected) != 0 {
 		t.Fatalf("missing structural/table operations: %v", expected)
+	}
+}
+
+func TestExistingEligibleInventoryIsExhausted(t *testing.T) {
+	matrix := canonicalMatrix(t)
+	if matrix.Classifications["eligible_missing"] != 0 || matrix.Classifications["implementation_design_required"] != 41 {
+		t.Fatalf("remaining inventory not classified: %v", matrix.Classifications)
+	}
+	blockers := map[string]bool{"docs insert-file-chip": false, "slides create-from-template": false}
+	for _, leaf := range matrix.Leaves {
+		key := leaf.Service + " " + leaf.Command
+		if _, exists := blockers[key]; !exists {
+			continue
+		}
+		if leaf.Status != "implementation_design_required" || leaf.HostedTool != nil || leaf.LiveVerified || leaf.EngineeringReview == nil || leaf.EngineeringReview.ScopeBoundary == "outside_current_allowlist" {
+			t.Fatalf("incorrect authorization blocker %+v", leaf)
+		}
+		blockers[key] = true
+	}
+	for key, found := range blockers {
+		if !found {
+			t.Fatalf("missing blocker %s", key)
+		}
 	}
 }

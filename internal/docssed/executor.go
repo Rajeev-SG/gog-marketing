@@ -11,6 +11,8 @@ import (
 
 	"google.golang.org/api/docs/v1"
 	gapi "google.golang.org/api/googleapi"
+
+	"github.com/openclaw/gogcli/internal/googleapi"
 )
 
 const (
@@ -129,7 +131,7 @@ func (e *Executor) retry(ctx context.Context, operation func() error) error {
 		}
 		lastErr = err
 
-		if !isRetryableError(err) {
+		if googleapi.RetriesDisabled(ctx) || !isRetryableError(err) {
 			return err
 		}
 

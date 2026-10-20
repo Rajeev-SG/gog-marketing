@@ -134,6 +134,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
 	nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
 	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(), nativeDrivePermissionReadBindings(),
+	nativeDocsDriveRemainingBindings(), nativeSlidesRemainingBindings(), nativeSlidesTableRemainingBindings(), nativeSheetsRemainingBindings(),
 )...)
 
 var (
@@ -144,6 +145,11 @@ var (
 	calendarResourceID       = regexp.MustCompile(`^[A-Za-z0-9._@#+-]{1,256}$`)
 	crossFileFormula         = regexp.MustCompile(`(?i)\bIMPORTRANGE\s*\(`)
 )
+
+func isCrossFileFormulaValue(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	return (strings.HasPrefix(trimmed, "=") || strings.HasPrefix(trimmed, "+")) && crossFileFormula.MatchString(trimmed)
+}
 
 func nativeBinding(name string) (NativeToolBinding, bool) {
 	for _, binding := range nativeToolBindings {
@@ -239,7 +245,7 @@ func validateToolInvocation(invocation *ToolInvocation) error {
 			for _, row := range rows {
 				for _, value := range row {
 					text, isText := value.(string)
-					if isText && strings.HasPrefix(strings.TrimSpace(text), "=") && crossFileFormula.MatchString(text) {
+					if isText && isCrossFileFormulaValue(text) {
 						return invalidf("secondary file grant is required")
 					}
 				}
@@ -355,7 +361,7 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		switch invocation.Name {
-		case "drive_revisions_list", "drive_revisions_get", "drive_permissions", "drive_audit_sharing", "drive_audit_user":
+		case "drive_revisions_list", "drive_revisions_get", "drive_permissions", "drive_audit_sharing", "drive_audit_user", "slides_raw", "sheets_raw":
 			if alt, present := request.URL.Query()["alt"]; present && (len(alt) != 1 || alt[0] != "json") {
 				return native.ErrDenied
 			}
@@ -401,7 +407,7 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			}
 		}
 
-		allowed := slices.Contains(paths, path)
+		allowed := nativeRemainingToolPathAllowed(invocation, request, paths, path)
 		// Legacy Sheets value reads/updates span any A1 suffix under the exact
 		// selected spreadsheet. Newer Sheets operations admit a precise path
 		// instead, so their endpoints cannot be reconstructed this loosely.
@@ -446,6 +452,14 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 // admitWriteRequestMethod narrows each write tool to the declared mutating HTTP
 // method and, for Sheets values actions, an exact native action suffix.
 func admitWriteRequestMethod(name, path, method string) error {
+	if err := admitSheetsRemainingRequestMethod(name, path, method); err != nil {
+		return err
+	}
+
+	if err := admitSlidesRemainingMethod(name, path, method); err != nil {
+		return err
+	}
+
 	switch name {
 	case "drive_copy":
 		copyPath := strings.HasSuffix(path, "/copy")
@@ -481,7 +495,7 @@ func admitWriteRequestMethod(name, path, method string) error {
 		if method != http.MethodPost || !strings.HasSuffix(path, ":batchUpdate") {
 			return native.ErrDenied
 		}
-	case "docs_table_row_insert", "docs_table_row_delete", "docs_table_column_insert", "docs_table_column_delete", "docs_table_merge", "docs_table_unmerge", "docs_table_row_pin_header", "docs_insert_footnote", "docs_insert_horizontal_rule", "docs_insert_page_break", "docs_insert_section_break", "docs_insert_table", "docs_insert_person", "docs_insert_date_chip", "docs_header_create", "docs_footer_create", "docs_header_delete", "docs_footer_delete", "sheets_named_ranges_add", "sheets_named_ranges_update", "sheets_named_ranges_delete", "sheets_update_note", "sheets_merge", "sheets_unmerge", "sheets_resize_columns", "sheets_resize_rows", "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab", "slides_replace_text", "forms_add_question", "forms_delete_question", "docs_add_tab", "docs_rename_tab", "docs_delete_tab", "docs_named_range_create", "docs_named_range_delete", "docs_named_range_replace", "docs_insert", "docs_delete", "docs_clear", "docs_find_replace", "docs_format", "docs_page_layout", "docs_section_columns":
+	case "docs_table_row_insert", "docs_table_row_delete", "docs_table_column_insert", "docs_table_column_delete", "docs_table_merge", "docs_table_unmerge", "docs_table_row_pin_header", "docs_insert_footnote", "docs_insert_horizontal_rule", "docs_insert_page_break", "docs_insert_section_break", "docs_insert_table", "docs_insert_person", "docs_insert_date_chip", "docs_header_create", "docs_footer_create", "docs_header_delete", "docs_footer_delete", "sheets_named_ranges_add", "sheets_named_ranges_update", "sheets_named_ranges_delete", "sheets_update_note", "sheets_merge", "sheets_unmerge", "sheets_resize_columns", "sheets_resize_rows", "sheets_rename_tab", "sheets_delete_tab", "sheets_number_format_range", "sheets_freeze", "sheets_reorder_tab", "slides_replace_text", "slides_table_border_style", "slides_table_cell_style", "slides_table_column_delete", "slides_table_column_insert", "slides_table_column_size", "slides_table_create", "slides_table_merge", "slides_table_row_delete", "slides_table_row_insert", "slides_table_row_size", "slides_table_unmerge", "forms_add_question", "forms_delete_question", "docs_add_tab", "docs_rename_tab", "docs_delete_tab", "docs_named_range_create", "docs_named_range_delete", "docs_named_range_replace", "docs_insert", "docs_delete", "docs_clear", "docs_find_replace", "docs_format", "docs_page_layout", "docs_section_columns":
 		batch := strings.HasSuffix(path, ":batchUpdate")
 		if (batch && method != http.MethodPost) || (!batch && method != http.MethodGet) {
 			return native.ErrDenied
@@ -608,7 +622,7 @@ func (s *Server) verifyNativeDriveTrash(ctx context.Context, req *Request) outco
 }
 
 func validateSupplementalToolAuthorization(invocation *ToolInvocation) error {
-	for _, check := range []func(*ToolInvocation) error{validateAdminReplacement, validateNativeNoteClear, validateAppScriptExecution, validateNativeDocsRangeClear} {
+	for _, check := range []func(*ToolInvocation) error{validateAdminReplacement, validateNativeNoteClear, validateAppScriptExecution, validateNativeDocsRangeClear, validateRemainingDocsClear, validateSlidesRemainingClear} {
 		if err := check(invocation); err != nil {
 			return err
 		}

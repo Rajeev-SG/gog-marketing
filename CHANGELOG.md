@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted workspace: finish 68 remaining eligible Docs/Drive/Sheets/Slides operations in a coherent batch, preserving typed native handlers, selected-file and exact-tool grants, destructive approvals, existing scopes and no-replay writes. Includes structured editing, same-file table/value operations, raw reads, sharing and file workflows. Precisely classify two authorization-design blockers (Docs secondary file chips and copy-then-edit Slides templates); no eligible inventory is left unexplained. Fixture-tested, unverified live; chat starter allowlist unchanged. (#97, #110, thanks @Rajeev-SG)
+
 - Hosted Docs/Drive: complete 14 selected-file comment lifecycle operations through native handlers, including quote location in Docs. Require existing drive.file scope, exact tool/file grants, write approval and destructive authority for deletion. Inline bounded text only; no raw anchors or local files, and uncertain writes are not retried. Fixture-tested, unverified live; not added to the integrated chat starter allowlist. (#97, thanks @Rajeev-SG)
 
 - Hosted Docs: add 18 selected-document structural and table editing operations: headers/footers, footnotes, breaks, blank tables, person/date chips, row/column insertion/deletion, merge/unmerge and pinned headers. Exact tool/file grants and chat approval remain required; deletion requires destructive authority. Inline inputs only and uncertain writes are not retried. Fixture-tested, unverified live. (#97, thanks @Rajeev-SG)

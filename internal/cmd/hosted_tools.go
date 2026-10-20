@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alecthomas/kong"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	"github.com/openclaw/gogcli/internal/app"
@@ -93,6 +94,10 @@ func hostedExistingTools() []mcpToolSpec {
 	tools = append(tools, hostedSlidesReadTools()...)
 	tools = append(tools, hostedSlidesEditTools()...)
 	tools = append(tools, hostedSlidesLifecycleTools()...)
+	tools = append(tools, hostedDocsDriveRemainingTools()...)
+	tools = append(tools, hostedSlidesRemainingTools()...)
+	tools = append(tools, hostedSlidesTableRemainingTools()...)
+	tools = append(tools, hostedSheetsRemainingTools()...)
 	return append(tools, hostedPhotosLibraryTools()...)
 }
 
@@ -181,6 +186,18 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 			return nil, configureErr
 		}
 	}
+
+	if spec.Name == "docs_sed" {
+		if configureErr := configureHostedLiteralSlice(parser, []string{"docs", "sed"}, "expressions"); configureErr != nil {
+			return nil, configureErr
+		}
+	}
+	if spec.Name == "sheets_validation_set" {
+		if configureErr := configureHostedLiteralSlice(parser, []string{"sheets", "validation", "set"}, "value"); configureErr != nil {
+			return nil, configureErr
+		}
+	}
+
 	command, err := parser.Parse(args)
 	if err != nil {
 		return nil, ErrHostedToolInput
@@ -215,6 +232,12 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 	ctx = authclient.WithAccessToken(ctx, options.AccessToken)
 	ctx = authclient.WithQuotaProject(ctx, options.QuotaProject)
 	ctx = googleapi.WithRequestGuard(ctx, options.RequestGuard)
+	for _, candidate := range append(append(append(hostedDocsDriveRemainingTools(), hostedSlidesRemainingTools()...), hostedSlidesTableRemainingTools()...), hostedSheetsRemainingTools()...) {
+		if candidate.Name == spec.Name && spec.Risk == mcpRiskWrite {
+			ctx = googleapi.WithoutRetries(ctx)
+			break
+		}
+	}
 	if spec.Risk == mcpRiskWrite && (strings.HasPrefix(spec.Name, "docs_comments_") || strings.HasPrefix(spec.Name, "drive_comments_")) {
 		ctx = googleapi.WithoutRetries(ctx)
 	}
@@ -259,4 +282,31 @@ func executeHostedCommand(ctx context.Context, args []string, spec mcpToolSpec, 
 		return result, nil
 	}
 	return output.String(), nil
+}
+
+// Preserve each already-validated JSON value rather than applying CLI CSV rules.
+func configureHostedLiteralSlice(parser *kong.Kong, path []string, flagName string) error {
+	node := parser.Model.Node
+	for _, name := range path {
+		var found *kong.Node
+		for _, child := range node.Children {
+			if child.Name == name {
+				found = child
+				break
+			}
+		}
+		if found == nil {
+			return ErrHostedToolExecution
+		}
+		node = found
+	}
+	for _, flag := range node.Flags {
+		if flag.Name == flagName {
+			tag := *flag.Tag
+			tag.Sep = -1
+			flag.Tag = &tag
+			return nil
+		}
+	}
+	return ErrHostedToolExecution
 }

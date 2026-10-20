@@ -33,6 +33,10 @@ func WithoutRetries(ctx context.Context) context.Context {
 	return context.WithValue(ctx, retriesDisabledContextKey{}, true)
 }
 
+// RetriesDisabled lets native multi-step handlers honor the trusted
+// single-attempt policy already used by RetryTransport.
+func RetriesDisabled(ctx context.Context) bool { return retriesDisabled(ctx) }
+
 func retriesDisabled(ctx context.Context) bool {
 	if ctx == nil {
 		return false

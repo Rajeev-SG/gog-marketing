@@ -22,17 +22,16 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 360,
-  "hosted_tool_count": 233,
-  "total_hosted_catalog_count": 271,
+  "hosted_tool_count": 301,
+  "total_hosted_catalog_count": 339,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 243,
-  "mapped_hosted_tool_count": 233,
+  "mapped_native_leaf_count": 311,
+  "mapped_hosted_tool_count": 301,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 70,
     "excluded": 2,
-    "implementation_design_required": 39,
-    "implemented_hosted_unverified": 243,
+    "implementation_design_required": 41,
+    "implemented_hosted_unverified": 311,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,25 +67,23 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 54,
-      "mapped_native_leaves": 59,
+      "hosted_tools": 62,
+      "mapped_native_leaves": 67,
       "classifications": {
-        "eligible_missing": 9,
-        "implementation_design_required": 4,
-        "implemented_hosted_unverified": 59
+        "implementation_design_required": 5,
+        "implemented_hosted_unverified": 67
       }
     },
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 17,
-      "mapped_native_leaves": 17,
+      "hosted_tools": 24,
+      "mapped_native_leaves": 24,
       "classifications": {
         "deferred": 5,
-        "eligible_missing": 7,
         "excluded": 1,
         "implementation_design_required": 16,
-        "implemented_hosted_unverified": 17,
+        "implemented_hosted_unverified": 24,
         "scope_boundary_blocked": 1
       }
     },
@@ -112,24 +109,22 @@
     {
       "service": "sheets",
       "native_leaves": 67,
-      "hosted_tools": 32,
-      "mapped_native_leaves": 32,
+      "hosted_tools": 56,
+      "mapped_native_leaves": 56,
       "classifications": {
-        "eligible_missing": 24,
         "excluded": 1,
         "implementation_design_required": 10,
-        "implemented_hosted_unverified": 32
+        "implemented_hosted_unverified": 56
       }
     },
     {
       "service": "slides",
       "native_leaves": 47,
-      "hosted_tools": 13,
-      "mapped_native_leaves": 13,
+      "hosted_tools": 42,
+      "mapped_native_leaves": 42,
       "classifications": {
-        "eligible_missing": 30,
-        "implementation_design_required": 4,
-        "implemented_hosted_unverified": 13
+        "implementation_design_required": 5,
+        "implemented_hosted_unverified": 42
       }
     },
     {
@@ -1447,10 +1442,26 @@
       "service": "docs",
       "command": "cell-style",
       "native_command": "gog docs cell-style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_cell_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "dry-run/confirm and docs batch queue preserved; drive.file variant requires user-selected file grant; revision WriteControl retained"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1478,10 +1489,26 @@
       "service": "docs",
       "command": "cell-update",
       "native_command": "gog docs cell-update",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_cell_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "cell range computed from fetched doc; markdown/plain format fixed enum; batch queue and revision guard preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1944,10 +1971,25 @@
       "service": "docs",
       "command": "copy",
       "native_command": "gog docs copy",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_copy",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Prior 'requires_audit' label not justified; fixed-schema delegate via copyViaDrive; enforces document MIME; honors existing file grants; no raw/batch endpoints"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -2675,7 +2717,7 @@
         "command": "docs insert-file-chip",
         "scope_boundary": "within_current_allowlist",
         "paid_assessment": "not_required_for_approved_scope_variant",
-        "hostability": "ready_for_fixed_adapter",
+        "hostability": "requires_resource_or_transport_design",
         "google_methods": [
           "drive.files.get",
           "docs.documents.batchUpdate",
@@ -2686,8 +2728,11 @@
           "https://www.googleapis.com/auth/documents"
         ],
         "resource_model": "Reads Drive file metadata (id,name,mimeType,webViewLink) then inserts RichLink chip into the doc",
-        "constraint": "Drive read restricted to operator-supplied fileId under drive.file; no sharing grants created",
-        "source_evidence": "internal/cmd/docs_smart_chips.go:29 (DocsInsertFileChipCmd.Run, driveSvc.Files.Get + docs.Request{InsertRichLink})",
+        "constraint": "A chip reads a second caller-supplied Drive file before mutating the document. ToolAuthorization carries exactly one ResourceGrantInput and existing argumentPaths is computed from one signed selected resource. A drive.file OAuth grant is not an explicit secondary-file tool grant. Requires signed secondary-resource grants and fresh Worker/D1/runner admission; do not allow the second file ID solely from model arguments.",
+        "source_evidence": "internal/cmd/docs_smart_chips.go (DocsInsertFileChipCmd.Run); internal/hosted/runner/tools.go (ToolAuthorization, nativeRequestGuard)",
+        "controller_notes": [
+          "2026-10-20 implementation-boundary review: authorization-design blocker, not a new OAuth scope or paid Google assessment. Retained outside implemented/live-verified counts."
+        ],
         "native_handler": {
           "file": "internal/cmd/docs_smart_chips.go",
           "line_at_review": 85,
@@ -2698,9 +2743,9 @@
       "command": "insert-file-chip",
       "native_command": "gog docs insert-file-chip",
       "hosted_tool": null,
-      "status": "eligible_missing",
+      "status": "implementation_design_required",
       "live_verified": false,
-      "classification_reason": "Drive read restricted to operator-supplied fileId under drive.file; no sharing grants created"
+      "classification_reason": "A chip reads a second caller-supplied Drive file before mutating the document. ToolAuthorization carries exactly one ResourceGrantInput and existing argumentPaths is computed from one signed selected resource. A drive.file OAuth grant is not an explicit secondary-file tool grant. Requires signed secondary-resource grants and fresh Worker/D1/runner admission; do not allow the second file ID solely from model arguments."
     },
     {
       "engineering_review": {
@@ -3308,10 +3353,26 @@
       "service": "docs",
       "command": "raw",
       "native_command": "gog docs raw",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_raw",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native source is a FIXED single-resource GET, not an arbitrary HTTP/API proxy. Expose a bounded selected-file JSON projection; omit arbitrary field masks and preserve relevant secret-field redaction/output limits. Existing narrower metadata tools do not imply complete raw-structure coverage."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "documents.readonly",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -3445,10 +3506,26 @@
       "service": "docs",
       "command": "sed",
       "native_command": "gog docs sed",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_sed",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Expression parsing is local; keep request set fixed-schema; single- and multi-expression paths both resolve to batchUpdate"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -3620,10 +3697,26 @@
       "service": "docs",
       "command": "table-column-width",
       "native_command": "gog docs table-column-width",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_column_width",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Uses WriteControl RequiredRevisionId; keep that guard in adapter"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -3839,10 +3932,26 @@
       "service": "docs",
       "command": "table-row style",
       "native_command": "gog docs table-row style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_table_row_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema UpdateTableRowStyle only; revision ID concurrency guard via executeDocsTableRequests; dry-run payload preserved; --row cannot be 0; documentId must be user-selected (drive.file grant or documents scope)"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4042,10 +4151,26 @@
       "service": "docs",
       "command": "update",
       "native_command": "gog docs update",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema insert/replace requests only; WriteControl RequiredRevisionId concurrency guard; dry-run and batch queue preserved; --segment restricts to plain text; documentId must resolve under documents scope or drive.file grant; no raw HTTP involved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "documents",
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "docs",
@@ -4224,10 +4349,25 @@
       "service": "drive",
       "command": "bulk remove-public",
       "native_command": "gog drive bulk remove-public",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_bulk_remove_public",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive mutation; dry-run and confirm gate in code must be preserved; inherited permissions skipped; drive.file restricts to granted files"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "DELETE",
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4255,10 +4395,25 @@
       "service": "drive",
       "command": "bulk update-role",
       "native_command": "gog drive bulk update-role",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_bulk_update_role",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Bulk mutation; dry-run and confirm gate must be preserved; inherited skipped; --from/--to/--type/--target filters fixed schema"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -5055,10 +5210,24 @@
       "service": "drive",
       "command": "mkdir",
       "native_command": "gog drive mkdir",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_mkdir",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed mimeType/name/parents schema; parent must be a drive.file-granted folder for visibility; dry-run gate preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "parent_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -5163,10 +5332,24 @@
       "service": "drive",
       "command": "raw",
       "native_command": "gog drive raw",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_raw",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native source is a FIXED single-resource GET, not an arbitrary HTTP/API proxy. Expose a bounded selected-file JSON projection; omit arbitrary field masks and preserve relevant secret-field redaction/output limits. Existing narrower metadata tools do not imply complete raw-structure coverage."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
@@ -5294,10 +5477,25 @@
       "service": "drive",
       "command": "share",
       "native_command": "gog drive share",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_share",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "drive.file variant allows sharing only app-granted files; anyone-with-link path keeps destructive confirm; dry-run preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -5425,10 +5623,24 @@
       "service": "drive",
       "command": "unshare",
       "native_command": "gog drive unshare",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_unshare",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "drive.file variant; explicit permissionId required; dry-run and destructive confirm preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -5484,10 +5696,24 @@
       "service": "drive",
       "command": "url",
       "native_command": "gog drive url",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_url",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "drive.file variant; read-only webViewLink lookup per granted fileId"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "forms",
@@ -6245,10 +6471,26 @@
       "service": "sheets",
       "command": "banding clear",
       "native_command": "gog sheets banding clear",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_banding_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive (--all or --id) behind dryRunAndConfirmDestructive; addBanding payloads are fixed-schema via sheetsbanding.DeleteRequest"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -6300,10 +6542,26 @@
       "service": "sheets",
       "command": "banding set",
       "native_command": "gog sheets banding set",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_banding_set",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Row/column properties parsed from fixed JSON flags/stdin; dry-run preview before write"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -6375,10 +6633,26 @@
       "service": "sheets",
       "command": "batch-update",
       "native_command": "gog sheets batch-update",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_batch_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Data parsed through fixed schema (parseSheetsBatchUpdateData); dry-run preview; response summaries only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -6405,10 +6679,26 @@
       "service": "sheets",
       "command": "chart create",
       "native_command": "gog sheets chart create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_chart_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Spec JSON validated by sheetschart.ParseEmbedded; sheet resolution via reads; dry-run"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -6435,10 +6725,26 @@
       "service": "sheets",
       "command": "chart delete",
       "native_command": "gog sheets chart delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_chart_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive; requires dryRunAndConfirmDestructive confirmation"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -6515,10 +6821,26 @@
       "service": "sheets",
       "command": "chart update",
       "native_command": "gog sheets chart update",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_chart_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Spec schema fixed by sheetschart.ParseSpec; sheet-ID normalization via read; dry-run"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -6569,10 +6891,26 @@
       "service": "sheets",
       "command": "conditional-format add",
       "native_command": "gog sheets conditional-format add",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_conditional_format_add",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema rule construction via sheetsconditional helpers; mutual exclusion of gradient/boolean flags enforced"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -6600,10 +6938,26 @@
       "service": "sheets",
       "command": "conditional-format clear",
       "native_command": "gog sheets conditional-format clear",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_conditional_format_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive; confirmation gate with removed count reported before apply"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -6654,10 +7008,25 @@
       "service": "sheets",
       "command": "copy",
       "native_command": "gog sheets copy",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_copy",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Delegates to shared copyViaDrive helper; scope intersection must select drive.file variant; no content read of source beyond metadata"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -6684,10 +7053,26 @@
       "service": "sheets",
       "command": "copy-paste",
       "native_command": "gog sheets copy-paste",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_copy_paste",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Range bounding and table-validation spans via reads; fixed paste-type enumeration; runSheetsMutation dry-run wrapper"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7075,10 +7460,26 @@
       "service": "sheets",
       "command": "delete-dimension",
       "native_command": "gog sheets delete-dimension",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_delete_dimension",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive; bounds validated against sheet metadata before confirmDestructiveChecked; previous requires_audit label not substantiated by fixed-schema use"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7127,10 +7528,26 @@
       "service": "sheets",
       "command": "duplicate-tab",
       "native_command": "gog sheets duplicate-tab",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_duplicate_tab",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Index bounds-checked against tab count; missing reply properties treated as failure to avoid blind retry"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7186,10 +7603,26 @@
       "service": "sheets",
       "command": "filter set",
       "native_command": "gog sheets filter set",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_filter_set",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Replacing an existing basic filter triggers confirmDestructiveChecked; range resolved against catalog with basic filters prefetched"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7217,10 +7650,26 @@
       "service": "sheets",
       "command": "find-replace",
       "native_command": "gog sheets find-replace",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_find_replace",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "AllSheets variant mutates entire file; fixed adapter should require explicit sheet or confirmation; drive.file variant needs prior file grant"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7248,10 +7697,26 @@
       "service": "sheets",
       "command": "format",
       "native_command": "gog sheets format",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_format",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Format payload comes from local file/stdin; host adapter must use fixed schema fields, not free-form JSON passthrough"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7327,10 +7792,26 @@
       "service": "sheets",
       "command": "insert",
       "native_command": "gog sheets insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema friendly (validated rows/cols, start\u003e=1); zero-index conversion already bounded in code"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7383,10 +7864,26 @@
       "service": "sheets",
       "command": "links set",
       "native_command": "gog sheets links set",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_links_set",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Link targets are user-supplied URLs; adapter should keep per-cell spec fixed and validate link text length"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7637,10 +8134,26 @@
       "service": "sheets",
       "command": "raw",
       "native_command": "gog sheets raw",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_raw",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native source is a FIXED single-resource GET, not an arbitrary HTTP/API proxy. Expose a bounded selected-file JSON projection; omit arbitrary field masks and preserve relevant secret-field redaction/output limits. Existing narrower metadata tools do not imply complete raw-structure coverage."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets",
+          "spreadsheets.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -7790,10 +8303,26 @@
       "service": "sheets",
       "command": "table append",
       "native_command": "gog sheets table append",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_table_append",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Values come from JSON/flags/stdin; fixed adapter should constrain to table column count (already width-validated)"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7821,10 +8350,26 @@
       "service": "sheets",
       "command": "table clear",
       "native_command": "gog sheets table clear",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_table_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive: requires --force plus confirmation; preserve both gates in adapter"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7852,10 +8397,26 @@
       "service": "sheets",
       "command": "table create",
       "native_command": "gog sheets table create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_table_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Columns JSON from file/stdin; fixed adapter should use fixed column-property schema"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -7883,10 +8444,26 @@
       "service": "sheets",
       "command": "table delete",
       "native_command": "gog sheets table delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_table_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive: requires explicit --discard-data plus confirmation; preserve both gates"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -8036,10 +8613,26 @@
       "service": "sheets",
       "command": "validation clear",
       "native_command": "gog sheets validation clear",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_validation_clear",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Table-managed dropdowns need --filtered-rows-included gate; preserve that gate"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "sheets",
@@ -8092,10 +8685,26 @@
       "service": "sheets",
       "command": "validation set",
       "native_command": "gog sheets validation set",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "sheets_validation_set",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Condition types/values constrained by sheetsvalidation.BuildCondition; table dropdowns reject strict/custom-ui/input-message options"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "spreadsheet_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "spreadsheets"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8155,10 +8764,26 @@
       "service": "slides",
       "command": "bullets",
       "native_command": "gog slides bullets",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_bullets",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Single fixed request shape, enum-validated preset, dry-run payload emitted; no file discovery or sharing"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8189,10 +8814,25 @@
       "service": "slides",
       "command": "copy",
       "native_command": "gog slides copy",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_copy",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "SlidesCopyCmd delegates to copyViaDrive: source Files.Get validates MIME type, then Files.Copy copies that same selected source. There is NO Presentations.Get or created-resource readback. Default-root copy is scope-eligible; an optional destination parent needs separate authority. Basic presentation file-copy is already available with drive_copy and its explicit Drive grants; native formatter/argument identity is not assumed."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
@@ -8254,7 +8894,7 @@
         "command": "slides create-from-template",
         "scope_boundary": "within_current_allowlist",
         "paid_assessment": "not_required_for_approved_scope_variant",
-        "hostability": "ready_for_fixed_adapter",
+        "hostability": "requires_resource_or_transport_design",
         "google_methods": [
           "drive.files.copy",
           "slides.presentations.batchUpdate"
@@ -8264,8 +8904,11 @@
           "https://www.googleapis.com/auth/presentations"
         ],
         "resource_model": "Copies a template presentation via Drive, verifies presentation mimeType, then applies fixed ReplaceAllText batchUpdate requests",
-        "constraint": "Template file must be within the drive.file grant (user-selected); replacement request set is deterministically built; partial-failure path leaves copy created and warns rather than auto-deleting",
-        "source_evidence": "internal/cmd/slides_create_from_template.go:18 (driveSvc.Files.Copy with SupportsAllDrives, Presentations.BatchUpdate with buildTemplateReplacementRequests)",
+        "constraint": "Native template creation performs Drive Files.Copy, reads created.Id from that response, then Slides batchUpdate on that newly created presentation. Static signed selected-file admission cannot authorize the new ID from caller arguments, nor may it wildcard all presentation writes. Requires invocation-bound creation receipt/resource admission and failure/recovery handling for the copy-plus-edit operation. Plain selected-file Slides copy remains implemented separately.",
+        "source_evidence": "internal/cmd/slides_create_from_template.go (Run, created.Id and Presentations.BatchUpdate); internal/hosted/runner/tools.go (ToolAuthorization, nativeRequestGuard)",
+        "controller_notes": [
+          "2026-10-20 implementation-boundary review: authorization-design blocker, not a new OAuth scope or paid Google assessment. Retained outside implemented/live-verified counts."
+        ],
         "native_handler": {
           "file": "internal/cmd/slides_create_from_template.go",
           "line_at_review": 27,
@@ -8276,9 +8919,9 @@
       "command": "create-from-template",
       "native_command": "gog slides create-from-template",
       "hosted_tool": null,
-      "status": "eligible_missing",
+      "status": "implementation_design_required",
       "live_verified": false,
-      "classification_reason": "Template file must be within the drive.file grant (user-selected); replacement request set is deterministically built; partial-failure path leaves copy created and warns rather than auto-deleting"
+      "classification_reason": "Native template creation performs Drive Files.Copy, reads created.Id from that response, then Slides batchUpdate on that newly created presentation. Static signed selected-file admission cannot authorize the new ID from caller arguments, nor may it wildcard all presentation writes. Requires invocation-bound creation receipt/resource admission and failure/recovery handling for the copy-plus-edit operation. Plain selected-file Slides copy remains implemented separately."
     },
     {
       "engineering_review": {
@@ -8392,10 +9035,26 @@
       "service": "slides",
       "command": "element alt-text",
       "native_command": "gog slides element alt-text",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_alt_text",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed single-request mutation; accessibility field update only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8421,10 +9080,26 @@
       "service": "slides",
       "command": "element create-line",
       "native_command": "gog slides element create-line",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_create_line",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed schema; enum whitelist and dimension validation already enforced"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8450,10 +9125,26 @@
       "service": "slides",
       "command": "element create-shape",
       "native_command": "gog slides element create-shape",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_create_shape",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed schema; shape-type normalization must be preserved to avoid unspecified-type requests"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8479,10 +9170,26 @@
       "service": "slides",
       "command": "element delete",
       "native_command": "gog slides element delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive: existing confirmation/destructive-summary path must be preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8508,10 +9215,26 @@
       "service": "slides",
       "command": "element group",
       "native_command": "gog slides element group",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_group",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Minimum-two-children validation enforced; fixed single request"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8538,10 +9261,26 @@
       "service": "slides",
       "command": "element style",
       "native_command": "gog slides element style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Mutation limited to granted presentation; fill/outline option exclusivity validated pre-flight"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8568,10 +9307,26 @@
       "service": "slides",
       "command": "element transform",
       "native_command": "gog slides element transform",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_transform",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Rotate mutually exclusive with scale/shear; targets granted presentation only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8598,10 +9353,26 @@
       "service": "slides",
       "command": "element ungroup",
       "native_command": "gog slides element ungroup",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_ungroup",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Requires \u003e=1 group ID; granted-file writes only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8628,10 +9399,26 @@
       "service": "slides",
       "command": "element z-order",
       "native_command": "gog slides element z-order",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_element_z_order",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Enum-normalized operation; granted-file writes only"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8742,10 +9529,26 @@
       "service": "slides",
       "command": "insert-text",
       "native_command": "gog slides insert-text",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_insert_text",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Replace path reads presentation first and sets RequiredRevisionId; stdin text is plain-text transport, not a raw endpoint"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8772,10 +9575,26 @@
       "service": "slides",
       "command": "link",
       "native_command": "gog slides link",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_link",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Exactly one of --url/--clear; fixed field set (link only)"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
@@ -8940,10 +9759,26 @@
       "service": "slides",
       "command": "paragraph-style",
       "native_command": "gog slides paragraph-style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_paragraph_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Row/col must be paired; table path validates anchor before write"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -8972,10 +9807,26 @@
       "service": "slides",
       "command": "raw",
       "native_command": "gog slides raw",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_raw",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Native source is a FIXED single-resource GET, not an arbitrary HTTP/API proxy. Expose a bounded selected-file JSON projection; omit arbitrary field masks and preserve relevant secret-field redaction/output limits. Existing narrower metadata tools do not imply complete raw-structure coverage."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations",
+          "presentations.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
@@ -9028,10 +9879,26 @@
       "service": "slides",
       "command": "replace-slide",
       "native_command": "gog slides replace-slide",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_replace_slide",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "URL-based image replace is fixed-schema ready; the --image local-file path requires a transient upload/URL transport (binary transport design only, no paid audit). Read of presentation before write; destructive only to the targeted image element."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",
@@ -9107,10 +9974,26 @@
       "service": "slides",
       "command": "style-text",
       "native_command": "gog slides style-text",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_style_text",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed schema: presentationId/objectId/range plus bounded style flags; validated range parsing before mutation."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9137,10 +10020,26 @@
       "service": "slides",
       "command": "table border style",
       "native_command": "gog slides table border style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_border_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Bounded enum validation (position, dash), hex color parsing, explicit fields mask; pre-write table range validation."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9167,10 +10066,26 @@
       "service": "slides",
       "command": "table cell style",
       "native_command": "gog slides table cell style",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_cell_style",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Single-cell anchor validated pre-write; mutually exclusive flag checks; explicit fields masks."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9197,10 +10112,26 @@
       "service": "slides",
       "command": "table column delete",
       "native_command": "gog slides table column delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_column_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive but table-scoped with anchor validation and explicit destructive-description gate in helper."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9227,10 +10158,26 @@
       "service": "slides",
       "command": "table column insert",
       "native_command": "gog slides table column insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_column_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Insert-count validation; anchor cell validated pre-write."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9257,10 +10204,26 @@
       "service": "slides",
       "command": "table column size",
       "native_command": "gog slides table column size",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_column_size",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Min-width guard (\u003e=32 PT); single-column fields mask."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9288,10 +10251,26 @@
       "service": "slides",
       "command": "table create",
       "native_command": "gog slides table create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Non-destructive creation bounded to one slide; dimensions \u003e=1; revision guard via pre-read presentation get."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9319,10 +10298,26 @@
       "service": "slides",
       "command": "table merge",
       "native_command": "gog slides table merge",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_merge",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Range-validated table mutation; helper performs pre-read validation before batchUpdate; underlying request type not shown inline, delegating classification to the shared table range helper."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9349,10 +10344,26 @@
       "service": "slides",
       "command": "table row delete",
       "native_command": "gog slides table row delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_row_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive but table-scoped with anchor validation and explicit destructive-description gate in helper."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9379,10 +10390,26 @@
       "service": "slides",
       "command": "table row insert",
       "native_command": "gog slides table row insert",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_row_insert",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Insert-count validation; anchor cell validated pre-write."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9409,10 +10436,26 @@
       "service": "slides",
       "command": "table row size",
       "native_command": "gog slides table row size",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_row_size",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Non-negative height guard; single-row fields mask."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9441,10 +10484,26 @@
       "service": "slides",
       "command": "table unmerge",
       "native_command": "gog slides table unmerge",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_table_unmerge",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "slides_table_structure.go runSlidesTableRangeCommand builds UnmergeTableCells; runSlidesTableMutation sends fixed batchUpdate on exact presentation. Preserve row/column/span and write authority."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations"
+        ],
+        "http_methods": [
+          "GET",
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -9472,10 +10531,26 @@
       "service": "slides",
       "command": "thumbnail",
       "native_command": "gog slides thumbnail",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "slides_thumbnail",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema command with size/format normalization and selected-file presentation ID; binary download to --out is a local transport concern only. Prior product_limited reflects thumbnail availability limits (e.g. recently rendered slides), not a scope or audit barrier; drive.file selected-file grant and user approval flow must be preserved."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "presentation_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file",
+          "presentations",
+          "presentations.readonly"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "slides",

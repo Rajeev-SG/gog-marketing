@@ -6,14 +6,14 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 360 visible native leaves in the 11 active services
-and 233 active hosted tools (271 total). It maps 233 hosted tools across 243
+and 301 active hosted tools (339 total). It maps 301 hosted tools across 311
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 243 implemented/unverified hosted
-leaves, 70 reviewed eligible missing, 39 requiring resource/transport/billing
+also map direct and grouped aliases. Counts are: 311 implemented/unverified hosted
+leaves, zero reviewed eligible missing, 41 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.
@@ -135,3 +135,30 @@ host/path pairing enforced across the two APIs. Mutations are single-attempt.
 Signed-runner fixtures prove all fourteen operations and authorization/HTTP
 boundaries, including no replay after uncertain writes. Live verification remains
 outstanding; these new tools are not in the integrated chat starter allowlist.
+
+## Existing eligible inventory finish line
+
+The fixed inventory of 105 eligible native leaves is exhausted: 103 now have
+executable hosted variants and two have precise authorization-design blockers.
+The final batch adds 68 Docs/Drive/Sheets/Slides tools without new scopes or
+billable execution. Ordinary same-file Sheets table append/clear are implemented
+with validated metadata-derived A1 paths; they are not authorization blockers.
+
+- **Docs file chip:** requires an explicit grant for the second referenced Drive
+  file as well as the selected document. The signed runner contract contains one
+  resource, not an authorized list. OAuth drive.file visibility alone is not a
+  replacement for the missing secondary grant.
+- **Slides create from template:** copies a selected template, then edits the ID
+  returned by that copy. The runner has no invocation-bound creation receipt or
+  dynamically admitted new-resource write capability; wildcard presentation
+  writes would break selected-file isolation. Plain typed Slides copy works.
+
+These two are added to the 39 pre-existing design blockers, not classified as
+new OAuth scopes or paid Google assessments. All implementations remain
+live-unverified. New tool availability is hosted MCP; the integrated chat starter
+allowlist is unchanged. Native bulk Drive mutations are selected-file-only,
+inherited permissions are skipped, and permission mutations require destructive
+consent. Raw reads retain native redaction/output limits and never follow links.
+Native sed and Slides image retries now honor trusted hosted single-attempt
+policy, with ordinary CLI defaults unchanged. Phase 2 is issue #110, not further
+parity discovery.

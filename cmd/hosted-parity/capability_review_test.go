@@ -121,7 +121,7 @@ func TestFixedRawReadsAreNotArbitraryAPIExclusions(t *testing.T) {
 				if leaf.HostedTool == nil || *leaf.HostedTool != "forms_get" || leaf.ImplementationState != "executable_equivalent_read_variant_live_evidence_separate" {
 					t.Fatal("Forms fixed GET alias was not mapped to existing typed tool")
 				}
-			} else if leaf.Status != "eligible_missing" {
+			} else if leaf.Status != "implemented_hosted_unverified" || leaf.HostedTool == nil || *leaf.HostedTool != service+"_raw" || leaf.LiveVerified {
 				t.Fatalf("fixed %s raw GET still incorrectly excluded: %s", service, leaf.Status)
 			}
 			if leaf.EngineeringReview == nil || leaf.EngineeringReview.PaidAssessment != "not_required_for_approved_scope_variant" {

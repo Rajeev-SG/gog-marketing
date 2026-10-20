@@ -136,6 +136,13 @@ func TestSignedNativeSheetsAppendReadClearAndMetadataUnderSelectedFileGrant(t *t
 		t.Fatalf("foreign import formula was not rejected: %d %s", imported.Status, imported.Body)
 	}
 
+	for _, payload := range []string{`[["+IMPORTRANGE(\"other-sheet\",\"A1\")"]]`, `[["\u002bIMPO\u0052TRANGE(\"other-sheet\",\"A1\")"]]`} {
+		rejected := call("sheets_append_range", appendArgs("USER_ENTERED", payload), writeAuth)
+		if rejected.OK || calls.Load() != before {
+			t.Fatalf("plus-prefixed foreign import reached Google: %s", rejected.Body)
+		}
+	}
+
 	if calls.Load() != before {
 		t.Fatal("blocked append reached Google")
 	}
