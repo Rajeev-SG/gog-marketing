@@ -11,7 +11,8 @@ CodeQL, source uploads, or production changes.
 | `make security-nightly` | Semgrep, OSV-Scanner, Trivy | Source, dependencies, configuration, and container image | Nightly and manual |
 
 The fast gate intentionally avoids the expensive nightly scanners on every PR.
-The nightly gate scans a locally built image and never publishes it.
+The nightly gate scans both locally built existing Go images (CLI and hosted runner)
+and never publishes them. CLI --help is smoke-tested with networking disabled.
 
 ## Commands
 
@@ -114,3 +115,19 @@ non-shell argument cases to remain clean. The direct-TypeScript-execution rule
 is unchanged. These are bounded intraprocedural checks, not comprehensive SAST
 or proof that all other input sources are safe; the targeted audit and native
 boundary tests remain necessary. No production source finding is suppressed.
+
+The module-level OpenPGP warning GO-2026-5932 affects unmaintained
+`golang.org/x/crypto/openpgp` packages, not all x/crypto APIs. Production
+`go list -deps ./...` at the controller security candidate enumerated773
+packages with no OpenPGP import. OSV native Go call analysis is enabled to
+make this distinction without an advisory-wide ignore; an introduced reachable
+unsafe import must still fail. The nightly job explicitly sets up the pinned
+repository Go toolchain for this analysis. Fresh analysis remains required after
+dependency changes; the original lockfile-only count is historical, not a
+claim of current production exposure.
+
+Controller native Go reachability verification against the patched dependency
+candidate exited0, retaining GO-2026-5932 with `called:false` in JSON rather than
+ignoring it. No unresolved Go advisory was returned as called. Both current
+container builders are included in the final nightly image gate; the original
+single-image six-result baseline above remains a historical pre-fix observation.

@@ -7,6 +7,7 @@ TOOLS_DIR="${GOG_SECURITY_TOOLS_DIR:-$ROOT/.tools/security}"
 OUT_DIR="${GOG_SECURITY_OUTPUT_DIR:-$ROOT/.tools/security/reports}"
 SEMGREP_IMAGE='semgrep/semgrep@sha256:db0579f992f6597840f96b249119f4999d44ffbc9e3f0a8854c367183e474c24'
 SCAN_IMAGE="gog-security-scan:$(git -C "$ROOT" rev-parse --short=12 HEAD)"
+RUNNER_IMAGE="gog-security-runner-scan:$(git -C "$ROOT" rev-parse --short=12 HEAD)"
 mkdir -p "$OUT_DIR"
 scan_status=0
 
@@ -70,6 +71,7 @@ docker run --rm \
 
 "$TOOLS_DIR/osv-scanner" scan source \
   --data-source native \
+  --call-analysis go \
   --offline-vulnerabilities \
   --download-offline-databases \
   --format sarif \
@@ -77,6 +79,8 @@ docker run --rm \
   --recursive "$ROOT" || scan_status=$?
 
 docker build --tag "$SCAN_IMAGE" "$ROOT"
+docker run --rm --network none "$SCAN_IMAGE" --help >/dev/null
+docker build --file "$ROOT/Dockerfile.hosted-runner" --tag "$RUNNER_IMAGE" "$ROOT"
 
 "$TOOLS_DIR/trivy" config \
   --disable-telemetry \
@@ -94,6 +98,15 @@ docker build --tag "$SCAN_IMAGE" "$ROOT"
   --output "$OUT_DIR/trivy-image.sarif" \
   --exit-code 1 \
   "$SCAN_IMAGE" || scan_status=$?
+
+"$TOOLS_DIR/trivy" image \
+  --disable-telemetry \
+  --scanners vuln \
+  --severity HIGH,CRITICAL \
+  --format sarif \
+  --output "$OUT_DIR/trivy-hosted-runner-image.sarif" \
+  --exit-code 1 \
+  "$RUNNER_IMAGE" || scan_status=$?
 
 if [ "$scan_status" -ne 0 ]; then
   echo "one or more nightly security scans found unresolved findings" >&2
