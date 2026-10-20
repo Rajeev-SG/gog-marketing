@@ -1,3 +1,4 @@
+import { renderAccessState } from "../access-pages.js";
 import { ChatThreads, publicThread, threadTitle, validThreadId } from "./threads.js";
 /** Same-origin chat routes. Existing product, Google and MCP routes fall through unchanged. */
 import type { HostedRepository } from "../../../state/src/repository.js";
@@ -43,16 +44,12 @@ function config(env: ChatEnv): HtmlConfig {
 
 function errorResponse(status: number, message: string, page: boolean, headers: Headers): Response {
   if (!page) return Response.json({ error: message }, { status, headers });
-  // Messages are fixed application/authentication copy, never raw provider exceptions.
-  const escaped = message
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll('"', "&quot;");
   headers.set("Content-Type", "text/html; charset=utf-8");
   return new Response(
-    '<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Chat — gog-marketing</title></head><body><main><h1>Chat unavailable</h1><p>' +
-      escaped +
-      '</p><a href="/">Return to Home</a></main></body></html>',
+    renderAccessState(
+      status === 403 ? "not-invited" : status === 401 ? "expired" : "unavailable",
+      "/chat",
+    ),
     { status, headers },
   );
 }
@@ -102,13 +99,7 @@ export async function handleChat(
     headers.set("Content-Type", "text/html; charset=utf-8");
     const selected = url.searchParams.get("thread");
     const returnTo = selected && validThreadId(selected) ? "/chat?thread=" + selected : "/chat";
-    return new Response(
-      renderSignIn(config(env)).replace(
-        "fallbackRedirectUrl: '/'",
-        "fallbackRedirectUrl: '" + returnTo + "'",
-      ),
-      { headers },
-    );
+    return new Response(renderSignIn(config(env), returnTo), { headers });
   }
   const authenticatedHeaders = privateHeaders(env, request, outcome.headers);
   const registry = new ChatThreads(repo, outcome.session.tenant.id);

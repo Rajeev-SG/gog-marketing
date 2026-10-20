@@ -25,6 +25,7 @@
  *
  * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
+import { safeWorkspaceReturn } from "./access-pages.js";
 import { handleChat } from "./chat/routes.js";
 import type { ChatEnv } from "./chat/access.js";
 import { HostedRepository } from "../../state/src/repository.js";
@@ -50,6 +51,9 @@ import {
   renderCallbackNotice,
   renderHome,
   renderSignIn,
+  renderLanding,
+  renderRequestAccess,
+  renderAccessState,
   renderPublicAbout,
   securityHeaders,
   type HtmlConfig,
@@ -140,6 +144,34 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
       },
     });
   }
+  if (path === "/request-access") {
+    if (request.method !== "GET")
+      return new Response(null, { status: 405, headers: { Allow: "GET", ...securityHeaders() } });
+    return new Response(renderRequestAccess(), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        ...securityHeaders(),
+      },
+    });
+  }
+  if (path === "/sign-in" && request.method !== "GET")
+    return new Response(null, { status: 405, headers: { Allow: "GET", ...securityHeaders() } });
+  if (
+    path === "/" &&
+    request.method === "GET" &&
+    !request.headers.has("authorization") &&
+    !request.headers.has("cookie") &&
+    !url.searchParams.has("__clerk_handshake")
+  ) {
+    return new Response(renderLanding(), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+        ...securityHeaders(),
+      },
+    });
+  }
   const connectionAction = GOOGLE_CONNECTION_ACTION.exec(path);
 
   const metadataResponse = await handleMcpMetadata(request, env, path);
@@ -148,7 +180,7 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   if (mcpResponse) return mcpResponse;
 
   // Only the known routes are served. Everything else is 404.
-  const knownPaths = ["/", "/api/tenant", ...GOOGLE_API_PATHS];
+  const knownPaths = ["/", "/sign-in", "/api/tenant", ...GOOGLE_API_PATHS];
   if (!knownPaths.includes(path) && !connectionAction) {
     return safeError(404, "Not found.");
   }
@@ -316,6 +348,24 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
         });
       }
       const htmlConfig = buildHtmlConfig(env);
+      if (path === "/sign-in") {
+        const headers = new Headers(outcome.headers);
+        if (url.searchParams.get("switch") === "1" || url.searchParams.get("expired") === "1") {
+          headers.set("Content-Type", "text/html; charset=utf-8");
+          for (const [name, value] of Object.entries(securityHeaders(htmlConfig.clerkDomain)))
+            headers.set(name, value);
+          return new Response(
+            renderSignIn(
+              htmlConfig,
+              safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined),
+              true,
+            ),
+            { headers },
+          );
+        }
+        headers.set("Location", safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined));
+        return new Response(null, { status: 303, headers });
+      }
       const headers = new Headers(outcome.headers);
       headers.set("Content-Type", "text/html; charset=utf-8");
       for (const [name, value] of Object.entries(securityHeaders(htmlConfig.clerkDomain))) {
@@ -337,16 +387,37 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
         return safeError(401, "Authentication required.");
       }
       const htmlConfig = buildHtmlConfig(env);
+      if (path === "/")
+        return new Response(renderLanding(), {
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            ...securityHeaders(),
+          },
+        });
       if (!htmlConfig.clerkDomain || !htmlConfig.publishableKey) {
-        return safeError(503, "Authentication is not configured.");
+        return new Response(renderAccessState("unavailable", "/sign-in"), {
+          status: 503,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+            ...securityHeaders(),
+          },
+        });
       }
-      return new Response(renderSignIn(htmlConfig), {
-        status: 200,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          ...securityHeaders(htmlConfig.clerkDomain),
+      return new Response(
+        renderSignIn(
+          htmlConfig,
+          safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined),
+        ),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            ...securityHeaders(htmlConfig.clerkDomain),
+          },
         },
-      });
+      );
     }
     case "error":
       if (isBrowserGoogleCallback(request, path)) {
@@ -358,6 +429,35 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
             : "We could not verify your sign-in session. Please try again in a moment.",
         );
       }
+      if (path === "/sign-in") {
+        const config = buildHtmlConfig(env);
+        if (config.clerkDomain && config.publishableKey)
+          return new Response(
+            renderSignIn(
+              config,
+              safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined),
+              url.searchParams.has("expired") || url.searchParams.has("switch"),
+            ),
+            {
+              headers: {
+                "Content-Type": "text/html; charset=utf-8",
+                ...securityHeaders(config.clerkDomain),
+              },
+            },
+          );
+      }
+      if (path === "/" || path === "/sign-in")
+        return new Response(
+          renderAccessState(outcome.status === 401 ? "expired" : "unavailable", path),
+          {
+            status: outcome.status,
+            headers: {
+              "Content-Type": "text/html; charset=utf-8",
+              "Cache-Control": "no-store",
+              ...securityHeaders(),
+            },
+          },
+        );
       return safeError(outcome.status, outcome.message);
   }
 }

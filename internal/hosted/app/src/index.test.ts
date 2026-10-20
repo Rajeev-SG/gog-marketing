@@ -267,15 +267,17 @@ async function tenantIdForClerkUser(env: Env, clerkUserId: string): Promise<stri
 }
 
 describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
-  it("redirects unauthenticated requests to the sign-in page with a CSP", async () => {
+  it("serves a public entry page without loading auth or bootstrapping credentials", async () => {
     const env = await createNativeEnv();
     const req = buildUnauthenticatedRequest(`${ORIGIN}/`);
     const res = await worker.fetch(req, env);
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain("sign-in");
-    expect(html).toContain("Clerk");
-    expect(html).toContain("@clerk/clerk-js@6");
+    expect(html).toContain("Less moving data.");
+    expect(html).toContain('href="/sign-in"');
+    expect(html).not.toContain("@clerk/clerk-js@6");
+    expect(html).not.toContain('id="app-shell"');
     expect(res.headers.get("content-security-policy")).toContain("script-src");
   });
 
@@ -286,7 +288,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       keys.privateJwk,
     );
     for (const request of [
-      buildUnauthenticatedRequest(`${ORIGIN}/`),
+      buildUnauthenticatedRequest(`${ORIGIN}/sign-in`),
       buildCookieRequest(`${ORIGIN}/`, token, true),
     ]) {
       const res = await worker.fetch(request, env);
@@ -407,7 +409,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       const html = await res.text();
       // No tenant UUID is rendered on the home page.
       expect(html).not.toMatch(UUID_RE);
-      expect(html).toContain("ready");
+      expect(html).toContain('id="app-shell"');
     }
     const row = await (env.DB as unknown as Database)
       .prepare("SELECT COUNT(*) AS n FROM hosted_tenants WHERE clerk_user_id = ?1")
@@ -483,7 +485,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       exp: past,
     });
     const body = await res.text();
-    expect(body).not.toContain("ready");
+    expect(body).not.toContain('id="app-shell"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_expired");
     expect(body).not.toContain("sk_test");
@@ -495,7 +497,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       azp: "https://evil.example.com",
     });
     const body = await res.text();
-    expect(body).not.toContain("ready");
+    expect(body).not.toContain('id="app-shell"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_azp_wrong");
     expect(body).not.toContain("evil");
@@ -516,7 +518,8 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       iss: "https://evil-wombat-2813.clerk.accounts.dev",
     });
     const html = await homeRes.text();
-    expect(html).not.toContain("ready");
+    expect(html).not.toContain('id="app-shell"');
+    expect(html).not.toContain('id="workspace-content"');
     expect(html).not.toContain("user_iss_wrong");
   });
 
@@ -565,7 +568,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const req = buildAuthenticatedRequest(`${ORIGIN}/`, tampered);
     const res = await worker.fetch(req, env);
     const body = await res.text();
-    expect(body).not.toContain("ready");
+    expect(body).not.toContain('id="app-shell"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_attacker");
     expect(body).not.toContain("user_tamper");
@@ -643,7 +646,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const homeRes = await authenticatedRequest(`${ORIGIN}/`, "user_deleted", env);
     expect(homeRes.status).toBe(200);
     const html = await homeRes.text();
-    expect(html).toContain("ready");
+    expect(html).toContain('id="app-shell"');
     expect(html).not.toMatch(UUID_RE);
   });
 
@@ -698,12 +701,12 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     expect(await navigation.text()).toBe("");
     // Once the browser removes its session cookies, it gets sign-in, not home.
     const signedOut = await worker.fetch(buildUnauthenticatedRequest(`${ORIGIN}/`), env);
-    expect(await signedOut.text()).toContain('id="sign-in"');
+    expect(await signedOut.text()).toContain('href="/sign-in"');
   });
 
   it("forwards real SDK handshake redirect headers and completes a signed handshake into cookie auth", async () => {
     const env = await createNativeEnv();
-    const request = new Request(`${ORIGIN}/`, {
+    const request = new Request(`${ORIGIN}/sign-in`, {
       headers: { "Sec-Fetch-Dest": "document", Accept: "text/html" },
     });
     const redirect = await worker.fetch(request, env);
@@ -712,7 +715,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const location = new URL(redirect.headers.get("location")!);
     expect(location.origin).toBe(CLERK_ISSUER);
     expect(location.pathname).toBe("/v1/client/handshake");
-    expect(location.searchParams.get("redirect_url")).toBe(`${ORIGIN}/`);
+    expect(location.searchParams.get("redirect_url")).toBe(`${ORIGIN}/sign-in`);
     expect(location.searchParams.get("__clerk_hs_reason")).toBe("dev-browser-missing");
     expect(await redirect.text()).toBe("");
     expect(await tenantIdForClerkUser(env, "user_handshake")).toBeNull();
@@ -1214,4 +1217,21 @@ describe("hosted Google connection routes (#62)", () => {
       services: ["analytics"],
     });
   });
+});
+
+it("keeps public beta pages separate from protected APIs and refuses signup-like submission", async () => {
+  const env = await createNativeEnv();
+  for (const path of ["/", "/request-access"]) {
+    const response = await worker.fetch(new Request(ORIGIN + path), env);
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    expect(text).not.toContain('id="app-shell"');
+    expect(text).not.toContain("clerk-js");
+    expect(response.headers.get("cache-control")).toBe("no-store");
+  }
+  expect(
+    (await worker.fetch(new Request(ORIGIN + "/request-access", { method: "POST" }), env)).status,
+  ).toBe(405);
+  expect((await worker.fetch(new Request(ORIGIN + "/api/tenant"), env)).status).toBe(401);
+  expect((await worker.fetch(new Request(ORIGIN + "/api/google/resources"), env)).status).toBe(401);
 });

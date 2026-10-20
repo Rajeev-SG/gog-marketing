@@ -7,8 +7,8 @@
     Helvetica,
     Arial,
     sans-serif;
-  color: #24362f;
-  background: #f6f5ef;
+  color: var(--text);
+  background: var(--surface-page);
   font-synthesis: none;
   line-height: 1.6;
 }
@@ -37,7 +37,7 @@ button:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
 a:focus-visible {
-  outline: 2px solid #526557;
+  outline: 2px solid var(--action);
   outline-offset: 3px;
 }
 a {
@@ -55,7 +55,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #dcded3;
+  border-bottom: 1px solid var(--border);
   padding: 25px 0;
 }
 .brand {
@@ -68,13 +68,13 @@ header {
   font-weight: 400;
   font-size: 14px;
   letter-spacing: 0;
-  color: #64746a;
+  color: var(--text-muted);
   margin-left: 12px;
 }
 .quiet {
   border: 0;
   background: none;
-  color: #526557;
+  color: var(--action);
   font-size: 13px;
   padding: 10px;
 }
@@ -84,10 +84,10 @@ header {
   gap: 10px;
   margin-top: 14px;
   padding: 10px 14px;
-  background: #e9edde;
+  background: var(--surface-sunken);
   border-radius: 10px;
   font-size: 13px;
-  color: #405444;
+  color: var(--text);
 }
 .notice a {
   text-decoration: underline;
@@ -109,12 +109,12 @@ main {
   font-size: 10px;
   letter-spacing: 2px;
   font-weight: 700;
-  color: #526557;
+  color: var(--action);
 }
 h1,
 h2 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 400;
+  font-family: inherit;
+  font-weight: 700;
   letter-spacing: -1px;
   line-height: 1.15;
 }
@@ -128,10 +128,10 @@ h2 {
 }
 .badge {
   font-size: 11px;
-  background: #e9edde;
+  background: var(--surface-sunken);
   padding: 6px 12px;
   border-radius: 20px;
-  color: #476039;
+  color: var(--text-muted);
 }
 .thread {
   flex: 1;
@@ -151,7 +151,7 @@ h2 {
 }
 .empty p,
 .login p {
-  color: #647065;
+  color: var(--text-muted);
   font-size: 15px;
 }
 .suggestions {
@@ -161,19 +161,19 @@ h2 {
   margin: 30px 0;
 }
 .suggestions button {
-  border: 1px solid #dcded3;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fbfbf6;
+  background: var(--surface-card);
   padding: 13px 18px;
   text-align: left;
-  color: #405444;
+  color: var(--text);
   display: flex;
   justify-content: space-between;
   gap: 25px;
   font-size: 14px;
 }
 .suggestions button:hover {
-  background: #eef1e5;
+  background: var(--surface-sunken);
 }
 .message {
   max-width: 800px;
@@ -187,10 +187,10 @@ h2 {
   letter-spacing: 1px;
   text-transform: uppercase;
   margin-bottom: 8px;
-  color: #526557;
+  color: var(--action);
 }
 .user {
-  background: #e9edde;
+  background: var(--surface-sunken);
   border-radius: 12px;
   padding: 16px 20px;
 }
@@ -204,7 +204,7 @@ h2 {
   overflow: auto;
   padding: 15px;
   border-radius: 8px;
-  background: #e9edde;
+  background: var(--surface-sunken);
 }
 .assistant code {
   font-size: 13px;
@@ -220,7 +220,7 @@ h2 {
 }
 .status {
   font-size: 11px;
-  color: #63735f;
+  color: var(--text-muted);
   min-height: 24px;
 }
 .composer {
@@ -228,10 +228,10 @@ h2 {
   align-items: flex-end;
   gap: 12px;
   padding: 14px;
-  background: #fffef9;
-  border: 1px solid #ced5c1;
+  background: var(--surface-card);
+  border: 1px solid var(--border-strong);
   border-radius: 14px;
-  box-shadow: 0 4px 20px #24362f06;
+  box-shadow: var(--shadow);
 }
 .composer textarea {
   width: 100%;
@@ -239,7 +239,7 @@ h2 {
   border: 0;
   background: transparent;
   padding: 4px 7px;
-  color: #24362f;
+  color: var(--text);
   min-height: 60px;
   max-height: 180px;
   font-size: 15px;
@@ -249,8 +249,8 @@ h2 {
 .signin-link {
   border: 0;
   border-radius: 8px;
-  background: #304e3d;
-  color: #fffef9;
+  background: var(--action);
+  color: var(--surface-card);
   padding: 10px 16px;
   white-space: nowrap;
   text-decoration: none;
@@ -266,7 +266,7 @@ h2 {
   justify-content: space-between;
   gap: 12px;
   font-size: 11px;
-  color: #526557;
+  color: var(--action);
   padding: 12px 3px;
 }
 .error {
@@ -278,7 +278,7 @@ h2 {
 }
 footer {
   font-size: 11px;
-  color: #526557;
+  color: var(--action);
   text-align: center;
   padding: 12px;
 }
@@ -307,7 +307,7 @@ footer {
 }
 .login small {
   font-size: 11px;
-  color: #526557;
+  color: var(--action);
   display: block;
   margin-top: 18px;
 }
@@ -382,17 +382,17 @@ footer {
   outline: none;
 }
 .composer[data-keyboard-focus="true"]:has(textarea:focus) {
-  outline: 2px solid #526557;
+  outline: 2px solid var(--action);
   outline-offset: 3px;
 }
 .viewport:focus-visible {
-  outline: 2px solid #526557;
+  outline: 2px solid var(--action);
   outline-offset: -2px;
 }
 .draft-note,
 .turn-note {
   font-size: 12px;
-  color: #526557;
+  color: var(--action);
   margin: 8px 3px;
 }
 .model-selector {
@@ -508,7 +508,7 @@ footer {
   border-color: var(--border-strong);
 }
 .turn-note {
-  border-top: 1px solid #ced5c1;
+  border-top: 1px solid var(--border-strong);
   padding-top: 8px;
 }
 .sr-only {
@@ -527,7 +527,7 @@ footer {
 .composer textarea,
 .assistant pre {
   scrollbar-width: thin;
-  scrollbar-color: #b7c1b2 transparent;
+  scrollbar-color: var(--border-strong) transparent;
   scrollbar-gutter: stable;
 }
 .composer textarea {
@@ -547,7 +547,7 @@ footer {
 .viewport::-webkit-scrollbar-thumb,
 .composer textarea::-webkit-scrollbar-thumb,
 .assistant pre::-webkit-scrollbar-thumb {
-  background: #b7c1b2;
+  background: var(--border-strong);
   border-radius: 8px;
 }
 
@@ -813,4 +813,85 @@ footer {
 .model-select-field select:focus-visible {
   outline: 2px solid var(--action);
   outline-offset: 2px;
+}
+
+/* Keep the conversation dominant; details remain available on demand. */
+.model-status-idle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.model-more {
+  min-width: 0;
+}
+.model-more > summary {
+  cursor: pointer;
+  color: var(--action);
+  font-size: 12px;
+  padding-block: 6px;
+  min-height: 32px;
+}
+.model-more p {
+  margin-top: 10px;
+}
+.model-selector {
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.model-selector-main {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+}
+.model-select-label {
+  margin: 0;
+}
+.model-select-field {
+  min-width: 0;
+}
+.model-more,
+.model-error,
+.model-status:not(.model-status-idle) {
+  grid-column: 1/-1;
+}
+.model-select-field select {
+  flex-basis: 0;
+}
+@media (max-width: 640px) {
+  .empty {
+    padding: 12px 0;
+  }
+  .empty h2 {
+    font-size: 28px;
+    margin: 10px 0;
+  }
+  .empty p {
+    font-size: 14px;
+  }
+  .suggestions {
+    margin: 16px 0;
+    gap: 6px;
+  }
+  .suggestions button {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .model-more > summary {
+    min-height: 40px;
+  }
+  .model-selector {
+    margin-top: 6px;
+  }
+  .notice {
+    line-height: 1.5;
+  }
+  .app > footer {
+    padding-block: 8px;
+  }
+  .footnote {
+    padding-block: 6px;
+  }
 }

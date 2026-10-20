@@ -1,3 +1,5 @@
+import { accessDocument, safeWorkspaceReturn } from "./access-pages.js";
+export { renderLanding, renderRequestAccess, renderAccessState } from "./access-pages.js";
 import { renderProductNavigation } from "./product-navigation.js";
 import { PRODUCT_CSS } from "./product-css.generated.js";
 import { HOSTED_SERVICES } from "./scopes.js";
@@ -186,18 +188,39 @@ function appShell(content: string, htmlConfig: HtmlConfig): string {
     "Home — gog-marketing",
     `<a class="skip-link" href="#main-content">Skip to content</a><div class="app-shell" id="app-shell">
     <aside class="sidebar" id="app-sidebar" aria-label="Application navigation"><a class="sidebar-brand" href="/"><span class="brand-mark">g</span><span>gog-marketing</span></a><div class="sidebar-rule"></div><nav class="side-nav">${renderProductNavigation("home")}</nav><div class="sidebar-spacer"></div><div class="trust-card">${icon("shield")}<strong>Secure by design</strong><p>Least-privilege access to the Google data you choose.</p></div><div class="sidebar-user"><span class="avatar">G</span><span>Google access workspace</span></div></aside>
-    <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Search" aria-label="Search workspace"></label><div class="topbar-actions"><a class="button secondary-action" href="#settings">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><a href="/about">About &amp; privacy status</a></footer></div>
+    <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Find a file or resource" aria-label="Find a file or resource"></label><div class="topbar-actions"><a class="button secondary-action" href="#settings">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><a href="/about">About &amp; privacy status</a></footer></div>
     <nav class="bottom-nav" aria-label="Mobile navigation">${renderProductNavigation("home")}</nav></div>`,
     htmlConfig,
   );
 }
 
-export function renderSignIn(htmlConfig: HtmlConfig): string {
-  return documentShell(
-    "Sign in — gog-marketing",
-    `<main class="shell" id="main-content" tabindex="-1"><section class="card intro sign-in-card"><p class="eyebrow">Get started</p><h1>Connect your Google marketing data</h1><p>Control exactly which Google accounts, services and assets your AI agents can access.</p><div id="sign-in"><p>Clerk authentication is loading…</p></div><p class="faint">Your credentials stay with Google. gog-marketing stores only the access you explicitly approve.</p></section></main><script>window.addEventListener('load', async function () { await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } }); var target = document.getElementById('sign-in'); if (target) Clerk.mountSignIn(target, { fallbackRedirectUrl: '/' }); });</script>`,
-    htmlConfig,
-  );
+export function renderSignIn(
+  htmlConfig: HtmlConfig,
+  returnTo = "/",
+  switchAccount = false,
+): string {
+  const target = safeWorkspaceReturn(returnTo);
+  const mountOptions = JSON.stringify({
+    fallbackRedirectUrl: target,
+    appearance: {
+      variables: {
+        colorPrimary: "var(--action)",
+        colorForeground: "var(--text)",
+        colorBackground: "var(--surface-card)",
+        fontFamily: "inherit",
+        borderRadius: "10px",
+      },
+      elements: {
+        rootBox: { width: "100%" },
+        cardBox: { width: "100%", boxShadow: "none" },
+        card: { boxShadow: "none", border: 0, padding: 0 },
+        footerAction: { display: "none" },
+      },
+    },
+  }).replaceAll("<", "\\u003c");
+  const scripts = clerkScriptTags(htmlConfig);
+  const content = `<main id="main-content" tabindex="-1" class="access-main auth-layout"><section class="auth-intro"><p class="eyebrow">Welcome to your workspace</p><h1>Good work starts<br>with a clear brief.</h1><p class="access-lead">Sign in to connect the Google accounts and files you choose, then work with AI under your saved permissions.</p><ul class="auth-promises"><li>Separate read and change permissions</li><li>Selected files, not blanket access</li><li>Explicit review before Google writes</li></ul><a href="/request-access">Need a beta invitation?</a></section><section class="auth-panel" aria-labelledby="signin-heading"><h2 id="signin-heading">Sign in</h2><p class="muted">Use the account your workspace administrator invited.</p><div id="sign-in"><p role="status">Secure sign-in is loading…</p></div><div id="signin-error" hidden role="alert"><h3>Sign-in is temporarily unavailable</h3><p>We could not load the sign-in service. No access was changed. Check your connection, then retry.</p><button type="button" class="primary" id="signin-retry">Retry sign-in</button></div><div id="switch-account" hidden><p>You are already signed in. Sign out before using another account.</p><button type="button" class="primary" id="switch-signout">Sign out to switch account</button></div><p class="access-caption">Google sign-in stays with Google. Access tokens are stored encrypted; signing in alone does not enable assets or tools.</p></section></main><script>window.addEventListener('load', async function () { var target=document.getElementById('sign-in');var failure=document.getElementById('signin-error');function fail(){target.hidden=true;failure.hidden=false;}document.getElementById('signin-retry').addEventListener('click',function(){window.location.reload();});try {if(!window.Clerk)throw new Error('Unavailable');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});if(${switchAccount ? "true" : "false"} && Clerk.session){target.hidden=true;document.getElementById('switch-account').hidden=false;document.getElementById('switch-signout').addEventListener('click',async function(){try{await Clerk.signOut({redirectUrl:${JSON.stringify("/sign-in?returnTo=" + encodeURIComponent(target))}})}catch{fail();}});}else{Clerk.mountSignIn(target,${mountOptions});}} catch {fail();}});</script>`;
+  return accessDocument("Sign in", content, scripts);
 }
 
 export function renderCallbackNotice(title: string, message: string): string {
@@ -213,6 +236,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
     <section class="state-banner" id="state-banner" hidden aria-live="polite"></section>
     <section class="panel completion" id="completion-state" hidden aria-labelledby="completion-heading"><div class="completion-progress" aria-label="Connection progress"><div class="progress-step done"><span class="progress-dot">${icon("check")}</span><span>1 Connect Google</span></div><div class="progress-step" id="completion-step-data"><span class="progress-dot" id="completion-step-data-dot">2</span><span>2 Choose data</span></div><div class="progress-step" id="completion-step-ready"><span class="progress-dot">3</span><strong>Ready</strong></div></div><div class="completion-body"><span class="completion-check" id="completion-check">${icon("check")}</span><h2 id="completion-heading">Google connected — choose your data</h2><p id="completion-description">No assets are available to connected AI tools until you make a selection.</p><div class="completion-metrics"><div class="completion-metric"><strong id="completion-accounts">0</strong><span>accounts connected</span></div><div class="completion-metric"><strong id="completion-services">0</strong><span>services enabled</span></div><div class="completion-metric"><strong id="completion-assets">0</strong><span>assets enabled</span></div></div><button class="button primary" id="completion-continue" type="button">Choose data →</button></div></section>
     <header class="page-header" id="home"><div><p class="eyebrow">Home</p><h1>Your Google marketing data</h1><p>Secure access and permissions for AI agents and tools.</p></div><div class="page-actions"><button class="button secondary-action" id="view-assets" type="button">${icon("data")} Manage data</button><button class="button primary" id="add-connection" type="button">${icon("plus")} Add Google account</button></div></header>
+    <section class="setup-guide" id="setup-guide" hidden aria-labelledby="setup-heading"><div><p class="eyebrow">Your next step</p><h2 id="setup-heading">Set up your marketing workspace</h2><p id="setup-copy">Connect deliberately, choose data, then enable exact tools.</p></div><ol aria-label="Workspace setup"><li id="setup-account">Connect an account</li><li id="setup-data">Choose data</li><li id="setup-tools">Enable tools</li></ol><a class="button primary" id="setup-next" href="#connect-panel">Connect Google account</a></section>
     <section class="panel loading-panel" id="loading-state" aria-live="polite"><div class="loading-heading"><span class="spinner" aria-hidden="true"></span><div><h2>Finding your Google marketing assets…</h2><p>Checking connected accounts and the access you already approved.</p></div></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div><div class="skeleton-row"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div></section>
     <section class="panel loading-panel" id="load-error" hidden><h2>We couldn’t load your Google access</h2><p>Your existing permissions have not changed.</p><button class="button primary" id="retry-load" type="button">Try again</button></section>
     <div id="workspace-content" hidden><section class="metric-strip" aria-label="Workspace summary"><div class="metric"><span class="metric-icon">${icon("data")}</span><div><strong id="tile-accounts">0</strong><span id="tile-connected">0 connected</span></div></div><div class="metric"><span class="metric-icon">${icon("shield")}</span><div><strong id="tile-selected">0</strong><span id="tile-assets">0 of 0 assets enabled</span></div></div><div class="metric"><span class="metric-icon">${icon("sparkles")}</span><div><strong id="tile-services">0</strong><span>services connected</span></div></div><div class="metric"><span class="metric-icon">${icon("check")}</span><div><strong id="tile-health">All healthy</strong><span id="tile-health-detail">No issues detected</span></div></div></section>
@@ -220,7 +244,7 @@ export function renderHome(htmlConfig: HtmlConfig): string {
     <div class="overview-grid"><section class="panel" aria-labelledby="accounts-heading"><div class="panel-head"><div><h2 id="accounts-heading">Connected Google accounts</h2><p>Accounts you’ve authorized</p></div><button class="panel-link" id="manage-accounts" type="button">Manage →</button></div><div class="account-list" id="account-overview"></div></section><section class="panel" id="activity" aria-labelledby="access-heading"><div class="panel-head"><div><h2 id="access-heading">Access model</h2><p>Least-privilege controls for connected tools</p></div></div><div class="quiet-list"><div class="quiet-item">${icon("shield")}<div><strong>Selected assets only</strong><p>Agents can access only the resources you explicitly enable.</p></div></div><div class="quiet-item">${icon("lock")}<div><strong>Read access by default</strong><p>Writes require separate service opt-in and tool permission.</p></div></div><div class="quiet-item">${icon("activity")}<div><strong>Independent accounts</strong><p>Credentials and grants remain isolated by account and tenant.</p></div></div></div></section></div>
     <section class="panel" id="google-data" aria-labelledby="google-data-heading"><div class="panel-head"><div><h2 id="google-data-heading">Google accounts</h2><p>Manage access for each connected account.</p></div></div><div id="google-accounts" style="padding:0 20px 20px"></div></section>
     <section class="panel" id="asset-workspace" hidden aria-labelledby="asset-heading"><div class="panel-head"><div><p class="eyebrow">Google data</p><h2 id="asset-heading">Manage asset access</h2><p>Choose the existing Google assets your AI agents and tools can access. This controls access, not reporting.</p></div><button class="button" id="pick-files" type="button">Choose Google files</button></div><div id="picker-status" role="status" aria-live="polite"></div><div class="asset-frame"><div class="asset-toolbar"><div class="searchbar"><input id="asset-search" type="search" placeholder="Search assets…" aria-label="Search assets"><button id="clear-search" type="button">Clear</button></div><div class="asset-summary"><strong id="asset-selected-count">0 selected</strong><span id="asset-health">● All services healthy</span></div></div><div class="asset-picker"><nav class="rail" id="asset-rail" aria-label="Google services"></nav><div class="asset-content" id="asset-groups"></div></div><div class="savebar"><p>New discoveries stay disabled until you choose them.</p><button id="save-grants" type="button" class="primary">Save changes</button></div></div></section>
-    <section class="panel" id="tool-workspace" hidden aria-labelledby="tool-heading"><div class="panel-head"><div><h2 id="tool-heading">AI tool permissions</h2><p>Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes.</p></div></div><div class="connect-panel"><div class="tool-list" id="tool-choices" aria-label="Tools for the selected Google account"></div><button id="save-tools" type="button" class="primary">Save tool permissions</button> <span id="tool-status" role="status" aria-live="polite"></span></div></section>
+    <section class="panel" id="tool-workspace" hidden aria-labelledby="tool-heading"><div class="panel-head"><div><h2 id="tool-heading">AI tool permissions</h2><p id="tool-heading-copy">Select exactly which tools this Google account may run. OAuth consent and asset selection do not enable writes.</p></div></div><div class="connect-panel tool-panel"><div class="tool-toolbar" id="tool-toolbar" hidden><span class="tool-account" id="tool-account"></span><div class="searchbar tool-search"><input id="tool-search" type="search" placeholder="Search tools…" aria-label="Search tools by name or machine ID"><button id="clear-tool-search" type="button">Clear</button></div><div class="tool-filter" role="group" aria-label="Filter tools by access type"><button type="button" id="tool-filter-all" data-tool-filter="all" aria-pressed="true">All</button><button type="button" id="tool-filter-reads" data-tool-filter="reads" aria-pressed="false">Reads</button><button type="button" id="tool-filter-changes" data-tool-filter="changes" aria-pressed="false">Changes</button></div><button type="button" id="enable-tool-reads" class="secondary">Enable read-only tools in this list</button></div><p class="tool-scope-note" id="tool-scope-note" hidden>“Enable read-only tools in this list” affects only read-only tools shown by the current search and filter. It never enables write tools or destructive operations, and it leaves every write and destructive choice unchanged.</p><p class="tool-summary" id="tool-summary" role="status" aria-live="polite"></p><section class="tool-state" id="tool-loading" hidden><h3>Loading tool permissions…</h3><p>Your existing permissions are unchanged.</p></section><section class="tool-state" id="tool-error" hidden role="alert"><h3>We couldn’t load tool permissions</h3><p id="tool-error-message">Your existing permissions have not changed.</p><button type="button" id="retry-tools" class="primary">Try again</button></section><section class="tool-state" id="tool-empty" hidden><h3>No tools are available</h3><p>This Google account has no tools in the hosted catalogue.</p></section><section class="tool-state" id="tool-search-zero" hidden><h3>No matching tools</h3><p id="tool-search-zero-message">No tools match your search or filter. Existing permissions are unchanged.</p></section><div class="tool-list" id="tool-choices" aria-label="Tools for the selected Google account"></div><div class="tool-savebar"><button id="save-tools" type="button" class="primary">Save tool permissions</button><span id="tool-status" role="status" aria-live="polite"></span></div></div></section>
     <section class="panel connect-panel" id="connect-panel" aria-labelledby="connect-heading"><div class="connect-layout"><div><p class="eyebrow">Add access</p><h2 id="connect-heading">Connect a Google account</h2><p class="connect-help">Select only what this account should use. Writes require a separate opt-in per service; agents start with zero assets enabled.</p>${consentToolbarMarkup()}${consentSummaryMarkup()}<div id="connect-services" class="service-consent" aria-label="Google service read and write consent">${consentGroupsMarkup()}</div><div class="connect-actions"><button id="connect-google" type="button" class="primary">${icon("plus")}<span id="connect-google-label">Connect Google account</span></button><span id="connect-target" class="muted" role="status" aria-live="polite" hidden></span><span id="connect-status" class="muted" role="status" aria-live="polite"></span></div></div><aside class="safety-note"><strong>Least privilege by default</strong><p>Scope eligibility does not guarantee account or hosted-tool availability. Explicit tool and resource grants remain required.</p></aside></div></section>
     <section class="panel connect-panel" id="settings" aria-labelledby="mcp-heading"><p class="eyebrow">Connect to your AI</p><h2 id="mcp-heading">Codex remote MCP endpoint</h2>${canonicalMcpUrl ? `<p>Add this HTTPS URL as a remote MCP server in Codex. Complete the Clerk browser sign-in, then execute only the tools and assets enabled for your Google account.</p><div class="ai-panel"><code id="mcp-url">${canonicalMcpUrl}</code><button id="copy-mcp-url" type="button">Copy URL</button></div>` : `<p>Workspace address is not configured.</p><div class="ai-panel"><code>Remote MCP address unavailable</code><button id="copy-mcp-url" type="button" disabled>Copy URL</button></div>`}<p class="faint">Expanded service coverage is still being verified; this is not a public-beta readiness claim.</p></section></div>
   <script>
@@ -260,10 +284,21 @@ export function renderHome(htmlConfig: HtmlConfig): string {
     function serviceCount() {
       var keys = new Set(); data.connections.forEach(function (connection) { (connection.resources || []).forEach(function (resource) { keys.add(resource.service); }); (connection.services || []).forEach(function (name) { var key = serviceKey(name); if (key) keys.add(key); }); }); return keys.size;
     }
+    function updateSetupGuide() {
+      var guide=el('setup-guide');if(!guide)return;guide.hidden=false;
+      var account=selectedAccount();var active=account&&account.status==='active';var assets=active&&selectedCountFor(account)>0;var tools=assets&&toolChoicesConnectionId===account.id&&toolCatalog.some(function(tool){return tool.enabled;});
+      [['setup-account',active],['setup-data',assets],['setup-tools',tools]].forEach(function(step){el(step[0]).classList.toggle('is-complete',Boolean(step[1]));});
+      var link=el('setup-next');var copy=el('setup-copy');
+      if(!account){copy.textContent='Start by connecting a Google account. Nothing is enabled automatically.';link.href='#connect-panel';link.textContent='Connect Google account';}
+      else if(!active){copy.textContent='Review '+(account.email||'your selected account')+' before continuing. Your saved selections are preserved.';link.href='#google-data';link.textContent='Review account';}
+      else if(!assets){copy.textContent='Choose only the files or resources you want AI to access for '+(account.email||'this account')+'.';link.href='#asset-workspace';link.textContent='Choose data';}
+      else if(!tools){copy.textContent='Your selected data is saved. Now choose exact AI tools; start with reads and opt into changes only when needed.';link.href='#tool-workspace';link.textContent='Choose AI tools';}
+      else{copy.textContent='Data and tools are enabled for '+(account.email||'this account')+'. Every Google write still needs review.';link.href='/chat';link.textContent='Open chat';}
+    }
     function updateTiles() {
       var connected = data.connections.filter(function (item) { return item.status === 'active'; }).length; var needsAttention = data.connections.some(function (item) { return item.status !== 'active'; }); var delayed = data.connections.some(function (item) { return item.discovery.status === 'error' || item.discovery.status === 'unavailable'; });
       var health = needsAttention ? 'Needs attention' : delayed ? 'Some checks delayed' : 'All healthy'; var detail = needsAttention ? 'Review the highlighted account' : delayed ? 'Existing access remains available' : 'No issues detected';
-      setText('tile-accounts', String(data.connections.length)); setText('tile-connected', connected + ' connected'); setText('tile-selected', String(selectedCount())); setText('tile-assets', selectedCount() + ' of ' + assetCount() + ' assets enabled'); setText('tile-services', String(serviceCount())); setText('tile-health', health); setText('tile-health-detail', detail);
+      setText('tile-accounts', String(data.connections.length)); setText('tile-connected', connected + ' connected'); setText('tile-selected', String(selectedCount())); setText('tile-assets', selectedCount() + ' of ' + assetCount() + ' assets enabled'); setText('tile-services', String(serviceCount())); setText('tile-health', health); setText('tile-health-detail', detail); updateSetupGuide();
     }
     function renderStateBanner() {
       var target = el('state-banner'); target.textContent = ''; target.hidden = true;
@@ -321,23 +356,118 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       if (connectionId && connectionId !== selectedId && toolChoicesDirty && !window.confirm('Discard unsaved tool permission changes for this account?')) return;
       selectedId = connectionId; activeService = ''; renderAssets(); renderToolPermissions(); el('google-data').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    var toolChoices = new Map(); var toolChoicesConnectionId = null; var toolChoicesDirty = false;
+    var toolChoices = new Map(); var toolChoicesConnectionId = null; var toolChoicesDirty = false; var toolCatalog = []; var toolSearch = ''; var toolFilter = 'all';
+    function toolAccountName(connection) { return connection.email || connection.displayName || 'the selected Google account'; }
+    function readableToolLabel(tool) {
+      var shortName = tool.name; var servicePrefix = tool.service + '_'; if (shortName.indexOf(servicePrefix) === 0) shortName = shortName.slice(servicePrefix.length);
+      var words = shortName.split('_').filter(Boolean).map(function (word) { return word.charAt(0).toUpperCase() + word.slice(1); });
+      return (label(tool.service) + ' · ' + words.join(' '));
+    }
+    function filteredToolCatalog(catalog, query, filter) {
+      var needle = (query || '').trim().toLowerCase();
+      return (catalog || []).filter(function (tool) {
+        if (filter === 'reads' && tool.write) return false;
+        if (filter === 'changes' && !tool.write) return false;
+        if (!needle) return true;
+        return (readableToolLabel(tool) + ' ' + tool.name + ' ' + tool.service + ' ' + tool.description).toLowerCase().includes(needle);
+      });
+    }
+    function enableVisibleReadTools(choices, catalog, query, filter) {
+      var changed = 0; filteredToolCatalog(catalog, query, filter).forEach(function (tool) {
+        var choice = choices.get(tool.name); if (!choice || tool.write || choice.enabled) return;
+        choice.enabled = true; changed += 1;
+      }); return changed;
+    }
+    function setToolUiState(state) {
+      el('tool-loading').hidden = state !== 'loading';
+      el('tool-error').hidden = state !== 'error';
+      el('tool-empty').hidden = state !== 'empty';
+      el('tool-search-zero').hidden = state !== 'search-zero';
+      el('tool-choices').hidden = state !== 'ready';
+      var ready = state === 'ready' || state === 'search-zero';
+      ['tool-search', 'clear-tool-search', 'tool-filter-all', 'tool-filter-reads', 'tool-filter-changes', 'enable-tool-reads'].forEach(function (id) { el(id).disabled = !ready; });
+    }
+    function toolGroups(visibleTools) {
+      var groups = new Map();
+      visibleTools.forEach(function (tool) {
+        if (!groups.has(tool.service)) groups.set(tool.service, []);
+        groups.get(tool.service).push(tool);
+      });
+      return Array.from(groups.entries()).map(function (entry) { return { service: entry[0], tools: entry[1] }; }).sort(function (a, b) { return category(a.service).localeCompare(category(b.service)) || label(a.service).localeCompare(label(b.service)); });
+    }
+    function renderToolChoices() {
+      var connection = selectedAccount(); if (!connection || toolChoicesConnectionId !== connection.id) return;
+      var visibleTools = filteredToolCatalog(toolCatalog, toolSearch, toolFilter);
+      setToolUiState(visibleTools.length ? 'ready' : (toolCatalog.length ? 'search-zero' : 'empty'));
+      if (!visibleTools.length) {
+        setText('tool-search-zero-message', toolSearch ? 'No tools match “' + toolSearch + '” and your current filter. Existing permissions are unchanged.' : 'No tools match your current filter. Existing permissions are unchanged.');
+        return;
+      }
+      var search = el('tool-search'); var clear = el('clear-tool-search');
+      search.value = toolSearch; clear.disabled = !toolSearch;
+      el('enable-tool-reads').disabled = !visibleTools.some(function (tool) { return !tool.write && !toolChoices.get(tool.name).enabled; });
+      document.querySelectorAll('[data-tool-filter]').forEach(function (button) { button.setAttribute('aria-pressed', String(button.dataset.toolFilter === toolFilter)); });
+      setText('tool-summary', 'Showing ' + visibleTools.length + ' of ' + toolCatalog.length + ' tools · ' + visibleTools.filter(function (tool) { return toolChoices.get(tool.name).enabled; }).length + ' enabled');
+      var target = el('tool-choices'); var openServices = new Set(Array.from(target.querySelectorAll('.tool-group[open]')).map(function (group) { return group.dataset.service; })); var focusedId = target.contains(document.activeElement) ? document.activeElement.id : null; target.textContent = '';
+      toolGroups(visibleTools).forEach(function (group) {
+        var details = document.createElement('details'); details.className = 'tool-group'; details.dataset.service = group.service; details.open = openServices.has(group.service);
+        var summary = document.createElement('summary');
+        var groupLabel = document.createElement('span'); groupLabel.className = 'tool-group-name'; groupLabel.textContent = label(group.service) + ' (' + category(group.service) + ')';
+        var groupCount = document.createElement('span'); groupCount.className = 'tool-group-count'; groupCount.textContent = group.tools.length + ' tools · ' + group.tools.filter(function (tool) { return toolChoices.get(tool.name).enabled; }).length + ' enabled · ' + group.tools.filter(function (tool) { return tool.write; }).length + ' change tools';
+        summary.appendChild(groupLabel); summary.appendChild(groupCount); details.appendChild(summary);
+        var rows = document.createElement('div'); rows.className = 'tool-group-rows';
+        group.tools.forEach(function (tool) {
+          var choice = toolChoices.get(tool.name); var row = document.createElement('div'); row.className = 'tool-choice';
+          var labelNode = document.createElement('label'); var input = document.createElement('input'); input.type = 'checkbox'; input.checked = choice.enabled; input.dataset.toolName = tool.name;
+          var inputId = 'tool-choice-' + connection.id + '-' + tool.name; input.id = inputId; labelNode.htmlFor = inputId;
+          var title = document.createElement('span'); title.className = 'tool-title'; title.textContent = readableToolLabel(tool);
+          var machine = document.createElement('span'); machine.className = 'tool-machine-id'; machine.textContent = tool.name;
+          var kind = document.createElement('span'); kind.className = 'tool-kind ' + (tool.write ? 'changes' : 'reads'); kind.textContent = tool.write ? 'Changes Google data' : 'Read only';
+          labelNode.appendChild(input); labelNode.appendChild(title); labelNode.appendChild(machine); labelNode.appendChild(kind); row.appendChild(labelNode);
+          var technical = document.createElement('details'); technical.className = 'tool-details';
+          var technicalSummary = document.createElement('summary'); technicalSummary.textContent = 'Show technical description';
+          var description = document.createElement('p'); description.textContent = tool.description;
+          technical.appendChild(technicalSummary); technical.appendChild(description); row.appendChild(technical);
+          var destructiveInput = null;
+          input.addEventListener('change', function () {
+            if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for ' + toolAccountName(connection) + '?')) { input.checked = false; return; }
+            choice.enabled = input.checked; toolChoicesDirty = true;
+            if (!input.checked) {
+              choice.allowDestructive = false;
+              if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; }
+            } else if (destructiveInput) destructiveInput.disabled = false;
+            el('tool-status').textContent = 'Unsaved tool permission changes.'; renderToolChoices();
+          });
+          if (tool.write) {
+            var destructiveLabel = document.createElement('label'); destructiveLabel.className = 'tool-destructive';
+            destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = choice.allowDestructive; destructiveInput.disabled = !choice.enabled;
+            var destructiveInputId = inputId + '-destructive'; destructiveInput.id = destructiveInputId; destructiveLabel.htmlFor = destructiveInputId;
+            destructiveInput.addEventListener('change', function () {
+              if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) { destructiveInput.checked = false; return; }
+              choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true;
+              el('tool-status').textContent = 'Unsaved tool permission changes.';
+            });
+            destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel);
+          }
+          rows.appendChild(row);
+        });
+        details.appendChild(rows); target.appendChild(details);
+      });
+      if (focusedId) { var focusedInput = document.getElementById(focusedId); if (focusedInput) focusedInput.focus({ preventScroll: true }); }
+    }
     async function renderToolPermissions() {
       var connection = selectedAccount(); var workspace = el('tool-workspace'); if (!connection) { workspace.hidden = true; return; }
-      workspace.hidden = false; var connectionId = connection.id; var target = el('tool-choices'); target.textContent = 'Loading tool permissions…'; el('save-tools').disabled = true; el('tool-status').textContent = ''; toolChoices.clear(); toolChoicesConnectionId = null; toolChoicesDirty = false;
+      workspace.hidden = false; var connectionId = connection.id; var who = toolAccountName(connection); var target = el('tool-choices');
+      setText('tool-account', 'Google account: ' + who); target.setAttribute('aria-label', 'Tools for ' + who); el('tool-toolbar').hidden = false; el('tool-scope-note').hidden = false; el('save-tools').disabled = true; el('tool-status').textContent = ''; setText('tool-error-message', 'Your existing permissions for ' + who + ' have not changed.'); setToolUiState('loading');
+      toolChoices.clear(); toolChoicesConnectionId = null; toolChoicesDirty = false; toolCatalog = []; toolSearch = ''; toolFilter = 'all';
       try {
         var response = await fetch('/api/google/tools?connectionId=' + encodeURIComponent(connectionId)); if (!response.ok) throw new Error('Could not load tool permissions.'); var permissions = await response.json(); if (!selectedAccount() || selectedAccount().id !== connectionId) return;
-        target.textContent = ''; toolChoicesConnectionId = connectionId; el('save-tools').disabled = false;
-        permissions.tools.forEach(function (tool) {
-          var row = document.createElement('div'); row.className = 'tool-choice'; var labelNode = document.createElement('label'); var input = document.createElement('input'); input.type = 'checkbox'; input.checked = tool.enabled; input.dataset.toolName = tool.name;
-          var choice = { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive }; toolChoices.set(tool.name, choice);
-          var destructiveInput = null;
-          input.addEventListener('change', function () { if (input.checked && tool.write && !window.confirm('Allow ' + tool.name + ' to change Google data for this account?')) input.checked = false; choice.enabled = input.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.'; if (!input.checked) { choice.allowDestructive = false; if (destructiveInput) { destructiveInput.checked = false; destructiveInput.disabled = true; } } else if (destructiveInput) destructiveInput.disabled = false; });
-          labelNode.appendChild(input); labelNode.append(document.createTextNode(tool.name + (tool.write ? ' · writes' : ' · reads') + ' — ' + tool.description)); row.appendChild(labelNode);
-          if (tool.write) { var destructiveLabel = document.createElement('label'); destructiveInput = document.createElement('input'); destructiveInput.type = 'checkbox'; destructiveInput.checked = tool.allowDestructive; destructiveInput.disabled = !tool.enabled; destructiveInput.addEventListener('change', function () { if (destructiveInput.checked && !window.confirm('Allow destructive replacement/deletion for ' + tool.name + '? This is a separate account-specific permission.')) destructiveInput.checked = false; choice.allowDestructive = destructiveInput.checked; toolChoicesDirty = true; el('tool-status').textContent = 'Unsaved tool permission changes.'; }); destructiveLabel.appendChild(destructiveInput); destructiveLabel.append(document.createTextNode('Allow destructive operations for ' + tool.name)); row.appendChild(destructiveLabel); }
-          target.appendChild(row);
-        });
-      } catch (error) { if (selectedAccount() && selectedAccount().id === connectionId) { target.textContent = ''; el('tool-status').textContent = error.message || 'Could not load tools. Existing grants are unchanged.'; } }
+        if (!Array.isArray(permissions.tools)) throw new Error('The tool permission response was invalid.');
+        toolCatalog = permissions.tools; toolCatalog.forEach(function (tool) { toolChoices.set(tool.name, { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive }); }); toolChoicesConnectionId = connectionId; updateSetupGuide();
+        el('save-tools').disabled = false; renderToolChoices();
+      } catch (error) {
+        if (selectedAccount() && selectedAccount().id === connectionId) { setToolUiState('error'); el('save-tools').disabled = true; el('tool-status').textContent = error.message || 'Could not load tools. Existing grants are unchanged.'; }
+      }
     }
     async function jsonFetch(url, body, signal) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}), signal: signal }); }
     async function loadResources() {
@@ -438,10 +568,10 @@ export function renderHome(htmlConfig: HtmlConfig): string {
       } message(entry[0], entry[1]); window.history.replaceState(null, '', '/');
     }
     window.addEventListener('load', async function () {
-      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } }); var userButton = el('user-button'); if (userButton) Clerk.mountUserButton(userButton); el('sign-out').addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }); });
+      await Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor } }); var userButton = el('user-button'); if (userButton) Clerk.mountUserButton(userButton); el('sign-out').addEventListener('click', function () { return Clerk.signOut({ redirectUrl: '/' }).catch(function(){message('Could not complete sign-out. Your workspace remains open; retry when the sign-in service is available.','warning');}); });
       var sidebar = el('app-sidebar'); var mobileNav = window.matchMedia('(max-width: 900px)'); function updateNavMode() { sidebar.inert = mobileNav.matches && !el('app-shell').classList.contains('nav-open'); sidebar.setAttribute('aria-hidden', String(sidebar.inert)); } updateNavMode(); mobileNav.addEventListener('change', updateNavMode);
       function updateCurrentNavigation() { var active = window.location.hash.slice(1) || 'home'; document.querySelectorAll('[data-product-nav]').forEach(function (link) { if (link.dataset.productNav === active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current'); }); } window.addEventListener('hashchange', updateCurrentNavigation); updateCurrentNavigation();
-      el('nav-toggle').addEventListener('click', function () { var open = el('app-shell').classList.toggle('nav-open'); this.setAttribute('aria-expanded', String(open)); updateNavMode(); }); document.querySelectorAll('.side-nav a, .bottom-nav a').forEach(function (link) { link.addEventListener('click', function () { el('app-shell').classList.remove('nav-open'); el('nav-toggle').setAttribute('aria-expanded', 'false'); updateNavMode(); }); }); el('connect-google').addEventListener('click', function () { var body = { services: selectedServices(), writeServices: selectedWriteServices() }; if (connectionTarget) body.connectionId = connectionTarget; return startConnection(body); }); el('add-connection').addEventListener('click', function () { setConnectTarget(null); el('connect-status').textContent = ''; el('connect-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('view-assets').addEventListener('click', function () { selectAccount(selectedId || (data.connections[0] && data.connections[0].id)); }); el('manage-services').addEventListener('click', function () { el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('manage-accounts').addEventListener('click', function () { el('google-data').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('retry-load').addEventListener('click', loadResources); el('save-grants').addEventListener('click', save); el('save-tools').addEventListener('click', saveTools); el('pick-files').addEventListener('click', pickFiles); el('asset-search').addEventListener('input', renderAssets); el('clear-search').addEventListener('click', function () { el('asset-search').value = ''; renderAssets(); }); el('completion-continue').addEventListener('click', function () { var ready = el('completion-state').dataset.ready === 'true'; var connectionId = el('completion-state').dataset.connectionId; el('completion-state').hidden = true; if (!ready && connectionId) { selectedId = connectionId; activeService = ''; renderAssets(); renderToolPermissions(); } (ready ? el('home') : el('asset-workspace')).scrollIntoView({ behavior: 'smooth', block: 'start' }); }); document.querySelector('.toast-close').addEventListener('click', function () { message(''); }); var copyButton = el('copy-mcp-url'); if (copyButton) copyButton.addEventListener('click', function () { navigator.clipboard.writeText(el('mcp-url').textContent); copyButton.textContent = 'Copied'; setTimeout(function () { copyButton.textContent = 'Copy URL'; }, 1800); }); wireConsentActions(); await loadResources(); var location = new URL(window.location.href); showOutcome(location.searchParams.get('google'), location.searchParams.get('connection'));
+      el('nav-toggle').addEventListener('click', function () { var open = el('app-shell').classList.toggle('nav-open'); this.setAttribute('aria-expanded', String(open)); updateNavMode(); }); document.querySelectorAll('.side-nav a, .bottom-nav a').forEach(function (link) { link.addEventListener('click', function () { el('app-shell').classList.remove('nav-open'); el('nav-toggle').setAttribute('aria-expanded', 'false'); updateNavMode(); }); }); el('connect-google').addEventListener('click', function () { var body = { services: selectedServices(), writeServices: selectedWriteServices() }; if (connectionTarget) body.connectionId = connectionTarget; return startConnection(body); }); el('add-connection').addEventListener('click', function () { setConnectTarget(null); el('connect-status').textContent = ''; el('connect-panel').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('view-assets').addEventListener('click', function () { selectAccount(selectedId || (data.connections[0] && data.connections[0].id)); }); el('manage-services').addEventListener('click', function () { el('asset-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('manage-accounts').addEventListener('click', function () { el('google-data').scrollIntoView({ behavior: 'smooth', block: 'start' }); }); el('retry-load').addEventListener('click', loadResources); el('save-grants').addEventListener('click', save); el('save-tools').addEventListener('click', saveTools); el('retry-tools').addEventListener('click', renderToolPermissions); el('tool-search').addEventListener('input', function () { toolSearch = el('tool-search').value; renderToolChoices(); }); el('clear-tool-search').addEventListener('click', function () { toolSearch = ''; renderToolChoices(); }); document.querySelectorAll('[data-tool-filter]').forEach(function (button) { button.addEventListener('click', function () { toolFilter = button.dataset.toolFilter; renderToolChoices(); }); }); el('enable-tool-reads').addEventListener('click', function () { var changed = enableVisibleReadTools(toolChoices, toolCatalog, toolSearch, toolFilter); if (changed) toolChoicesDirty = true; el('tool-status').textContent = changed ? 'Enabled ' + changed + ' read-only tool' + (changed === 1 ? '' : 's') + ' in this list. Write and destructive choices are unchanged.' : 'No additional read-only tools are enabled by this action.'; renderToolChoices(); }); el('pick-files').addEventListener('click', pickFiles); el('asset-search').addEventListener('input', renderAssets); el('clear-search').addEventListener('click', function () { el('asset-search').value = ''; renderAssets(); }); el('completion-continue').addEventListener('click', function () { var ready = el('completion-state').dataset.ready === 'true'; var connectionId = el('completion-state').dataset.connectionId; el('completion-state').hidden = true; if (!ready && connectionId) { selectedId = connectionId; activeService = ''; renderAssets(); renderToolPermissions(); } (ready ? el('home') : el('asset-workspace')).scrollIntoView({ behavior: 'smooth', block: 'start' }); }); document.querySelector('.toast-close').addEventListener('click', function () { message(''); }); var copyButton = el('copy-mcp-url'); if (copyButton) copyButton.addEventListener('click', function () { navigator.clipboard.writeText(el('mcp-url').textContent); copyButton.textContent = 'Copied'; setTimeout(function () { copyButton.textContent = 'Copy URL'; }, 1800); }); el('global-search').addEventListener('input',function(){el('asset-search').value=this.value;renderAssets();if(selectedAccount())el('asset-workspace').scrollIntoView({behavior:'smooth',block:'start'});}); wireConsentActions(); await loadResources(); var location = new URL(window.location.href); showOutcome(location.searchParams.get('google'), location.searchParams.get('connection'));
     });
   </script>`;
   return appShell(content, htmlConfig);
