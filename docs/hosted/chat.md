@@ -139,12 +139,15 @@ to six model/tool steps; each approval continuation is authenticated and budgete
 Saved transcripts include tool arguments/results: use only accounts/data you are
 comfortable passing to the configured OpenRouter model.
 
-The installed production dependency audit was rechecked: the MCP client/SDK
-OAuth credential-forwarding advisory remains in transitive dependencies. This
-bridge does **not** instantiate an MCP/OAuth client or connect to a remote MCP
-server; no OAuth client credentials are handed to an MCP-selected issuer. Do not
-enable remote MCP/OAuth client functionality without resolving that advisory.
-Other existing dependency advisories were not silently upgraded in this change.
+The MCP OAuth credential-forwarding dependency advisory GHSA-6qxp-vccf-f47h is
+addressed by agents0.28.1 with MCP client/core/server2.3.1 and SDK1.32.1 (#106).
+The bridge still does **not** configure a remote MCP/OAuth client. A native-runtime
+regression rejects inherited MCP/lifecycle management RPCs and private endpoint
+paths while preserving legitimate model/history access. No credential compromise
+or reachable credential-forwarding exploit was demonstrated. Adding remote MCP
+OAuth would require a separate issuer/credential-migration review; dependency
+patching alone is not authorization to enable it. Other advisories are not
+silently suppressed; see [the targeted audit](security-audit-2026-10-20.md).
 
 Implementation/fixture proof and real Google acceptance are recorded separately
 in [issue #92](https://github.com/Rajeev-SG/gog-marketing/issues/92). A passing fixture
