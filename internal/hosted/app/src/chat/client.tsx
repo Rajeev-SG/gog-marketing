@@ -14,6 +14,7 @@ import {
   type ToolCallMessagePartProps,
 } from "@assistant-ui/react";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
+import { ModelSelector, type ChatModelSettings } from "./model-selector.js";
 import "./style.css";
 
 type ChatThread = { id: string; title: string; createdAt: string; updatedAt: string };
@@ -169,11 +170,24 @@ function Chat({
   const [draftSaved, setDraftSaved] = useState(true);
   const [announcement, setAnnouncement] = useState("");
   const [turnNotice, setTurnNotice] = useState("");
+  const [modelSettings, setModelSettings] = useState<ChatModelSettings | null>(null);
+  const [modelSettingsLoading, setModelSettingsLoading] = useState(false);
+  const [modelSettingsError, setModelSettingsError] = useState("");
+  const [modelBusy, setModelBusy] = useState(false);
+  const [modelSettingsVersion, setModelSettingsVersion] = useState(0);
   const draftKey = draftStorageKey(session.draftKey);
   const agent = useAgent({
     agent: "Chat",
     name: session.conversation,
     onOpen: () => setConnected(true),
+    onMessage: (event) => {
+      try {
+        const data = JSON.parse(String(event.data)) as { type?: unknown };
+        if (data.type === "gog-model-changed") setModelSettingsVersion((value) => value + 1);
+      } catch {
+        /* Native protocol frames are handled by the SDK. */
+      }
+    },
     onClose: () => {
       setConnected(false);
       onDisconnect();
@@ -231,6 +245,50 @@ function Chat({
   });
   const runtime = useAISDKRuntime(chat);
   const running = chat.status === "streaming" || chat.status === "submitted";
+  const modelReady =
+    !!modelSettings?.models.some(
+      (model) => model.key === modelSettings.selectedKey && model.enabled,
+    ) && modelSettings.model !== "unavailable";
+  useEffect(() => {
+    if (!connected) return;
+    let active = true;
+    setModelSettingsLoading(true);
+    setModelSettingsError("");
+    agent
+      .call("modelSettings")
+      .then((settings) => {
+        if (!active) return;
+        setModelSettings(settings as ChatModelSettings);
+      })
+      .catch(() => {
+        if (!active) return;
+        setModelSettings(null);
+        setModelSettingsError(
+          "Could not load saved model settings. Sending is paused until the connection recovers.",
+        );
+      })
+      .finally(() => {
+        if (active) setModelSettingsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [agent, connected, modelSettingsVersion]);
+  const selectModel = async (key: string) => {
+    if (!modelSettings || modelBusy || running || !connected) return;
+    setModelBusy(true);
+    setModelSettingsError("");
+    try {
+      const settings = (await agent.call("selectModel", [key])) as ChatModelSettings;
+      setModelSettings(settings);
+    } catch {
+      setModelSettingsError(
+        "Could not save your model choice. Check your connection, then choose it again.",
+      );
+    } finally {
+      setModelBusy(false);
+    }
+  };
   useEffect(() => {
     const composer = runtime.thread.composer;
     try {
@@ -341,7 +399,11 @@ function Chat({
                       "Explain a tricky idea simply",
                       "Turn my notes into a clear plan",
                     ].map((prompt) => (
-                      <ThreadPrimitive.Suggestion key={prompt} prompt={prompt} send>
+                      <ThreadPrimitive.Suggestion
+                        key={prompt}
+                        prompt={prompt}
+                        send={modelReady && connected && !modelBusy && !modelSettingsLoading}
+                      >
                         {prompt}
                         <span aria-hidden="true">↗</span>
                       </ThreadPrimitive.Suggestion>
@@ -389,7 +451,7 @@ function Chat({
                   <ComposerPrimitive.Send
                     className="send"
                     aria-label="Send message"
-                    disabled={!connected}
+                    disabled={!connected || !modelReady || modelBusy || modelSettingsLoading}
                   >
                     Send ↑
                   </ComposerPrimitive.Send>
@@ -401,9 +463,18 @@ function Chat({
                 </p>
               )}
               <div className="footnote">
-                <span>OpenRouter · {session.model}</span>
                 <span>AI can make mistakes. Check important details.</span>
               </div>
+              <ModelSelector
+                settings={modelSettings}
+                connected={connected}
+                running={running}
+                busy={modelBusy}
+                loading={modelSettingsLoading}
+                error={modelSettingsError}
+                onSelect={selectModel}
+                onRetry={() => setModelSettingsVersion((value) => value + 1)}
+              />
             </div>
           </ThreadPrimitive.Root>
         </main>

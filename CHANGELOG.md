@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted chat: add a per-conversation model selector with openrouter/free default, curated free alternatives, preserved history/drafts/Google approvals, strict privacy and no automatic paid fallback. Count provider steps with atomic shared/tenant request, token and cost budgets. Paid models require explicit owner opt-in, verified existing provider hard caps and configured budgets; no production settings are changed. Fixture-verified native RPC/D1/SDK and mobile/desktop selector behavior; live provider acceptance remains separate. (#108, #110, thanks @Rajeev-SG)
+
 - Hosted workspace: finish 68 remaining eligible Docs/Drive/Sheets/Slides operations in a coherent batch, preserving typed native handlers, selected-file and exact-tool grants, destructive approvals, existing scopes and no-replay writes. Includes structured editing, same-file table/value operations, raw reads, sharing and file workflows. Precisely classify two authorization-design blockers (Docs secondary file chips and copy-then-edit Slides templates); no eligible inventory is left unexplained. Fixture-tested, unverified live; chat starter allowlist unchanged. (#97, #110, thanks @Rajeev-SG)
 
 - Hosted Docs/Drive: complete 14 selected-file comment lifecycle operations through native handlers, including quote location in Docs. Require existing drive.file scope, exact tool/file grants, write approval and destructive authority for deletion. Inline bounded text only; no raw anchors or local files, and uncertain writes are not retried. Fixture-tested, unverified live; not added to the integrated chat starter allowlist. (#97, thanks @Rajeev-SG)

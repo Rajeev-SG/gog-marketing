@@ -300,7 +300,7 @@ describe("integrated chat identity boundary", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const data = (await response.json()) as Record<string, unknown>;
-    expect(data).toMatchObject({ model: "openai/gpt-4.1-mini", expiresAt });
+    expect(data).toMatchObject({ model: "openrouter/free", expiresAt });
     expect(data.conversation).toMatch(/^[a-f0-9]{64}$/);
     const tenant = await repo.getTenantByClerkId(owner);
     const serialized = JSON.stringify(data);
