@@ -3,18 +3,20 @@
 rules:
   artipacked:
     ignore:
-      - ci.yml:34
-      - ci.yml:80
-      - ci.yml:120
-      - ci.yml:142
-      - ci.yml:174
-      - ci.yml:206
-      - docker.yml:43
-      - pages.yml:33
-      - release-unified.yml:25
+      - ci.yml:35
+      - ci.yml:81
+      - ci.yml:121
+      - ci.yml:143
+      - ci.yml:175
+      - ci.yml:207
+      - docker.yml:44
+      - pages.yml:34
+      - release-unified.yml:26
   adhoc-packages:
     ignore:
-      - ci.yml:146
-      - ci.yml:178
-      - ci.yml:210
+      - ci.yml:149
+      - ci.yml:181
+      - ci.yml:213
 
+      # Same pinned Corepack bootstrap as CI; trusted owner, read-only job, no persisted credentials.
+      - quality.yml:40

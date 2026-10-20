@@ -22,8 +22,9 @@ make security-nightly
 ```
 
 Both commands install their pinned scanner into `.tools/security`, verify the
-official release artifact SHA-256 checksum, and write SARIF under
-`.tools/security/reports/` (outside Git). Semgrep runs from a digest-pinned
+official release artifact SHA-256 checksum, and write local reports under
+`.tools/security/reports/` (outside Git). Workflow gating uses plain output;
+other scanners retain SARIF reports. Semgrep runs from a digest-pinned
 official image.
 
 ## Pinned versions and evidence
@@ -87,9 +88,9 @@ The 2026-10-20 nightly run produced these unresolved, unsuppressed results:
 - Trivy locally built image scan: 6 results across 5 advisory IDs, including two
   CRITICAL `pgx` findings and four HIGH findings.
 
-The failed nightly gate is an actionable backlog, not accepted risk. The fast
-PR gate remains green and still blocks new secret/workflow issues without
-hiding the source findings.
+That initial nightly failure was triage input, not accepted risk. Current
+post-fix results are recorded below; a reporting-only SARIF exit is never
+treated as proof that the workflow gate enforces findings.
 
 ## Maintenance
 
@@ -131,3 +132,46 @@ candidate exited0, retaining GO-2026-5932 with `called:false` in JSON rather tha
 ignoring it. No unresolved Go advisory was returned as called. Both current
 container builders are included in the final nightly image gate; the original
 single-image six-result baseline above remains a historical pre-fix observation.
+
+## Failure-propagating workflow gate
+
+Zizmor SARIF mode intentionally returns0 even for high findings. The PR gate
+therefore uses native plain output and its documented nonzero severity exit
+codes; it does not depend on paid SARIF/code-scanning services. A deliberately
+unsafe, non-runnable fixture shares the exact gate invocation and must produce
+high-finding exit14. Tool errors or accidental success fail the regression.
+Existing per-location ignores use the actual1-based primary locations, not the
+previous off-by-one / step-header lines. No rule or severity class is disabled.
+
+There are13 precise workflow exceptions: the12 legacy findings above and the
+prepared quality workflow's pinned Corepack bootstrap at quality.yml:40 (same
+known low-severity install pattern as CI, trusted owner/same-repository source,
+read-only permissions, no persisted checkout credentials). Existing expiry and
+review-on-edit requirements apply. Corrected plain-mode checks, not raw SARIF
+success, establish that no unexpected workflow finding remains.
+
+## Verified integrated result — 2026-10-20
+
+Local source contains reviewed UX4e632954 and security-code a94d2895; this does
+not mean either PR is merged or production is verified.
+
+| Check | Actual result |
+| --- | --- |
+| Gitleaks actual source |0 unresolved after17 documented fixture fingerprints |
+| Zizmor enforced plain gate |0 unexpected findings after precise known exceptions; high unsafe-workflow fixture returns14 |
+| Semgrep |0 production matches; both injected Go cases plus TypeScript fixture detected |
+| OSV |0 blocking findings; GO-2026-5932 retained as uncalled, not ignored |
+| Trivy configuration |0 HIGH/CRITICAL |
+| Trivy CLI image |0 HIGH/CRITICAL; network-disabled --help succeeds |
+| Trivy hosted runner image |0 HIGH/CRITICAL; image built locally |
+
+Negative gate probes confirmed Gitleaks returns1 for a generated, unregistered
+high-entropy API credential; OSV returns1 for the old vulnerable lockfile in
+SARIF mode; Semgrep --error returns1 for unsafe source; zizmor plain returns14
+for the deliberately unsafe workflow. The initial alphabetic fake PAT was
+recognized as non-secret/sample content, so it was not used as positive proof.
+No actual credential, workflow dispatch or image publication was used.
+
+Final full CI and the bounded review of scan introduction remain required.
+Native authenticated-browser/Google/provider and production acceptance are
+external boundaries, not implied by these source/image checks.
