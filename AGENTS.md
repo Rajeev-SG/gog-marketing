@@ -7,6 +7,20 @@
 - Tests: `*_test.go` next to code; opt-in integration suite in `internal/integration/` (build-tagged).
 - `bin/`: build outputs; `docs/`: specs/releasing; `scripts/`: release helpers.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the canonical labels defined in `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context. See `docs/agents/domain.md`.
+
 ## Build, Test, and Development Commands
 
 - `make` / `make build`: build `bin/gog`.
