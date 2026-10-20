@@ -15,6 +15,7 @@ import {
 } from "@assistant-ui/react";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import { ModelSelector, type ChatModelSettings } from "./model-selector.js";
+import { safeModelFailureMessage } from "./models.js";
 import "./style.css";
 
 type ChatThread = { id: string; title: string; createdAt: string; updatedAt: string };
@@ -232,6 +233,11 @@ function Chat({
       );
     },
     onTurnEnd: (event) => {
+      if (event.outcome === "error") {
+        setTurnNotice(safeModelFailureMessage(event.error));
+        setAnnouncement("");
+        return;
+      }
       if (event.outcome !== "aborted") return;
       setTurnNotice("Response stopped. Your sent messages and any partial reply are kept.");
       setAnnouncement("");

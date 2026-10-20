@@ -8,6 +8,8 @@ import {
   modelRequestReservation,
   paidModelConfigured,
   selectChatModel,
+  modelFailureMessage,
+  safeModelFailureMessage,
   verifyPaidProviderBudget,
 } from "./models.js";
 const env = {
@@ -16,6 +18,25 @@ const env = {
   CHAT_TENANT_MONTHLY_BUDGET_MICRO_USD: "250000",
   CHAT_GLOBAL_MONTHLY_BUDGET_MICRO_USD: "1000000",
 };
+it("keeps actionable native failure notices but never displays arbitrary upstream error text", () => {
+  for (const code of [
+    "budget",
+    "privacy",
+    "context",
+    "model_not_allowed",
+    "paid_not_enabled",
+  ] as const)
+    expect(safeModelFailureMessage(modelFailureMessage(code))).toBe(modelFailureMessage(code));
+  for (const error of [
+    undefined,
+    new Error("raw upstream response with credentials"),
+    { message: modelFailureMessage("budget") },
+    "raw upstream response with credentials",
+    `${modelFailureMessage("budget")} secret suffix`,
+  ])
+    expect(safeModelFailureMessage(error)).toBe(modelFailureMessage("provider"));
+});
+
 it("uses a server-owned free default, hides paid from cohorts and rejects forged model ids", () => {
   expect(DEFAULT_CHAT_MODEL).toBe("openrouter/free");
   expect(availableChatModels({}, "cohort").every((x) => x.free)).toBe(true);
