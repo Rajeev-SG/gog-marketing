@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Code quality: add pinned Knip/duplication checks and repeatable bundle metrics for hosted app/state/tracking entry points. Remove only unreferenced type declarations and unnecessary export markers; no runtime logic, dependencies, tests or generated artifacts are removed, and the production bundle is unchanged. (#109, #110, thanks @Rajeev-SG)
+
 - Hosted workspace UX: add a marketer-first public entry, branded invitation/session/outage states, native Clerk sign-in framing, ordered onboarding and searchable service-grouped exact-tool permissions. Preserve account/file boundaries, explicit write/destructive consent and API errors; compact chat model details and keep mobile empty conversations readable. Fixture-tested, with live authentication acceptance separate. (#107, #110, thanks @Rajeev-SG)
 
 - Hosted chat: add Xing4.0 Free as a tool-capable, listed-ZDR alternative; retain MiniMax/Nemotron choices as disabled with an explanation after public metadata showed no ZDR endpoints for those free variants. Keep existing thread selections visible rather than silently switching them. All privacy/price/budget controls remain unchanged; metadata is not live inference acceptance. (#108, #110, thanks @Rajeev-SG)
