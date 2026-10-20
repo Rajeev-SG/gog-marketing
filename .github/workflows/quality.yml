@@ -3,6 +3,9 @@ name: quality
 on:
   pull_request:
     paths:
+      - "**/*.go"
+      - go.mod
+      - go.sum
       - .github/workflows/quality.yml
       - internal/hosted/app/**
       - internal/hosted/state/**
