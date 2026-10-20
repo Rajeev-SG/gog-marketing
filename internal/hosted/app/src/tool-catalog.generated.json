@@ -8000,6 +8000,464 @@
     }
   },
   {
+    "name": "docs_comments_add",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment add on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "quoted": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "content"],
+        "type": "object"
+      },
+      "name": "docs_comments_add"
+    }
+  },
+  {
+    "name": "docs_comments_delete",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment delete on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_delete"
+    }
+  },
+  {
+    "name": "docs_comments_get",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment get on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_get"
+    }
+  },
+  {
+    "name": "docs_comments_list",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment list on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "document_id": {
+            "type": "string"
+          },
+          "include_resolved": {
+            "type": "boolean"
+          },
+          "page": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_list"
+    }
+  },
+  {
+    "name": "docs_comments_locate",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment locate on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_locate"
+    }
+  },
+  {
+    "name": "docs_comments_reply",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment reply on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["resolve", "reopen"],
+            "type": "string"
+          },
+          "comment_id": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id", "content"],
+        "type": "object"
+      },
+      "name": "docs_comments_reply"
+    }
+  },
+  {
+    "name": "docs_comments_resolve",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment resolve on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_resolve"
+    }
+  },
+  {
+    "name": "docs_comments_reopen",
+    "service": "docs",
+    "resource_type": "file",
+    "resource_argument": "document_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native docs comment reopen on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "document_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["document_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "docs_comments_reopen"
+    }
+  },
+  {
+    "name": "drive_comments_create",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment create on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "quoted": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "content"],
+        "type": "object"
+      },
+      "name": "drive_comments_create"
+    }
+  },
+  {
+    "name": "drive_comments_update",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment update on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id", "content"],
+        "type": "object"
+      },
+      "name": "drive_comments_update"
+    }
+  },
+  {
+    "name": "drive_comments_delete",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment delete on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "drive_comments_delete"
+    }
+  },
+  {
+    "name": "drive_comments_reply",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment reply on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": ["resolve", "reopen"],
+            "type": "string"
+          },
+          "comment_id": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id", "content"],
+        "type": "object"
+      },
+      "name": "drive_comments_reply"
+    }
+  },
+  {
+    "name": "drive_comments_resolve",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment resolve on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "drive_comments_resolve"
+    }
+  },
+  {
+    "name": "drive_comments_reopen",
+    "service": "drive",
+    "resource_type": "file",
+    "resource_argument": "file_id",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Native drive comment reopen on one explicitly granted file, using existing drive.file authority. Exact tool/file grants; writes require one-use chat approval and deletion additionally requires destructive authority. Inline bounded text only, no arbitrary anchors, local files, all-pages options or impersonation. Mutations are single-attempt.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "comment_id": {
+            "type": "string"
+          },
+          "file_id": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "comment_id"],
+        "type": "object"
+      },
+      "name": "drive_comments_reopen"
+    }
+  },
+  {
     "name": "sheets_chart_list",
     "service": "sheets",
     "resource_type": "file",

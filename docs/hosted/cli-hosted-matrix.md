@@ -6,14 +6,14 @@ catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
 The current baseline covers 360 visible native leaves in the 11 active services
-and 219 active hosted tools (257 total). It maps 219 hosted tools across 229
+and 233 active hosted tools (271 total). It maps 233 hosted tools across 243
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 229 implemented/unverified hosted
-leaves, 84 reviewed eligible missing, 39 requiring resource/transport/billing
+also map direct and grouped aliases. Counts are: 243 implemented/unverified hosted
+leaves, 70 reviewed eligible missing, 39 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
 not a separate missing hosted tool.
@@ -121,3 +121,17 @@ permission. Chat uses the existing exact-argument one-use write approval path.
 All new adapters disable uncertain-write retries. Signed-runner fixtures prove
 request shapes, selected-file/tool/scope denials, destructive denials and no
 replay after a simulated 503. These are not live Google acceptance results.
+
+## Shared Docs/Drive comment lifecycle
+
+Fourteen existing eligible operations now delegate to native comment handlers:
+Docs add/delete/get/list/locate/reply/resolve/reopen and Drive
+create/update/delete/reply/resolve/reopen. Exact selected-file/tool grants and
+existing drive.file scope are required, including for Docs comments. Writes
+retain one-use chat approval policy; deletion requires destructive authority.
+No raw anchor JSON, arbitrary requests, files/stdin, impersonation or all-pages
+option is exposed. Locate reads only the selected comment and document, with
+host/path pairing enforced across the two APIs. Mutations are single-attempt.
+Signed-runner fixtures prove all fourteen operations and authorization/HTTP
+boundaries, including no replay after uncertain writes. Live verification remains
+outstanding; these new tools are not in the integrated chat starter allowlist.

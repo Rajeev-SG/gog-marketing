@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted Docs/Drive: complete 14 selected-file comment lifecycle operations through native handlers, including quote location in Docs. Require existing drive.file scope, exact tool/file grants, write approval and destructive authority for deletion. Inline bounded text only; no raw anchors or local files, and uncertain writes are not retried. Fixture-tested, unverified live; not added to the integrated chat starter allowlist. (#97, thanks @Rajeev-SG)
+
 - Hosted Docs: add 18 selected-document structural and table editing operations: headers/footers, footnotes, breaks, blank tables, person/date chips, row/column insertion/deletion, merge/unmerge and pinned headers. Exact tool/file grants and chat approval remain required; deletion requires destructive authority. Inline inputs only and uncertain writes are not retried. Fixture-tested, unverified live. (#97, thanks @Rajeev-SG)
 
 - Hosted Drive: expose native permission listing, sharing audit and user-permission audit for one explicitly granted file under existing drive.file scope. Preserve pagination and local user/domain filtering; reject folder enumeration, alternate file paths and media downloads. Chat reads require no write approval and recheck fresh authority. Fixture-tested, unverified live. (#96, #97, thanks @Rajeev-SG)
