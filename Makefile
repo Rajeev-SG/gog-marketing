@@ -4,6 +4,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := build
 
 .PHONY: build build-safe gog gogcli gog-help gogcli-help help fmt fmt-check lint deadcode test ci tools docker-version-check docs-commands docs-site docs-check agent-skills agent-skills-check
+.PHONY: security-fast security-nightly
 .PHONY: worker-ci state-ci hosted-app-ci provider-preflight eval-gws eval-gws-agents eval-gws-test build-acceptance acceptance-doctor acceptance-local acceptance-live acceptance-live-repeat acceptance-bootstrap
 
 BIN_DIR := $(CURDIR)/bin
@@ -201,3 +202,11 @@ provider-preflight:
 	@mkdir -p $(BIN_DIR)
 	@go build -o $(BIN_DIR)/hosted-preflight ./cmd/hosted-preflight
 	@$(BIN_DIR)/hosted-preflight $(PREFLIGHT_FLAGS)
+
+security-fast:
+	@scripts/security/install-tools.sh fast
+	@scripts/security/run-fast.sh
+
+security-nightly:
+	@scripts/security/install-tools.sh all
+	@scripts/security/run-nightly.sh

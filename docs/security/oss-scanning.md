@@ -1,0 +1,100 @@
+# OSS security scanning
+
+This baseline adds local, reproducible OSS gates without paid services,
+CodeQL, source uploads, or production changes.
+
+## Coverage and cadence
+
+| Gate | Scanners | Purpose | Cadence |
+| --- | --- | --- | --- |
+| `make security-fast` | Gitleaks, zizmor | Secret leaks and GitHub Actions policy | Pull request |
+| `make security-nightly` | Semgrep, OSV-Scanner, Trivy | Source, dependencies, configuration, and container image | Nightly and manual |
+
+The fast gate intentionally avoids the expensive nightly scanners on every PR.
+The nightly gate scans a locally built image and never publishes it.
+
+## Commands
+
+```sh
+make security-fast
+make security-nightly
+```
+
+Both commands install their pinned scanner into `.tools/security`, verify the
+official release artifact SHA-256 checksum, and write SARIF under
+`.tools/security/reports/` (outside Git). Semgrep runs from a digest-pinned
+official image.
+
+## Pinned versions and evidence
+
+Versions, licenses, official Linux/macOS ARM64 artifacts, and checksums were
+verified from each project's GitHub release and repository metadata on
+2026-10-20:
+
+- Semgrep `1.181.0` — LGPL-2.1; official image Linux ARM64 digest
+  `sha256:db0579f992f6597840f96b249119f4999d44ffbc9e3f0a8854c367183e474c24`.
+- OSV-Scanner `2.7.0` — Apache-2.0; SHA-256 values are pinned in
+  `scripts/security/install-tools.sh`.
+- Gitleaks `8.30.1` — MIT; SHA-256 values are pinned in
+  `scripts/security/install-tools.sh`.
+- Trivy `0.76.0` — Apache-2.0; SHA-256 values are pinned in
+  `scripts/security/install-tools.sh`.
+- zizmor `1.31.1` — MIT; SHA-256 values are pinned in
+  `scripts/security/install-tools.sh`.
+
+The pinned image digest is immutable. Release checksums are compared before a
+binary is installed. Upgrades require replacing both the version and checksum.
+
+## Privacy and network controls
+
+- Source remains local. No scanner uploads repository contents or images.
+- Gitleaks and zizmor are run locally; zizmor uses `--offline`.
+- Semgrep uses the repository's pinned local rules only, and
+  `SEMGREP_SEND_METRICS=off` disables metrics collection.
+- OSV-Scanner uses native lockfile extraction and offline vulnerability
+  databases. It does not submit dependency graphs to the OSV API.
+- Trivy downloads vulnerability and policy data only; scanned artifacts remain
+  local.
+- No third-party scanner action is used beyond the immutable checkout action.
+
+## Findings baseline
+
+The initial scans found accepted findings that are not production source:
+
+- Gitleaks found 17 `generic-api-key` matches in test constants and E2E
+  fixtures. Their exact fingerprints are in
+  `scripts/security/.gitleaksignore`; new or moved findings still fail.
+- zizmor found 12 accepted findings in existing workflows: nine `artipacked`
+  medium/low-confidence and three `adhoc-packages` low/high-confidence. They
+  are exact file-and-line exceptions in `scripts/security/zizmor.yml`.
+
+The existing workflows use pinned actions but are outside the approved file
+scope for this scanning change, so fixing them requires a separate
+owner-approved workflow change. Reassess every exception no later than
+**2027-01-20**; remove it as soon as the referenced source or workflow is
+updated.
+
+The controller is separately landing the known package advisory fix; this
+scanner change does not suppress or duplicate that advisory.
+
+The 2026-10-20 nightly run produced these unresolved, unsuppressed results:
+
+- Semgrep: 10 `go.dynamic-external-command` findings in production Go source.
+- OSV-Scanner: 50 dependency findings across 23 advisory IDs, spanning Go and
+  pnpm lockfiles. The controller's separate package-advisory fix owns remediation.
+- Trivy configuration scan: 0 HIGH/CRITICAL findings.
+- Trivy locally built image scan: 6 results across 5 advisory IDs, including two
+  CRITICAL `pgx` findings and four HIGH findings.
+
+The failed nightly gate is an actionable backlog, not accepted risk. The fast
+PR gate remains green and still blocks new secret/workflow issues without
+hiding the source findings.
+
+## Maintenance
+
+- Nightly scans can change when upstream vulnerability or rule data changes.
+- Scanner versions and checksums are reviewed at least monthly.
+- Failed findings are triaged by severity, exploitability, and evidence. Do
+  not add file-wide audit disables or unexplained suppressions.
+- Prefer a precise fix or a scoped exception with evidence and expiry.
+

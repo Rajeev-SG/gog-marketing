@@ -1,0 +1,26 @@
+rules:
+  - id: go.dynamic-external-command
+    languages: [go]
+    severity: ERROR
+    message: External command name must be a compile-time constant.
+    patterns:
+      - pattern-either:
+          - pattern: exec.Command($CMD, ...)
+          - pattern: exec.CommandContext($CTX, $CMD, ...)
+      - pattern-not: exec.Command("...", ...)
+      - pattern-not: exec.CommandContext($CTX, "...", ...)
+    metadata:
+      category: security
+      technology: [go]
+
+  - id: typescript.direct-code-execution
+    languages: [typescript]
+    severity: ERROR
+    message: Direct eval or Function construction can execute untrusted code.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+    metadata:
+      category: security
+      technology: [typescript]
+

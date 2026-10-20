@@ -1,0 +1,20 @@
+# Exact-location baseline. Remove entries when the corresponding workflow is
+# updated. Maintenance owner: Rajeev-SG. Expiry: 2027-01-20.
+rules:
+  artipacked:
+    ignore:
+      - ci.yml:34
+      - ci.yml:80
+      - ci.yml:120
+      - ci.yml:142
+      - ci.yml:174
+      - ci.yml:206
+      - docker.yml:43
+      - pages.yml:33
+      - release-unified.yml:25
+  adhoc-packages:
+    ignore:
+      - ci.yml:146
+      - ci.yml:178
+      - ci.yml:210
+
