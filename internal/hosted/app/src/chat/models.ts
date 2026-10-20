@@ -130,6 +130,22 @@ export function modelFailureMessage(code: ModelFailure): string {
       return "The selected model could not respond. Your conversation is saved. Try another allowed model or retry later. No automatic model switch was made.";
   }
 }
+/** Native error frames may contain arbitrary upstream text; show only our own notices. */
+export function safeModelFailureMessage(error: unknown): string {
+  for (const code of [
+    "model_not_allowed",
+    "paid_not_enabled",
+    "budget",
+    "context",
+    "privacy",
+    "provider",
+  ] as const) {
+    const message = modelFailureMessage(code);
+    if (error === message) return message;
+  }
+  return modelFailureMessage("provider");
+}
+
 function currencyCap(value: string | undefined): number {
   if (!value || !/^[1-9]\d{0,9}$/.test(value)) return 0;
   const cap = Number(value);

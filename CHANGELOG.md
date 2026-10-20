@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted live acceptance: clear the native Clerk loading placeholder and constrain its heading typography; show safe, actionable native failed-turn notices instead of blank chat replies, including on reconnect. No provider, privacy, paid-fallback or Google permission changes. (#107, #108, #110, thanks @Rajeev-SG)
+
 - Code quality: add pinned Knip/duplication checks and repeatable bundle metrics for hosted app/state/tracking entry points. Remove only unreferenced type declarations and unnecessary export markers; no runtime logic, dependencies, tests or generated artifacts are removed, and the production bundle is unchanged. (#109, #110, thanks @Rajeev-SG)
 
 - Security gates: add pinned local Gitleaks/zizmor PR checks and nightly Semgrep/OSV/Trivy source, dependency, config and local-image scans. Keep source private and CodeQL deferred; retain precise fixture/workflow exceptions with expiry and report unresolved dependency findings rather than silently suppressing them. (#106, #110, thanks @Rajeev-SG)
