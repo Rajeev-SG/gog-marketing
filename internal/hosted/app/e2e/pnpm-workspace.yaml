@@ -1,6 +1,9 @@
 allowBuilds:
   esbuild: true
   workerd: true
+overrides:
+  sharp: 0.35.5
+  undici: 7.29.1
 minimumReleaseAgeExclude:
   - "@playwright/test@1.64.0"
   - playwright-core@1.64.0

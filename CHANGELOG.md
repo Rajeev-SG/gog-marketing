@@ -4,7 +4,13 @@
 
 - Code quality: add pinned Knip/duplication checks and repeatable bundle metrics for hosted app/state/tracking entry points. Remove only unreferenced type declarations and unnecessary export markers; no runtime logic, dependencies, tests or generated artifacts are removed, and the production bundle is unchanged. (#109, #110, thanks @Rajeev-SG)
 
+- Security gates: add pinned local Gitleaks/zizmor PR checks and nightly Semgrep/OSV/Trivy source, dependency, config and local-image scans. Keep source private and CodeQL deferred; retain precise fixture/workflow exceptions with expiry and report unresolved dependency findings rather than silently suppressing them. (#106, #110, thanks @Rajeev-SG)
+
 - Hosted workspace UX: add a marketer-first public entry, branded invitation/session/outage states, native Clerk sign-in framing, ordered onboarding and searchable service-grouped exact-tool permissions. Preserve account/file boundaries, explicit write/destructive consent and API errors; compact chat model details and keep mobile empty conversations readable. Fixture-tested, with live authentication acceptance separate. (#107, #110, thanks @Rajeev-SG)
+
+- Hosted security: patch pgx protocol/SQL advisories with5.9.2, HTTP/2 advisories with x/net0.60.0, compression advisories with1.18.7, Node build/test dependency advisories with bounded patch pins, and Go runtime advisories with a1.27.3 toolchain/digest-pinned container build plus compatible pinned lint tools. Malformed pgx decoder regressions fail on the old package and pass after upgrade; server-side decoder exposure is not claimed for this PostgreSQL-client app. No production deploy or module language-minimum increase. (#106, #110, thanks @Rajeev-SG)
+
+- Hosted security: patch the transitive MCP OAuth credential-forwarding advisory with agents0.28.1 and patched MCP peers; keep remote MCP management inaccessible to chat clients. Native-runtime regression covers denied inherited management/lifecycle RPCs and private routes while retaining model/history access. No production settings or Google scopes change. (#106, #110, thanks @Rajeev-SG)
 
 - Hosted chat: add Xing4.0 Free as a tool-capable, listed-ZDR alternative; retain MiniMax/Nemotron choices as disabled with an explanation after public metadata showed no ZDR endpoints for those free variants. Keep existing thread selections visible rather than silently switching them. All privacy/price/budget controls remain unchanged; metadata is not live inference acceptance. (#108, #110, thanks @Rajeev-SG)
 

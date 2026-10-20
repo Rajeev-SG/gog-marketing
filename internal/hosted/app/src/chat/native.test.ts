@@ -843,3 +843,45 @@ it("enforces application-wide provider request limits before dispatch without lo
   );
   socket.close();
 });
+
+it("rejects inherited remote MCP management and lifecycle RPCs without outbound access", async () => {
+  const sessionCookie = await cookieFor("sess-native-security-rpc");
+  const created = await mf.dispatchFetch(origin + "/api/chat/threads", {
+    method: "POST",
+    headers: { Cookie: sessionCookie, Origin: origin, "Content-Type": "application/json" },
+    body: JSON.stringify({ title: "Security RPC boundary" }),
+  });
+  expect(created.status).toBe(201);
+  const { thread } = (await created.json()) as { thread: { id: string } };
+  const meta = await mf.dispatchFetch(origin + "/api/chat/session?thread=" + thread.id, {
+    headers: { Cookie: sessionCookie },
+  });
+  expect(meta.status).toBe(200);
+  const { conversation } = (await meta.json()) as { conversation: string };
+  const path = origin + "/agents/chat/" + conversation;
+  const socket = await open(path, sessionCookie);
+  const before = providerCalls;
+  const outboundStart = outboundRoutes.length;
+  for (const method of ["addMcpServer", "removeMcpServer", "setState", "destroy", "onRequest"]) {
+    const result = await modelRpc(socket, method, [
+      "untrusted",
+      "https://attacker.example.test/mcp",
+    ]);
+    expect(result.success, method).toBe(false);
+  }
+  for (const suffix of ["/mcp", "/oauth/callback", "/__legacy-budget", "/__thread-delete"]) {
+    const response = await mf.dispatchFetch(path + suffix, {
+      headers: { Cookie: sessionCookie, Origin: origin },
+    });
+    expect(response.status, suffix).toBe(404);
+  }
+  expect(providerCalls).toBe(before);
+  expect(
+    outboundRoutes
+      .slice(outboundStart)
+      .some((route) => route.startsWith("https://attacker.example.test")),
+  ).toBe(false);
+  expect((await modelRpc(socket, "modelSettings")).success).toBe(true);
+  expect(await history(path, sessionCookie)).toEqual([]);
+  socket.close(1000);
+});

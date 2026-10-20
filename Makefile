@@ -4,6 +4,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := build
 
 .PHONY: build build-safe gog gogcli gog-help gogcli-help help fmt fmt-check lint deadcode test ci tools docker-version-check docs-commands docs-site docs-check agent-skills agent-skills-check quality quality-metrics
+.PHONY: security-fast security-nightly
 .PHONY: worker-ci state-ci hosted-app-ci provider-preflight eval-gws eval-gws-agents eval-gws-test build-acceptance acceptance-doctor acceptance-local acceptance-live acceptance-live-repeat acceptance-bootstrap
 
 BIN_DIR := $(CURDIR)/bin
@@ -25,7 +26,7 @@ GOIMPORTS := $(TOOLS_DIR)/goimports
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 DEADCODE := $(TOOLS_DIR)/deadcode
 TOOLS_STAMP := $(TOOLS_DIR)/.versions
-TOOLS_VERSION := gofumpt=v0.12.0;goimports=v0.50.0;golangci-lint=v2.13.2;deadcode=v0.50.0
+TOOLS_VERSION := gofumpt=v0.12.0;goimports=v0.52.0;golangci-lint=v2.15.0;deadcode=v0.52.0
 
 # Allow passing CLI args as extra "targets":
 #   make gogcli -- --help
@@ -97,9 +98,9 @@ tools:
 	else \
 		set -e; \
 		GOBIN=$(TOOLS_DIR) go install mvdan.cc/gofumpt@v0.12.0; \
-		GOBIN=$(TOOLS_DIR) go install golang.org/x/tools/cmd/goimports@v0.50.0; \
-		GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2; \
-		GOBIN=$(TOOLS_DIR) go install golang.org/x/tools/cmd/deadcode@v0.50.0; \
+		GOBIN=$(TOOLS_DIR) go install golang.org/x/tools/cmd/goimports@v0.52.0; \
+		GOBIN=$(TOOLS_DIR) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0; \
+		GOBIN=$(TOOLS_DIR) go install golang.org/x/tools/cmd/deadcode@v0.52.0; \
 		printf '%s\n' "$(TOOLS_VERSION)" > "$(TOOLS_STAMP)"; \
 	fi
 
@@ -207,3 +208,11 @@ provider-preflight:
 	@mkdir -p $(BIN_DIR)
 	@go build -o $(BIN_DIR)/hosted-preflight ./cmd/hosted-preflight
 	@$(BIN_DIR)/hosted-preflight $(PREFLIGHT_FLAGS)
+
+security-fast:
+	@scripts/security/install-tools.sh fast
+	@scripts/security/run-fast.sh
+
+security-nightly:
+	@scripts/security/install-tools.sh all
+	@scripts/security/run-nightly.sh

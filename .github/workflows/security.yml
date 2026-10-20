@@ -1,0 +1,57 @@
+name: security
+
+on:
+  pull_request:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  fast:
+    if: >-
+      github.actor == github.repository_owner &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
+    timeout-minutes: 10
+    steps:
+      - name: Use disk-backed temporary storage
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Fast security gate
+        run: make security-fast
+
+  nightly:
+    if: >-
+      (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner)
+    runs-on: [self-hosted, Linux, ARM64, oracle, gog-marketing]
+    timeout-minutes: 40
+    steps:
+      - name: Use disk-backed temporary storage
+        run: |
+          test -d "$RUNNER_TEMP"
+          printf 'TMPDIR=%s\nGOTMPDIR=%s\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Go for native reachability analysis
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Nightly security gate
+        run: make security-nightly
+
