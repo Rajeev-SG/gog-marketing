@@ -130,7 +130,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	nativeAppScriptProjectBindings(), nativeChatBindings(), nativeClassroomCourseBindings(), nativeYouTubePlaylistBindings(),
 	nativePhotosLibraryBindings(), nativeBigQueryReadBindings(), nativeTagManagerBindings(), nativeSheetsBindings(),
 	[]NativeToolBinding{nativeDriveRenameBinding(), nativeDriveCopyBinding(), nativeDriveTrashBinding()},
-	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(),
+	nativeSheetsCreateBindings(), nativeDocsSlidesCreateBindings(), nativeDocsInventoryBindings(), nativeCommentsWatchReadBindings(), nativeCommentLifecycleBindings(),
 	nativeSheetsInventoryBindings(), nativeSheetsLayoutBindings(), nativeSlidesReadBindings(), nativeSlidesEditBindings(),
 	nativeSlidesLifecycleBindings(), nativeFormsQuestionBindings(), nativeDocsTabBindings(), nativeDriveRevisionBindings(),
 	nativeSheetsGeometryBindings(), nativeSheetsRangeNoteBindings(), nativeDrivePermissionReadBindings(),
@@ -362,6 +362,10 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 		}
 
 		path := request.URL.Path
+		if !admitCommentLocateHost(invocation.Name, request.URL.Hostname(), path) {
+			return native.ErrDenied
+		}
+
 		if binding.escapedPaths {
 			path = request.URL.EscapedPath()
 		}

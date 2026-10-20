@@ -22,17 +22,17 @@
     "prior_deferred_excluded": true
   },
   "native_leaf_count": 360,
-  "hosted_tool_count": 219,
-  "total_hosted_catalog_count": 257,
+  "hosted_tool_count": 233,
+  "total_hosted_catalog_count": 271,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 229,
-  "mapped_hosted_tool_count": 219,
+  "mapped_native_leaf_count": 243,
+  "mapped_hosted_tool_count": 233,
   "classifications": {
     "deferred": 5,
-    "eligible_missing": 84,
+    "eligible_missing": 70,
     "excluded": 2,
     "implementation_design_required": 39,
-    "implemented_hosted_unverified": 229,
+    "implemented_hosted_unverified": 243,
     "scope_boundary_blocked": 1
   },
   "by_service": [
@@ -68,25 +68,25 @@
     {
       "service": "docs",
       "native_leaves": 72,
-      "hosted_tools": 46,
-      "mapped_native_leaves": 51,
+      "hosted_tools": 54,
+      "mapped_native_leaves": 59,
       "classifications": {
-        "eligible_missing": 17,
+        "eligible_missing": 9,
         "implementation_design_required": 4,
-        "implemented_hosted_unverified": 51
+        "implemented_hosted_unverified": 59
       }
     },
     {
       "service": "drive",
       "native_leaves": 47,
-      "hosted_tools": 11,
-      "mapped_native_leaves": 11,
+      "hosted_tools": 17,
+      "mapped_native_leaves": 17,
       "classifications": {
         "deferred": 5,
-        "eligible_missing": 13,
+        "eligible_missing": 7,
         "excluded": 1,
         "implementation_design_required": 16,
-        "implemented_hosted_unverified": 11,
+        "implemented_hosted_unverified": 17,
         "scope_boundary_blocked": 1
       }
     },
@@ -1556,10 +1556,24 @@
       "service": "docs",
       "command": "comments add",
       "native_command": "gog docs comments add",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_add",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "drive.file variant valid (comments.create accepts drive.file); anchor validation and dry-run preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1585,10 +1599,24 @@
       "service": "docs",
       "command": "comments delete",
       "native_command": "gog docs comments delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "destructive: dry-run plus explicit confirm gate preserved; drive.file variant valid"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1614,10 +1642,24 @@
       "service": "docs",
       "command": "comments get",
       "native_command": "gog docs comments get",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_get",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "read-only; drive.file variant valid per discovery scopes for comments.get"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1643,10 +1685,24 @@
       "service": "docs",
       "command": "comments list",
       "native_command": "gog docs comments list",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_list",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "located mode may additionally fetch doc body for tab anchoring; read-only; drive.file variant valid"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1674,10 +1730,24 @@
       "service": "docs",
       "command": "comments locate",
       "native_command": "gog docs comments locate",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_locate",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "findQuoteMatches helper body not supplied; docs.documents.get is the only read method consistent with usage but exact call unverified"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1738,10 +1808,24 @@
       "service": "docs",
       "command": "comments reopen",
       "native_command": "gog docs comments reopen",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_reopen",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Exact selected document/comment; inline reply/action only; write grant and approval; helper comment_ops.go createDriveReplyWithAction calls Replies.Create."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1770,10 +1854,24 @@
       "service": "docs",
       "command": "comments reply",
       "native_command": "gog docs comments reply",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_reply",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Exact selected document/comment; inline reply/action only; write grant and approval; helper comment_ops.go createDriveReplyWithAction calls Replies.Create."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -1802,10 +1900,24 @@
       "service": "docs",
       "command": "comments resolve",
       "native_command": "gog docs comments resolve",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "docs_comments_resolve",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Exact selected document/comment; inline reply/action only; write grant and approval; helper comment_ops.go createDriveReplyWithAction calls Replies.Create."
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4366,10 +4478,24 @@
       "service": "drive",
       "command": "comments create",
       "native_command": "gog drive comments create",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Prior requires_audit label was unreviewed-engineering flag, not a paid Google assessment; method accepts drive.file; fixed fileId/content/quoted schema; dry-run and quoted-content warning preserved"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4395,10 +4521,24 @@
       "service": "drive",
       "command": "comments delete",
       "native_command": "gog drive comments delete",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_delete",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Destructive; existing dry-run/confirm gate must be preserved; only files the app has been granted via drive.file are reachable"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "DELETE"
+        ],
+        "http_methods_known": true,
+        "destructive": true
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",
@@ -4470,10 +4610,24 @@
       "service": "drive",
       "command": "comments reopen",
       "native_command": "gog drive comments reopen",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_reopen",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Reopen is not a distinct discovery method; implemented via reply creation helper (reopenDriveComment), not proved beyond replies.create"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4499,10 +4653,24 @@
       "service": "drive",
       "command": "comments reply",
       "native_command": "gog drive comments reply",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_reply",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Fixed-schema content/action adapter only; no raw payload passthrough"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4528,10 +4696,24 @@
       "service": "drive",
       "command": "comments resolve",
       "native_command": "gog drive comments resolve",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_resolve",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Resolve is not a distinct discovery method; implemented via reply creation helper (resolveDriveComment), not proved beyond replies.create"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "engineering_review": {
@@ -4557,10 +4739,24 @@
       "service": "drive",
       "command": "comments update",
       "native_command": "gog drive comments update",
-      "hosted_tool": null,
-      "status": "eligible_missing",
+      "hosted_tool": "drive_comments_update",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
       "live_verified": false,
-      "classification_reason": "Content-only fixed schema (non-empty content enforced); drive.file visibility limits apply"
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "policy_binding": {
+        "accepted_scopes": [
+          "drive.file"
+        ],
+        "http_methods": [
+          "PATCH"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
     },
     {
       "service": "drive",

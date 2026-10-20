@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 257,
-  "active_tool_count": 219,
+  "total_catalog_count": 271,
+  "active_tool_count": 233,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -890,6 +890,134 @@
     },
     {
       "service": "docs",
+      "tool": "docs_comments_add",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_get",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_list",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_locate",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_reopen",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_reply",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
+      "tool": "docs_comments_resolve",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "document_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "docs",
       "tool": "docs_create_blank",
       "write": true,
       "destructive_binding_flag": false,
@@ -1706,6 +1834,38 @@
     },
     {
       "service": "drive",
+      "tool": "drive_comments_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_delete",
+      "write": true,
+      "destructive_binding_flag": true,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "DELETE"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
       "tool": "drive_comments_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -1732,6 +1892,70 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_reopen",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_reply",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_resolve",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "drive",
+      "tool": "drive_comments_update",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "file",
+      "resource_argument": "file_id",
+      "accepted_scopes": [
+        "drive.file"
+      ],
+      "http_methods": [
+        "PATCH"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
