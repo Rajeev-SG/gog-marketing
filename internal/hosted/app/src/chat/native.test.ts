@@ -20,7 +20,9 @@ let providerCalls = 0;
 let nextToolCall: { id: string; connectionId: string } | null = null;
 let rateLimited = false;
 let sessionChecks = 0;
-let delayedSessionCheck: string | undefined;
+let heldSessionCheck:
+  | { sessionId: string; entered: () => void; release: Promise<void> }
+  | undefined;
 const outboundRoutes: string[] = [];
 const owner = "user_native_chat_owner";
 const cohortA = "user_NativeCohortA";
@@ -177,9 +179,11 @@ beforeAll(async () => {
             if (url.origin !== "https://api.clerk.com" || !url.pathname.startsWith("/v1/sessions/"))
               throw new Error("Unexpected native fixture network request");
             const sessionId = url.pathname.split("/").at(-1)!;
-            if (sessionId === delayedSessionCheck) {
-              delayedSessionCheck = undefined;
-              await new Promise((resolve) => setTimeout(resolve, 1250));
+            if (sessionId === heldSessionCheck?.sessionId) {
+              const check = heldSessionCheck;
+              heldSessionCheck = undefined;
+              check.entered();
+              await check.release;
             }
             sessionChecks++;
             if (rateLimited)
@@ -498,29 +502,55 @@ it("persists native write approval over reconnect and never dispatches an unappr
     },
   ]);
   expect(JSON.stringify(await history(path, sessionCookie))).toContain("approval-requested");
-  // Fresh authorization can outlast Vitest's one-second default on shared CI.
-  // Exercise that delay while retaining the existing five-second native wait budget.
-  delayedSessionCheck = "session-tool-approvals";
-  socket.send(
-    JSON.stringify({
-      type: "cf_agent_tool_approval",
-      toolCallId: "native-write-approved",
-      approved: true,
-      autoContinue: true,
-    }),
-  );
-  await expect
-    .poll(
-      async () =>
-        (await db
-          .prepare(
-            "SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'",
-          )
-          .first<{ count: number }>())!.count,
-      { timeout: 5000 },
-    )
-    .toBe(before!.count + 1);
-  expect(delayedSessionCheck).toBeUndefined();
+  // Hold fresh authorization explicitly instead of racing an artificial sleep
+  // against the dispatch deadline on a heavily loaded shared CI runner.
+  let markAuthorizationEntered!: () => void;
+  let releaseAuthorization!: () => void;
+  const authorizationEntered = new Promise<void>((resolve) => {
+    markAuthorizationEntered = resolve;
+  });
+  const authorizationRelease = new Promise<void>((resolve) => {
+    releaseAuthorization = resolve;
+  });
+  heldSessionCheck = {
+    sessionId: "session-tool-approvals",
+    entered: markAuthorizationEntered,
+    release: authorizationRelease,
+  };
+  try {
+    socket.send(
+      JSON.stringify({
+        type: "cf_agent_tool_approval",
+        toolCallId: "native-write-approved",
+        approved: true,
+        autoContinue: true,
+      }),
+    );
+    await authorizationEntered;
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'",
+        )
+        .first<{ count: number }>(),
+    ).toEqual(before);
+    releaseAuthorization();
+    await expect
+      .poll(
+        async () =>
+          (await db
+            .prepare(
+              "SELECT COUNT(*) AS count FROM hosted_audit_events WHERE action = 'mcp.tools.call'",
+            )
+            .first<{ count: number }>())!.count,
+        { timeout: 5000 },
+      )
+      .toBe(before!.count + 1);
+    expect(heldSessionCheck).toBeUndefined();
+  } finally {
+    releaseAuthorization();
+    heldSessionCheck = undefined;
+  }
   await expect
     .poll(async () => JSON.stringify(await history(path, sessionCookie)))
     .toContain("isError");
