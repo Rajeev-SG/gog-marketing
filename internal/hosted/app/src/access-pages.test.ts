@@ -55,6 +55,57 @@ it("retains native Clerk with brand appearance, bounded retry and literal safe r
   }
 });
 
+it("clears the loader before native mount and constrains the provider heading typography", async () => {
+  const nodes = new Map<
+    string,
+    { hidden: boolean; textContent: string; addEventListener: () => void }
+  >();
+  const element = (id: string) => {
+    if (!nodes.has(id))
+      nodes.set(id, {
+        hidden: id !== "sign-in",
+        textContent: id === "sign-in" ? "Secure sign-in is loading…" : "",
+        addEventListener: () => {},
+      });
+    return nodes.get(id)!;
+  };
+  let load: (() => Promise<void>) | undefined;
+  let mounted = false;
+  const context = vm.createContext({
+    document: { getElementById: element },
+    window: {
+      addEventListener: (_event: string, fn: () => Promise<void>) => {
+        load = fn;
+      },
+    },
+    Clerk: {
+      load: async () => {},
+      mountSignIn: (
+        target: ReturnType<typeof element>,
+        options: { appearance: { elements: Record<string, Record<string, unknown>> } },
+      ) => {
+        expect(target.textContent).toBe("");
+        expect(options.appearance.elements.headerTitle).toMatchObject({
+          fontSize: "1.25rem !important",
+          lineHeight: "1.4 !important",
+          letterSpacing: "normal !important",
+          margin: "0 !important",
+        });
+        expect(options.appearance.elements.headerSubtitle.fontSize).toBe("0.875rem");
+        mounted = true;
+      },
+    },
+    setTimeout: () => 1,
+    clearTimeout: () => {},
+  });
+  vm.runInContext("window.Clerk=Clerk", context);
+  const script = renderSignIn(config).match(/<script>([\s\S]*?)<\/script>/)![1];
+  vm.runInContext(script, context);
+  await load!();
+  expect(mounted).toBe(true);
+  expect(element("signin-error").hidden).toBe(true);
+});
+
 it("exposes sign-in retry after a stalled SDK without late mounting", async () => {
   const nodes = new Map<string, { hidden: boolean; addEventListener: () => void }>();
   const element = (id: string) => {
