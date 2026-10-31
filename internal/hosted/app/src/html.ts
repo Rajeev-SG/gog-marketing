@@ -223,6 +223,12 @@ export function renderSignIn(
         },
         headerSubtitle: { fontSize: "0.875rem", lineHeight: "1.5" },
         footerAction: { display: "none" },
+        // Keep the measured auth-strategy badge inside the provider card edge.
+        lastAuthenticationStrategyBadge: {
+          right: "8px",
+          top: "0",
+          transform: "translateY(-50%)",
+        },
       },
     },
   }).replaceAll("<", "\\u003c");

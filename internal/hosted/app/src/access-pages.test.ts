@@ -92,6 +92,11 @@ it("clears the loader before native mount and constrains the provider heading ty
           margin: "0 !important",
         });
         expect(options.appearance.elements.headerSubtitle.fontSize).toBe("0.875rem");
+        expect(options.appearance.elements.lastAuthenticationStrategyBadge).toMatchObject({
+          right: "8px",
+          top: "0",
+          transform: "translateY(-50%)",
+        });
         mounted = true;
       },
     },
