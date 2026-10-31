@@ -424,7 +424,7 @@ button:disabled { cursor: default; opacity: .7; }
 .service-cell { color: var(--text-muted); font-size: 12.5px; }
 .service-cell strong { color: var(--text); font-size: 12.5px; }
 .row-chevron { color: var(--text-faint); font-size: 21px; line-height: 1; }
-.service-mark.analytics { background: #fff4d9; color: #b96800; }
+.service-mark.analytics { background: #fff4d9; color: #875000; }
 .service-mark.tagmanager { background: #e8f1ff; color: #1769aa; }
 .service-mark.searchconsole { background: #e5f5ed; color: #0c7651; }
 .service-mark.bigquery { background: #e8efff; color: #235bc7; }
@@ -691,6 +691,7 @@ button:disabled { cursor: default; opacity: .7; }
 .auth-panel { min-width:0; padding:32px; background:var(--surface-card); border:1px solid var(--border); border-radius:var(--radius-l); }
 .auth-panel h2 { margin:0 0 8px; }.auth-panel #sign-in { margin-block:24px; }.auth-panel #sign-in input { width:100%; min-height:44px; padding:10px; border:1px solid var(--border-strong); border-radius:var(--radius-s); }
 .auth-panel #sign-in label { display:grid; gap:8px; }.auth-panel #sign-in button { width:100%; margin-top:16px; }.auth-promises { padding-left:20px; margin-block:28px; color:var(--text-muted); }.auth-promises li { margin-block:10px; }
+.auth-panel #sign-in .cl-footerItem p { color:var(--text); }
 .access-state-note { border-top:3px solid var(--action); padding:24px 0; margin-top:56px; max-width:360px; }.access-state-note p { color:var(--text-muted); }.access-notice { border:1px solid var(--border); padding:18px; background:var(--surface-sunken); max-width:650px; }
 @media(max-width:900px){.landing-hero,.auth-layout,.access-state,.access-explainer{grid-template-columns:minmax(0,1fr);gap:32px}.access-main{padding-block:40px}.workflow-preview{max-width:none}.access-state-note{max-width:none;margin-top:0}.access-invite{align-items:flex-start}.access-explainer{margin-top:40px}.access-page h1{letter-spacing:-1.3px}}
 @media(max-width:520px){.access-nav,.access-main,.access-footer{width:calc(100% - 32px)}.access-nav{padding-block:16px;gap:12px}.access-brand{font-size:17px}.access-nav nav{gap:12px}.access-nav nav>a:not(.button){display:none}.access-page h1{font-size:36px}.access-lead{font-size:16px}.auth-panel,.workflow-preview{padding:24px}.access-invite{display:grid}.access-actions{align-items:stretch;gap:12px}.access-actions .button{width:100%;justify-content:center}.access-footer{font-size:12px}}

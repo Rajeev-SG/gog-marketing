@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted sign-in: keep the Clerk authentication-strategy badge inside the provider card edge and darken the GA service-mark and Clerk footer text for contrast. (#107, thanks @Rajeev-SG)
+
 - Hosted live acceptance: clear the native Clerk loading placeholder and constrain its heading typography; show safe, actionable native failed-turn notices instead of blank chat replies, including on reconnect. No provider, privacy, paid-fallback or Google permission changes. (#107, #108, #110, thanks @Rajeev-SG)
 
 - Code quality: add pinned Knip/duplication checks and repeatable bundle metrics for hosted app/state/tracking entry points. Remove only unreferenced type declarations and unnecessary export markers; no runtime logic, dependencies, tests or generated artifacts are removed, and the production bundle is unchanged. (#109, #110, thanks @Rajeev-SG)
