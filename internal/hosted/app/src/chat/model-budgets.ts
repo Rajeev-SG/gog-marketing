@@ -211,3 +211,45 @@ export async function reserveModelRequest(
     results.every((result) => result.success && (result.results?.length ?? 0) === 1)
   );
 }
+
+export interface ModelUsageSummary {
+  tenantRequestsToday: number;
+  tenantTokensToday: number;
+  globalRequestsToday: number;
+  /** Next UTC midnight, when the daily allowances reset. */
+  resetsAt: string;
+}
+
+/** Read-only view of today's model-start counters for plain-language usage display. */
+export async function readModelUsage(
+  repo: HostedRepository,
+  tenantId: string,
+  now: number = Date.now(),
+): Promise<ModelUsageSummary> {
+  const day = utcDay(now);
+  const resetsAt = new Date((Number(day) + 1) * 86_400_000).toISOString();
+  const empty = { tenantRequestsToday: 0, tenantTokensToday: 0, globalRequestsToday: 0, resetsAt };
+  if (typeof tenantId !== "string" || !TENANT_ID_PATTERN.test(tenantId)) return empty;
+  const rows = await repo.db
+    .prepare(
+      `SELECT scope_key, period, value FROM hosted_rate_limit_counters
+       WHERE scope_kind = 'tenant' AND scope_key IN (?1, ?2) AND period IN (?3, ?4)`,
+    )
+    .bind(
+      TENANT_SCOPE_PREFIX + tenantId,
+      GLOBAL_SCOPE_KEY,
+      `model-requests-day:${day}`,
+      `model-tokens-day:${day}`,
+    )
+    .all<{ scope_key: string; period: string; value: number }>();
+  const value = (scope: string, period: string) =>
+    Number(
+      rows.results?.find((row) => row.scope_key === scope && row.period === period)?.value ?? 0,
+    );
+  return {
+    tenantRequestsToday: value(TENANT_SCOPE_PREFIX + tenantId, `model-requests-day:${day}`),
+    tenantTokensToday: value(TENANT_SCOPE_PREFIX + tenantId, `model-tokens-day:${day}`),
+    globalRequestsToday: value(GLOBAL_SCOPE_KEY, `model-requests-day:${day}`),
+    resetsAt,
+  };
+}

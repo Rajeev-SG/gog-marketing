@@ -85,11 +85,13 @@ export function budgetedModelFetch(options: {
     }
     if (!response.ok) {
       options.failed(
-        response.status === 429 || response.status === 402 || response.status === 403
-          ? "budget"
-          : response.status === 404
-            ? "privacy"
-            : "provider",
+        response.status === 429
+          ? "provider_busy"
+          : response.status === 402 || response.status === 403
+            ? "budget"
+            : response.status === 404
+              ? "privacy"
+              : "provider",
       );
     }
     return response;

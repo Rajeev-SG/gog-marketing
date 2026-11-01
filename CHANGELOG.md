@@ -6,6 +6,10 @@
 
 - Hosted live acceptance: clear the native Clerk loading placeholder and constrain its heading typography; show safe, actionable native failed-turn notices instead of blank chat replies, including on reconnect. No provider, privacy, paid-fallback or Google permission changes. (#107, #108, #110, thanks @Rajeev-SG)
 
+- Hosted chat UX: a failed reply now shows once, as a danger notice with Retry on the assistant turn, instead of a blank "GOG" bubble, a green status pill and a second alert. Provider rate limits (HTTP 429) get their own "free model service is busy" message, separate from our own usage limits. Model details show today's usage, shared free capacity and the local reset time in plain language. The model select keeps short option labels so it no longer pushes the composer and Send off-screen at 390px; unavailable-model reasons move into the details list. Fixture-tested with a native-protocol socket; the live capacity root cause still needs production log access. (31 Oct UX audit C01, C02, C03, C05)
+
+- Hosted workspace: switching to an account with no assets now resets the asset summary instead of keeping the previous account's "selected / all services healthy" figures. The asset panel names the Google account, and the selected account card is highlighted. (31 Oct UX audit U03, D01)
+
 - Code quality: add pinned Knip/duplication checks and repeatable bundle metrics for hosted app/state/tracking entry points. Remove only unreferenced type declarations and unnecessary export markers; no runtime logic, dependencies, tests or generated artifacts are removed, and the production bundle is unchanged. (#109, #110, thanks @Rajeev-SG)
 
 - Security gates: add pinned local Gitleaks/zizmor PR checks and nightly Semgrep/OSV/Trivy source, dependency, config and local-image scans. Keep source private and CodeQL deferred; retain precise fixture/workflow exceptions with expiry and report unresolved dependency findings rather than silently suppressing them. (#106, #110, thanks @Rajeev-SG)

@@ -4,6 +4,7 @@ import { HostedRepository } from "../../../state/src/repository.js";
 import { loadMigrationSql, splitMigrationStatements } from "../../../state/src/dev-migrations.js";
 import {
   DEFAULT_MODEL_REQUEST_LIMITS,
+  readModelUsage,
   reserveModelRequest,
   type ModelRequestLimits,
 } from "./model-budgets.js";
@@ -243,4 +244,42 @@ it("does not block zero-cost routing after paid budgets are exhausted or disable
       now,
     ),
   ).toBe(false);
+});
+
+it("reads today's tenant and shared usage with the next UTC reset (C05)", async () => {
+  const tenantId = "11111111-2222-4333-8444-555555555555";
+  const otherTenant = "99999999-2222-4333-8444-555555555555";
+  const now = Date.parse("2026-11-01T15:30:00Z");
+  const reservation = { inputTokens: 100, outputTokens: 50, costMicroUsd: 0, paid: false };
+  expect(
+    await reserveModelRequest(repo, tenantId, reservation, DEFAULT_MODEL_REQUEST_LIMITS, now),
+  ).toBe(true);
+  expect(
+    await reserveModelRequest(repo, tenantId, reservation, DEFAULT_MODEL_REQUEST_LIMITS, now),
+  ).toBe(true);
+  expect(
+    await reserveModelRequest(repo, otherTenant, reservation, DEFAULT_MODEL_REQUEST_LIMITS, now),
+  ).toBe(true);
+  // Yesterday's counter must not be counted.
+  expect(
+    await reserveModelRequest(
+      repo,
+      tenantId,
+      reservation,
+      DEFAULT_MODEL_REQUEST_LIMITS,
+      now - 86_400_000,
+    ),
+  ).toBe(true);
+  expect(await readModelUsage(repo, tenantId, now)).toEqual({
+    tenantRequestsToday: 2,
+    tenantTokensToday: 300,
+    globalRequestsToday: 3,
+    resetsAt: "2026-11-02T00:00:00.000Z",
+  });
+  expect(await readModelUsage(repo, "not-a-tenant", now)).toEqual({
+    tenantRequestsToday: 0,
+    tenantTokensToday: 0,
+    globalRequestsToday: 0,
+    resetsAt: "2026-11-02T00:00:00.000Z",
+  });
 });

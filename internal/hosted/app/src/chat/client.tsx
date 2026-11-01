@@ -1,7 +1,7 @@
 import { PRODUCT_CSS } from "../product-css.generated.js";
 import { renderProductNavigation } from "../product-navigation.js";
 import { createRoot } from "react-dom/client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAgent } from "agents/react";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAISDKRuntime } from "@assistant-ui/ai-sdk";
@@ -139,13 +139,47 @@ function GoogleToolCard({
   );
 }
 
+/** Latest turn failure, rendered on the assistant turn it belongs to (one place, one style). */
+type TurnFailure = { message: string; retry: () => void; canRetry: boolean } | null;
+const TurnFailureContext = createContext<TurnFailure>(null);
+
+function TurnFailureNotice({ failure }: { failure: NonNullable<TurnFailure> }) {
+  return (
+    <div className="turn-failure" role="alert">
+      <p>
+        <strong>No reply.</strong> {failure.message}
+      </p>
+      <button type="button" onClick={failure.retry} disabled={!failure.canRetry}>
+        Retry
+      </button>
+    </div>
+  );
+}
+
 function AssistantMessage() {
+  const failure = useContext(TurnFailureContext);
+  const isLast = useAuiState((s) => s.message.isLast);
+  const running = useAuiState((s) => s.message.status?.type === "running");
+  // Persisted turns can be empty shells (a failed start). Never show a blank bubble.
+  const hasContent = useAuiState((s) =>
+    s.message.content.some(
+      (part) => part.type !== "text" || (part as { text?: string }).text?.trim(),
+    ),
+  );
+  const failed = isLast && failure && !running;
+  if (!hasContent && !running && !failed)
+    return (
+      <MessagePrimitive.Root className="message assistant is-empty">
+        <p className="turn-note">No reply was saved for this message.</p>
+      </MessagePrimitive.Root>
+    );
   return (
     <MessagePrimitive.Root className="message assistant">
       <span className="speaker">Gog</span>
       <MessagePrimitive.Parts
         components={{ Text: Markdown, tools: { Fallback: GoogleToolCard } }}
       />
+      {failed && <TurnFailureNotice failure={failure} />}
     </MessagePrimitive.Root>
   );
 }
@@ -171,6 +205,7 @@ function Chat({
   const [draftSaved, setDraftSaved] = useState(true);
   const [announcement, setAnnouncement] = useState("");
   const [turnNotice, setTurnNotice] = useState("");
+  const [turnError, setTurnError] = useState("");
   const [modelSettings, setModelSettings] = useState<ChatModelSettings | null>(null);
   const [modelSettingsLoading, setModelSettingsLoading] = useState(false);
   const [modelSettingsError, setModelSettingsError] = useState("");
@@ -234,10 +269,12 @@ function Chat({
     },
     onTurnEnd: (event) => {
       if (event.outcome === "error") {
-        setTurnNotice(safeModelFailureMessage(event.error));
+        // Native turn outcomes also arrive on reconnect, when chat.error is unset.
+        setTurnError(safeModelFailureMessage(event.error));
         setAnnouncement("");
         return;
       }
+      setTurnError("");
       if (event.outcome !== "aborted") return;
       setTurnNotice("Response stopped. Your sent messages and any partial reply are kept.");
       setAnnouncement("");
@@ -250,6 +287,19 @@ function Chat({
     },
   });
   const runtime = useAISDKRuntime(chat);
+  const turnFailure: TurnFailure =
+    chat.error || turnError
+      ? {
+          // Error frames may carry arbitrary upstream text; show only our own notices.
+          message: chat.error ? safeModelFailureMessage(chat.error.message) : turnError,
+          canRetry: connected,
+          retry: () => {
+            setTurnError("");
+            chat.clearError();
+            void chat.regenerate();
+          },
+        }
+      : null;
   const running = chat.status === "streaming" || chat.status === "submitted";
   const modelReady =
     !!modelSettings?.models.some(
@@ -354,143 +404,145 @@ function Chat({
   }, [running]);
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="app">
-        <header className="chat-thread-bar">
-          <div className="thread-heading">
-            <button
-              type="button"
-              className="nav-toggle quiet"
-              aria-label="Open conversations"
-              aria-expanded={navigationOpen}
-              aria-controls="chat-sidebar"
-              onClick={onOpenThreads}
-            >
-              ☰
-            </button>
-            <h1>{session.thread?.title ?? "Original conversation"}</h1>
-          </div>
-          <div className="thread-actions">
-            <button type="button" className="quiet" onClick={onRename}>
-              Rename
-            </button>
-            <button type="button" className="quiet" onClick={onDelete}>
-              Delete
-            </button>
-          </div>
-        </header>
-        <div className="notice" role="note">
-          Google tools use your enabled permissions. Writes need your approval. Open{" "}
-          <a href="/#google-data">Google settings</a> or return to <a href="/">Home</a>.
-        </div>
-        <main aria-label="Chat">
-          <ThreadPrimitive.Root className="thread">
-            <ThreadPrimitive.Viewport
-              className="viewport"
-              role="region"
-              aria-label="Conversation"
-              tabIndex={0}
-              autoScroll={chat.messages.length > 0}
-              scrollToBottomOnInitialize={chat.messages.length > 0}
-              scrollToBottomOnThreadSwitch={chat.messages.length > 0}
-            >
-              <ThreadPrimitive.Empty>
-                <section className="empty">
-                  <span className="eyebrow">YOUR NEXT CAMPAIGN</span>
-                  <h2>What needs moving forward?</h2>
-                  <p>
-                    Draft a brief, work through results, or prepare a client handoff.
-                    <br />
-                    Your sent messages are saved as you go.
-                  </p>
-                  <div className="suggestions">
-                    {[
-                      "Help me draft a campaign brief",
-                      "Summarise my campaign results",
-                      "Outline a client presentation",
-                    ].map((prompt) => (
-                      <ThreadPrimitive.Suggestion
-                        key={prompt}
-                        prompt={prompt}
-                        send={modelReady && connected && !modelBusy && !modelSettingsLoading}
-                      >
-                        {prompt}
-                        <span aria-hidden="true">↗</span>
-                      </ThreadPrimitive.Suggestion>
-                    ))}
-                  </div>
-                </section>
-              </ThreadPrimitive.Empty>
-              <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
-            </ThreadPrimitive.Viewport>
-            <div className="composer-area">
-              <div role="status" className="status">
-                {!connected
-                  ? "Reconnecting… Your draft is kept in this tab."
-                  : running
-                    ? "Gog is responding…"
-                    : turnNotice || "Connected · Sent messages saved"}
-              </div>
-              <div
-                className="sr-only"
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-                aria-label="Latest assistant reply"
+      <TurnFailureContext.Provider value={turnFailure}>
+        <div className="app">
+          <header className="chat-thread-bar">
+            <div className="thread-heading">
+              <button
+                type="button"
+                className="nav-toggle quiet"
+                aria-label="Open conversations"
+                aria-expanded={navigationOpen}
+                aria-controls="chat-sidebar"
+                onClick={onOpenThreads}
               >
-                {announcement}
-              </div>
-              {chat.error && (
-                <p role="alert" className="error">
-                  {safeModelFailureMessage(chat.error.message)}
-                </p>
-              )}
-              <ComposerPrimitive.Root className="composer" data-keyboard-focus={keyboardFocus}>
-                <ComposerPrimitive.Input
-                  aria-label="Message"
-                  placeholder="Ask about a campaign, brief or report…"
-                  disabled={!connected}
-                  maxLength={8000}
-                  rows={2}
-                />
-                {running ? (
-                  <ComposerPrimitive.Cancel className="send" aria-label="Stop response">
-                    Stop ■
-                  </ComposerPrimitive.Cancel>
-                ) : (
-                  <ComposerPrimitive.Send
-                    className="send"
-                    aria-label="Send message"
-                    disabled={!connected || !modelReady || modelBusy || modelSettingsLoading}
-                  >
-                    Send ↑
-                  </ComposerPrimitive.Send>
-                )}
-              </ComposerPrimitive.Root>
-              {hasDraft && !draftSaved && (
-                <p className="draft-note" role="alert">
-                  Draft could not be saved. Copy it before leaving this page.
-                </p>
-              )}
-              <div className="footnote">
-                <span>AI can make mistakes. Check important details.</span>
-              </div>
-              <ModelSelector
-                settings={modelSettings}
-                connected={connected}
-                running={running}
-                busy={modelBusy}
-                loading={modelSettingsLoading}
-                error={modelSettingsError}
-                onSelect={selectModel}
-                onRetry={() => setModelSettingsVersion((value) => value + 1)}
-              />
+                ☰
+              </button>
+              <h1>{session.thread?.title ?? "Original conversation"}</h1>
             </div>
-          </ThreadPrimitive.Root>
-        </main>
-        <footer>
-          Google access follows your saved permissions. Review every write before approving.
-        </footer>
-      </div>
+            <div className="thread-actions">
+              <button type="button" className="quiet" onClick={onRename}>
+                Rename
+              </button>
+              <button type="button" className="quiet" onClick={onDelete}>
+                Delete
+              </button>
+            </div>
+          </header>
+          <div className="notice" role="note">
+            Google tools use your enabled permissions. Writes need your approval. Open{" "}
+            <a href="/#google-data">Google settings</a> or return to <a href="/">Home</a>.
+          </div>
+          <main aria-label="Chat">
+            <ThreadPrimitive.Root className="thread">
+              <ThreadPrimitive.Viewport
+                className="viewport"
+                role="region"
+                aria-label="Conversation"
+                tabIndex={0}
+                autoScroll={chat.messages.length > 0}
+                scrollToBottomOnInitialize={chat.messages.length > 0}
+                scrollToBottomOnThreadSwitch={chat.messages.length > 0}
+              >
+                <ThreadPrimitive.Empty>
+                  <section className="empty">
+                    <span className="eyebrow">YOUR NEXT CAMPAIGN</span>
+                    <h2>What needs moving forward?</h2>
+                    <p>
+                      Draft a brief, work through results, or prepare a client handoff.
+                      <br />
+                      Your sent messages are saved as you go.
+                    </p>
+                    <div className="suggestions">
+                      {[
+                        "Help me draft a campaign brief",
+                        "Summarise my campaign results",
+                        "Outline a client presentation",
+                      ].map((prompt) => (
+                        <ThreadPrimitive.Suggestion
+                          key={prompt}
+                          prompt={prompt}
+                          send={modelReady && connected && !modelBusy && !modelSettingsLoading}
+                        >
+                          {prompt}
+                          <span aria-hidden="true">↗</span>
+                        </ThreadPrimitive.Suggestion>
+                      ))}
+                    </div>
+                  </section>
+                </ThreadPrimitive.Empty>
+                <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
+              </ThreadPrimitive.Viewport>
+              <div className="composer-area">
+                <div role="status" className="composer-status">
+                  {!connected
+                    ? "Reconnecting… Your draft is kept in this tab."
+                    : running
+                      ? "Gog is responding…"
+                      : turnFailure
+                        ? "Connected · Your message is saved"
+                        : turnNotice || "Connected · Sent messages saved"}
+                </div>
+                <div
+                  className="sr-only"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                  aria-label="Latest assistant reply"
+                >
+                  {announcement}
+                </div>
+                {turnFailure && chat.messages.at(-1)?.role !== "assistant" && (
+                  <TurnFailureNotice failure={turnFailure} />
+                )}
+                <ComposerPrimitive.Root className="composer" data-keyboard-focus={keyboardFocus}>
+                  <ComposerPrimitive.Input
+                    aria-label="Message"
+                    placeholder="Ask about a campaign, brief or report…"
+                    disabled={!connected}
+                    maxLength={8000}
+                    rows={2}
+                  />
+                  {running ? (
+                    <ComposerPrimitive.Cancel className="send" aria-label="Stop response">
+                      Stop ■
+                    </ComposerPrimitive.Cancel>
+                  ) : (
+                    <ComposerPrimitive.Send
+                      className="send"
+                      aria-label="Send message"
+                      disabled={!connected || !modelReady || modelBusy || modelSettingsLoading}
+                    >
+                      Send ↑
+                    </ComposerPrimitive.Send>
+                  )}
+                </ComposerPrimitive.Root>
+                {hasDraft && !draftSaved && (
+                  <p className="draft-note" role="alert">
+                    Draft could not be saved. Copy it before leaving this page.
+                  </p>
+                )}
+                <div className="footnote">
+                  <span>AI can make mistakes. Check important details.</span>
+                </div>
+                <ModelSelector
+                  settings={modelSettings}
+                  connected={connected}
+                  running={running}
+                  busy={modelBusy}
+                  loading={modelSettingsLoading}
+                  error={modelSettingsError}
+                  onSelect={selectModel}
+                  onRetry={() => setModelSettingsVersion((value) => value + 1)}
+                />
+              </div>
+            </ThreadPrimitive.Root>
+          </main>
+          <footer>
+            Google access follows your saved permissions. Review every write before approving.
+          </footer>
+        </div>
+      </TurnFailureContext.Provider>
     </AssistantRuntimeProvider>
   );
 }

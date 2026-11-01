@@ -208,6 +208,8 @@ it("returns safe privacy/rate errors with one SDK attempt and never follows redi
       }),
     ).rejects.toThrow();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(failures).toContain(status === 404 ? "privacy" : status === 429 ? "budget" : "provider");
+    expect(failures).toContain(
+      status === 404 ? "privacy" : status === 429 ? "provider_busy" : "provider",
+    );
   }
 });

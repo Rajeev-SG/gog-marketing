@@ -698,4 +698,8 @@ button:disabled { cursor: default; opacity: .7; }
 .setup-guide { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:16px 28px; align-items:center; padding:24px; margin-bottom:24px; background:var(--action-soft); border:1px solid var(--border); border-radius:var(--radius); }
 .setup-guide h2 { margin:4px 0 8px; font-size:22px; }.setup-guide p { margin:0; color:var(--text-muted); max-width:720px; }.setup-guide ol { grid-column:1; display:flex;flex-wrap:wrap;gap:12px 24px;list-style:none;padding:0;margin:0;font-size:13px; }.setup-guide li { color:var(--text-muted); }.setup-guide .is-complete { color:var(--status-ok); }.setup-guide .is-complete::before{content:'✓ ';}.setup-guide>a { grid-column:2;grid-row:1/3; }
 @media(max-width:640px){.setup-guide{grid-template-columns:minmax(0,1fr);padding:20px}.setup-guide>a{grid-column:1;grid-row:auto}.setup-guide ol{gap:8px 16px}}
+
+/* Account context (U03, D01): name the account in panels, mark the selected card. */
+.panel-account { margin: 2px 0 6px; font-size: 14px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.account-card.is-selected { border-color: var(--action); box-shadow: inset 3px 0 0 var(--action); }
 `;
