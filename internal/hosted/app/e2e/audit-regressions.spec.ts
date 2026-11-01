@@ -167,3 +167,27 @@ test.describe("@deterministic home overview (D02, L01, L03, N04)", () => {
     await expect(card.locator("details.context-menu")).not.toHaveAttribute("open", "");
   });
 });
+
+for (const viewport of VIEWPORTS) {
+  test.describe(`@deterministic public pages at ${viewport.name} (P01, P02, DR12, L08)`, () => {
+    test.use({ viewport: { width: viewport.width, height: viewport.height } });
+    for (const path of ["/", "/about", "/request-access", "/settings"]) {
+      test(`${path} is axe clean, has one h1 and does not overflow`, async ({ page }) => {
+        const response = await page.goto(path);
+        if (path === "/settings") {
+          expect(response?.status()).toBe(404);
+          await expect(page.getByRole("link", { name: "Go to your workspace" })).toBeVisible();
+        }
+        await expect(page.locator("h1")).toHaveCount(1);
+        await expect(page.locator('link[rel="icon"]')).toHaveCount(1);
+        expect(
+          await page
+            .locator("h1, h2")
+            .evaluateAll((els) => els.some((el) => el.querySelector("br"))),
+        ).toBe(false);
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+        expect(await axeViolations(page)).toEqual([]);
+      });
+    }
+  });
+}

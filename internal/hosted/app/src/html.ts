@@ -1,4 +1,4 @@
-import { accessDocument, safeWorkspaceReturn } from "./access-pages.js";
+import { FAVICON_LINK, accessDocument, safeWorkspaceReturn } from "./access-pages.js";
 export { renderLanding, renderRequestAccess, renderAccessState } from "./access-pages.js";
 import { renderProductNavigation } from "./product-navigation.js";
 import { PRODUCT_CSS } from "./product-css.generated.js";
@@ -214,7 +214,7 @@ export function clerkScriptTags(htmlConfig: HtmlConfig): string {
 }
 
 function documentShell(title: string, content: string, htmlConfig: HtmlConfig): string {
-  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title><style>${PRODUCT_CSS}</style>${clerkScriptTags(htmlConfig)}</head><body>${content}</body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title}</title>${FAVICON_LINK}<style>${PRODUCT_CSS}</style>${clerkScriptTags(htmlConfig)}</head><body>${content}</body></html>`;
 }
 
 function appShell(content: string, htmlConfig: HtmlConfig): string {
@@ -222,7 +222,7 @@ function appShell(content: string, htmlConfig: HtmlConfig): string {
     "Home — gog-marketing",
     `<a class="skip-link" href="#main-content">Skip to content</a><div class="app-shell" id="app-shell">
     <aside class="sidebar" id="app-sidebar" aria-label="Application navigation"><a class="sidebar-brand" href="/"><span class="brand-mark">g</span><span>gog-marketing</span></a><div class="sidebar-rule"></div><nav class="side-nav">${renderProductNavigation("home")}</nav><div class="sidebar-spacer"></div><div class="trust-card">${icon("shield")}<strong>Secure by design</strong><p>Least-privilege access to the Google data you choose.</p></div><div class="sidebar-user"><span class="avatar">G</span><span>Google access workspace</span></div></aside>
-    <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Find a file or resource" aria-label="Find a file or resource"></label><div class="topbar-actions"><a class="button secondary-action" href="/about#help">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><a href="/about">About &amp; privacy status</a></footer></div>
+    <div class="app-frame"><header class="topbar"><button class="icon-button nav-toggle" id="nav-toggle" type="button" aria-label="Open navigation" aria-controls="app-sidebar" aria-expanded="false">☰</button><label class="topbar-search">${icon("search")}<input id="global-search" type="search" placeholder="Find a file or resource" aria-label="Find a file or resource"></label><div class="topbar-actions"><a class="button secondary-action" href="/about#help">${icon("help")} Help</a><button id="sign-out" type="button">Sign out</button><div id="user-button"></div></div></header><main class="app-main" id="main-content" tabindex="-1">${content}</main><footer class="app-footer"><span>gog-marketing · Secure access layer for Google marketing data</span><a href="/about">Help &amp; privacy</a></footer></div>
     <nav class="bottom-nav" aria-label="Mobile navigation">${renderProductNavigation("home")}</nav></div>`,
     htmlConfig,
   );
@@ -242,13 +242,27 @@ export function renderSignIn(
         colorForeground: "var(--text)",
         colorBackground: "var(--surface-card)",
         fontFamily: "inherit",
-        borderRadius: "10px",
+        borderRadius: "6px",
       },
       elements: {
         rootBox: { width: "100%" },
-        cardBox: { width: "100%", boxShadow: "none" },
-        card: { boxShadow: "none", border: 0, padding: 0 },
-        // The shared access-page h1 rule otherwise outranks Clerk's generated class.
+        cardBox: { width: "100%", boxShadow: "none", border: 0, overflow: "visible" },
+        // Padding keeps input/button borders inside the box (no clipped edges).
+        card: { boxShadow: "none", border: 0, padding: "2px" },
+        // The page already titles the panel; avoid "Sign in" / "Welcome back" duplicates.
+        header: { display: "none" },
+        footerAction: { display: "none" },
+        formButtonPrimary: {
+          backgroundColor: "var(--action)",
+          backgroundImage: "none",
+          boxShadow: "none",
+          borderRadius: "6px",
+          minHeight: "44px",
+          fontWeight: 600,
+        },
+        socialButtonsBlockButton: { borderRadius: "6px", minHeight: "44px" },
+        formFieldInput: { borderRadius: "6px", minHeight: "44px" },
+        // Header is hidden; keep bounded typography in case Clerk shows it (#144).
         headerTitle: {
           fontSize: "1.25rem !important",
           lineHeight: "1.4 !important",
@@ -256,8 +270,7 @@ export function renderSignIn(
           margin: "0 !important",
         },
         headerSubtitle: { fontSize: "0.875rem", lineHeight: "1.5" },
-        footerAction: { display: "none" },
-        // Keep the measured auth-strategy badge inside the provider card edge.
+        // Keep the measured auth-strategy badge inside the provider card edge (#145).
         lastAuthenticationStrategyBadge: {
           right: "8px",
           top: "0",
@@ -267,12 +280,12 @@ export function renderSignIn(
     },
   }).replaceAll("<", "\\u003c");
   const scripts = clerkScriptTags(htmlConfig);
-  const content = `<main id="main-content" tabindex="-1" class="access-main auth-layout"><section class="auth-intro"><p class="eyebrow">Welcome to your workspace</p><h1>Good work starts<br>with a clear brief.</h1><p class="access-lead">Sign in to connect the Google accounts and files you choose, then work with AI under your saved permissions.</p><ul class="auth-promises"><li>Separate read and change permissions</li><li>Selected files, not blanket access</li><li>Explicit review before Google writes</li></ul><a href="/request-access">Need a beta invitation?</a></section><section class="auth-panel" aria-labelledby="signin-heading"><h2 id="signin-heading">Sign in</h2><p class="muted">Use the account your workspace administrator invited.</p><div id="sign-in"><p role="status">Secure sign-in is loading…</p></div><div id="signin-error" hidden role="alert"><h3>Sign-in is temporarily unavailable</h3><p>We could not load the sign-in service. No access was changed. Check your connection, then retry.</p><button type="button" class="primary" id="signin-retry">Retry sign-in</button></div><div id="switch-account" hidden><p>You are already signed in. Sign out before using another account.</p><button type="button" class="primary" id="switch-signout">Sign out to switch account</button></div><p class="access-caption">Google sign-in stays with Google. Access tokens are stored encrypted; signing in alone does not enable assets or tools.</p></section></main><script>(function () { var target=document.getElementById('sign-in');var failure=document.getElementById('signin-error');function fail(){target.hidden=true;failure.hidden=false;}var timedOut=false;var deadline=setTimeout(function(){timedOut=true;fail();},15000);document.getElementById('signin-retry').addEventListener('click',function(){window.location.reload();});window.addEventListener('load', async function () {try {if(!window.Clerk)throw new Error('Unavailable');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});if(timedOut)return;clearTimeout(deadline);if(${switchAccount ? "true" : "false"} && Clerk.session){target.hidden=true;document.getElementById('switch-account').hidden=false;document.getElementById('switch-signout').addEventListener('click',async function(){try{await Clerk.signOut({redirectUrl:${JSON.stringify("/sign-in?returnTo=" + encodeURIComponent(target))}})}catch{fail();}});}else{target.textContent='';Clerk.mountSignIn(target,${mountOptions});}} catch {clearTimeout(deadline);fail();}});})();</script>`;
+  const content = `<main id="main-content" tabindex="-1" class="access-main auth-layout"><section class="auth-intro"><p class="eyebrow">gog-marketing workspace</p><h1>Sign in to your workspace</h1><p class="access-lead">Sign in to connect the Google accounts and files you choose, then work with AI under your saved permissions.</p><ul class="auth-promises"><li>Separate read and change permissions</li><li>Selected files, not blanket access</li><li>Explicit review before Google writes</li></ul><a href="/request-access">Need a beta invitation?</a></section><section class="auth-panel" aria-labelledby="signin-heading"><h2 id="signin-heading">Use your invited account</h2><p class="muted">Sign in with the work account your administrator invited.</p><div id="sign-in"><p role="status">Secure sign-in is loading…</p></div><div id="signin-error" hidden role="alert"><h3>Sign-in is temporarily unavailable</h3><p>We could not load the sign-in service. No access was changed. Check your connection, then retry.</p><button type="button" class="primary" id="signin-retry">Retry sign-in</button></div><div id="switch-account" hidden><p>You are already signed in. Sign out before using another account.</p><button type="button" class="primary" id="switch-signout">Sign out to switch account</button></div><p class="access-caption">Google sign-in stays with Google. Access tokens are stored encrypted; signing in alone does not enable assets or tools.</p></section></main><script>(function () { var target=document.getElementById('sign-in');var failure=document.getElementById('signin-error');function fail(){target.hidden=true;failure.hidden=false;}var timedOut=false;var deadline=setTimeout(function(){timedOut=true;fail();},15000);document.getElementById('signin-retry').addEventListener('click',function(){window.location.reload();});window.addEventListener('load', async function () {try {if(!window.Clerk)throw new Error('Unavailable');await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});if(timedOut)return;clearTimeout(deadline);if(${switchAccount ? "true" : "false"} && Clerk.session){target.hidden=true;document.getElementById('switch-account').hidden=false;document.getElementById('switch-signout').addEventListener('click',async function(){try{await Clerk.signOut({redirectUrl:${JSON.stringify("/sign-in?returnTo=" + encodeURIComponent(target))}})}catch{fail();}});}else{target.textContent='';Clerk.mountSignIn(target,${mountOptions});}} catch {clearTimeout(deadline);fail();}});})();</script>`;
   return accessDocument("Sign in", content, scripts);
 }
 
 export function renderCallbackNotice(title: string, message: string): string {
-  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title} — gog-marketing</title><style>${PRODUCT_CSS}</style></head><body><main class="shell"><section class="card intro"><p class="eyebrow">gog-marketing</p><h1>${title}</h1><p>${message}</p><a class="button primary" href="/">Return to workspace</a></section></main><script>window.history.replaceState(null, '', window.location.pathname);</script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${title} — gog-marketing</title>${FAVICON_LINK}<style>${PRODUCT_CSS}</style></head><body><main class="shell"><section class="card intro"><p class="eyebrow">gog-marketing</p><h1>${title}</h1><p>${message}</p><a class="button primary" href="/">Return to workspace</a></section></main><script>window.history.replaceState(null, '', window.location.pathname);</script></body></html>`;
 }
 
 export function renderHome(htmlConfig: HtmlConfig): string {
@@ -646,7 +659,39 @@ export function renderHome(htmlConfig: HtmlConfig): string {
   return appShell(content, htmlConfig);
 }
 
-/** Public, descriptive verification homepage; no login or secret-bearing bootstrap. */
+/** Public help and privacy page in the shared public shell; plain language, no login (P02, N02). */
 export function renderPublicAbout(): string {
-  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>gog-marketing — Google tools and private chat</title><style>${PRODUCT_CSS}</style></head><body><main class="app-main" style="max-width:900px;margin:auto"><h1>gog-marketing</h1><p>Connect your Google accounts, choose the tools and resources you allow, and use them through the hosted MCP interface or private chat.</p><h2>Your accounts, your permissions</h2><p>Google consent is separate from product sign-in. Settings control enabled accounts, services, exact tools and resources. Chat uses those same server-side permissions. Writes require a separate review of the exact action before execution.</p><h2>Saved conversations</h2><p>Conversations have independent history and drafts. You can create, rename and delete threads. Deleting a conversation does not undo an action already performed in Google.</p><h2>AI processing</h2><p>Chat messages and user-requested Google tool results may be processed by OpenRouter and the selected model provider. Google access and refresh credentials are not given to the model. Do not use chat for data you are not authorized to share with those processors.</p><h2>Private-preview status</h2><p>Chat is currently restricted to the configured owner. Supported tools and usage are bounded; full command parity, billing and long-term memory are not promised. Legal policy URLs and Google public-launch verification are still being finalized. This page is not a claim of Google approval or an approved privacy policy.</p><p><a class="button" href="/">Existing users: sign in</a></p></main></body></html>`;
+  const faq: Array<[string, string]> = [
+    [
+      "What can gog-marketing see in my Google account?",
+      "Only the services you approve when you connect an account, and then only the files and resources you choose. Approving a service does not turn on any assets or AI tools by itself.",
+    ],
+    [
+      "Can the AI change my Google data?",
+      "Only if you allow changes for that service and that exact tool. Each change is shown to you first and runs only after you approve it. Deleting or replacing data needs a separate permission.",
+    ],
+    [
+      "Why did chat say it reached a limit?",
+      "Chat uses shared free model capacity with per-minute and daily limits. Open “Model details and today’s usage” under the chat box to see your usage and when it resets. No paid model is ever used automatically.",
+    ],
+    [
+      "How do I remove access?",
+      "On Home, open the account’s ⋮ menu and choose Disconnect account. You can also revoke access at any time from your Google Account’s third-party connections page.",
+    ],
+    [
+      "How do I delete a conversation?",
+      "Open the conversation in chat and choose Delete. This removes its messages and pending approvals. It does not undo anything already done in Google.",
+    ],
+  ];
+  return accessDocument(
+    "Help & privacy",
+    `<main id="main-content" tabindex="-1" class="access-main access-prose"><h1>Help &amp; privacy</h1><p class="access-lead">gog-marketing connects the Google accounts you choose to AI chat and tools, under permissions you control.</p><section id="help" aria-labelledby="help-heading"><h2 id="help-heading">Common questions</h2>${faq
+      .map(
+        ([question, answer]) =>
+          `<details class="faq"><summary>${question}</summary><p>${answer}</p></details>`,
+      )
+      .join(
+        "",
+      )}</section><section aria-labelledby="privacy-heading"><h2 id="privacy-heading">What we access and who processes it</h2><ul><li><strong>Google sign-in stays with Google.</strong> Signing in to gog-marketing is separate from connecting a Google account.</li><li><strong>Credentials are encrypted.</strong> Google access tokens are stored encrypted and are never given to the AI model.</li><li><strong>AI processing.</strong> Chat messages, and Google results you ask for, are processed by OpenRouter and the model provider you select. Don’t share data in chat that you aren’t allowed to share with them.</li><li><strong>Your conversations.</strong> Each conversation keeps its own history. You can rename or delete it at any time.</li></ul></section><section aria-labelledby="status-heading"><h2 id="status-heading">Beta status</h2><p>gog-marketing is a private, invitation-only beta. Supported tools and usage are limited, and billing and long-term memory aren’t offered yet. Our formal privacy policy and Google’s app verification are still being finalised, so this page is a plain-language summary, not a legal policy.</p></section><p class="access-actions"><a class="button primary" href="/sign-in">Sign in</a><a href="/">Back to the product</a></p></main>`,
+  );
 }

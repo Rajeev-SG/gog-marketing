@@ -741,4 +741,17 @@ button:disabled { cursor: default; opacity: .7; }
 /* Account context (U03, D01): name the account in panels, mark the selected card. */
 .panel-account { margin: 2px 0 6px; font-size: var(--text-s); font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
 .account-card.is-selected { border-color: var(--action); box-shadow: inset 3px 0 0 var(--action); }
+
+/* Public headings wrap naturally, without forced breaks or orphans (DR12). */
+.access-page h1, .access-page h2 { text-wrap: balance; }
+.access-page h1 { max-width: 20ch; }
+/* Help & privacy page (P02). */
+.access-prose { max-width: 760px; margin: 0 auto; }
+.access-prose h1 { max-width: none; }
+.access-prose h2 { font-size: var(--text-l); margin: 40px 0 12px; letter-spacing: 0; }
+.access-prose ul { padding-left: 20px; display: grid; gap: 8px; }
+.faq { border-top: 1px solid var(--border); }
+.faq:last-of-type { border-bottom: 1px solid var(--border); }
+.faq summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: var(--text-m); }
+.faq p { margin: 0 0 16px; color: var(--text-muted); }
 `;

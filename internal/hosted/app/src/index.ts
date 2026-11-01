@@ -25,7 +25,7 @@
  *
  * No generic HTTP proxy, exec tool, or runner endpoint is exposed.
  */
-import { safeWorkspaceReturn } from "./access-pages.js";
+import { renderNotFound, safeWorkspaceReturn } from "./access-pages.js";
 import { handleChat } from "./chat/routes.js";
 import type { ChatEnv } from "./chat/access.js";
 import { HostedRepository } from "../../state/src/repository.js";
@@ -182,6 +182,17 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   // Only the known routes are served. Everything else is 404.
   const knownPaths = ["/", "/sign-in", "/api/tenant", ...GOOGLE_API_PATHS];
   if (!knownPaths.includes(path) && !connectionAction) {
+    // Browser page navigations get a recoverable HTML page; API/protocol paths keep JSON (P01).
+    const machinePath = /^\/(api|mcp|oauth|agents|\.well-known)(\/|$)/.test(path);
+    if (request.method === "GET" && !machinePath)
+      return new Response(renderNotFound(), {
+        status: 404,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store",
+          ...securityHeaders(),
+        },
+      });
     return safeError(404, "Not found.");
   }
 

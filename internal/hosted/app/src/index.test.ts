@@ -800,6 +800,12 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const req = buildUnauthenticatedRequest(`${ORIGIN}/nonexistent`);
     const res = await worker.fetch(req, env);
     expect(res.status).toBe(404);
+    // Browser pages get a recoverable HTML 404 (P01); API paths keep JSON.
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(await res.text()).toContain("We couldn’t find that page.");
+    const api = await worker.fetch(buildUnauthenticatedRequest(`${ORIGIN}/api/nonexistent`), env);
+    expect(api.status).toBe(404);
+    expect(api.headers.get("content-type")).toContain("application/json");
   });
 });
 

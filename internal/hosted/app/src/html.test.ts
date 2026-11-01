@@ -396,8 +396,11 @@ describe("startConnection error handling (executed script)", () => {
 
 it("provides a factual public homepage without presenting draft legal policy as approved", () => {
   const page = renderPublicAbout();
-  expect(page).toContain("Google tools and private chat");
-  expect(page).toContain("not a claim of Google approval");
+  expect(page).toContain("connects the Google accounts you choose to AI chat and tools");
+  // Draft legal policy and Google verification must never read as approved.
+  expect(page).toContain("still being finalised");
+  expect(page).toContain("not a legal policy");
+  expect(page).toContain('id="help"');
   expect(page).not.toContain("clerk.browser.js");
   expect(page).toContain('href="/"');
 });
