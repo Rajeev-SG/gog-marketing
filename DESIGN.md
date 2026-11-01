@@ -67,6 +67,13 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
 - Buttons: primary (cobalt, one per view), default (bordered), attention
   (reconnect). Minimum 44px touch target on coarse pointers.
 - Status is never colour alone: badges carry text labels.
+- Save model (decided 1 Nov 2026, audit D03): permission choices are
+  checkboxes, reviewed and saved together. Each account has one sticky save bar
+  for assets and tools. It appears only while there are unsaved changes and
+  shows the selection count, a summary of those changes, Cancel (discard) and
+  Save. There are no instant-apply switches for
+  access, because a permission change should be reviewed before it takes
+  effect. Leaving with unsaved changes warns first.
 - Cards only where semantically justified; no nested cards. Asset rows are
   bordered list rows, not cards.
 - Icons: inline Lucide SVG via the `icon` template function, one stroke

@@ -82,7 +82,7 @@ window.Clerk = { loaded: true, session: { id: 'fixture' }, load: async function(
 export async function openHome(
   page: Page,
   connections = fixtureConnections(),
-  options: { toolsEnabled?: boolean } = {},
+  options: { toolsEnabled?: boolean; failToolSave?: boolean; posts?: string[] } = {},
 ) {
   const { renderHome } = await loadHtml();
   const html = renderHome({
@@ -103,6 +103,18 @@ export async function openHome(
     }
     if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: html });
     if (url.pathname === "/api/google/resources") return route.fulfill({ json: connections });
+    if (
+      route.request().method() === "POST" &&
+      (url.pathname === "/api/google/grants" || url.pathname === "/api/google/tools")
+    ) {
+      options.posts?.push(url.pathname);
+      if (url.pathname === "/api/google/tools" && options.failToolSave)
+        return route.fulfill({
+          status: 503,
+          json: { error: "Tool permissions are temporarily unavailable." },
+        });
+      return route.fulfill({ json: { ok: true } });
+    }
     if (url.pathname === "/api/google/tools")
       return route.fulfill({
         json: {

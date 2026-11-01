@@ -208,3 +208,47 @@ test.describe("@deterministic asset picker (DR09, L06)", () => {
     await expect(page.locator(".service-meta")).toHaveText(/Showing 1 of 2 assets matching/);
   });
 });
+
+test.describe("@deterministic one save model (D03 decision A)", () => {
+  test("assets and tools share one save bar and save with one click", async ({ page }) => {
+    const posts: string[] = [];
+    await openHome(page, undefined, { posts });
+    await expect(page.locator(".savebar")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: /save tool permissions/i })).toHaveCount(0);
+    await expect(page.locator("#pending-summary")).toHaveText("No unsaved changes");
+    await expect(page.locator("#access-savebar")).toBeHidden();
+    await page.getByRole("checkbox", { name: /asset 1 access/ }).uncheck();
+    await expect(page.locator("#access-savebar")).toBeVisible();
+    await page.locator(".tool-group summary").first().click();
+    await page.locator('input[data-tool-name="analytics_run_report"]').check();
+    await expect(page.locator("#pending-summary")).toHaveText(
+      "Unsaved: 1 asset change and tool permission changes",
+    );
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect.poll(() => posts).toEqual(["/api/google/tools", "/api/google/grants"]);
+  });
+
+  test("a failed tool save stops before the asset save so no draft is lost", async ({ page }) => {
+    const posts: string[] = [];
+    await openHome(page, undefined, { posts, failToolSave: true });
+    await page.getByRole("checkbox", { name: /asset 1 access/ }).uncheck();
+    await page.locator(".tool-group summary").first().click();
+    await page.locator('input[data-tool-name="analytics_run_report"]').check();
+    await page.getByRole("button", { name: "Save changes" }).click();
+    await expect(page.locator("#tool-status")).toContainText("temporarily unavailable");
+    expect(posts).toEqual(["/api/google/tools"]);
+    await expect(page.getByRole("checkbox", { name: /asset 1 access/ })).not.toBeChecked();
+    await expect(page.locator("#pending-summary")).toContainText("1 asset change");
+  });
+
+  test("Cancel discards both asset and tool drafts", async ({ page }) => {
+    await openHome(page);
+    await page.getByRole("checkbox", { name: /asset 1 access/ }).uncheck();
+    await page.locator(".tool-group summary").first().click();
+    await page.locator('input[data-tool-name="analytics_run_report"]').check();
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(page.locator("#pending-summary")).toHaveText("No unsaved changes");
+    await expect(page.locator("#access-savebar")).toBeHidden();
+    await expect(page.getByRole("checkbox", { name: /asset 1 access/ })).toBeChecked();
+  });
+});

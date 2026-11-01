@@ -33,6 +33,8 @@ for (const viewport of VIEWPORTS) {
       await openHome(page);
       await page.screenshot({ path: shot("home"), fullPage: true });
       await page.screenshot({ path: shot("home-viewport") });
+      await page.getByRole("checkbox", { name: /asset 1 access/ }).uncheck();
+      await page.screenshot({ path: shot("home-unsaved") });
     });
 
     test("chat thread and failure", async ({ page }) => {

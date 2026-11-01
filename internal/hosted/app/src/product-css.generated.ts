@@ -678,7 +678,7 @@ button:disabled { cursor: default; opacity: .7; }
 .tool-details p { margin: 6px 0 0; font-size: var(--text-xs); color: var(--text-muted); }
 .tool-choice .tool-destructive { display: inline-flex; align-items: center; gap: 8px; align-self: start; margin-top: 0; color: var(--text-muted); font-size: var(--text-xs); }
 .tool-choice .tool-destructive input { width: 16px; height: 16px; margin: 0; accent-color: var(--status-warn, #b45309); }
-.tool-savebar { display: flex; align-items: center; gap: 12px; padding-top: 4px; }
+.tool-status { margin: 8px 0 0; font-size: var(--text-s); color: var(--text-muted); }
 @media (max-width: 900px) {
   .tool-toolbar > * { flex: 1 1 100%; }
   .tool-filter button { flex: 1 1 auto; }
@@ -771,4 +771,10 @@ button:disabled { cursor: default; opacity: .7; }
 .asset-picker .rail { align-content: start; justify-content: flex-start; }
 .asset-picker .rail-item { flex: none; align-self: stretch; min-height: 48px; }
 .asset-picker .rail-item { width: 100%; }
+/* One save bar per account for assets and tools (DESIGN.md save model, D03). */
+.access-savebar { position: sticky; bottom: 0; z-index: 20; margin-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 20px; background: var(--surface-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.access-savebar { border-color: var(--action); }
+.access-savebar .savebar-actions { flex-wrap: nowrap; }
+.access-savebar .savebar-actions button { width: auto; flex: 1 1 auto; }
+@media (max-width: 900px) { .access-savebar { bottom: 74px; } }
 `;
