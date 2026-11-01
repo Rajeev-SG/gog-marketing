@@ -1,7 +1,9 @@
 # DESIGN.md — gog-marketing design system
 
 Aesthetic direction and the component/token contract for the gog-marketing
-UI. The approved renders in `docs/ui/renders/` are source material; this
+UI. Choose components with [docs/ui/component-catalogue.md](docs/ui/component-catalogue.md)
+and patterns with [docs/ui/pattern-catalogue.md](docs/ui/pattern-catalogue.md):
+prefer the conventional option, and record any deviation here with a reason. The approved renders in `docs/ui/renders/` are source material; this
 system is the implementation standard. Pair with [PRODUCT.md](PRODUCT.md).
 
 ## Aesthetic direction
