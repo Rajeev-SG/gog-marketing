@@ -55,12 +55,12 @@ export function fixtureConnections() {
         email: "owner@example.com",
         status: "active",
         discovery: { status: "complete" },
-        services: ["Google Analytics", "Google Tag Manager", "Google Drive"],
+        services: ["Google Analytics 4", "Google Tag Manager", "Drive (selected files)"],
         resources: [
-          resource("analytics", "Google Analytics", "1", true),
-          resource("analytics", "Google Analytics", "2", true),
+          resource("analytics", "Google Analytics 4", "1", true),
+          resource("analytics", "Google Analytics 4", "2", true),
           resource("tagmanager", "Google Tag Manager", "3", false),
-          resource("drive", "Google Drive", "4", true),
+          resource("drive", "Drive (selected files)", "4", true),
         ],
       },
       {
@@ -68,7 +68,7 @@ export function fixtureConnections() {
         email: "empty@example.com",
         status: "active",
         discovery: { status: "empty" },
-        services: ["Google Analytics", "Google Drive"],
+        services: ["Google Analytics 4", "Drive (selected files)"],
         resources: [],
       },
     ],
@@ -79,7 +79,11 @@ const CLERK_STUB = `window.__internal_ClerkUICtor = function(){};
 window.Clerk = { loaded: true, session: { id: 'fixture' }, load: async function(){}, mountUserButton: function(el){ el.innerHTML = '<button type="button" aria-label="Open user menu" class="fixture-avatar">R</button>'; }, signOut: async function(){}, addListener: function(fn){ fn({ session: { id: 'fixture' } }); return function(){}; } };`;
 
 /** Serve the real server-rendered Home with a stubbed Clerk and mocked Google APIs. */
-export async function openHome(page: Page, connections = fixtureConnections()) {
+export async function openHome(
+  page: Page,
+  connections = fixtureConnections(),
+  options: { toolsEnabled?: boolean } = {},
+) {
   const { renderHome } = await loadHtml();
   const html = renderHome({
     publishableKey: "pk_test_fixture",
@@ -108,7 +112,7 @@ export async function openHome(page: Page, connections = fixtureConnections()) {
               service: "analytics",
               description: "Run a report.",
               write: false,
-              enabled: false,
+              enabled: options.toolsEnabled ?? false,
               allowDestructive: false,
             },
           ],
@@ -159,7 +163,7 @@ export const MODEL_SETTINGS = {
 };
 
 export const LIMIT_ERROR =
-  "Chat request, token or spending limit reached. Shared free capacity is limited. Wait for the allowance to reset; no automatic paid fallback is used.";
+  "You've reached the chat usage limit. Per-minute limits clear within a minute; daily allowances reset at 00:00 UTC. Open Model details to see today's usage. No paid model is used automatically.";
 
 /**
  * Serve the built chat client with a native-protocol websocket fixture.

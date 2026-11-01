@@ -28,10 +28,10 @@ test.describe("@deterministic chat failure turn (C01, C03, C05)", () => {
     await expect(page.getByRole("button", { name: "Send message" })).toBeEnabled();
     await page.getByRole("button", { name: "Send message" }).click();
     const turn = page.locator(".message.assistant").last();
-    await expect(turn.getByRole("alert")).toContainText(/limit|capacity|allowance/i);
+    await expect(turn.getByRole("alert")).toContainText(/usage limit/i);
     await expect(turn.getByRole("button", { name: /retry/i })).toBeVisible();
     // C03: the error is shown once, never in the neutral/success status pill.
-    await expect(page.getByText(/limit reached/i)).toHaveCount(1);
+    await expect(page.getByText(/usage limit/i)).toHaveCount(1);
     await expect(page.locator(".composer-status")).not.toContainText(/limit/i);
     // C02: the failure state must not widen the column on a phone.
     await page.setViewportSize({ width: 390, height: 844 });
@@ -98,10 +98,11 @@ for (const viewport of VIEWPORTS) {
   test.describe(`@deterministic home at ${viewport.name}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-    test("no horizontal overflow and no page errors", async ({ page }) => {
+    test("no horizontal overflow, no page errors and axe clean", async ({ page }) => {
       const errors = await openHome(page);
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       expect(errors).toEqual([]);
+      expect(await axeViolations(page)).toEqual([]);
     });
   });
 }
@@ -122,5 +123,47 @@ test.describe("@deterministic home account context (U03, D01)", () => {
     await expect(page.locator("#asset-selected-count")).toHaveText("0 selected");
     await expect(page.locator("#asset-health")).not.toContainText("All services healthy");
     await expect(workspace).toContainText("empty@example.com");
+  });
+});
+
+test.describe("@deterministic home overview (D02, L01, L03, N04)", () => {
+  test("service rows count every granting account and open the asset picker", async ({ page }) => {
+    await openHome(page);
+    const analytics = page.locator(".service-row", { hasText: "Google Analytics" });
+    // Both fixture accounts granted Analytics; only one has discovered assets.
+    await expect(analytics).toContainText("2 accounts");
+    await expect(analytics).toContainText("2 of 2");
+    await expect(page.locator(".service-row", { hasText: "Google Tag Manager" })).toContainText(
+      "1 account",
+    );
+    await page.locator(".service-row", { hasText: "Google Tag Manager" }).click();
+    await expect(page.locator("#asset-workspace .card-head h3")).toHaveText("Google Tag Manager");
+    await expect(page.locator(".service-mark").first()).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("the setup banner shows only while setup is incomplete", async ({ page }) => {
+    await openHome(page);
+    await expect(page.locator("#setup-guide")).toBeVisible();
+    await expect(page.locator("#setup-next")).toHaveText("Choose AI tools");
+  });
+
+  test("the setup banner is hidden once every step is complete", async ({ page }) => {
+    await openHome(page, undefined, { toolsEnabled: true });
+    await expect(page.locator("#tool-summary")).toContainText("1 enabled");
+    await expect(page.locator("#setup-guide")).toBeHidden();
+  });
+
+  test("account menu closes on Escape, names its account and returns focus", async ({ page }) => {
+    await openHome(page);
+    const card = page.locator(".account-card", { hasText: "owner@example.com" });
+    const summary = card.locator("summary");
+    await summary.click();
+    await expect(card.locator(".context-menu-header")).toHaveText("Actions for owner@example.com");
+    await page.keyboard.press("Escape");
+    await expect(card.locator("details.context-menu")).not.toHaveAttribute("open", "");
+    await expect(summary).toBeFocused();
+    await summary.click();
+    await page.locator("h1").click();
+    await expect(card.locator("details.context-menu")).not.toHaveAttribute("open", "");
   });
 });

@@ -13,6 +13,7 @@ export default defineConfig({
     "chat-threads.spec.ts",
     "chat-multiuser.spec.ts",
     "audit-regressions.spec.ts",
+    "visual-capture.spec.ts",
   ],
   fullyParallel: false,
   workers: 1,

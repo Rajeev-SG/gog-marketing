@@ -19,16 +19,18 @@ const PRODUCT_NAVIGATION = [
     path: '<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/>',
   },
   {
+    // No activity log exists yet, so the label names the real destination (N01).
     id: "activity",
-    label: "Activity",
+    label: "Access",
     href: "/#activity",
-    path: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    path: '<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/>',
   },
   {
+    // The destination is the remote MCP connection, not workspace settings (N02).
     id: "settings",
-    label: "Settings",
+    label: "Connect AI",
     href: "/#settings",
-    path: '<circle cx="12" cy="12" r="3"/><path d="m9 3-1 3-3 1-2 4 2 3 1 4 4 3 4-1 4-2 3-4-1-4-2-4-4-1Z"/>',
+    path: '<path d="M12 22v-5M9 8V2M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8Z"/>',
   },
 ] as const;
 

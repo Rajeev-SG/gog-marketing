@@ -49,8 +49,15 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
 - Action: `--action` (cobalt), `--action-hover`, `--action-active`.
 - Status: `--status-ok`, `--status-warn`, `--status-danger` with soft
   background variants for badges/alerts.
-- Radius: `--radius-s` (6px controls), `--radius` (10px cards), `--radius-l`
-  (14px panels). Shadow: `--shadow` single subtle elevation.
+- Radius: `--radius-s` (6px controls), `--radius` (10px cards, panels,
+  menus), `--radius-pill` (999px badges/chips). Nothing else; `--radius-l` is a
+  retired alias. Shadow: `--shadow` single subtle elevation.
+- Type scale (six sizes, no fractional pixels): `--text-xs` 12 (meta, badges,
+  eyebrows), `--text-s` 14 (dense UI, tables, controls), `--text-m` 16 (body,
+  emphasis), `--text-l` 20 (section titles), `--text-xl` 28 (page titles, key
+  figures), `--text-display` (public hero only). Weights 400/600/700 only.
+- Eyebrows: one style (`--eyebrow-tracking` 0.08em, uppercase, 12px), used for
+  page-level context only, never on every card.
 - Spacing: 4px scale (`--space-1..8`). Focus: `--focus-ring` cobalt ring.
 
 ## Component rules
@@ -62,6 +69,13 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
   bordered list rows, not cards.
 - Icons: inline Lucide SVG via the `icon` template function, one stroke
   system, `aria-hidden` by default, never decorative tiles above headings.
+  Google services use neutral glyphs beside their text label, not
+  abbreviation tiles or third-party logos. This is a deliberate deviation from
+  renders 02/06: no brand assets are used without approval.
+- Status pills appear only when a state differs from the norm (attention,
+  delayed, nothing to choose). Healthy rows carry no pill.
+- Clickable rows are real buttons or links with a hover state. A chevron
+  is never shown on a row that can't be activated.
 - Forms: labels for every input, obvious focus, `:focus-visible` ring that
   sticky UI never covers.
 - Toasts: `aria-live="polite"`, informational by default, auto-styled.
