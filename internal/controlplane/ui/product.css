@@ -752,3 +752,20 @@ button:disabled { cursor: default; opacity: .7; }
 .faq:last-of-type { border-bottom: 1px solid var(--border); }
 .faq summary { min-height: 48px; display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: var(--text-m); }
 .faq p { margin: 0 0 16px; color: var(--text-muted); }
+
+/* Asset picker (DR09): left-aligned rail labels with right-aligned counts; footer attached to the panel. */
+.asset-picker .rail-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; }
+.asset-picker .rail-item > span:last-child { justify-self: end; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.asset-frame > .savebar { margin: 0; border-radius: 0 0 var(--radius) var(--radius); border-top: 1px solid var(--border); position: sticky; bottom: 0; background: var(--surface-card); }
+.savebar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Touch targets: every permission control is at least 44px tall and the whole row toggles it (L12). */
+@media (pointer: coarse), (max-width: 680px) {
+  .row, .service-choice, .tool-choice > label:first-of-type, .tool-choice .tool-destructive { min-height: 44px; }
+  .row input[type="checkbox"], .service-choice input, .tool-choice input { width: 22px !important; height: 22px !important; }
+  .tool-filter button { min-height: 44px; }
+  .context-menu > summary { width: 44px; height: 44px; }
+}
+.connect-actions { margin-top: 16px; }
+.asset-picker .rail { align-content: start; justify-content: flex-start; }
+.asset-picker .rail-item { flex: none; align-self: stretch; min-height: 48px; }
+.asset-picker .rail-item { width: 100%; }

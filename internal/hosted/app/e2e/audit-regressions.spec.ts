@@ -191,3 +191,20 @@ for (const viewport of VIEWPORTS) {
     }
   });
 }
+
+test.describe("@deterministic asset picker (DR09, L06)", () => {
+  test("footer summarises the selection, Cancel discards, search shows filtered counts", async ({
+    page,
+  }) => {
+    await openHome(page);
+    await expect(page.locator("#asset-footer-count")).toHaveText("3 assets selected");
+    const first = page.getByRole("checkbox", { name: /asset 1 access/ });
+    await first.uncheck();
+    await expect(page.locator("#asset-footer-count")).toHaveText("2 assets selected");
+    await page.getByRole("button", { name: "Cancel", exact: true }).click();
+    await expect(first).toBeChecked();
+    await expect(page.locator("#asset-footer-count")).toHaveText("3 assets selected");
+    await page.getByRole("searchbox", { name: "Search assets" }).fill("asset 2");
+    await expect(page.locator(".service-meta")).toHaveText(/Showing 1 of 2 assets matching/);
+  });
+});
