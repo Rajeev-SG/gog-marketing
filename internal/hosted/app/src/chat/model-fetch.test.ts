@@ -184,7 +184,7 @@ it("permits an explicitly authorized paid request only under both provider and l
 });
 it("returns safe privacy/rate errors with one SDK attempt and never follows redirects or pays for fallback", async () => {
   const model = selectChatModel("free-router", {}, "owner");
-  for (const status of [404, 429, 302]) {
+  for (const status of [404, 429, 402, 403, 302]) {
     const failures: ModelFailure[] = [];
     const fetcher = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       expect(init?.redirect).toBe("manual");

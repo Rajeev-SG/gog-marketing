@@ -84,14 +84,15 @@ export function budgetedModelFetch(options: {
       return fail("provider");
     }
     if (!response.ok) {
+      // "budget" is reserved for our own D1 counters. Upstream 402 (provider
+      // credits) and 403 (provider moderation) are provider failures, not the
+      // user's allowance: live counters showed users told "limit reached" at 3/100.
       options.failed(
         response.status === 429
           ? "provider_busy"
-          : response.status === 402 || response.status === 403
-            ? "budget"
-            : response.status === 404
-              ? "privacy"
-              : "provider",
+          : response.status === 404
+            ? "privacy"
+            : "provider",
       );
     }
     return response;
