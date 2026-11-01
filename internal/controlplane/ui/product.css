@@ -563,8 +563,10 @@ button:disabled { cursor: default; opacity: .7; }
   .app-shell { display: block; padding-bottom: 67px; }
   .sidebar { position: fixed; left: 0; top: 0; width: min(300px, 86vw); transform: translateX(-105%); transition: transform var(--motion); box-shadow: var(--shadow); }
   .app-shell.nav-open .sidebar { transform: translateX(0); }
-  /* The bottom bar is the phone navigation; no duplicate drawer (L13, N03). */
-  .nav-toggle { display: none; }
+  .nav-toggle { display: inline-flex; }
+  /* Home: the bottom bar is the phone navigation; no duplicate drawer (L13, N03).
+     Chat keeps its toggle, because its drawer holds conversations. */
+  .topbar .nav-toggle { display: none; }
   .topbar { padding: 10px 18px; justify-content: flex-end; }
   .topbar-search { display: none; }
   .app-main { padding: 24px 20px 34px; }

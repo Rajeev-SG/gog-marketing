@@ -50,7 +50,7 @@ function UserMessage() {
   const stopped = useAuiState((s) => s.message.metadata.custom.gogStopped === true);
   return (
     <MessagePrimitive.Root className="message user">
-      <span className="speaker">You</span>
+      <span className="speaker sr-only">You said</span>
       <MessagePrimitive.Parts />
       {stopped && (
         <p className="turn-note" data-turn-state="stopped">
@@ -175,7 +175,7 @@ function AssistantMessage() {
     );
   return (
     <MessagePrimitive.Root className="message assistant">
-      <span className="speaker">Gog</span>
+      <span className="speaker sr-only">Gog replied</span>
       <MessagePrimitive.Parts
         components={{ Text: Markdown, tools: { Fallback: GoogleToolCard } }}
       />
@@ -421,18 +421,18 @@ function Chat({
               <h1>{session.thread?.title ?? "Original conversation"}</h1>
             </div>
             <div className="thread-actions">
-              <button type="button" className="quiet" onClick={onRename}>
+              <button type="button" className="button-secondary" onClick={onRename}>
                 Rename
               </button>
-              <button type="button" className="quiet" onClick={onDelete}>
+              <button type="button" className="button-secondary" onClick={onDelete}>
                 Delete
               </button>
             </div>
           </header>
-          <div className="notice" role="note">
-            Google tools use your enabled permissions. Writes need your approval. Open{" "}
-            <a href="/#google-data">Google settings</a> or return to <a href="/">Home</a>.
-          </div>
+          <p className="notice" role="note">
+            Google tools use your enabled permissions, and every write needs your approval. Manage
+            access in <a href="/#google-data">Google data</a>.
+          </p>
           <main aria-label="Chat">
             <ThreadPrimitive.Root className="thread">
               <ThreadPrimitive.Viewport
@@ -446,7 +446,6 @@ function Chat({
               >
                 <ThreadPrimitive.Empty>
                   <section className="empty">
-                    <span className="eyebrow">YOUR NEXT CAMPAIGN</span>
                     <h2>What needs moving forward?</h2>
                     <p>
                       Draft a brief, work through results, or prepare a client handoff.
@@ -1068,7 +1067,12 @@ function App() {
           <section className="thread-list" aria-label="Saved conversations">
             <div className="thread-list-heading">
               <h2>Conversations</h2>
-              <button type="button" onClick={() => void mutateThread("new")} disabled={threadBusy}>
+              <button
+                type="button"
+                className="button-secondary"
+                onClick={() => void mutateThread("new")}
+                disabled={threadBusy}
+              >
                 New chat
               </button>
             </div>
@@ -1131,8 +1135,10 @@ function App() {
         )}
         <div className="app-frame" inert={navigationOpen && mobile}>
           <div className="chat-account-bar">
-            <span>Private workspace</span>
-            <button type="button" className="quiet" onClick={() => void signOut()}>
+            <a className="button-secondary" href="/about#help">
+              Help
+            </a>
+            <button type="button" className="button-secondary" onClick={() => void signOut()}>
               Sign out
             </button>
           </div>
@@ -1194,9 +1200,18 @@ function App() {
               </p>
             )}
             {threadError && <p role="alert">{threadError}</p>}
-            <div className="approval-actions">
+            <div className="approval-actions dialog-actions">
+              <button
+                type="button"
+                className="button-secondary"
+                disabled={threadBusy}
+                onClick={() => setThreadAction(null)}
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
+                className={threadAction === "rename" ? "button-primary" : "button-danger"}
                 disabled={threadBusy || (threadAction === "rename" && !threadName.trim())}
               >
                 {threadBusy
@@ -1204,9 +1219,6 @@ function App() {
                   : threadAction === "rename"
                     ? "Save name"
                     : "Delete conversation"}
-              </button>
-              <button type="button" disabled={threadBusy} onClick={() => setThreadAction(null)}>
-                Cancel
               </button>
             </div>
           </form>
