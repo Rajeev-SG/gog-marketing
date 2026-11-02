@@ -2,54 +2,31 @@ import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Link, RouterProvider } from "react-aria-components";
 import { PRODUCT_CSS } from "../product-css.generated.js";
-import { PRODUCT_NAVIGATION } from "../product-navigation.js";
+import { SETTINGS_SECTIONS, productNavFor, type SettingsSectionId } from "../product-navigation.js";
+import { ProductNav } from "../ui/ProductNav.js";
 import { clerk, isWorkspacePath, navigate, redirectLegacyAnchor, useLocation } from "./router.js";
 import { ConfirmProvider, Icon, Notice } from "../ui/index.js";
 import { WorkspaceProvider, useWorkspace } from "./state.js";
 import { HomePage } from "./pages/HomePage.js";
-import { DataPage } from "./pages/DataPage.js";
-import { AccessPage } from "./pages/AccessPage.js";
+import { DataAccessPage, ToolsPage } from "./pages/DataPage.js";
+import { AccountsPage } from "./pages/AccountsPage.js";
 import { ConnectAiPage } from "./pages/ConnectAiPage.js";
+import { ActivityPage } from "./pages/ActivityPage.js";
+import { SettingsLayout, SettingsOverview } from "./pages/SettingsPage.js";
 import "./workspace.css";
 
-const NAV_IDS: Record<string, string> = {
-  "/": "home",
-  "/data": "google-data",
-  "/access": "activity",
-  "/connect-ai": "settings",
-};
 const TITLES: Record<string, string> = {
   "/": "Home",
-  "/data": "Google data",
-  "/access": "Access",
-  "/connect-ai": "Connect AI",
+  ...Object.fromEntries(
+    SETTINGS_SECTIONS.map((item) => [
+      item.href,
+      item.id === "overview" ? "Settings" : `${item.label} · Settings`,
+    ]),
+  ),
 };
-
-function Navigation({
-  active,
-  label,
-  className,
-}: {
-  active: string;
-  label: string;
-  className: string;
-}) {
-  return (
-    <nav className={className} aria-label={label}>
-      {PRODUCT_NAVIGATION.map((item) => (
-        <Link
-          key={item.id}
-          href={item.href}
-          aria-current={active === item.id ? "page" : undefined}
-          data-product-nav={item.id}
-        >
-          <Icon path={item.path} />
-          <span>{item.label}</span>
-        </Link>
-      ))}
-    </nav>
-  );
-}
+const SECTION_FOR: Record<string, SettingsSectionId> = Object.fromEntries(
+  SETTINGS_SECTIONS.map((item) => [item.href, item.id]),
+);
 
 function UserButton() {
   const ref = useRef<HTMLDivElement>(null);
@@ -76,6 +53,9 @@ function Shell() {
   const [query, setQuery] = useState("");
   const main = useRef<HTMLElement>(null);
   const firstRender = useRef(true);
+  const active = productNavFor(path);
+  const section = SECTION_FOR[path];
+  const badges = { settings: workspace.attention.length };
 
   useEffect(redirectLegacyAnchor, []);
   // Phones use the bottom bar; the off-canvas sidebar must not take focus (N03, L13).
@@ -120,7 +100,7 @@ function Shell() {
           <span>gog-marketing</span>
         </Link>
         <div className="sidebar-rule" />
-        <Navigation active={NAV_IDS[path]} label="Primary" className="side-nav" />
+        <ProductNav active={active} label="Primary" className="side-nav" badges={badges} />
         <div className="sidebar-spacer" />
         <div className="trust-card">
           <Icon name="shield" />
@@ -135,7 +115,7 @@ function Shell() {
             role="search"
             onSubmit={(event) => {
               event.preventDefault();
-              navigate("/data?q=" + encodeURIComponent(query.trim()));
+              navigate("/settings/data?q=" + encodeURIComponent(query.trim()));
             }}
           >
             <Icon name="search" />
@@ -164,16 +144,28 @@ function Shell() {
             </Notice>
           )}
           {path === "/" && <HomePage />}
-          {path === "/data" && <DataPage />}
-          {path === "/access" && <AccessPage />}
-          {path === "/connect-ai" && <ConnectAiPage />}
+          {section && (
+            <SettingsLayout section={section}>
+              {section === "overview" && <SettingsOverview />}
+              {section === "accounts" && <AccountsPage />}
+              {section === "data" && <DataAccessPage />}
+              {section === "tools" && <ToolsPage />}
+              {section === "activity" && <ActivityPage />}
+              {section === "connect-ai" && <ConnectAiPage />}
+            </SettingsLayout>
+          )}
         </main>
         <footer className="app-footer">
           <span>gog-marketing · Secure access layer for Google marketing data</span>
           <a href="/about">Help &amp; privacy</a>
         </footer>
       </div>
-      <Navigation active={NAV_IDS[path]} label="Mobile navigation" className="bottom-nav" />
+      <ProductNav
+        active={active}
+        label="Mobile navigation"
+        className="bottom-nav"
+        badges={badges}
+      />
     </div>
   );
 }

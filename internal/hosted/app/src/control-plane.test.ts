@@ -308,7 +308,7 @@ describe("control plane route and UI contracts (#64)", () => {
 
   it("shows no MCP URL without operator configuration, never deriving it from request hints", async () => {
     const env = await createEnv();
-    const request = new Request(ORIGIN + "/connect-ai", {
+    const request = new Request(ORIGIN + "/settings/connect-ai", {
       headers: new Headers(await sessionHeaders(env, "user_panel_missing")),
     });
     request.headers.set("Host", CANONICAL_ORIGIN.replace("https://", ""));
@@ -325,7 +325,15 @@ describe("control plane route and UI contracts (#64)", () => {
     const env = await createEnv({
       GOG_HOSTED_CANONICAL_ORIGIN: CANONICAL_ORIGIN,
     });
-    for (const path of ["/", "/data", "/access", "/connect-ai"]) {
+    for (const path of [
+      "/",
+      "/settings",
+      "/settings/accounts",
+      "/settings/data",
+      "/settings/tools",
+      "/settings/activity",
+      "/settings/connect-ai",
+    ]) {
       const response = await authenticatedRequest(ORIGIN + path, "user_panel", env);
       expect(response.status).toBe(200);
       expect(response.headers.get("Cache-Control")).toBe("no-store");
@@ -338,6 +346,45 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(html).toContain("clerk.browser.js");
     expect(html).not.toContain("evil.example.com");
     expect(html).not.toMatch(UUID_RE);
+  });
+
+  it("moves previous-IA pages permanently to Settings, keeping the query", async () => {
+    const env = await createEnv();
+    for (const [from, to] of [
+      ["/data?service=analytics&account=a1", "/settings/data?service=analytics&account=a1"],
+      ["/access?update=c1", "/settings/accounts?update=c1"],
+      ["/connect-ai", "/settings/connect-ai"],
+    ] as const) {
+      const response = await worker.fetch(new Request(ORIGIN + from), env);
+      expect(response.status).toBe(301);
+      expect(response.headers.get("Location")).toBe(to);
+    }
+  });
+
+  it("sends browser pages on workers.dev to the canonical origin, never machine routes", async () => {
+    const env = await createEnv({ GOG_HOSTED_CANONICAL_ORIGIN: CANONICAL_ORIGIN });
+    const workersDev = "https://gog-marketing.example.workers.dev";
+    for (const path of ["/", "/chat?thread=t1", "/settings/tools", "/sign-in", "/about"]) {
+      const response = await worker.fetch(new Request(workersDev + path), env);
+      expect(response.status).toBe(308);
+      expect(response.headers.get("Location")).toBe(CANONICAL_ORIGIN + path);
+    }
+    for (const path of ["/mcp", "/api/google/resources", "/.well-known/oauth-protected-resource"]) {
+      const response = await worker.fetch(new Request(workersDev + path), env);
+      expect(response.status).not.toBe(308);
+    }
+    const unconfigured = await createEnv();
+    expect((await worker.fetch(new Request(workersDev + "/"), unconfigured)).status).not.toBe(308);
+  });
+
+  it("serves the tenant's own activity in plain language, without raw audit detail", async () => {
+    const env = await createEnv();
+    const anonymous = await worker.fetch(new Request(ORIGIN + "/api/activity"), env);
+    expect(anonymous.status).toBe(401);
+    const response = await authenticatedRequest(ORIGIN + "/api/activity", "user_activity", env);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(await response.json()).toEqual({ events: [] });
   });
 
   it("requires trusted same-origin JSON for protected grant mutations", async () => {

@@ -46,11 +46,37 @@ function fixtureConnections() {
   };
 }
 
+/** One blocked AI request an hour ago, and one saved setting. */
+function fixtureActivity() {
+  const hourAgo = new Date(Date.now() - 3_600_000).toISOString();
+  const twoHoursAgo = new Date(Date.now() - 7_200_000).toISOString();
+  return [
+    {
+      id: "a1",
+      at: hourAgo,
+      connectionId: "conn-populated",
+      kind: "tool",
+      tone: "blocked",
+      title: "Google Analytics 4: Properties get was blocked",
+      detail: "Blocked because the tool or asset isn’t enabled for this account.",
+    },
+    {
+      id: "a2",
+      at: twoHoursAgo,
+      connectionId: "conn-populated",
+      kind: "setting",
+      tone: "info",
+      title: "Data access saved",
+      detail: "1 asset changed",
+    },
+  ];
+}
+
 const CLERK_STUB = `window.Clerk = { loaded: true, session: { id: 'fixture' }, load: async function(){}, mountUserButton: function(el){ el.innerHTML = '<button type="button" aria-label="Open user menu" class="fixture-avatar">R</button>'; }, signOut: async function(){}, addListener: function(fn){ fn({ session: { id: 'fixture' } }); return function(){}; } };`;
 
 /**
  * Serve the built workspace app (dist/client/app.html) with a stubbed Clerk and
- * mocked Google APIs. `path` is any workspace page: /, /data, /access, /connect-ai.
+ * mocked Google APIs. `path` is any workspace page: / or /settings/….
  */
 export async function openHome(
   page: Page,
@@ -61,6 +87,7 @@ export async function openHome(
     posts?: string[];
     path?: string;
     connectBodies?: unknown[];
+    activity?: unknown[];
   } = {},
 ) {
   const shell = readFileSync(join(dist, "app.html"), "utf8").replace(
@@ -72,7 +99,7 @@ export async function openHome(
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const method = route.request().method();
-    if (["/", "/data", "/access", "/connect-ai"].includes(url.pathname))
+    if (url.pathname === "/" || url.pathname.startsWith("/settings"))
       return route.fulfill({ contentType: "text/html", body: shell });
     if (url.pathname.startsWith("/assets/"))
       return route.fulfill({
@@ -80,6 +107,8 @@ export async function openHome(
         body: readFileSync(join(dist, url.pathname.slice(1))),
       });
     if (url.pathname === "/api/google/resources") return route.fulfill({ json: connections });
+    if (url.pathname === "/api/activity")
+      return route.fulfill({ json: { events: options.activity ?? fixtureActivity() } });
     if (method === "POST" && url.pathname === "/api/google/connect") {
       options.connectBodies?.push(route.request().postDataJSON());
       return route.fulfill({

@@ -46,10 +46,14 @@ export function navigate(href: string, replace = false) {
   else window.scrollTo({ top: 0 });
 }
 
-/** Old single-page anchors (/#google-data, /#settings, …) still land on the right page. */
+/** Old anchors still land on the right page: /#google-data, and /data#tools (now /settings/data#tools). */
 export function redirectLegacyAnchor() {
-  const anchor = window.location.pathname === "/" ? window.location.hash.slice(1) : "";
+  const { pathname, search, hash } = window.location;
+  if (pathname === "/settings/data" && (hash === "#tools" || hash === "#tool-workspace")) {
+    navigate("/settings/tools" + search, true);
+    return;
+  }
+  const anchor = pathname === "/" ? hash.slice(1) : "";
   const target = anchor ? LEGACY_WORKSPACE_ANCHORS[anchor] : undefined;
-  if (target && target !== "/")
-    navigate(target + (anchor === "tool-workspace" ? "#tools" : ""), true);
+  if (target && target !== "/") navigate(target, true);
 }

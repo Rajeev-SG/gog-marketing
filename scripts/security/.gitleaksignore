@@ -4,7 +4,7 @@ internal/hosted/app/src/chat/integration.test.ts:generic-api-key:58
 internal/hosted/app/src/chat/native.test.ts:generic-api-key:72
 internal/hosted/app/src/connect.test.ts:generic-api-key:832
 internal/hosted/app/src/control-plane.test.ts:generic-api-key:32
-internal/hosted/app/src/control-plane.test.ts:generic-api-key:549
+internal/hosted/app/src/control-plane.test.ts:generic-api-key:596
 internal/hosted/app/src/discovery.test.ts:generic-api-key:13
 internal/hosted/app/src/index.test.ts:generic-api-key:30
 internal/hosted/app/src/index.test.ts:generic-api-key:1200

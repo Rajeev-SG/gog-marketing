@@ -23,6 +23,18 @@ it("renders a public marketer entry without auth SDK, private workspace controls
   expect(html).not.toContain("mountSignUp");
   expect(renderRequestAccess()).toContain("No request has been submitted");
   expect(renderRequestAccess()).not.toContain("<form");
+  expect(renderRequestAccess()).not.toContain("mailto:");
+});
+it("shows an operator-configured contact address only when it is a plain email (P03)", () => {
+  expect(renderRequestAccess("beta@example.com")).toContain(
+    'href="mailto:beta@example.com?subject=gog-marketing%20beta%20access"',
+  );
+  expect(renderRequestAccess('x"><script>@evil.com')).not.toContain("mailto:");
+});
+it("keeps sign-in returns to known workspace pages, mapping old ones to Settings", () => {
+  expect(safeWorkspaceReturn("/settings/tools")).toBe("/settings/tools");
+  expect(safeWorkspaceReturn("/data")).toBe("/settings/data");
+  expect(safeWorkspaceReturn("/settings/unknown")).toBe("/");
 });
 it("separates denied, ended-session and provider failure pages with safe next actions", () => {
   expect(renderAccessState("not-invited")).toContain("This workspace isn’t available yet");

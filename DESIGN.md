@@ -62,6 +62,36 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
   page-level context only, never on every card.
 - Spacing: 4px scale (`--space-1..8`). Focus: `--focus-ring` cobalt ring.
 
+## Information architecture (refreshed 2 Nov 2026)
+
+- The sidebar (and the phone bottom bar) has three destinations: **Home**,
+  **Chat** and **Settings**. No in-page anchors or duplicate destinations. A
+  count badge on Settings shows how many things need the user.
+- **Settings** is a hub with real sub-pages, listed in a secondary nav (a
+  scrollable row of tabs below 1100px): Overview, Google accounts, Data
+  access, AI tools, Activity, Connect AI apps. A warning icon on a
+  section marks one that needs attention.
+- **Overview** follows the NN/g and GOV.UK pattern of status first, then a
+  summary list. A "needs attention" list comes first, most urgent first, and
+  each item has the button that fixes it. If nothing needs the user, Overview
+  says so plainly. Below that, a summary row for each area gives its current
+  value and a link to change it.
+- Attention rules live in `attentionItems()` (`src/workspace/model.ts`). Only
+  states that need action produce an item: reconnect, failed asset checks,
+  assets found but none enabled, data enabled but no tools, enabled tools for
+  an unshared service, and AI requests blocked in the last 7 days. Healthy
+  configuration produces nothing.
+- The same items appear where they can be fixed: at the top of Data access
+  and AI tools for the selected account, and on Home (minus whatever the
+  setup guide already says).
+- Each account is edited in one place: the **Google accounts** page
+  (status, shared services, Data and AI tools links, more actions). Data
+  access and AI tools choose the account with a `Select`, not a second
+  account list.
+- AI tools lists only the services the account shares. Tools for unshared
+  services are hidden behind "Show them", except those already enabled, which
+  are flagged "Not shared · can't run".
+
 ## Component rules
 
 - Controls come from the component library in `internal/hosted/app/src/ui`

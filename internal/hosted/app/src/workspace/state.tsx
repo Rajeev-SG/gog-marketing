@@ -11,7 +11,11 @@ import {
 import { useConfirm, type NoticeTone } from "../ui/index.js";
 import {
   accountName,
+  attentionItems,
   changedGrants,
+  recentBlockedCount,
+  type ActivityItem,
+  type AttentionItem,
   resourceKey,
   toolGrantPayload,
   type Connection,
@@ -51,6 +55,12 @@ interface WorkspaceValue {
   saveAll: () => Promise<void>;
   discardAll: () => void;
   saving: boolean;
+  // Settings overview: every account's saved tools, recent activity, attention list
+  toolCatalogs: ReadonlyMap<string, readonly Tool[]>;
+  activity: ActivityItem[] | null;
+  activityState: LoadState;
+  reloadActivity: () => Promise<void>;
+  attention: AttentionItem[];
   // Account actions
   runAction: (
     label: string,
@@ -92,8 +102,49 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [toolStatus, setToolStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const toolRequest = useRef(0);
+  const [toolCatalogs, setToolCatalogs] = useState<Map<string, Tool[]>>(new Map());
+  const [activity, setActivity] = useState<ActivityItem[] | null>(null);
+  const [activityState, setActivityState] = useState<LoadState>("loading");
 
   const selected = connections.find((item) => item.id === selectedId);
+
+  const fetchTools = async (connectionId: string): Promise<Tool[]> => {
+    const response = await fetch(
+      "/api/google/tools?connectionId=" + encodeURIComponent(connectionId),
+    );
+    if (!response.ok) throw new Error("Could not load tool permissions.");
+    const body = (await response.json()) as { tools?: Tool[] };
+    if (!Array.isArray(body.tools)) throw new Error("The tool permission response was invalid.");
+    return body.tools;
+  };
+  const storeCatalog = (connectionId: string, catalog: Tool[]) =>
+    setToolCatalogs((current) => new Map(current).set(connectionId, catalog));
+  // Saved tool permissions for every account, so Settings can say what needs attention.
+  const loadCatalogs = async (items: Connection[]) => {
+    const results = await Promise.allSettled(items.map((item) => fetchTools(item.id)));
+    setToolCatalogs(
+      new Map(
+        items.flatMap((item, index) => {
+          const result = results[index]!;
+          return result.status === "fulfilled" ? [[item.id, result.value] as const] : [];
+        }),
+      ),
+    );
+  };
+  const reloadActivity = useCallback(async () => {
+    try {
+      const response = await fetch("/api/activity");
+      if (!response.ok) throw new Error();
+      const body = (await response.json()) as { events?: ActivityItem[] };
+      setActivity(Array.isArray(body.events) ? body.events : []);
+      setActivityState("ready");
+    } catch {
+      setActivityState("error");
+    }
+  }, []);
+  useEffect(() => {
+    void reloadActivity();
+  }, [reloadActivity]);
 
   const reload = useCallback(async () => {
     setLoadState((state) => (state === "ready" ? state : "loading"));
@@ -106,6 +157,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         discovery: item.discovery ?? {},
       }));
       setConnections(next);
+      void loadCatalogs(next);
       setSelectedId((current) =>
         current && next.some((item) => item.id === current) ? current : (next[0]?.id ?? null),
       );
@@ -127,17 +179,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setToolChoices(new Map());
     setToolsDirty(false);
     try {
-      const response = await fetch(
-        "/api/google/tools?connectionId=" + encodeURIComponent(connectionId),
-      );
-      if (!response.ok) throw new Error("Could not load tool permissions.");
-      const body = (await response.json()) as { tools?: Tool[] };
+      const catalog = await fetchTools(connectionId);
       if (request !== toolRequest.current) return;
-      if (!Array.isArray(body.tools)) throw new Error("The tool permission response was invalid.");
-      setTools(body.tools);
+      storeCatalog(connectionId, catalog);
+      setTools(catalog);
       setToolChoices(
         new Map(
-          body.tools.map((tool) => [
+          catalog.map((tool) => [
             tool.name,
             { toolName: tool.name, enabled: tool.enabled, allowDestructive: tool.allowDestructive },
           ]),
@@ -277,6 +325,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         await reload();
       }
       setNotice({ tone: "success", text: "Access saved." });
+      void reloadActivity();
     } catch {
       setNotice({
         tone: "error",
@@ -285,7 +334,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [draft, loadTools, reload, selected, toolChoices, toolsDirty]);
+  }, [draft, loadTools, reload, reloadActivity, selected, toolChoices, toolsDirty]);
 
   const runAction = useCallback(
     async (
@@ -315,6 +364,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         );
         if (!response.ok) throw new Error(await errorMessage(response, `${label} failed.`));
         if (await reload()) setNotice({ tone: "success", text: `${label} complete.` });
+        void reloadActivity();
       } catch (error) {
         setNotice({
           tone: "error",
@@ -322,7 +372,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [confirm, reload],
+    [confirm, reload, reloadActivity],
+  );
+
+  const attention = useMemo(
+    () =>
+      loadState === "ready"
+        ? attentionItems(connections, toolCatalogs, activity ? recentBlockedCount(activity) : 0)
+        : [],
+    [activity, connections, loadState, toolCatalogs],
   );
 
   const value: WorkspaceValue = {
@@ -348,6 +406,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     discardAll,
     saving,
     runAction,
+    toolCatalogs,
+    activity,
+    activityState,
+    reloadActivity,
+    attention,
   };
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

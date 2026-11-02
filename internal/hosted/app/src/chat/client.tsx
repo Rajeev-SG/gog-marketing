@@ -1,5 +1,6 @@
 import { PRODUCT_CSS } from "../product-css.generated.js";
-import { renderProductNavigation } from "../product-navigation.js";
+import { ProductNav } from "../ui/ProductNav.js";
+import { Button, LinkButton, ModalDialog } from "../ui/index.js";
 import { createRoot } from "react-dom/client";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useAgent } from "agents/react";
@@ -191,6 +192,8 @@ function Chat({
   onRename,
   onDelete,
   onDisconnect,
+  onEmptyChange,
+  onFirstMessage,
 }: {
   session: ChatSession;
   onOpenThreads: () => void;
@@ -198,6 +201,8 @@ function Chat({
   onRename: () => void;
   onDelete: () => void;
   onDisconnect: () => void;
+  onEmptyChange: (empty: boolean) => void;
+  onFirstMessage: (text: string) => void;
 }) {
   const [connected, setConnected] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
@@ -301,6 +306,21 @@ function Chat({
         }
       : null;
   const running = chat.status === "streaming" || chat.status === "submitted";
+  const messageCount = chat.messages.length;
+  useEffect(() => onEmptyChange(messageCount === 0), [messageCount, onEmptyChange]);
+  const named = useRef(false);
+  useEffect(() => {
+    if (named.current || session.thread?.title !== "New chat") return;
+    const first = chat.messages.find((message) => message.role === "user");
+    if (!first) return;
+    named.current = true;
+    onFirstMessage(
+      first.parts
+        .filter((part) => part.type === "text")
+        .map((part) => part.text)
+        .join(" "),
+    );
+  }, [chat.messages, onFirstMessage, session.thread?.title]);
   const modelReady =
     !!modelSettings?.models.some(
       (model) => model.key === modelSettings.selectedKey && model.enabled,
@@ -421,17 +441,13 @@ function Chat({
               <h1>{session.thread?.title ?? "Original conversation"}</h1>
             </div>
             <div className="thread-actions">
-              <button type="button" className="button-secondary" onClick={onRename}>
-                Rename
-              </button>
-              <button type="button" className="button-secondary" onClick={onDelete}>
-                Delete
-              </button>
+              <Button onPress={onRename}>Rename</Button>
+              <Button onPress={onDelete}>Delete</Button>
             </div>
           </header>
           <p className="notice" role="note">
             Google tools use your enabled permissions, and every write needs your approval. Manage
-            access in <a href="/data">Google data</a>.
+            access in <a href="/settings/data">Settings</a>.
           </p>
           <main aria-label="Chat">
             <ThreadPrimitive.Root className="thread">
@@ -558,7 +574,8 @@ function App() {
   const [mobile, setMobile] = useState(() => window.matchMedia("(max-width: 900px)").matches);
   const [threadAction, setThreadAction] = useState<"rename" | "delete" | null>(null);
   const [threadName, setThreadName] = useState("");
-  const dialog = useRef<HTMLDialogElement>(null);
+  // C07: the open conversation has no messages yet, so "New chat" reuses it.
+  const [currentEmpty, setCurrentEmpty] = useState(false);
   const sidebar = useRef<HTMLElement>(null);
   const selectedThread = () => new URL(window.location.href).searchParams.get("thread");
   const sessionEndpoint = () =>
@@ -837,10 +854,16 @@ function App() {
       document.querySelector<HTMLButtonElement>("[aria-label='Open conversations']")?.focus();
     };
   }, [navigationOpen, mobile]);
-  useEffect(() => {
-    if (threadAction && dialog.current && !dialog.current.open) dialog.current.showModal();
-    if (!threadAction && dialog.current?.open) dialog.current.close();
-  }, [threadAction]);
+  const startNewChat = async () => {
+    if (currentEmpty && session) {
+      // No empty duplicates (C07): the open conversation is already blank.
+      setNavigationOpen(false);
+      setThreadError("");
+      document.querySelector<HTMLTextAreaElement>(".composer textarea")?.focus();
+      return;
+    }
+    await mutateThread("new");
+  };
   const mutateThread = async (action: "new" | "rename" | "delete") => {
     if (threadBusy) return;
     const generation = authGeneration.current;
@@ -908,6 +931,29 @@ function App() {
     } finally {
       if (generation === authGeneration.current && identity === activeClerkSessionId())
         setThreadBusy(false);
+    }
+  };
+  // A conversation still called "New chat" takes its name from the first message (C07).
+  const nameNewThread = async (text: string) => {
+    const thread = session?.thread;
+    if (!thread || thread.title !== "New chat") return;
+    const title = text.replace(/\s+/g, " ").trim().slice(0, 60);
+    if (!title) return;
+    try {
+      const r = await fetch("/api/chat/threads/" + encodeURIComponent(thread.id), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!r.ok) return;
+      const data = (await r.json()) as { thread: ChatThread };
+      setSession((current) =>
+        current?.thread?.id === data.thread.id ? { ...current, thread: data.thread } : current,
+      );
+      void refreshThreads();
+    } catch {
+      /* Naming is cosmetic; the conversation is unaffected. */
     }
   };
   const retryDeletion = async (pending: { id: string; draftKey: string }) => {
@@ -1059,22 +1105,13 @@ function App() {
             <span>gog-marketing</span>
           </a>
           <div className="sidebar-rule" />
-          <nav
-            className="side-nav"
-            aria-label="Application navigation"
-            dangerouslySetInnerHTML={{ __html: renderProductNavigation("chat") }}
-          />
+          <ProductNav active="chat" label="Application navigation" className="side-nav" />
           <section className="thread-list" aria-label="Saved conversations">
             <div className="thread-list-heading">
               <h2>Conversations</h2>
-              <button
-                type="button"
-                className="button-secondary"
-                onClick={() => void mutateThread("new")}
-                disabled={threadBusy}
-              >
+              <Button onPress={() => void startNewChat()} isDisabled={threadBusy}>
                 New chat
-              </button>
+              </Button>
             </div>
             <ul>
               {threads.map((thread) => (
@@ -1135,12 +1172,8 @@ function App() {
         )}
         <div className="app-frame" inert={navigationOpen && mobile}>
           <div className="chat-account-bar">
-            <a className="button-secondary" href="/about#help">
-              Help
-            </a>
-            <button type="button" className="button-secondary" onClick={() => void signOut()}>
-              Sign out
-            </button>
+            <LinkButton href="/about#help">Help</LinkButton>
+            <Button onPress={() => void signOut()}>Sign out</Button>
           </div>
           {threadError && (
             <p role="alert" className="thread-error">
@@ -1158,21 +1191,19 @@ function App() {
             }}
             onDelete={() => setThreadAction("delete")}
             onDisconnect={recheck}
+            onEmptyChange={setCurrentEmpty}
+            onFirstMessage={(text) => void nameNewThread(text)}
           />
         </div>
-        <nav
-          className="bottom-nav"
-          inert={navigationOpen && mobile}
-          aria-label="Mobile navigation"
-          dangerouslySetInnerHTML={{ __html: renderProductNavigation("chat") }}
-        />
-        <dialog
-          ref={dialog}
-          aria-labelledby="thread-action-heading"
-          onCancel={(event) => {
-            if (threadBusy) event.preventDefault();
-            else setThreadAction(null);
-          }}
+        <div className="bottom-nav-wrap" inert={navigationOpen && mobile}>
+          <ProductNav active="chat" label="Mobile navigation" className="bottom-nav" />
+        </div>
+        <ModalDialog
+          isOpen={threadAction !== null}
+          isBusy={threadBusy}
+          role={threadAction === "delete" ? "alertdialog" : "dialog"}
+          onClose={() => setThreadAction(null)}
+          title={threadAction === "rename" ? "Rename conversation" : "Delete conversation?"}
         >
           <form
             onSubmit={(event) => {
@@ -1180,49 +1211,46 @@ function App() {
               if (threadAction) void mutateThread(threadAction);
             }}
           >
-            <h2 id="thread-action-heading">
-              {threadAction === "rename" ? "Rename conversation" : "Delete conversation?"}
-            </h2>
             {threadAction === "rename" ? (
-              <label>
+              <label className="dialog-field">
                 Conversation name
                 <input
                   value={threadName}
                   onChange={(event) => setThreadName(event.target.value)}
                   maxLength={100}
                   required
+                  autoFocus
                 />
               </label>
             ) : (
-              <p>
+              <p className="ui-dialog-body">
                 This permanently removes this conversation, saved replies and pending approvals.
                 Other conversations are kept.
               </p>
             )}
             {threadError && <p role="alert">{threadError}</p>}
-            <div className="approval-actions dialog-actions">
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={threadBusy}
-                onClick={() => setThreadAction(null)}
+            <div className="ui-dialog-actions">
+              <Button
+                isDisabled={threadBusy}
+                autoFocus={threadAction === "delete"}
+                onPress={() => setThreadAction(null)}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
-                className={threadAction === "rename" ? "button-primary" : "button-danger"}
-                disabled={threadBusy || (threadAction === "rename" && !threadName.trim())}
+                variant={threadAction === "rename" ? "primary" : "danger"}
+                isDisabled={threadBusy || (threadAction === "rename" && !threadName.trim())}
               >
                 {threadBusy
                   ? "Saving…"
                   : threadAction === "rename"
                     ? "Save name"
                     : "Delete conversation"}
-              </button>
+              </Button>
             </div>
           </form>
-        </dialog>
+        </ModalDialog>
       </div>
     </>
   );

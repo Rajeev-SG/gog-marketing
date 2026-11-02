@@ -47,6 +47,13 @@ hand-roll a control the library already has.
 | [Badge](#badge) | `StatusBadge` | — | Abnormal account or service status only |
 | Save bar (sticky) | `SaveBar` | — | One save model (D03) |
 | [Icon](#icon) | `Icon` | — | Decorative Lucide glyphs, `aria-hidden` |
+| [Select](#select) | `Select` | `Select` + `ListBox` + `Popover` | Account picker on Data access and AI tools |
+| [Modal](#modal) (task dialog) | `ModalDialog` | `ModalOverlay` + `Modal` + `Dialog` | Chat rename and delete |
+| [Navigation](#navigation) | `ProductNav` (with attention badge) | `Link` | Sidebar and phone bar, shared by workspace and chat (L09) |
+
+Deviation: the chat **model** picker stays a native `<select>`. USWDS recommends
+the native element for short single-choice lists, and the picker's paid-model
+confirmation flow and tests depend on it.
 
 Rules for adding to the library: wrap the React Aria component, style it only in
 `src/ui/ui.css` with tokens and React Aria's `data-*` state attributes, keep its

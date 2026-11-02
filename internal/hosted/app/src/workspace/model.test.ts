@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  attentionBySection,
+  attentionItems,
   changedGrants,
+  hiddenToolCount,
+  recentBlockedCount,
+  toolSummary,
+  visibleToolGroups,
+  type Tool,
   connectOutcome,
   pendingSummary,
   requestConnection,
@@ -92,12 +99,12 @@ describe("setup guide (L01)", () => {
   it("walks connect → data → tools and disappears once complete", () => {
     expect(setupStep(undefined, false).action).toEqual({
       label: "Connect Google account",
-      href: "/access",
+      href: "/settings/accounts#connect",
     });
     expect(setupStep(empty, false).action.label).toBe("Choose data");
     expect(setupStep(populated, false).action).toEqual({
       label: "Choose AI tools",
-      href: "/data#tools",
+      href: "/settings/tools",
     });
     expect(setupStep(populated, true).complete).toBe(true);
   });
@@ -201,5 +208,102 @@ describe("Google connection start", () => {
     expect(connectOutcome("made_up")[0]).toBe(
       "The Google connection attempt could not be completed.",
     );
+  });
+});
+
+describe("settings attention (IA refresh)", () => {
+  const tool = (name: string, service: string, over: Partial<Tool> = {}): Tool => ({
+    name,
+    service,
+    description: "",
+    write: false,
+    enabled: false,
+    allowDestructive: false,
+    ...over,
+  });
+  const catalog = [
+    tool("analytics_properties_get", "analytics", { enabled: true }),
+    tool("analytics_properties_update", "analytics", {
+      write: true,
+      enabled: true,
+      allowDestructive: true,
+    }),
+    tool("youtube_channels_list", "youtube", { enabled: true }),
+    tool("adsense_accounts_list", "adsense"),
+  ];
+
+  it("summarises tools by what the account shares, counting stranded grants", () => {
+    expect(toolSummary(populated, catalog)).toEqual({
+      available: 2,
+      enabled: 2,
+      changes: 1,
+      destructive: 1,
+      stranded: 1,
+    });
+    expect(hiddenToolCount(populated, catalog)).toEqual({ tools: 2, services: 2 });
+  });
+
+  it("hides unshared services by default but keeps groups with stranded grants", () => {
+    const choices = new Map(catalog.map((t) => [t.name, { toolName: t.name, ...t }]));
+    expect(visibleToolGroups(populated, catalog, choices, false).map((g) => g.service)).toEqual([
+      "analytics",
+      "youtube",
+    ]);
+    expect(visibleToolGroups(populated, catalog, choices, true)).toHaveLength(3);
+  });
+
+  it("lists only what needs the user, most urgent first", () => {
+    const broken = { ...empty, id: "conn-broken", status: "needs_reconnect" };
+    const unchosen: Connection = {
+      ...populated,
+      id: "conn-unchosen",
+      resources: [resource("analytics", "9", false)],
+    };
+    const items = attentionItems(
+      [populated, broken, unchosen],
+      new Map([
+        ["conn-populated", catalog],
+        ["conn-unchosen", []],
+      ]),
+      2,
+    );
+    expect(items.map((item) => item.id)).toEqual([
+      "reconnect:conn-broken",
+      "stranded:conn-populated",
+      "data:conn-unchosen",
+      "blocked",
+    ]);
+    expect(items[0]!.action.href).toBe("/settings/accounts?update=conn-broken#connect");
+    expect(attentionBySection(items)).toEqual({ accounts: 1, tools: 1, data: 1, activity: 1 });
+  });
+
+  it("says nothing when everything is healthy, and prompts a first connection", () => {
+    const healthy = [tool("analytics_properties_get", "analytics", { enabled: true })];
+    expect(attentionItems([populated], new Map([["conn-populated", healthy]]))).toEqual([]);
+    expect(attentionItems([], new Map()).map((item) => item.id)).toEqual(["connect"]);
+  });
+
+  it("counts blocked and failed AI requests from the last 7 days only", () => {
+    const now = Date.parse("2026-11-02T12:00:00Z");
+    const event = (at: string, tone: "ok" | "blocked" | "failed") => ({
+      id: at,
+      at,
+      connectionId: "",
+      kind: "tool" as const,
+      tone,
+      title: "",
+      detail: "",
+    });
+    expect(
+      recentBlockedCount(
+        [
+          event("2026-11-01T00:00:00Z", "blocked"),
+          event("2026-10-30T00:00:00Z", "failed"),
+          event("2026-11-01T00:00:00Z", "ok"),
+          event("2026-10-20T00:00:00Z", "blocked"),
+        ],
+        now,
+      ),
+    ).toBe(2);
   });
 });

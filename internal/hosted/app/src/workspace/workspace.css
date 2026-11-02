@@ -368,3 +368,405 @@
     gap: var(--space-4);
   }
 }
+
+/* Settings hub ------------------------------------------------------------- */
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+.settings-content > * + * {
+  margin-top: 20px;
+}
+.settings-nav {
+  position: sticky;
+  top: 84px;
+}
+.settings-nav-title {
+  margin: 4px 0 8px 12px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.settings-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+.settings-nav-link {
+  /* Contains its visually hidden label inside the scrolling tab row. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--text-s);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  outline: none;
+}
+.settings-nav-link[data-hovered] {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+.settings-nav-link[aria-current="page"] {
+  background: var(--action-soft);
+  color: var(--action);
+}
+.settings-nav-link[data-focus-visible] {
+  box-shadow: var(--focus-ring);
+}
+.settings-nav-flag {
+  display: inline-flex;
+  color: var(--status-warn);
+}
+.settings-nav-flag .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+.page-header .account-switcher {
+  align-self: flex-end;
+}
+
+/* Attention list ----------------------------------------------------------- */
+.attention-panel {
+  border-left: 4px solid var(--status-warn);
+}
+.attention-panel.is-clear {
+  border-left-color: var(--status-ok);
+}
+.attention-panel.compact {
+  padding-top: 4px;
+}
+.attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 20px 8px;
+}
+.attention-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.attention-panel.compact .attention-item:first-child {
+  border-top: 0;
+}
+.attention-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+.attention-icon .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+.attention-item.action .attention-icon {
+  background: var(--status-warn-soft);
+  color: var(--status-warn);
+}
+.attention-icon.ok {
+  background: var(--status-ok-soft);
+  color: var(--status-ok);
+}
+.attention-copy strong {
+  display: block;
+  font-size: var(--text-s);
+  overflow-wrap: anywhere;
+}
+.attention-copy p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+.attention-clear {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 20px;
+}
+.attention-clear h2 {
+  margin: 0;
+  font-size: var(--text-m);
+}
+.attention-clear p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+.attention-unsaved {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0 20px 4px;
+  color: var(--status-warn);
+  font-size: var(--text-s);
+  font-weight: var(--weight-semibold);
+}
+.attention-unsaved .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Settings summary (summary list pattern) ---------------------------------- */
+.settings-summary {
+  margin: 0;
+  padding: 0 20px 8px;
+}
+.settings-summary-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.settings-summary dt {
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-s);
+}
+.settings-summary dd {
+  margin: 0;
+}
+.settings-summary-value {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+  overflow-wrap: anywhere;
+}
+.settings-summary-action a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  color: var(--action);
+  font-size: var(--text-s);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.settings-summary-action a[data-hovered] {
+  text-decoration: underline;
+}
+.settings-summary-action .ui-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* Accounts ----------------------------------------------------------------- */
+.account-card.needs-attention {
+  border-color: var(--status-warn);
+}
+.granted-disclosure {
+  grid-column: 1 / -1;
+}
+.granted-disclosure .granted-services {
+  margin-top: 0;
+}
+
+/* Tools -------------------------------------------------------------------- */
+.tool-hidden-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-s);
+  background: var(--surface-sunken);
+  font-size: var(--text-s);
+  color: var(--text-muted);
+}
+.tool-hidden-note p {
+  margin: 0;
+}
+.tool-group .ui-disclosure-title {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tool-group .ui-disclosure-title .service-mark {
+  width: 20px;
+  height: 20px;
+}
+
+/* Activity ----------------------------------------------------------------- */
+.activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.activity-empty {
+  margin: 0;
+  padding: 8px 20px 20px;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+.activity-day {
+  padding: 0 20px 8px;
+}
+.activity-day h3 {
+  margin: 8px 0 0;
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.activity-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.activity-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+.activity-icon .ui-icon {
+  width: 15px;
+  height: 15px;
+}
+.activity-item.ok .activity-icon {
+  background: var(--status-ok-soft);
+  color: var(--status-ok);
+}
+.activity-item.blocked .activity-icon {
+  background: var(--status-warn-soft);
+  color: var(--status-warn);
+}
+.activity-item.failed .activity-icon {
+  background: var(--status-danger-soft);
+  color: var(--status-danger);
+}
+.activity-copy strong {
+  font-size: var(--text-s);
+  overflow-wrap: anywhere;
+}
+.activity-copy p {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.activity-meta {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* Connect AI apps ---------------------------------------------------------- */
+.app-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: var(--text-s);
+}
+
+@media (max-width: 1100px) {
+  .settings-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .settings-nav {
+    position: static;
+    min-width: 0;
+  }
+  .settings-nav-title {
+    display: none;
+  }
+  /* Narrow screens: the sections become one scrollable row of tabs. */
+  .settings-nav ul {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+  .settings-nav-link {
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    background: var(--surface-card);
+  }
+}
+@media (max-width: 680px) {
+  .attention-item,
+  .settings-summary-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .attention-item > .ui-button,
+  .attention-item > a {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .settings-summary-row {
+    grid-template-columns: 1fr auto;
+  }
+  .settings-summary-value {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .tool-hidden-note {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .page-header .account-switcher {
+    align-self: stretch;
+  }
+}
+
+/* The connect form sits in the narrower Settings column: stack the note, let groups wrap. */
+.settings-content .connect-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.settings-content .connect-layout > .safety-note {
+  grid-row: 1;
+}
+.settings-content .service-consent {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.connect-panel .ai-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.connect-panel .ai-panel code {
+  overflow-wrap: anywhere;
+}
