@@ -103,6 +103,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [saving, setSaving] = useState(false);
   const toolRequest = useRef(0);
   const [toolCatalogs, setToolCatalogs] = useState<Map<string, Tool[]>>(new Map());
+  // The attention list waits for every account's tools, so its count never jumps while loading.
+  const [catalogsSettled, setCatalogsSettled] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[] | null>(null);
   const [activityState, setActivityState] = useState<LoadState>("loading");
 
@@ -130,6 +132,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         }),
       ),
     );
+    setCatalogsSettled(true);
   };
   const reloadActivity = useCallback(async () => {
     try {
@@ -377,10 +380,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const attention = useMemo(
     () =>
-      loadState === "ready"
+      loadState === "ready" && catalogsSettled && activityState !== "loading"
         ? attentionItems(connections, toolCatalogs, activity ? recentBlockedCount(activity) : 0)
         : [],
-    [activity, connections, loadState, toolCatalogs],
+    [activity, activityState, catalogsSettled, connections, loadState, toolCatalogs],
   );
 
   const value: WorkspaceValue = {
