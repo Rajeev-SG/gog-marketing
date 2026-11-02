@@ -2,8 +2,8 @@
 
 Reference standard for picking UI components while fixing the 31 October 2026
 audit (`FINDINGS.md` IDs `C/U/D/N/P/L`, `DESIGN-REVIEW.md` IDs `DR`). Pair with
-[pattern-catalogue.md](pattern-catalogue.md), [DESIGN.md](../../DESIGN.md) and
-[PRODUCT.md](../../PRODUCT.md).
+[pattern-catalogue.md](pattern-catalogue.md), [DESIGN.md](https://github.com/Rajeev-SG/gog-marketing/blob/main/DESIGN.md) and
+[PRODUCT.md](https://github.com/Rajeev-SG/gog-marketing/blob/main/PRODUCT.md).
 
 ## How to use this
 
@@ -544,7 +544,7 @@ keyboard and screen-reader behaviour, and add the row above.
 - **What:** A group of inputs submitted together.
 - **Use:** To collect information. **Avoid:** Long single pages with
   conditional logic, and Reset or Clear buttons. **Instead:** a multi-step
-  pattern (see [pattern catalogue](pattern-catalogue.md#multi-step-workflows--wizards)),
+  pattern (see [pattern catalogue](pattern-catalogue.md#multi-step-workflows-and-wizards)),
   or [Toggles](#toggle) for instant settings.
 - **Behaviour & a11y:** A visible label for every input. Mark required fields.
   Validate on submit or on blur, never while the user is still typing a format

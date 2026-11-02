@@ -2,8 +2,8 @@
 
 Higher-level UX patterns: how components combine to solve a recurring problem.
 Use this with [component-catalogue.md](component-catalogue.md) (which component),
-[DESIGN.md](../../DESIGN.md) (tokens and visual rules) and
-[PRODUCT.md](../../PRODUCT.md) (what the product may and may not do). Finding
+[DESIGN.md](https://github.com/Rajeev-SG/gog-marketing/blob/main/DESIGN.md) (tokens and visual rules) and
+[PRODUCT.md](https://github.com/Rajeev-SG/gog-marketing/blob/main/PRODUCT.md) (what the product may and may not do). Finding
 IDs refer to the 31 October 2026 audit: `FINDINGS.md` (`C/U/D/N/P/L`) and
 `DESIGN-REVIEW.md` (`DR`).
 
@@ -36,7 +36,7 @@ Navigation & structure: [Global navigation](#global-navigation-and-app-shell) ·
 — Finding & input: [Search & filtering](#search-and-filtering) ·
 [Forms & validation](#forms-and-validation) ·
 [Progressive disclosure](#progressive-disclosure) ·
-[Multi-step workflows](#multi-step-workflows--wizards)
+[Multi-step workflows](#multi-step-workflows-and-wizards)
 — First use: [Onboarding & setup checklists](#onboarding-and-setup-checklists) ·
 [Empty states](#empty-states)
 — Feedback & status: [Loading](#loading-and-skeletons) ·
@@ -288,7 +288,7 @@ Navigation & structure: [Global navigation](#global-navigation-and-app-shell) ·
   [HIG Disclosure controls](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls)
 - **Governs:** D03, C05, C06, render 09 diagnostics, PRODUCT.md "advanced detail behind disclosure"
 
-### Multi-step workflows / wizards
+### Multi-step workflows and wizards
 - **Problem:** An occasional, multi-part task with dependencies, such as
   connecting an account (choose services → Google consent → discover → choose
   assets), can get users lost.
