@@ -9,7 +9,7 @@ const appRoot = join(here, "..");
 const dist = join(appRoot, "dist", "client");
 const axeSource = readFileSync(join(appRoot, "node_modules", "axe-core", "axe.min.js"), "utf8");
 
-export const CLERK_DOMAIN = "fixture.clerk.accounts.dev";
+const CLERK_DOMAIN = "fixture.clerk.accounts.dev";
 
 type HtmlModule = {
   renderHome: (config: {
@@ -38,7 +38,7 @@ function loadHtml(): Promise<HtmlModule> {
 }
 
 /** Synthetic connections: one populated account and one connected account with no assets. */
-export function fixtureConnections() {
+function fixtureConnections() {
   const resource = (service: string, label: string, id: string, enabled: boolean) => ({
     service,
     serviceLabel: label,
@@ -137,7 +137,7 @@ export async function openHome(
   return errors;
 }
 
-export const MODEL_SETTINGS = {
+const MODEL_SETTINGS = {
   selectedKey: "free-router",
   model: "openrouter/free",
   models: [

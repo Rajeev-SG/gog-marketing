@@ -28,7 +28,7 @@ export type ChatModelSettings = {
 };
 
 /** Daily allowances reset at 00:00 UTC; show that moment in the viewer's own time. */
-export function resetLabel(resetsAt: string | undefined): string {
+function resetLabel(resetsAt: string | undefined): string {
   const date = resetsAt ? new Date(resetsAt) : null;
   if (!date || Number.isNaN(date.getTime())) return "Daily at 00:00 UTC";
   return (
