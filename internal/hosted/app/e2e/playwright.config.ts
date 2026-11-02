@@ -8,7 +8,13 @@ const browserOverrides = systemChrome ? { channel: "chrome" as const } : {};
 
 export default defineConfig({
   testDir: ".",
-  testMatch: ["owner-journey.spec.ts", "chat-threads.spec.ts", "chat-multiuser.spec.ts"],
+  testMatch: [
+    "owner-journey.spec.ts",
+    "chat-threads.spec.ts",
+    "chat-multiuser.spec.ts",
+    "audit-regressions.spec.ts",
+    "visual-capture.spec.ts",
+  ],
   fullyParallel: false,
   workers: 1,
   timeout: 30_000,

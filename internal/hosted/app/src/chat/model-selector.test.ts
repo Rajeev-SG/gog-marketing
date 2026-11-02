@@ -57,15 +57,19 @@ it("renders model labels, the selected value, limits and the last routed model",
   const markup = render();
   expect(markup).toContain("Fast and free · Free");
   expect(markup).toContain("Capable paid · Paid");
+  // Option text stays short (a native select is as wide as its longest option);
+  // the reason is disclosed in the details list instead (C02).
+  expect(markup).toContain("Unavailable paid · Paid · Unavailable</option>");
   expect(markup).toContain(
-    "Unavailable paid · Paid · Unavailable: Your organization&#x27;s model budget is exhausted.",
+    "<dt>Unavailable paid</dt><dd>Unavailable: Your organization&#x27;s model budget is exhausted.</dd>",
   );
   expect(markup).toContain('value="free-fast"');
-  expect(markup).toContain("Current model: openrouter/free");
-  expect(markup).toContain("Last routed model: minimax/minimax-m3.1-flash:free");
-  expect(markup).toContain(
-    "Request limits: 40 requests/day · 15,000 tokens/day · service-wide 500 requests/day",
-  );
+  // Plain-language usage, no provider IDs in the primary fields (C05).
+  expect(markup).toContain("<dt>Model</dt><dd>Fast and free</dd>");
+  expect(markup).toContain("<dd>minimax/minimax-m3.1-flash:free</dd>");
+  expect(markup).toContain("Up to 40 model requests a day");
+  expect(markup).toContain("Up to 500 requests a day across all users");
+  expect(markup).toContain("Daily at 00:00 UTC");
 });
 
 it("disables model selection while busy, running, disconnected or loading", () => {
@@ -90,4 +94,20 @@ it("renders unavailable paid options and model selection errors accessibly", () 
   expect(markup).toContain('aria-label="Chat model selection"');
   expect(markup).toContain('<option value="paid-over-budget" disabled=""');
   expect(markup).toContain("Unavailable: Your organization&#x27;s model budget is exhausted.");
+});
+
+it("shows today's usage and the reset time when usage is available (C05)", () => {
+  const settings = {
+    ...baseProps.settings!,
+    usage: {
+      tenantRequestsToday: 12,
+      tenantTokensToday: 900,
+      globalRequestsToday: 77,
+      resetsAt: "2026-11-02T00:00:00.000Z",
+    },
+  };
+  const markup = render({ settings });
+  expect(markup).toContain("You&#x27;ve used 12 of 40 model requests");
+  expect(markup).toContain("77 of 500 requests used across all users");
+  expect(markup).toContain("(00:00 UTC)");
 });

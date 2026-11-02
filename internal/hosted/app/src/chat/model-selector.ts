@@ -19,7 +19,24 @@ export type ChatModelSettings = {
     tenantRequestsPerDay: number;
     tenantTokensPerDay: number;
   };
+  usage?: {
+    tenantRequestsToday: number;
+    tenantTokensToday: number;
+    globalRequestsToday: number;
+    resetsAt: string;
+  };
 };
+
+/** Daily allowances reset at 00:00 UTC; show that moment in the viewer's own time. */
+function resetLabel(resetsAt: string | undefined): string {
+  const date = resetsAt ? new Date(resetsAt) : null;
+  if (!date || Number.isNaN(date.getTime())) return "Daily at 00:00 UTC";
+  return (
+    "Resets at " +
+    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+    " your time (00:00 UTC)"
+  );
+}
 
 export function ModelSelector({
   settings,
@@ -100,9 +117,8 @@ export function ModelSelector({
                 (model.label.endsWith("· Free") || model.label.endsWith("· Paid")
                   ? ""
                   : " · " + (model.free ? "Free" : "Paid")) +
-                (!model.enabled
-                  ? " · Unavailable: " + (model.disabledReason ?? "temporarily unavailable")
-                  : ""),
+                // Keep option text short: a native select is as wide as its longest option.
+                (!model.enabled ? " · Unavailable" : ""),
             ),
           ),
         ),
@@ -130,24 +146,55 @@ export function ModelSelector({
         createElement(
           "details",
           { className: "model-more" },
-          createElement("summary", null, "Model details and usage limits"),
+          createElement("summary", null, "Model details and today's usage"),
           createElement(
-            "p",
+            "dl",
             { className: "model-details" },
-            createElement("span", null, "Current model: " + settings.model),
-            settings.lastModelId &&
-              createElement("span", null, "Last routed model: " + settings.lastModelId),
+            createElement("dt", null, "Model"),
+            createElement("dd", null, selected?.label ?? "Unavailable"),
+            ...(settings.lastModelId
+              ? [
+                  createElement("dt", { key: "last-dt" }, "Last reply from"),
+                  createElement("dd", { key: "last-dd" }, settings.lastModelId),
+                ]
+              : []),
+            createElement("dt", null, "Your usage today"),
             createElement(
-              "span",
+              "dd",
               null,
-              "Request limits: " +
-                settings.limits.tenantRequestsPerDay +
-                " requests/day · " +
-                settings.limits.tenantTokensPerDay.toLocaleString() +
-                " tokens/day · service-wide " +
-                settings.limits.globalRequestsPerDay +
-                " requests/day",
+              settings.usage
+                ? "You've used " +
+                    settings.usage.tenantRequestsToday +
+                    " of " +
+                    settings.limits.tenantRequestsPerDay +
+                    " model requests"
+                : "Up to " + settings.limits.tenantRequestsPerDay + " model requests a day",
             ),
+            createElement("dt", null, "Shared free capacity"),
+            createElement(
+              "dd",
+              null,
+              settings.usage
+                ? settings.usage.globalRequestsToday +
+                    " of " +
+                    settings.limits.globalRequestsPerDay +
+                    " requests used across all users"
+                : "Up to " +
+                    settings.limits.globalRequestsPerDay +
+                    " requests a day across all users",
+            ),
+            createElement("dt", null, "Resets"),
+            createElement("dd", null, resetLabel(settings.usage?.resetsAt)),
+            ...settings.models
+              .filter((model) => !model.enabled)
+              .flatMap((model) => [
+                createElement("dt", { key: model.key + "-dt" }, model.label),
+                createElement(
+                  "dd",
+                  { key: model.key + "-dd" },
+                  "Unavailable: " + (model.disabledReason ?? "temporarily unavailable"),
+                ),
+              ]),
           ),
           selected &&
             createElement(

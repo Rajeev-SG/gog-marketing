@@ -1,7 +1,9 @@
 # DESIGN.md — gog-marketing design system
 
 Aesthetic direction and the component/token contract for the gog-marketing
-UI. The approved renders in `docs/ui/renders/` are source material; this
+UI. Choose components with [docs/ui/component-catalogue.md](docs/ui/component-catalogue.md)
+and patterns with [docs/ui/pattern-catalogue.md](docs/ui/pattern-catalogue.md):
+prefer the conventional option, and record any deviation here with a reason. The approved renders in `docs/ui/renders/` are source material; this
 system is the implementation standard. Pair with [PRODUCT.md](PRODUCT.md).
 
 ## Aesthetic direction
@@ -49,19 +51,45 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
 - Action: `--action` (cobalt), `--action-hover`, `--action-active`.
 - Status: `--status-ok`, `--status-warn`, `--status-danger` with soft
   background variants for badges/alerts.
-- Radius: `--radius-s` (6px controls), `--radius` (10px cards), `--radius-l`
-  (14px panels). Shadow: `--shadow` single subtle elevation.
+- Radius: `--radius-s` (6px controls), `--radius` (10px cards, panels,
+  menus), `--radius-pill` (999px badges/chips). Nothing else; `--radius-l` is a
+  retired alias. Shadow: `--shadow` single subtle elevation.
+- Type scale (six sizes, no fractional pixels): `--text-xs` 12 (meta, badges,
+  eyebrows), `--text-s` 14 (dense UI, tables, controls), `--text-m` 16 (body,
+  emphasis), `--text-l` 20 (section titles), `--text-xl` 28 (page titles, key
+  figures), `--text-display` (public hero only). Weights 400/600/700 only.
+- Eyebrows: one style (`--eyebrow-tracking` 0.08em, uppercase, 12px), used for
+  page-level context only, never on every card.
 - Spacing: 4px scale (`--space-1..8`). Focus: `--focus-ring` cobalt ring.
 
 ## Component rules
 
+- Controls come from the component library in `internal/hosted/app/src/ui`
+  (React Aria Components styled with these tokens). Never hand-roll a checkbox,
+  menu, dialog, search field or segmented control; never use `window.confirm`.
+  The catalogue's "Implemented components" table maps each entry to its component.
+
 - Buttons: primary (cobalt, one per view), default (bordered), attention
   (reconnect). Minimum 44px touch target on coarse pointers.
 - Status is never colour alone: badges carry text labels.
+- Save model (decided 1 Nov 2026, audit D03): permission choices are
+  checkboxes, reviewed and saved together. Each account has one sticky save bar
+  for assets and tools. It appears only while there are unsaved changes and
+  shows the selection count, a summary of those changes, Cancel (discard) and
+  Save. There are no instant-apply switches for
+  access, because a permission change should be reviewed before it takes
+  effect. Leaving with unsaved changes warns first.
 - Cards only where semantically justified; no nested cards. Asset rows are
   bordered list rows, not cards.
-- Icons: inline Lucide SVG via the `icon` template function, one stroke
+- Icons: inline Lucide SVG via the `Icon` component, one stroke
   system, `aria-hidden` by default, never decorative tiles above headings.
+  Google services use neutral glyphs beside their text label, not
+  abbreviation tiles or third-party logos. This is a deliberate deviation from
+  renders 02/06: no brand assets are used without approval.
+- Status pills appear only when a state differs from the norm (attention,
+  delayed, nothing to choose). Healthy rows carry no pill.
+- Clickable rows are real buttons or links with a hover state. A chevron
+  is never shown on a row that can't be activated.
 - Forms: labels for every input, obvious focus, `:focus-visible` ring that
   sticky UI never covers.
 - Toasts: `aria-live="polite"`, informational by default, auto-styled.
@@ -84,7 +112,11 @@ Tailwind class soup in Go string literals.
 
 ## Stack constraints
 
-- Server-rendered Go templates. No React/SPA runtime.
+- Go control plane: server-rendered Go templates, no React/SPA runtime.
+- Hosted app (`internal/hosted/app`): the signed-in workspace and Chat are
+  React apps built with Vite, using the `src/ui` component library (React Aria
+  Components). Public pages stay server-rendered HTML. Both share `product.css`
+  tokens (generated into `product-css.generated.ts`).
 - One static stylesheet embedded with `go:embed`, served at
   `/static/product.css`. No third-party CDN assets in production.
 - Icons are inline SVG served from Go (Lucide paths), not an icon font.

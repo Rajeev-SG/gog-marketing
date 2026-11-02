@@ -10,6 +10,10 @@ name = "gog-marketing"
 main = "src/worker.ts"
 compatibility_date = "2026-10-12"
 compatibility_flags = ["nodejs_compat"]
+# Production hostname (rajeevg.com is a Cloudflare zone since 2 Nov 2026).
+# workers.dev stays enabled: the runner WIF issuer and existing MCP URLs use it.
+workers_dev = true
+routes = [{ pattern = "gog-marketing.rajeevg.com", custom_domain = true }]
 
 [[d1_databases]]
 binding = "DB"

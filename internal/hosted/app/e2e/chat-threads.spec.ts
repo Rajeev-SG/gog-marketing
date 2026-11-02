@@ -231,7 +231,7 @@ test("@deterministic separate threads, legacy drafts, rename/delete and mobile s
       page
         .getByRole("navigation", { name: "Mobile navigation", exact: true })
         .getByRole("link", { name: "Google data" }),
-    ).toHaveAttribute("href", "/#google-data");
+    ).toHaveAttribute("href", "/data");
     await page.getByRole("button", { name: "Open conversations" }).click();
     await expect(page.getByRole("button", { name: "New chat", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Close conversations" })).toBeVisible();

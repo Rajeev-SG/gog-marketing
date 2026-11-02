@@ -29,6 +29,12 @@ export interface ChatModelSettings {
     tenantRequestsPerDay: number;
     tenantTokensPerDay: number;
   };
+  usage?: {
+    tenantRequestsToday: number;
+    tenantTokensToday: number;
+    globalRequestsToday: number;
+    resetsAt: string;
+  };
 }
 export interface ChatModelPolicy {
   key: string;
@@ -106,6 +112,7 @@ export type ModelFailure =
   | "model_not_allowed"
   | "paid_not_enabled"
   | "budget"
+  | "provider_busy"
   | "context"
   | "privacy"
   | "provider";
@@ -121,7 +128,9 @@ export function modelFailureMessage(code: ModelFailure): string {
     case "paid_not_enabled":
       return "Paid models are disabled without explicit owner authorization and verified spending limits. Choose a free model.";
     case "budget":
-      return "Chat request, token or spending limit reached. Shared free capacity is limited. Wait for the allowance to reset; no automatic paid fallback is used.";
+      return "You've reached the chat usage limit. Per-minute limits clear within a minute; daily allowances reset at 00:00 UTC. Open Model details to see today's usage. No paid model is used automatically.";
+    case "provider_busy":
+      return "The free model service is busy right now. Wait a minute and retry, or choose another free model. Your message is saved and no paid model is used automatically.";
     case "context":
       return "This conversation or enabled tool set is too large for the model budget. Start a shorter conversation or enable fewer tools.";
     case "privacy":
@@ -136,6 +145,7 @@ export function safeModelFailureMessage(error: unknown): string {
     "model_not_allowed",
     "paid_not_enabled",
     "budget",
+    "provider_busy",
     "context",
     "privacy",
     "provider",

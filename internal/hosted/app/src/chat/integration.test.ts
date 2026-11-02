@@ -466,7 +466,7 @@ describe("integrated chat identity boundary", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toContain("text/html");
     const text = await response.text();
-    expect(text).toContain("Your accounts, your permissions");
+    expect(text).toContain("What we access and who processes it");
     expect(text).not.toContain("clerk.browser.js");
     expect(text).not.toContain(env.CLERK_SECRET_KEY);
     expect(

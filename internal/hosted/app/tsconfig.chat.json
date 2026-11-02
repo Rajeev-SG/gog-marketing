@@ -5,6 +5,6 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "node"]
   },
-  "include": ["src/chat/client.tsx"],
+  "include": ["src/chat/client.tsx", "src/workspace/**/*", "src/ui/**/*"],
   "exclude": []
 }

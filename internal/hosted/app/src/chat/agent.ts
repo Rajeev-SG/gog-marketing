@@ -56,7 +56,7 @@ import {
   type ChatModelSettings,
   type ModelFailure,
 } from "./models.js";
-import { DEFAULT_MODEL_REQUEST_LIMITS } from "./model-budgets.js";
+import { DEFAULT_MODEL_REQUEST_LIMITS, readModelUsage } from "./model-budgets.js";
 
 import {
   authenticateChatOwner,
@@ -521,6 +521,10 @@ export class Chat extends AIChatAgent<ChatEnv> {
         tenantRequestsPerDay: DEFAULT_MODEL_REQUEST_LIMITS.tenantDay,
         tenantTokensPerDay: DEFAULT_MODEL_REQUEST_LIMITS.tenantDayTokens,
       },
+      // Usage display is advisory; a counter read failure must not block chat.
+      usage: await readModelUsage(new HostedRepository(this.env.DB), state.tenantId).catch(
+        () => undefined,
+      ),
     };
   }
   async selectModel(key: string): Promise<ChatModelSettings> {

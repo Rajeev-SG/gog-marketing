@@ -52,7 +52,8 @@ the normal journey.
 - Healthy accounts are visually quiet. Reconnect appears only when required.
 - Partial service failures never block healthy services.
 - Duplicate-account attempts are informational feedback, not errors.
-- Access changes persist immediately and are auditable; audit detail stays
+- Access changes are reviewed, then saved together with one Save (Cancel
+  discards them), and are auditable; audit detail stays
   out of the marketer journey unless it is explicitly redacted product copy.
 - Advanced technical detail (connection IDs, resource IDs, scopes, JSON) sits
   behind progressive disclosure, never in the primary flow.
