@@ -5,6 +5,6 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: "dist/client",
-    rolldownOptions: { input: "chat.html" },
+    rolldownOptions: { input: ["chat.html", "app.html"] },
   },
 });

@@ -13,6 +13,8 @@ export function safeWorkspaceReturn(value: string | undefined): string {
     const url = new URL(value, "https://workspace.invalid");
     if (url.origin !== "https://workspace.invalid" || url.hash) return "/";
     if (url.pathname === "/" && !url.search) return "/";
+    if (["/data", "/access", "/connect-ai"].includes(url.pathname) && !url.search)
+      return url.pathname;
     if (url.pathname !== "/chat") return "/";
     const keys = [...url.searchParams.keys()];
     if (!keys.length) return "/chat";

@@ -24,6 +24,7 @@
     "agents": "0.28.1",
     "ai": "7.0.138",
     "react": "19.3.0",
+    "react-aria-components": "1.22.1",
     "react-dom": "19.3.0",
     "zod": "4.6.7"
   },

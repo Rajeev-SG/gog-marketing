@@ -64,6 +64,11 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
 
 ## Component rules
 
+- Controls come from the component library in `internal/hosted/app/src/ui`
+  (React Aria Components styled with these tokens). Never hand-roll a checkbox,
+  menu, dialog, search field or segmented control; never use `window.confirm`.
+  The catalogue's "Implemented components" table maps each entry to its component.
+
 - Buttons: primary (cobalt, one per view), default (bordered), attention
   (reconnect). Minimum 44px touch target on coarse pointers.
 - Status is never colour alone: badges carry text labels.
@@ -76,7 +81,7 @@ properties. No screen invents its own colour, radius, shadow, or focus style.
   effect. Leaving with unsaved changes warns first.
 - Cards only where semantically justified; no nested cards. Asset rows are
   bordered list rows, not cards.
-- Icons: inline Lucide SVG via the `icon` template function, one stroke
+- Icons: inline Lucide SVG via the `Icon` component, one stroke
   system, `aria-hidden` by default, never decorative tiles above headings.
   Google services use neutral glyphs beside their text label, not
   abbreviation tiles or third-party logos. This is a deliberate deviation from
@@ -107,7 +112,11 @@ Tailwind class soup in Go string literals.
 
 ## Stack constraints
 
-- Server-rendered Go templates. No React/SPA runtime.
+- Go control plane: server-rendered Go templates, no React/SPA runtime.
+- Hosted app (`internal/hosted/app`): the signed-in workspace and Chat are
+  React apps built with Vite, using the `src/ui` component library (React Aria
+  Components). Public pages stay server-rendered HTML. Both share `product.css`
+  tokens (generated into `product-css.generated.ts`).
 - One static stylesheet embedded with `go:embed`, served at
   `/static/product.css`. No third-party CDN assets in production.
 - Icons are inline SVG served from Go (Lucide paths), not an icon font.

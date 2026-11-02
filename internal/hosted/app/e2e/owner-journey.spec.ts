@@ -22,7 +22,7 @@ async function signInWithTestAccount(page: Page): Promise<void> {
     .click();
 }
 
-test("@deterministic public home renders Clerk sign-in and API returns 401", async ({
+test("@deterministic public home, Clerk sign-in on workspace pages, and API 401", async ({
   page,
   request,
 }) => {
@@ -46,13 +46,19 @@ test("@deterministic public home renders Clerk sign-in and API returns 401", asy
       body: Buffer.from(await upstream.arrayBuffer()),
     });
   });
+  // Signed-out visitors get the public landing page at "/".
   const response = await page.goto("/");
-
   expect(response?.status()).toBe(200);
   expect(new URL(page.url()).pathname).toBe("/");
+  await expect(page.locator("h1")).toHaveCount(1);
+  await expect(page.getByRole("link", { name: /sign in/i }).first()).toBeVisible();
+
+  // A signed-out workspace page renders Clerk sign-in that returns to that page.
+  const workspace = await page.goto("/data");
+  expect(workspace?.status()).toBe(200);
   await expect(page.locator("#sign-in")).toBeAttached();
   await expect(page.locator("script[data-clerk-publishable-key]").first()).toBeAttached();
-  await expect(page.getByText("Clerk authentication")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sign in to your workspace" })).toBeVisible();
 
   const api = await request.get("/api/tenant");
   expect(api.status()).toBe(401);

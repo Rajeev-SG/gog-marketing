@@ -29,12 +29,28 @@ for (const viewport of VIEWPORTS) {
       });
     }
 
-    test("home", async ({ page }) => {
-      await openHome(page);
-      await page.screenshot({ path: shot("home"), fullPage: true });
-      await page.screenshot({ path: shot("home-viewport") });
-      await page.getByRole("checkbox", { name: /asset 1 access/ }).uncheck();
-      await page.screenshot({ path: shot("home-unsaved") });
+    for (const [name, path] of [
+      ["home", "/"],
+      ["data", "/data"],
+      ["access", "/access"],
+      ["connect-ai", "/connect-ai"],
+    ] as const) {
+      test(`workspace ${name}`, async ({ page }) => {
+        await openHome(page, undefined, { path });
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: shot(name), fullPage: true });
+        await page.screenshot({ path: shot(name + "-viewport") });
+      });
+    }
+
+    test("workspace unsaved and dialogs", async ({ page }) => {
+      await openHome(page, undefined, { path: "/data" });
+      await page.getByText("Google Analytics 4 asset 1").click();
+      await page.screenshot({ path: shot("data-unsaved") });
+      await page.getByRole("button", { name: /More actions for owner@example.com/ }).click();
+      await page.screenshot({ path: shot("data-menu") });
+      await page.getByRole("menuitem", { name: "Disconnect account" }).click();
+      await page.screenshot({ path: shot("data-dialog") });
     });
 
     test("chat thread and failure", async ({ page }) => {

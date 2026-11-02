@@ -13,5 +13,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/chat/client.tsx"]
+  "exclude": ["src/chat/client.tsx", "src/workspace/**/*", "src/ui/**/*"]
 }

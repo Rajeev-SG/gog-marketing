@@ -431,7 +431,7 @@ function Chat({
           </header>
           <p className="notice" role="note">
             Google tools use your enabled permissions, and every write needs your approval. Manage
-            access in <a href="/#google-data">Google data</a>.
+            access in <a href="/data">Google data</a>.
           </p>
           <main aria-label="Chat">
             <ThreadPrimitive.Root className="thread">

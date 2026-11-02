@@ -18,7 +18,6 @@ import {
 } from "./connect.js";
 import { GoogleOAuthClient } from "./google-oauth.js";
 import type { DiscoveryRunner, DiscoveryOutcome } from "./discovery.js";
-import { renderHome } from "./html.js";
 import worker from "./index.js";
 import type { Env } from "./index.js";
 import {
@@ -80,6 +79,15 @@ async function createEnv(overrides: Partial<Env> = {}): Promise<Env> {
     CLERK_ISSUER,
     CLERK_AUTHORIZED_PARTIES: ORIGIN,
     CLERK_JWT_KEY: keys.publicPem,
+    // Stands in for the built workspace app (dist/client/app.html).
+    ASSETS: {
+      fetch: async (input: RequestInfo | URL) =>
+        new URL(input instanceof Request ? input.url : String(input)).pathname === "/app.html"
+          ? new Response(
+              '<!doctype html><html><head><title>Home</title></head><body><div id="root"></div></body></html>',
+            )
+          : new Response("Not found", { status: 404 }),
+    } as unknown as Fetcher,
   };
   return { ...baseEnv, ...overrides };
 }
@@ -298,34 +306,36 @@ describe("control plane route and UI contracts (#64)", () => {
     }
   });
 
-  it("shows the safe missing-origin panel without deriving MCP authority from request hints", async () => {
+  it("shows no MCP URL without operator configuration, never deriving it from request hints", async () => {
     const env = await createEnv();
-    const request = new Request(ORIGIN + "/", {
+    const request = new Request(ORIGIN + "/connect-ai", {
       headers: new Headers(await sessionHeaders(env, "user_panel_missing")),
     });
     request.headers.set("Host", CANONICAL_ORIGIN.replace("https://", ""));
     const response = await worker.fetch(request, env);
     expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain("Workspace address is not configured.");
-    expect(html).toContain("not a public-beta readiness claim");
+    expect(html).toContain(
+      '<script type="application/json" id="gog-config">{"mcpUrl":""}</script>',
+    );
     expect(html).not.toContain(`${CANONICAL_ORIGIN}/mcp`);
-    expect(html).toContain('<button id="copy-mcp-url" type="button" disabled>');
   });
 
   it("exposes the canonical MCP URL from trusted operator configuration and no internal identifiers", async () => {
     const env = await createEnv({
       GOG_HOSTED_CANONICAL_ORIGIN: CANONICAL_ORIGIN,
     });
+    for (const path of ["/", "/data", "/access", "/connect-ai"]) {
+      const response = await authenticatedRequest(ORIGIN + path, "user_panel", env);
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Cache-Control")).toBe("no-store");
+      expect(response.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'");
+    }
     const response = await authenticatedRequest(ORIGIN + "/", "user_panel", env);
-    expect(response.status).toBe(200);
     const html = await response.text();
-    expect(html).toContain(`${CANONICAL_ORIGIN}/mcp`);
-    expect(html).toContain("Add this HTTPS URL as a remote MCP server in Codex");
-    expect(html).toContain("Complete the Clerk browser sign-in");
-    expect(html).not.toContain("When authentication is enabled");
-    expect(html).toContain(".asset-picker {");
-    expect(html).toContain(".context-menu > summary");
+    expect(html).toContain(`{"mcpUrl":"${CANONICAL_ORIGIN}/mcp"}`);
+    expect(html).toContain('<div id="root"></div>');
+    expect(html).toContain("clerk.browser.js");
     expect(html).not.toContain("evil.example.com");
     expect(html).not.toMatch(UUID_RE);
   });
@@ -681,108 +691,6 @@ describe("control plane route and UI contracts (#64)", () => {
     expect(payload).not.toContain("1//private-refresh");
     expect(payload).not.toContain(tenant);
     expect(runnerCalls.every((call) => call.operation === "discover")).toBe(true);
-  });
-
-  it("keeps hosted reconnect, failed reload, and destructive disconnect contracts", async () => {
-    const html = renderHome({
-      publishableKey: CLERK_PUBLISHABLE_KEY,
-      authorizedParties: [ORIGIN],
-      clerkDomain: "oriented-wombat-2813.clerk.accounts.dev",
-      mcpOrigin: CANONICAL_ORIGIN,
-    });
-    const scriptStart = html.lastIndexOf("<script>") + "<script>".length;
-    const scriptEnd = html.indexOf("</script>", scriptStart);
-    const script = html.slice(scriptStart, scriptEnd);
-    const extraction = (name: string): string => {
-      const start = script.indexOf(`function ${name}(`);
-      if (start < 0) throw new Error(`missing UI function: ${name}`);
-      const marker = "\n    }";
-      const end = script.indexOf(marker, start);
-      if (end < 0) throw new Error(`missing UI function end: ${name}`);
-      return script.slice(start, end + marker.length);
-    };
-
-    const reconnect = new Function(
-      "setConnectTarget",
-      "el",
-      "startConnection",
-      "connection",
-      `${extraction("reconnect")}; return reconnect(connection);`,
-    );
-    const connection = { id: "owned-connection", email: "owner@example.com" };
-    let target: typeof connection | undefined;
-    let scrollOptions: unknown;
-    let oauthRequests = 0;
-    reconnect(
-      (selected: typeof connection) => {
-        target = selected;
-      },
-      (id: string) => {
-        expect(id).toBe("connect-panel");
-        return {
-          scrollIntoView: (options: unknown) => {
-            scrollOptions = options;
-          },
-        };
-      },
-      () => {
-        oauthRequests += 1;
-      },
-      connection,
-    );
-    expect(target).toBe(connection);
-    expect(scrollOptions).toEqual({ behavior: "smooth", block: "start" });
-    expect(oauthRequests).toBe(0);
-
-    const guarded = new Function(
-      "message",
-      "request",
-      "loadResources",
-      "connection",
-      `${extraction("guardedAction").replace("function guardedAction(", "async function guardedAction(")}; return guardedAction('Refresh', connection, request);`,
-    );
-    const messages: Array<string | undefined> = [];
-    await (
-      guarded as (
-        message: (text?: string) => void,
-        request: () => Promise<{ ok: true }>,
-        load: () => Promise<boolean>,
-      ) => Promise<void>
-    )(
-      (text = "") => messages.push(text),
-      () => Promise.resolve({ ok: true }),
-      () => Promise.resolve(false),
-    );
-    expect(messages).toEqual([""]);
-
-    const disconnect = new Function(
-      "guardedAction",
-      "window",
-      "jsonFetch",
-      "connection",
-      `${extraction("disconnect")}; return disconnect(connection);`,
-    );
-    const mutations: Array<{ label: string; request: () => Promise<unknown> }> = [];
-    const guardedAction = (label: string, target: unknown, request: () => Promise<unknown>) =>
-      mutations.push({ label, request });
-    (disconnect as unknown as (...args: unknown[]) => void)(
-      guardedAction,
-      { confirm: () => false },
-      () => Promise.resolve(new Response()),
-      connection,
-    );
-    expect(mutations).toHaveLength(0);
-    (disconnect as unknown as (...args: unknown[]) => void)(
-      guardedAction,
-      { confirm: () => true },
-      () => Promise.resolve(new Response()),
-      connection,
-    );
-    expect(mutations).toHaveLength(1);
-    expect(mutations[0]!.label).toBe("Disconnect");
-    expect(String(html)).toContain(
-      "connections/' + encodeURIComponent(connection.id) + '/disconnect",
-    );
   });
 
   it("preserves a concurrent disable when discovery resumes from its stale snapshot", async () => {

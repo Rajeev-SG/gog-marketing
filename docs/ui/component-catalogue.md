@@ -22,11 +22,35 @@ finding IDs it resolves. Where a component isn't used, the line says "n/a yet".
 > behaviour. Deviate only with a written reason in `DESIGN.md` (what, why, and
 > which convention you're breaking). "It looks cleaner" is not a reason.
 
-**Stack reminder** (from DESIGN.md): the app uses server-rendered Go templates
-with one embedded `product.css`, inline Lucide SVG and no SPA runtime. Prefer
-native HTML elements (`<button>`, `<a>`, `<dialog>`, `<details>`, `<fieldset>`,
-`<table>`, `<input type=search>`) and add ARIA only where native semantics run
-out.
+**Stack reminder** (from DESIGN.md): the signed-in workspace (Home, Google data,
+Access, Connect AI) and Chat are React apps built with Vite. Interactive
+controls come from the component library in `internal/hosted/app/src/ui`, which
+wraps [React Aria Components](https://react-spectrum.adobe.com/react-aria/) and
+styles them only with `product.css` tokens. Public pages (landing, sign-in,
+Help & privacy, 404) stay server-rendered HTML with native elements. Never
+hand-roll a control the library already has.
+
+### Implemented components (`src/ui`)
+
+| Catalogue entry | Component | React Aria part | Where it's used |
+|---|---|---|---|
+| [Button](#button) | `Button` (primary · secondary · danger · quiet · attention) | `Button` | Everywhere; Save bar, dialogs |
+| [Link](#link) styled as a button | `LinkButton` | `Link` + `RouterProvider` | Page actions that navigate |
+| [Checkbox](#checkbox) | `Checkbox` (with description and indeterminate) | `Checkbox` | Assets, tools, consent form, select-all |
+| [Search input](#search-input) | `SearchField` | `SearchField` | Asset and tool search |
+| [Segmented control](#segmented-control) | `SegmentedControl` | `ToggleButtonGroup` | Tool filter (All · Reads · Changes) |
+| [Dropdown menu](#dropdown-menu) | `ActionMenu` | `MenuTrigger` + `Menu` + `Popover` | Account actions |
+| [Modal](#modal) (alert dialog) | `ConfirmProvider` / `useConfirm` | `ModalOverlay` + `Modal` + `Dialog role=alertdialog` | Disconnect, allow changes, allow deletion, discard changes |
+| [Accordion](#accordion) | `Disclosure` | `Disclosure` | Tool groups, technical descriptions |
+| [Tabs](#tabs) (vertical) | Asset service rail | `Tabs` + `TabList` + `TabPanel` | Google data asset picker |
+| [Alert](#alert) | `Notice` | (role=status / alert) | Page outcomes, reconnect banner |
+| [Badge](#badge) | `StatusBadge` | — | Abnormal account or service status only |
+| Save bar (sticky) | `SaveBar` | — | One save model (D03) |
+| [Icon](#icon) | `Icon` | — | Decorative Lucide glyphs, `aria-hidden` |
+
+Rules for adding to the library: wrap the React Aria component, style it only in
+`src/ui/ui.css` with tokens and React Aria's `data-*` state attributes, keep its
+keyboard and screen-reader behaviour, and add the row above.
 
 ### Global behaviour floor (applies to every entry)
 

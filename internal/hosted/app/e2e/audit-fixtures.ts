@@ -1,41 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "esbuild";
 import type { Page, WebSocketRoute } from "@playwright/test";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const appRoot = join(here, "..");
 const dist = join(appRoot, "dist", "client");
 const axeSource = readFileSync(join(appRoot, "node_modules", "axe-core", "axe.min.js"), "utf8");
-
-const CLERK_DOMAIN = "fixture.clerk.accounts.dev";
-
-type HtmlModule = {
-  renderHome: (config: {
-    publishableKey: string;
-    authorizedParties: string[];
-    clerkDomain: string;
-    mcpOrigin: string;
-  }) => string;
-};
-let htmlModule: Promise<HtmlModule> | undefined;
-function loadHtml(): Promise<HtmlModule> {
-  htmlModule ??= build({
-    entryPoints: [join(appRoot, "src", "html.ts")],
-    bundle: true,
-    format: "esm",
-    platform: "neutral",
-    target: "es2022",
-    write: false,
-  }).then(
-    (bundle) =>
-      import(
-        `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString("base64")}`
-      ) as Promise<HtmlModule>,
-  );
-  return htmlModule;
-}
 
 /** Synthetic connections: one populated account and one connected account with no assets. */
 function fixtureConnections() {
@@ -75,38 +46,47 @@ function fixtureConnections() {
   };
 }
 
-const CLERK_STUB = `window.__internal_ClerkUICtor = function(){};
-window.Clerk = { loaded: true, session: { id: 'fixture' }, load: async function(){}, mountUserButton: function(el){ el.innerHTML = '<button type="button" aria-label="Open user menu" class="fixture-avatar">R</button>'; }, signOut: async function(){}, addListener: function(fn){ fn({ session: { id: 'fixture' } }); return function(){}; } };`;
+const CLERK_STUB = `window.Clerk = { loaded: true, session: { id: 'fixture' }, load: async function(){}, mountUserButton: function(el){ el.innerHTML = '<button type="button" aria-label="Open user menu" class="fixture-avatar">R</button>'; }, signOut: async function(){}, addListener: function(fn){ fn({ session: { id: 'fixture' } }); return function(){}; } };`;
 
-/** Serve the real server-rendered Home with a stubbed Clerk and mocked Google APIs. */
+/**
+ * Serve the built workspace app (dist/client/app.html) with a stubbed Clerk and
+ * mocked Google APIs. `path` is any workspace page: /, /data, /access, /connect-ai.
+ */
 export async function openHome(
   page: Page,
   connections = fixtureConnections(),
-  options: { toolsEnabled?: boolean; failToolSave?: boolean; posts?: string[] } = {},
+  options: {
+    toolsEnabled?: boolean;
+    failToolSave?: boolean;
+    posts?: string[];
+    path?: string;
+    connectBodies?: unknown[];
+  } = {},
 ) {
-  const { renderHome } = await loadHtml();
-  const html = renderHome({
-    publishableKey: "pk_test_fixture",
-    authorizedParties: ["https://test.example.com"],
-    clerkDomain: CLERK_DOMAIN,
-    mcpOrigin: "https://test.example.com",
-  });
+  const shell = readFileSync(join(dist, "app.html"), "utf8").replace(
+    "</head>",
+    `<script>${CLERK_STUB}</script><script type="application/json" id="gog-config">{"mcpUrl":"https://test.example.com/mcp"}</script></head>`,
+  );
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
-    if (url.hostname === CLERK_DOMAIN) {
+    const method = route.request().method();
+    if (["/", "/data", "/access", "/connect-ai"].includes(url.pathname))
+      return route.fulfill({ contentType: "text/html", body: shell });
+    if (url.pathname.startsWith("/assets/"))
       return route.fulfill({
-        contentType: "application/javascript",
-        body: url.pathname.includes("clerk-js") ? CLERK_STUB : "",
+        contentType: url.pathname.endsWith(".css") ? "text/css" : "application/javascript",
+        body: readFileSync(join(dist, url.pathname.slice(1))),
+      });
+    if (url.pathname === "/api/google/resources") return route.fulfill({ json: connections });
+    if (method === "POST" && url.pathname === "/api/google/connect") {
+      options.connectBodies?.push(route.request().postDataJSON());
+      return route.fulfill({
+        json: { authorizationUrl: "https://accounts.google.test/o/oauth2/auth" },
       });
     }
-    if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: html });
-    if (url.pathname === "/api/google/resources") return route.fulfill({ json: connections });
-    if (
-      route.request().method() === "POST" &&
-      (url.pathname === "/api/google/grants" || url.pathname === "/api/google/tools")
-    ) {
+    if (method === "POST" && url.pathname.startsWith("/api/google/")) {
       options.posts?.push(url.pathname);
       if (url.pathname === "/api/google/tools" && options.failToolSave)
         return route.fulfill({
@@ -127,13 +107,21 @@ export async function openHome(
               enabled: options.toolsEnabled ?? false,
               allowDestructive: false,
             },
+            {
+              name: "tagmanager_update_tag",
+              service: "tagmanager",
+              description: "Update a tag.",
+              write: true,
+              enabled: false,
+              allowDestructive: false,
+            },
           ],
         },
       });
     return route.abort();
   });
-  await page.goto("http://127.0.0.1:8799/");
-  await page.locator("#workspace-content").waitFor({ state: "visible" });
+  await page.goto("http://127.0.0.1:8799" + (options.path ?? "/"));
+  await page.locator("#main-content h1").waitFor();
   return errors;
 }
 

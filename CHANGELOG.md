@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted workspace: Home is now a React app split into real pages: Home (`/`), Google data (`/data`), Access (`/access`) and Connect AI (`/connect-ai`). Old `/#…` links still land on the right page. Controls come from a new component library (`src/ui`) built on React Aria Components and styled with the existing tokens: accessible dialogs replace every browser `confirm()` pop-up (disconnect, allow changes, allow deletion, discard changes), the account menu, checkboxes (with a tri-state select-all for assets), search fields, the Reads/Changes filter, tool-group disclosures and vertical service tabs all get full keyboard and screen-reader support. Workspace rules moved into a tested module (`src/workspace/model.ts`). (31 Oct audit D05, N04; #146)
+
 - Hosted production: the Worker now also serves `gog-marketing.rajeevg.com` (a Worker custom domain; `rajeevg.com` DNS moved to Cloudflare on 2 Nov 2026) and uses the production Clerk instance there. `workers.dev` stays enabled for the runner WIF issuer. (#146)
 
 - Hosted sign-in: keep the Clerk authentication-strategy badge inside the provider card edge and darken the GA service-mark and Clerk footer text for contrast. (#107, thanks @Rajeev-SG)

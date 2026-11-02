@@ -233,6 +233,15 @@ async function createNativeEnv(overrides?: Partial<Env>): Promise<Env> {
     CLERK_ISSUER: CLERK_ISSUER,
     CLERK_AUTHORIZED_PARTIES: ORIGIN,
     CLERK_JWT_KEY: keys.publicPem,
+    // Stands in for the built workspace app (dist/client/app.html).
+    ASSETS: {
+      fetch: async (input: RequestInfo | URL) =>
+        new URL(input instanceof Request ? input.url : String(input)).pathname === "/app.html"
+          ? new Response(
+              '<!doctype html><html><head><title>Home</title></head><body><div id="root"></div></body></html>',
+            )
+          : new Response("Not found", { status: 404 }),
+    } as unknown as Fetcher,
   };
   return { ...baseEnv, ...overrides };
 }
@@ -277,7 +286,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     expect(html).toContain("Less moving data.");
     expect(html).toContain('href="/sign-in"');
     expect(html).not.toContain("@clerk/clerk-js@6");
-    expect(html).not.toContain('id="app-shell"');
+    expect(html).not.toContain('id="gog-config"');
     expect(res.headers.get("content-security-policy")).toContain("script-src");
   });
 
@@ -380,9 +389,8 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     expect(html).toContain("@clerk/ui@1");
     expect(html).toContain("@clerk/clerk-js@6");
     expect(html).toContain("Clerk.load");
-    expect(html).toContain("Clerk.mountUserButton(");
-    expect(html).toContain("Clerk.signOut(");
-    expect(html).toContain('id="sign-out"');
+    // The workspace app mounts the user button and sign-out once Clerk has loaded.
+    expect(html).toContain('<div id="root"></div>');
   });
 
   it("returns the same tenant on repeated sign-in (idempotent)", async () => {
@@ -409,7 +417,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       const html = await res.text();
       // No tenant UUID is rendered on the home page.
       expect(html).not.toMatch(UUID_RE);
-      expect(html).toContain('id="app-shell"');
+      expect(html).toContain('id="gog-config"');
     }
     const row = await (env.DB as unknown as Database)
       .prepare("SELECT COUNT(*) AS n FROM hosted_tenants WHERE clerk_user_id = ?1")
@@ -485,7 +493,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       exp: past,
     });
     const body = await res.text();
-    expect(body).not.toContain('id="app-shell"');
+    expect(body).not.toContain('id="gog-config"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_expired");
     expect(body).not.toContain("sk_test");
@@ -497,7 +505,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       azp: "https://evil.example.com",
     });
     const body = await res.text();
-    expect(body).not.toContain('id="app-shell"');
+    expect(body).not.toContain('id="gog-config"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_azp_wrong");
     expect(body).not.toContain("evil");
@@ -518,7 +526,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
       iss: "https://evil-wombat-2813.clerk.accounts.dev",
     });
     const html = await homeRes.text();
-    expect(html).not.toContain('id="app-shell"');
+    expect(html).not.toContain('id="gog-config"');
     expect(html).not.toContain('id="workspace-content"');
     expect(html).not.toContain("user_iss_wrong");
   });
@@ -568,7 +576,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const req = buildAuthenticatedRequest(`${ORIGIN}/`, tampered);
     const res = await worker.fetch(req, env);
     const body = await res.text();
-    expect(body).not.toContain('id="app-shell"');
+    expect(body).not.toContain('id="gog-config"');
     expect(body).not.toContain("Signed in");
     expect(body).not.toContain("user_attacker");
     expect(body).not.toContain("user_tamper");
@@ -669,7 +677,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const homeRes = await authenticatedRequest(`${ORIGIN}/`, "user_deleted", env);
     expect(homeRes.status).toBe(200);
     const html = await homeRes.text();
-    expect(html).toContain('id="app-shell"');
+    expect(html).toContain('id="gog-config"');
     expect(html).not.toMatch(UUID_RE);
   });
 
@@ -684,7 +692,7 @@ describe("hosted Clerk auth + tenant bootstrap (worker)", () => {
     const home = await worker.fetch(request, env);
     expect(home.status).toBe(200);
     const html = await home.text();
-    expect(html).toContain("Your Google marketing data");
+    expect(html).toContain('id="gog-config"');
     expect(html).not.toContain(token);
     expect(html).not.toContain("test_dev_browser");
     const first = await tenantIdForClerkUser(env, "user_cookie");
@@ -1003,9 +1011,10 @@ describe("hosted Google connection routes (#62)", () => {
     expect(replay.status).toBe(409);
     expect(((await replay.json()) as { code: string }).code).toBe("state_replayed");
 
-    // Home surfaces the Google accounts panel.
+    // Home is served as the workspace app shell.
     const home = await worker.fetch(await googleRequest(`${ORIGIN}/`, "user_google"), env);
-    expect(await home.text()).toContain("Connect Google account");
+    expect(home.status).toBe(200);
+    expect(await home.text()).toContain('<div id="root"></div>');
   });
 
   it("surfaces Google consent denial as a distinct outcome", async () => {
@@ -1158,9 +1167,8 @@ describe("hosted Google connection routes (#62)", () => {
       env,
     );
     const html = await home.text();
-    expect(html).toContain("Reconnect");
-    expect(html).toContain("if (connectionTarget) body.connectionId = connectionTarget;");
-    expect(html).toContain("Google account connected.");
+    // Outcome copy lives in the workspace bundle; the shell must not echo OAuth secrets.
+    expect(home.status).toBe(200);
     expect(html).not.toContain(state);
     expect(html).not.toContain("private-code");
   });
@@ -1254,7 +1262,7 @@ it("keeps public beta pages separate from protected APIs and refuses signup-like
     const response = await worker.fetch(new Request(ORIGIN + path), env);
     expect(response.status).toBe(200);
     const text = await response.text();
-    expect(text).not.toContain('id="app-shell"');
+    expect(text).not.toContain('id="gog-config"');
     expect(text).not.toContain("clerk-js");
     expect(response.headers.get("cache-control")).toBe("no-store");
   }

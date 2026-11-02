@@ -49,7 +49,6 @@ import {
 import {
   deriveClerkDomain,
   renderCallbackNotice,
-  renderHome,
   renderSignIn,
   renderLanding,
   renderRequestAccess,
@@ -59,6 +58,8 @@ import {
   type HtmlConfig,
 } from "./html.js";
 import { handleMcp, handleMcpMetadata } from "./mcp.js";
+import { WORKSPACE_PATHS } from "./product-navigation.js";
+import { renderWorkspacePage } from "./workspace-page.js";
 
 export interface Env extends ClerkEnv, ConnectEnv, ChatEnv {
   CLERK_SECRET_KEY?: string;
@@ -76,6 +77,8 @@ export interface Env extends ClerkEnv, ConnectEnv, ChatEnv {
   __testNow?: () => number;
   DB: D1Database;
 }
+
+const isWorkspacePath = (path: string) => (WORKSPACE_PATHS as readonly string[]).includes(path);
 
 function safeError(status: number, message: string, clerkDomain = ""): Response {
   return Response.json({ error: message }, { status, headers: securityHeaders(clerkDomain) });
@@ -180,7 +183,7 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   if (mcpResponse) return mcpResponse;
 
   // Only the known routes are served. Everything else is 404.
-  const knownPaths = ["/", "/sign-in", "/api/tenant", ...GOOGLE_API_PATHS];
+  const knownPaths = [...WORKSPACE_PATHS, "/sign-in", "/api/tenant", ...GOOGLE_API_PATHS];
   if (!knownPaths.includes(path) && !connectionAction) {
     // Browser page navigations get a recoverable HTML page; API/protocol paths keep JSON (P01).
     const machinePath = /^\/(api|mcp|oauth|agents|\.well-known)(\/|$)/.test(path);
@@ -397,11 +400,14 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
         return new Response(null, { status: 303, headers });
       }
       const headers = new Headers(outcome.headers);
-      headers.set("Content-Type", "text/html; charset=utf-8");
       for (const [name, value] of Object.entries(securityHeaders(htmlConfig.clerkDomain))) {
         headers.set(name, value);
       }
-      return new Response(renderHome(htmlConfig), { status: 200, headers });
+      if (!isWorkspacePath(path) || request.method !== "GET") {
+        headers.set("Allow", "GET");
+        return new Response(null, { status: 405, headers });
+      }
+      return renderWorkspacePage(env.ASSETS, url, htmlConfig, headers);
     }
     case "handshake":
       return new Response(null, { status: 307, headers: outcome.headers });
@@ -438,7 +444,9 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
       return new Response(
         renderSignIn(
           htmlConfig,
-          safeWorkspaceReturn(url.searchParams.get("returnTo") ?? undefined),
+          safeWorkspaceReturn(
+            url.searchParams.get("returnTo") ?? (isWorkspacePath(path) ? path : undefined),
+          ),
         ),
         {
           status: 200,
