@@ -2,6 +2,8 @@
 
 ## 0.41.1 - Unreleased
 
+- Hosted production: the Worker now also serves `gog-marketing.rajeevg.com` (a Worker custom domain; `rajeevg.com` DNS moved to Cloudflare on 2 Nov 2026) and uses the production Clerk instance there. `workers.dev` stays enabled for the runner WIF issuer. (#146)
+
 - Hosted sign-in: keep the Clerk authentication-strategy badge inside the provider card edge and darken the GA service-mark and Clerk footer text for contrast. (#107, thanks @Rajeev-SG)
 
 - Hosted live acceptance: clear the native Clerk loading placeholder and constrain its heading typography; show safe, actionable native failed-turn notices instead of blank chat replies, including on reconnect. No provider, privacy, paid-fallback or Google permission changes. (#107, #108, #110, thanks @Rajeev-SG)
