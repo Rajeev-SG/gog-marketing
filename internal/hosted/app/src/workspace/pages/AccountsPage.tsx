@@ -1,13 +1,33 @@
 import { useState } from "react";
 import { CONSENT_GROUPS, consentServiceIds } from "../../consent.js";
 import { HOSTED_SERVICES } from "../../scopes.js";
-import { Button, Checkbox, Icon, LinkButton, Notice } from "../../ui/index.js";
+import {
+  ActionMenu,
+  Button,
+  Checkbox,
+  Disclosure,
+  Icon,
+  LinkButton,
+  Notice,
+  StatusBadge,
+} from "../../ui/index.js";
 import { useWorkspace } from "../state.js";
-import { useLocation } from "../router.js";
+import { navigate, useLocation } from "../router.js";
 import { ServiceMark } from "../ServiceMark.js";
-import { accountName, requestConnection, serviceKey } from "../model.js";
+import { LoadError, LoadingPanel } from "../states.js";
+import {
+  accountName,
+  discoveryDelayed,
+  enabledCount,
+  plural,
+  requestConnection,
+  safeStatus,
+  serviceKey,
+  toolSummary,
+  type Connection,
+} from "../model.js";
 
-export function AccessPage() {
+export function AccountsPage() {
   const ws = useWorkspace();
   const url = useLocation();
   const target = ws.connections.find((item) => item.id === url.searchParams.get("update"));
@@ -16,10 +36,33 @@ export function AccessPage() {
     <>
       <header className="page-header">
         <div>
-          <h1>Access</h1>
-          <p>Which Google services each account shares, and how to add or change that.</p>
+          <h1>Google accounts</h1>
+          <p>Each connected account, what it shares, and how to add or change that.</p>
+        </div>
+        <div className="page-actions">
+          <LinkButton variant="primary" href="/settings/accounts#connect">
+            <Icon name="plus" /> Add Google account
+          </LinkButton>
         </div>
       </header>
+
+      {ws.loadState === "loading" && <LoadingPanel />}
+      {ws.loadState === "error" && <LoadError onRetry={ws.reload} />}
+      {ws.loadState === "ready" && ws.connections.length > 0 && (
+        <section className="panel" aria-labelledby="accounts-heading">
+          <div className="panel-head">
+            <div>
+              <h2 id="accounts-heading">Connected accounts</h2>
+              <p>AI tools can use an account only for the data and tools you enable.</p>
+            </div>
+          </div>
+          <ul className="account-list-cards">
+            {ws.connections.map((connection) => (
+              <AccountCard key={connection.id} connection={connection} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="access-strip" aria-labelledby="how-heading">
         <Icon name="shield" />
@@ -27,57 +70,20 @@ export function AccessPage() {
           <h2 id="how-heading">How access works</h2>
           <ol className="access-steps-inline">
             <li>
-              <strong>Connect.</strong> You choose which Google services an account shares. Reads
-              and changes are separate choices.
+              <strong>Share services.</strong> When you connect, you choose which Google services
+              the account shares. Reading and changing data are separate choices.
             </li>
             <li>
-              <strong>Choose data.</strong> AI tools see only the assets you enable on Google data.
+              <strong>Enable data.</strong> AI tools see only the assets you enable in Data access.
               New assets start disabled.
             </li>
             <li>
-              <strong>Choose tools.</strong> Each tool is enabled per account. Every Google change
-              is shown to you before it runs.
+              <strong>Enable tools.</strong> Each AI tool is enabled per account. Every Google
+              change is shown to you before it runs.
             </li>
           </ol>
         </div>
       </section>
-
-      {ws.connections.length > 0 && (
-        <section className="panel" aria-labelledby="granted-heading">
-          <div className="panel-head">
-            <div>
-              <h2 id="granted-heading">Shared services by account</h2>
-              <p>What each connected account allows. Change it with Update Google permissions.</p>
-            </div>
-          </div>
-          <ul className="granted-list">
-            {ws.connections.map((connection) => (
-              <li key={connection.id} className="granted-account">
-                <div className="granted-head">
-                  <h3>{accountName(connection)}</h3>
-                  <LinkButton href={`/access?update=${encodeURIComponent(connection.id)}#connect`}>
-                    Update Google permissions
-                  </LinkButton>
-                </div>
-                <ul
-                  className="granted-services"
-                  aria-label={`Services shared by ${accountName(connection)}`}
-                >
-                  {(connection.services ?? []).map((name) => (
-                    <li key={name}>
-                      <ServiceMark service={serviceKey(name)} />
-                      {name}
-                    </li>
-                  ))}
-                  {!(connection.services ?? []).length && (
-                    <li className="muted">No services shared</li>
-                  )}
-                </ul>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
 
       <ConnectForm
         key={target?.id ?? "new"}
@@ -85,6 +91,101 @@ export function AccessPage() {
         targetName={target ? accountName(target) : ""}
       />
     </>
+  );
+}
+
+function AccountCard({ connection }: { connection: Connection }) {
+  const ws = useWorkspace();
+  const [tone, text] = safeStatus(connection);
+  const who = accountName(connection);
+  const catalog = ws.toolCatalogs.get(connection.id);
+  const tools = catalog ? toolSummary(connection, catalog) : null;
+  const services = connection.services ?? [];
+  const reconnect = connection.status !== "active";
+  const update = `/settings/accounts?update=${encodeURIComponent(connection.id)}#connect`;
+  const account = encodeURIComponent(connection.id);
+  return (
+    <li className={"card account-card" + (tone === "needs_attention" ? " needs-attention" : "")}>
+      <span className="avatar" aria-hidden="true">
+        {who.slice(0, 1).toUpperCase()}
+      </span>
+      <div>
+        <h3>{who}</h3>
+        <p className="muted">
+          {services.length} {plural(services.length, "service", "services")} shared ·{" "}
+          {enabledCount(connection)} of {(connection.resources ?? []).length} assets enabled
+          {tools ? ` · ${tools.enabled} AI ${plural(tools.enabled, "tool", "tools")} enabled` : ""}
+        </p>
+        {tone !== "ok" && (
+          <p className="account-status">
+            <StatusBadge tone={tone}>{text}</StatusBadge>
+          </p>
+        )}
+      </div>
+      <div className="card-actions">
+        {reconnect && (
+          <LinkButton variant="attention" href={update}>
+            Reconnect Google
+          </LinkButton>
+        )}
+        <LinkButton href={`/settings/data?account=${account}`}>Data</LinkButton>
+        <LinkButton href={`/settings/tools?account=${account}`}>AI tools</LinkButton>
+        <ActionMenu
+          label={`More actions for ${who}`}
+          heading={`Actions for ${who}`}
+          actions={[
+            {
+              id: "permissions",
+              label: "Change shared services",
+              onAction: () => navigate(update),
+            },
+            {
+              id: "discover",
+              label: "Check for new assets",
+              onAction: () => void ws.runAction("Asset check", connection, "discover"),
+            },
+            {
+              id: "refresh",
+              label: "Refresh connection",
+              onAction: () => void ws.runAction("Refresh", connection, "refresh"),
+            },
+            {
+              id: "disconnect",
+              label: "Disconnect account",
+              danger: true,
+              onAction: () => void ws.runAction("Disconnect", connection, "disconnect"),
+            },
+          ]}
+        />
+      </div>
+      {services.length > 0 && (
+        <Disclosure
+          className="granted-disclosure"
+          title="Shared services"
+          meta={`${services.length} ${plural(services.length, "service", "services")}`}
+        >
+          <ul className="granted-services" aria-label={`Services shared by ${who}`}>
+            {services.map((name) => (
+              <li key={name}>
+                <ServiceMark service={serviceKey(name)} />
+                {name}
+              </li>
+            ))}
+          </ul>
+        </Disclosure>
+      )}
+      {discoveryDelayed(connection) && (connection.resources ?? []).length > 0 && (
+        <div className="partial-banner">
+          <div>
+            <strong>Some Google services couldn’t be checked</strong>
+            <p>Your existing selections are unchanged and remain available.</p>
+          </div>
+          <Button onPress={() => void ws.runAction("Asset check", connection, "discover")}>
+            Check again
+          </Button>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -147,15 +248,17 @@ function ConnectForm({ targetId, targetName }: { targetId: string | null; target
     <section className="panel connect-panel" id="connect" aria-labelledby="connect-heading">
       <div className="connect-layout">
         <div>
-          <p className="eyebrow">{targetId ? "Update access" : "Add access"}</p>
+          <p className="eyebrow">{targetId ? "Change shared services" : "Add an account"}</p>
           <h2 id="connect-heading">
-            {targetId ? `Update Google permissions for ${targetName}` : "Connect a Google account"}
+            {targetId ? `Change shared services for ${targetName}` : "Connect a Google account"}
           </h2>
           {targetId ? (
             <Notice tone="info">
-              Updating permissions for {targetName}. Existing approvals are preserved; select
-              additional services, then continue to Google.{" "}
-              <LinkButton href="/access#connect">Connect a different account instead</LinkButton>
+              Changing what {targetName} shares. Services it already shares stay shared; select any
+              to add, then continue to Google.{" "}
+              <LinkButton href="/settings/accounts#connect">
+                Connect a different account instead
+              </LinkButton>
             </Notice>
           ) : (
             <p className="connect-help">
@@ -175,8 +278,8 @@ function ConnectForm({ targetId, targetName }: { targetId: string | null; target
             </Button>
           </div>
           <p className="connect-consent-summary">
-            {all.length} service choices are shown. Read and write consent controls Google data
-            access only—it does not enable any assets or tool permissions.
+            Tick a service to let gog-marketing read it; tick Writes to also allow changes. Sharing
+            a service doesn’t enable any assets or AI tools on its own.
           </p>
           <div
             className="service-consent"
@@ -226,7 +329,7 @@ function ConnectForm({ targetId, targetName }: { targetId: string | null; target
           <div className="connect-actions">
             <Button variant="primary" onPress={submit} isPending={pending}>
               <Icon name="plus" />
-              {targetId ? "Update Google permissions" : "Connect Google account"}
+              {targetId ? "Continue to Google" : "Connect Google account"}
             </Button>
           </div>
           {status && (

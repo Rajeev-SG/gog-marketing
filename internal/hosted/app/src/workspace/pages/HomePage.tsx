@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-aria-components";
-import { Button, Icon, LinkButton, Notice } from "../../ui/index.js";
+import { Button, Icon, LinkButton } from "../../ui/index.js";
+import { AttentionList } from "./SettingsPage.js";
 import { useWorkspace } from "../state.js";
 import { navigate } from "../router.js";
 import { ServiceMark } from "../ServiceMark.js";
 import { LoadingPanel, LoadError } from "../states.js";
 import {
-  accountName,
   connectOutcome,
   enabledCount,
   plural,
@@ -53,12 +53,17 @@ export function HomePage() {
   }, [ws.loadState]);
 
   const summary = workspaceSummary(ws.connections);
+  // While setup is incomplete the guide shows the next step, so the attention
+  // list keeps only what the guide doesn't already say.
+  const setupIds = /^(connect$|data:|tools:)/;
   const rows = serviceOverview(ws.connections);
   const step = setupStep(
     ws.selected,
     ws.toolState === "ready" && [...ws.toolChoices.values()].some((choice) => choice.enabled),
   );
-  const attention = ws.connections.find((item) => item.status !== "active");
+  const attention = step.complete
+    ? ws.attention
+    : ws.attention.filter((item) => !setupIds.test(item.id));
 
   return (
     <>
@@ -100,7 +105,7 @@ export function HomePage() {
                 if (!completion.ready && completion.connectionId)
                   await ws.selectAccount(completion.connectionId);
                 setCompletion(null);
-                if (!completion.ready) navigate("/data");
+                if (!completion.ready) navigate("/settings/data");
               }}
             >
               {completion.ready ? "Done" : "Choose data"}
@@ -115,11 +120,8 @@ export function HomePage() {
           <p>Secure access and permissions for AI agents and tools.</p>
         </div>
         <div className="page-actions">
-          <LinkButton href="/data">
-            <Icon name="data" /> Manage data
-          </LinkButton>
-          <LinkButton href="/access#connect">
-            <Icon name="plus" /> Add Google account
+          <LinkButton variant="primary" href="/chat">
+            Open chat
           </LinkButton>
         </div>
       </header>
@@ -128,24 +130,23 @@ export function HomePage() {
       {ws.loadState === "error" && <LoadError onRetry={ws.reload} />}
       {ws.loadState === "ready" && (
         <>
-          {attention && (
-            <Notice
-              tone="warning"
-              action={
-                <LinkButton
-                  variant="primary"
-                  href={`/access?update=${encodeURIComponent(attention.id)}#connect`}
-                >
-                  Reconnect Google
-                </LinkButton>
-              }
-            >
-              <strong>{accountName(attention)} needs attention</strong>
-              <p>
-                Google needs you to reconnect before access can be refreshed. Existing selections
-                are preserved.
-              </p>
-            </Notice>
+          {attention.length > 0 && (
+            <section className="panel attention-panel" aria-labelledby="home-attention-heading">
+              <div className="panel-head">
+                <div>
+                  <h2 id="home-attention-heading">
+                    {attention.length} {plural(attention.length, "thing needs", "things need")} your
+                    attention
+                  </h2>
+                </div>
+                {attention.length > 3 && (
+                  <Link className="panel-link" href="/settings">
+                    See all in Settings →
+                  </Link>
+                )}
+              </div>
+              <AttentionList items={attention} limit={3} />
+            </section>
           )}
 
           <section className="metric-strip" aria-label="Workspace summary">
@@ -156,7 +157,15 @@ export function HomePage() {
               label={`of ${summary.totalAssets} assets enabled`}
             />
             <Metric icon="plug" value={String(summary.services)} label={summary.servicesLabel} />
-            <Metric icon="check" value={summary.health} label={summary.healthDetail} />
+            {ws.attention.length ? (
+              <Metric
+                icon="alert"
+                value={`${ws.attention.length} to review`}
+                label="See Settings for details"
+              />
+            ) : (
+              <Metric icon="check" value={summary.health} label={summary.healthDetail} />
+            )}
           </section>
 
           {!step.complete && (
@@ -182,15 +191,15 @@ export function HomePage() {
                 <h2 id="services-heading">Google services</h2>
                 <p>Connection status and enabled assets</p>
               </div>
-              <Link className="panel-link" href="/data">
-                Manage access →
+              <Link className="panel-link" href="/settings/data">
+                Manage data access →
               </Link>
             </div>
             {rows.length === 0 ? (
               <div className="empty">
                 <h2>No Google services connected yet</h2>
                 <p>Connect an account to see its approved services here.</p>
-                <LinkButton variant="primary" href="/access#connect">
+                <LinkButton variant="primary" href="/settings/accounts#connect">
                   Connect Google account
                 </LinkButton>
               </div>
@@ -200,7 +209,7 @@ export function HomePage() {
                   <li key={row.service}>
                     <Link
                       className="service-row"
-                      href={`/data?service=${encodeURIComponent(row.service)}${row.ownerId ? "&account=" + encodeURIComponent(row.ownerId) : ""}`}
+                      href={`/settings/data?service=${encodeURIComponent(row.service)}${row.ownerId ? "&account=" + encodeURIComponent(row.ownerId) : ""}`}
                     >
                       <span className="service-identity">
                         <ServiceMark service={row.service} />
@@ -246,18 +255,6 @@ export function HomePage() {
                 ))}
               </ul>
             )}
-          </section>
-
-          <section className="access-strip" aria-labelledby="access-heading">
-            <Icon name="shield" />
-            <div>
-              <h2 id="access-heading">How access works</h2>
-              <p>
-                Agents see only the assets you enable. Reads are the default; changes need a
-                separate opt-in per service and tool, and every Google write is reviewed before it
-                runs. Accounts stay isolated. <Link href="/access">Review access</Link>
-              </p>
-            </div>
           </section>
         </>
       )}

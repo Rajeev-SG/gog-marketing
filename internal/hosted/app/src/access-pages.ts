@@ -1,4 +1,5 @@
 import { PRODUCT_CSS } from "./product-css.generated.js";
+import { LEGACY_WORKSPACE_PATHS, WORKSPACE_PATHS } from "./product-navigation.js";
 
 function escape(value: string): string {
   return value
@@ -13,8 +14,10 @@ export function safeWorkspaceReturn(value: string | undefined): string {
     const url = new URL(value, "https://workspace.invalid");
     if (url.origin !== "https://workspace.invalid" || url.hash) return "/";
     if (url.pathname === "/" && !url.search) return "/";
-    if (["/data", "/access", "/connect-ai"].includes(url.pathname) && !url.search)
+    if ((WORKSPACE_PATHS as readonly string[]).includes(url.pathname) && !url.search)
       return url.pathname;
+    if (LEGACY_WORKSPACE_PATHS[url.pathname] && !url.search)
+      return LEGACY_WORKSPACE_PATHS[url.pathname]!;
     if (url.pathname !== "/chat") return "/";
     const keys = [...url.searchParams.keys()];
     if (!keys.length) return "/chat";
@@ -37,10 +40,16 @@ export function renderLanding(): string {
     `<main id="main-content" tabindex="-1" class="access-main"><section class="landing-hero"><div><p class="eyebrow">Your marketing workspace, connected</p><h1>Less moving data. More moving work forward.</h1><p class="access-lead">Bring Google Docs, Sheets, Slides and Drive into a governed AI workflow. Turn a brief into a first draft, make sense of campaign results, and prepare the next client handoff.</p><div class="access-actions"><a class="button primary" href="/sign-in">Sign in to your workspace <span aria-hidden="true">→</span></a><a href="#how-access-works">See how access works</a></div><p class="access-caption">Invitation-only beta. No Google account is connected and nothing is changed just by signing in.</p></div><aside class="workflow-preview" aria-labelledby="workflow-heading"><p class="eyebrow">A clearer handoff</p><h2 id="workflow-heading">From scattered files to a useful next step.</h2><ol><li><strong>Start with the brief</strong><span>Choose the documents and campaign files that matter.</span></li><li><strong>Work through the detail</strong><span>Use chat to draft, analyse or prepare a presentation.</span></li><li><strong>Review before it changes</strong><span>Google writes need your explicit approval.</span></li></ol><p class="faint">Example workflow · availability follows your saved permissions.</p></aside></section><section id="how-access-works" class="access-explainer" aria-labelledby="access-heading"><div><p class="eyebrow">No blanket access</p><h2 id="access-heading">You choose the account, the data, and the tools.</h2></div><ol class="access-steps"><li><strong>1. Connect deliberately</strong><p>Choose a Google account and only the services you want to use.</p></li><li><strong>2. Select the right data</strong><p>Pick files and resources. Google consent alone does not enable assets or AI tools.</p></li><li><strong>3. Stay in the review loop</strong><p>Read access and changes are separate. Destructive actions need a further opt-in.</p></li></ol></section><section class="access-invite"><div><h2>Already invited?</h2><p>Your existing sign-in takes you to your own workspace. Looking for access? Ask your workspace administrator for an invitation.</p></div><a class="button secondary-action" href="/request-access">About beta access</a></section></main>`,
   );
 }
-export function renderRequestAccess(): string {
+const SAFE_EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/;
+/** Invitation-only beta page. `contactEmail` is operator configuration (GOG_CONTACT_EMAIL). */
+export function renderRequestAccess(contactEmail?: string): string {
+  const email = contactEmail?.trim() ?? "";
+  const contact = SAFE_EMAIL.test(email)
+    ? `<p>To ask about access, email <a href="mailto:${escape(email)}?subject=${encodeURIComponent("gog-marketing beta access")}">${escape(email)}</a>. Include the Google account you would use.</p>`
+    : "<p>The beta is invitation-only, and there is no public sign-up or waiting list yet. If you work with a team that uses gog-marketing, ask its administrator to invite your work account.</p>";
   return accessDocument(
     "Private beta access",
-    `<main id="main-content" tabindex="-1" class="access-main access-state"><div><p class="eyebrow">Invitation-only beta</p><h1>A useful workspace starts with the right access.</h1><p class="access-lead">Ask your workspace administrator to invite the account you use for work. An invitation and your saved permissions determine which private features are available.</p><p class="access-notice" role="note">No request has been submitted. This page does not send email or create an account.</p><div class="access-actions"><a class="button primary" href="/sign-in">I already have an invitation</a><a href="/">Back to the product</a></div></div><aside class="access-state-note"><strong>Not part of a workspace yet?</strong><p>The beta is invitation-only, and there is no public sign-up or waiting list yet. If you work with a team that uses gog-marketing, ask its administrator to invite your work account.</p></aside></main>`,
+    `<main id="main-content" tabindex="-1" class="access-main access-state"><div><p class="eyebrow">Invitation-only beta</p><h1>A useful workspace starts with the right access.</h1><p class="access-lead">Ask your workspace administrator to invite the account you use for work. An invitation and your saved permissions determine which private features are available.</p><p class="access-notice" role="note">No request has been submitted. This page does not send email or create an account.</p><div class="access-actions"><a class="button primary" href="/sign-in">I already have an invitation</a><a href="/">Back to the product</a></div></div><aside class="access-state-note"><strong>Not part of a workspace yet?</strong>${contact}</aside></main>`,
   );
 }
 /** HTML 404 for browser navigation, using the public shell with recovery links (P01). */

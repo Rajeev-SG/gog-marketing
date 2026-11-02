@@ -13,7 +13,10 @@ import {
   DisclosurePanel,
   Heading,
   Input,
+  Label,
   Link as AriaLink,
+  ListBox,
+  ListBoxItem,
   Menu,
   MenuItem,
   MenuTrigger,
@@ -21,6 +24,8 @@ import {
   ModalOverlay,
   Popover,
   SearchField as AriaSearchField,
+  Select as AriaSelect,
+  SelectValue,
   Header,
   Section,
   ToggleButton,
@@ -235,6 +240,96 @@ export function StatusBadge({ tone, children }: { tone: StatusTone; children: Re
   return <span className={`status ${tone}`}>{children}</span>;
 }
 
+/** Pick one option from a list (NN/g: a dropdown for 5+ options or long labels). */
+export function Select<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  isDisabled,
+  className = "",
+}: {
+  label: string;
+  options: ReadonlyArray<{ id: T; label: string; description?: string }>;
+  value: T | null;
+  onChange: (value: T) => void;
+  isDisabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <AriaSelect
+      selectedKey={value}
+      onSelectionChange={(key) => key !== null && onChange(String(key) as T)}
+      isDisabled={isDisabled}
+      className={`ui-select ${className}`.trim()}
+    >
+      <Label className="ui-select-label">{label}</Label>
+      <AriaButton className="ui-select-trigger">
+        <SelectValue className="ui-select-value" />
+        <Icon name="chevron" className="ui-select-chevron" />
+      </AriaButton>
+      <Popover placement="bottom start" className="ui-popover ui-select-popover">
+        <ListBox className="ui-menu">
+          {options.map((option) => (
+            <ListBoxItem
+              key={option.id}
+              id={option.id}
+              textValue={option.label}
+              className="ui-menu-item ui-select-option"
+            >
+              <span>
+                <span className="ui-select-option-label">{option.label}</span>
+                {option.description && (
+                  <span className="ui-select-option-description">{option.description}</span>
+                )}
+              </span>
+            </ListBoxItem>
+          ))}
+        </ListBox>
+      </Popover>
+    </AriaSelect>
+  );
+}
+
+/**
+ * A modal dialog for a short task (rename, confirm with a field). Escape and the
+ * Cancel button close it unless `isBusy`; focus returns to the trigger.
+ */
+export function ModalDialog({
+  isOpen,
+  onClose,
+  title,
+  children,
+  isBusy,
+  role = "dialog",
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: ReactNode;
+  isBusy?: boolean;
+  role?: "dialog" | "alertdialog";
+}) {
+  return (
+    <ModalOverlay
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && !isBusy && onClose()}
+      isDismissable={!isBusy}
+      isKeyboardDismissDisabled={isBusy}
+      className="ui-modal-overlay"
+    >
+      <Modal className="ui-modal">
+        <Dialog role={role} className="ui-dialog">
+          <Heading slot="title" className="ui-dialog-title">
+            {title}
+          </Heading>
+          {children}
+        </Dialog>
+      </Modal>
+    </ModalOverlay>
+  );
+}
+
 // ---- Confirmation dialogs (replace window.confirm) ---------------------------------
 
 export interface ConfirmOptions {
@@ -388,6 +483,11 @@ const ICONS: Record<string, string> = {
   help: '<circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 3.2 2.4c-.9.3-.9 1.1-.9 1.6"/><path d="M12 17h.01"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
+  alert:
+    '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  circle: '<circle cx="12" cy="12" r="9"/>',
+  arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
   file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
 };
 export function Icon({

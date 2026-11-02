@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  Link,
   Button as AriaButton,
   Disclosure as AriaDisclosure,
   DisclosurePanel,
@@ -9,44 +10,42 @@ import {
   Tabs,
 } from "react-aria-components";
 import {
-  ActionMenu,
   Button,
   Checkbox,
   Disclosure,
   LinkButton,
-  SaveBar,
   SearchField,
   SegmentedControl,
   StatusBadge,
   useConfirm,
 } from "../../ui/index.js";
 import { useWorkspace } from "../state.js";
-import { navigate, useLocation } from "../router.js";
+import { useLocation } from "../router.js";
+import { AccountSwitcher } from "../AccountSwitcher.js";
+import { AttentionList } from "./SettingsPage.js";
 import { ServiceMark } from "../ServiceMark.js";
 import { LoadError, LoadingPanel } from "../states.js";
 import { openPicker } from "../picker.js";
 import {
   accountName,
-  category,
-  discoveryDelayed,
   enableVisibleReadTools,
-  enabledCount,
   filteredToolCatalog,
+  hiddenToolCount,
   matchesAsset,
-  pendingSummary,
   plural,
   readableToolLabel,
+  toolActionLabel,
   resourceKey,
   safeStatus,
   serviceGroups,
   serviceLabel,
-  toolGroups,
+  visibleToolGroups,
   type Connection,
   type Tool,
   type ToolFilter,
 } from "../model.js";
 
-export function DataPage() {
+function useAccountFromUrl() {
   const ws = useWorkspace();
   const url = useLocation();
   const requestedAccount = url.searchParams.get("account");
@@ -54,159 +53,88 @@ export function DataPage() {
     if (requestedAccount && ws.loadState === "ready") void ws.selectAccount(requestedAccount);
     // Only when the link target changes or the first load finishes.
   }, [requestedAccount, ws.loadState]);
+  return url;
+}
 
-  const selectedCount = Array.from(ws.draft.values()).filter(Boolean).length;
-  const dirty = ws.assetChanges > 0 || ws.toolsDirty;
+function NoAccounts() {
+  return (
+    <section className="panel empty">
+      <h2>No Google accounts connected yet</h2>
+      <p>
+        Connect an account, then choose the exact data AI tools may use. Nothing is enabled
+        automatically.
+      </p>
+      <LinkButton variant="primary" href="/settings/accounts#connect">
+        Connect Google account
+      </LinkButton>
+    </section>
+  );
+}
 
+/** Settings › Data access: which assets AI tools may use, per account. */
+export function DataAccessPage() {
+  const ws = useWorkspace();
+  const url = useAccountFromUrl();
   return (
     <>
       <header className="page-header">
         <div>
-          <h1>Google data</h1>
-          <p>Choose which assets and tools your AI agents can use, one Google account at a time.</p>
+          <h1>Data access</h1>
+          <p>Choose the Google assets AI tools may use. New assets start disabled.</p>
         </div>
-        <div className="page-actions">
-          <LinkButton href="/access#connect">Add Google account</LinkButton>
-        </div>
+        <AccountSwitcher />
       </header>
       {ws.loadState === "loading" && <LoadingPanel />}
       {ws.loadState === "error" && <LoadError onRetry={ws.reload} />}
-      {ws.loadState === "ready" && ws.connections.length === 0 && (
-        <section className="panel empty">
-          <h2>No Google accounts connected yet</h2>
-          <p>
-            Connect an account, then choose the exact data AI tools may use. Nothing is enabled
-            automatically.
-          </p>
-          <LinkButton variant="primary" href="/access#connect">
-            Connect Google account
-          </LinkButton>
-        </section>
-      )}
-      {ws.loadState === "ready" && ws.connections.length > 0 && (
+      {ws.loadState === "ready" && ws.connections.length === 0 && <NoAccounts />}
+      {ws.loadState === "ready" && ws.selected && (
         <>
-          <AccountList />
-          {ws.selected && (
-            <AssetPanel
-              connection={ws.selected}
-              initialService={url.searchParams.get("service")}
-              initialQuery={url.searchParams.get("q") ?? ""}
-            />
-          )}
-          {ws.selected && <ToolPanel connection={ws.selected} />}
-          {dirty && (
-            <SaveBar
-              summary={`${selectedCount} ${plural(selectedCount, "asset", "assets")} selected`}
-              detail={pendingSummary(ws.assetChanges, ws.toolsDirty)}
-              onSave={ws.saveAll}
-              onCancel={ws.discardAll}
-              isSaving={ws.saving}
-            />
-          )}
+          <AccountAlert connection={ws.selected} />
+          <AssetPanel
+            connection={ws.selected}
+            initialService={url.searchParams.get("service")}
+            initialQuery={url.searchParams.get("q") ?? ""}
+          />
         </>
       )}
     </>
   );
 }
 
-function AccountList() {
+/** Settings › AI tools: which tools may run for each account. */
+export function ToolsPage() {
   const ws = useWorkspace();
+  useAccountFromUrl();
   return (
-    <section className="panel" aria-labelledby="accounts-heading">
-      <div className="panel-head">
+    <>
+      <header className="page-header">
         <div>
-          <h2 id="accounts-heading">Google accounts</h2>
-          <p>Choose an account to manage its data and tools.</p>
+          <h1>AI tools</h1>
+          <p>Choose which tools AI may run. Tools that change Google data always ask you first.</p>
         </div>
-      </div>
-      <ul className="account-list-cards">
-        {ws.connections.map((connection) => {
-          const [tone, text] = safeStatus(connection);
-          const current = connection.id === ws.selected?.id;
-          const who = accountName(connection);
-          return (
-            <li
-              key={connection.id}
-              className={"card account-card" + (current ? " is-selected" : "")}
-              aria-current={current ? "true" : undefined}
-            >
-              <span className="avatar" aria-hidden="true">
-                {who.slice(0, 1).toUpperCase()}
-              </span>
-              <div>
-                <h3>{who}</h3>
-                <p className="muted">
-                  {(connection.services ?? []).length} services · {enabledCount(connection)} assets
-                  enabled
-                </p>
-                {tone !== "ok" && (
-                  <p className="account-status">
-                    <StatusBadge tone={tone}>{text}</StatusBadge>
-                  </p>
-                )}
-              </div>
-              <div className="card-actions">
-                {connection.status !== "active" && (
-                  <Button
-                    variant="attention"
-                    onPress={() =>
-                      navigate(`/access?update=${encodeURIComponent(connection.id)}#connect`)
-                    }
-                  >
-                    Reconnect Google
-                  </Button>
-                )}
-                {current ? (
-                  <span className="selected-note">Managing now</span>
-                ) : (
-                  <Button variant="primary" onPress={() => void ws.selectAccount(connection.id)}>
-                    Manage data access
-                  </Button>
-                )}
-                <ActionMenu
-                  label={`More actions for ${who}`}
-                  heading={`Actions for ${who}`}
-                  actions={[
-                    {
-                      id: "refresh",
-                      label: "Refresh connection",
-                      onAction: () => void ws.runAction("Refresh", connection, "refresh"),
-                    },
-                    {
-                      id: "discover",
-                      label: "Check assets",
-                      onAction: () => void ws.runAction("Asset check", connection, "discover"),
-                    },
-                    {
-                      id: "permissions",
-                      label: "Update Google permissions",
-                      onAction: () =>
-                        navigate(`/access?update=${encodeURIComponent(connection.id)}#connect`),
-                    },
-                    {
-                      id: "disconnect",
-                      label: "Disconnect account",
-                      danger: true,
-                      onAction: () => void ws.runAction("Disconnect", connection, "disconnect"),
-                    },
-                  ]}
-                />
-              </div>
-              {discoveryDelayed(connection) && (connection.resources ?? []).length > 0 && (
-                <div className="partial-banner">
-                  <div>
-                    <strong>Some Google services couldn’t be checked</strong>
-                    <p>Your existing selections are unchanged and remain available.</p>
-                  </div>
-                  <Button onPress={() => void ws.runAction("Asset check", connection, "discover")}>
-                    Try again
-                  </Button>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+        <AccountSwitcher />
+      </header>
+      {ws.loadState === "loading" && <LoadingPanel />}
+      {ws.loadState === "error" && <LoadError onRetry={ws.reload} />}
+      {ws.loadState === "ready" && ws.connections.length === 0 && <NoAccounts />}
+      {ws.loadState === "ready" && ws.selected && (
+        <>
+          <AccountAlert connection={ws.selected} />
+          <ToolPanel connection={ws.selected} />
+        </>
+      )}
+    </>
+  );
+}
+
+/** The selected account's own attention items, shown where they can be fixed. */
+function AccountAlert({ connection }: { connection: Connection }) {
+  const ws = useWorkspace();
+  const items = ws.attention.filter((item) => item.id.endsWith(":" + connection.id));
+  if (!items.length) return null;
+  return (
+    <section className="panel attention-panel compact" aria-label="Needs attention">
+      <AttentionList items={items} />
     </section>
   );
 }
@@ -234,18 +162,15 @@ function AssetPanel({
     : (groups[0]?.service ?? "");
   const selected = Array.from(ws.draft.values()).filter(Boolean).length;
   const [tone, text] = safeStatus(connection);
-  const empty = !(connection.resources ?? []).length;
 
   return (
     <section className="panel" id="assets" aria-labelledby="asset-heading">
       <div className="panel-head">
         <div>
-          <p className="eyebrow">Google data</p>
-          <h2 id="asset-heading">Manage asset access</h2>
-          <p className="panel-account">Google account: {accountName(connection)}</p>
+          <h2 id="asset-heading">Assets in {accountName(connection)}</h2>
           <p>
-            Choose the existing Google assets your AI agents and tools can access. This controls
-            access, not reporting.
+            Tick an asset to let AI tools use it. Drive files appear here only after you choose
+            them.
           </p>
         </div>
         <Button
@@ -273,10 +198,10 @@ function AssetPanel({
             className="asset-search"
           />
           <div className="asset-summary">
-            <strong>{selected} selected</strong>
-            <StatusBadge tone={tone !== "ok" ? tone : empty ? "disconnected" : "ok"}>
-              {tone !== "ok" ? text : empty ? "Connected · no assets yet" : "All services healthy"}
-            </StatusBadge>
+            <strong>
+              {selected} of {(connection.resources ?? []).length} enabled
+            </strong>
+            {tone !== "ok" && <StatusBadge tone={tone}>{text}</StatusBadge>}
           </div>
         </div>
         {groups.length === 0 ? (
@@ -296,7 +221,11 @@ function AssetPanel({
                 <Tab key={group.service} id={group.service} className="rail-item">
                   <ServiceMark service={group.service} />
                   <span>{group.label}</span>
-                  <span className="rail-count">{group.resources.length}</span>
+                  <span className="rail-count">
+                    {group.resources.filter((r) => ws.draft.get(resourceKey(r))).length}/
+                    {group.resources.length}
+                    <span className="sr-only"> enabled</span>
+                  </span>
                 </Tab>
               ))}
             </TabList>
@@ -376,16 +305,27 @@ function ToolPanel({ connection }: { connection: Connection }) {
   const confirm = useConfirm();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<ToolFilter>("all");
+  const [showUnshared, setShowUnshared] = useState(false);
   useEffect(() => {
     setSearch("");
     setFilter("all");
+    setShowUnshared(false);
   }, [connection.id]);
+  const hidden = hiddenToolCount(connection, ws.tools);
   const who = accountName(connection);
-  const visible = filteredToolCatalog(ws.tools, search, filter);
+  const groups = visibleToolGroups(
+    connection,
+    filteredToolCatalog(ws.tools, search, filter),
+    ws.toolChoices,
+    showUnshared,
+  );
+  const visible = groups.flatMap((group) => group.tools);
   const enabledVisible = visible.filter((tool) => ws.toolChoices.get(tool.name)?.enabled).length;
   const ready = ws.toolState === "ready";
-  const canEnableReads = visible.some(
-    (tool) => !tool.write && !ws.toolChoices.get(tool.name)?.enabled,
+  const canEnableReads = groups.some(
+    (group) =>
+      group.shared &&
+      group.tools.some((tool) => !tool.write && !ws.toolChoices.get(tool.name)?.enabled),
   );
 
   const toggleTool = async (tool: Tool, on: boolean) => {
@@ -433,11 +373,10 @@ function ToolPanel({ connection }: { connection: Connection }) {
     <section className="panel" id="tools" aria-labelledby="tool-heading">
       <div className="panel-head">
         <div>
-          <h2 id="tool-heading">AI tool permissions</h2>
-          <p className="panel-account">Google account: {who}</p>
+          <h2 id="tool-heading">Tools for {who}</h2>
           <p>
-            Select exactly which tools this Google account may run. Connecting Google and choosing
-            assets never enables writes.
+            Tools work only on the data you enabled. Start with read-only tools; turn on tools that
+            change data only when you need them.
           </p>
         </div>
       </div>
@@ -464,7 +403,12 @@ function ToolPanel({ connection }: { connection: Connection }) {
               const choices = new Map(
                 [...ws.toolChoices].map(([name, choice]) => [name, { ...choice }]),
               );
-              const changed = enableVisibleReadTools(choices, ws.tools, search, filter);
+              const changed = enableVisibleReadTools(
+                choices,
+                groups.filter((group) => group.shared).flatMap((group) => group.tools),
+                "",
+                "all",
+              );
               if (changed)
                 ws.replaceToolChoices(
                   choices,
@@ -472,18 +416,38 @@ function ToolPanel({ connection }: { connection: Connection }) {
                 );
             }}
           >
-            Enable read-only tools in this list
+            Turn on all read-only tools shown
           </Button>
         </div>
         <p className="tool-scope-note">
-          “Enable read-only tools in this list” affects only read-only tools shown by the current
-          search and filter. It never enables write tools or destructive operations, and it leaves
-          every write and destructive choice unchanged.
+          This only turns on read-only tools in the current list. It never turns on tools that
+          change or delete data.
         </p>
         {ready && (
           <p className="tool-summary" role="status">
-            Showing {visible.length} of {ws.tools.length} tools · {enabledVisible} enabled
+            Showing {visible.length} {plural(visible.length, "tool", "tools")} · {enabledVisible}{" "}
+            enabled
           </p>
+        )}
+        {ready && hidden.tools > 0 && (
+          <div className="tool-hidden-note">
+            <p>
+              {showUnshared ? "Also showing " : ""}
+              {hidden.tools} {plural(hidden.tools, "tool", "tools")} for {hidden.services}{" "}
+              {plural(hidden.services, "service", "services")} {who} doesn’t share
+              {showUnshared
+                ? ". They can’t run until the account shares that service."
+                : hidden.tools === 1
+                  ? " is hidden."
+                  : " are hidden."}{" "}
+              <Link href={`/settings/accounts?update=${encodeURIComponent(connection.id)}#connect`}>
+                Change shared services
+              </Link>
+            </p>
+            <Button size="small" variant="quiet" onPress={() => setShowUnshared((on) => !on)}>
+              {showUnshared ? "Hide them" : "Show them"}
+            </Button>
+          </div>
         )}
         {ws.toolState === "loading" && (
           <section className="tool-state" aria-busy="true">
@@ -518,7 +482,7 @@ function ToolPanel({ connection }: { connection: Connection }) {
         )}
         {ready && visible.length > 0 && (
           <div className="tool-list" aria-label={`Tools for ${who}`} role="group">
-            {toolGroups(visible).map((group) => {
+            {groups.map((group) => {
               const enabled = group.tools.filter(
                 (tool) => ws.toolChoices.get(tool.name)?.enabled,
               ).length;
@@ -528,8 +492,16 @@ function ToolPanel({ connection }: { connection: Connection }) {
                   key={group.service}
                   className="tool-group"
                   defaultExpanded={Boolean(search)}
-                  title={`${serviceLabel(group.service)} (${category(group.service)})`}
-                  meta={`${group.tools.length} ${plural(group.tools.length, "tool", "tools")} · ${enabled} enabled · ${canEdit} can edit`}
+                  title={
+                    <>
+                      <ServiceMark service={group.service} />
+                      {serviceLabel(group.service)}
+                      {!group.shared && (
+                        <span className="status needs_attention">Not shared · can’t run</span>
+                      )}
+                    </>
+                  }
+                  meta={`${enabled} of ${group.tools.length} on${canEdit ? ` · ${canEdit} can change data` : ""}`}
                 >
                   <ul className="tool-group-rows">
                     {group.tools.map((tool) => {
@@ -549,7 +521,7 @@ function ToolPanel({ connection }: { connection: Connection }) {
                               </>
                             }
                           >
-                            {readableToolLabel(tool)}
+                            {toolActionLabel(tool)}
                           </Checkbox>
                           {tool.write && (
                             <Checkbox

@@ -21,7 +21,7 @@ for (const viewport of VIEWPORTS) {
       ["landing", "/"],
       ["about", "/about"],
       ["request-access", "/request-access"],
-      ["not-found", "/settings"],
+      ["not-found", "/no-such-page"],
     ] as const) {
       test(`public ${name}`, async ({ page }) => {
         await page.goto(path);
@@ -31,9 +31,12 @@ for (const viewport of VIEWPORTS) {
 
     for (const [name, path] of [
       ["home", "/"],
-      ["data", "/data"],
-      ["access", "/access"],
-      ["connect-ai", "/connect-ai"],
+      ["settings", "/settings"],
+      ["accounts", "/settings/accounts"],
+      ["data", "/settings/data"],
+      ["tools", "/settings/tools"],
+      ["activity", "/settings/activity"],
+      ["connect-ai", "/settings/connect-ai"],
     ] as const) {
       test(`workspace ${name}`, async ({ page }) => {
         await openHome(page, undefined, { path });
@@ -44,9 +47,13 @@ for (const viewport of VIEWPORTS) {
     }
 
     test("workspace unsaved and dialogs", async ({ page }) => {
-      await openHome(page, undefined, { path: "/data" });
+      await openHome(page, undefined, { path: "/settings/data" });
       await page.getByText("Google Analytics 4 asset 1").click();
       await page.screenshot({ path: shot("data-unsaved") });
+      await page
+        .getByRole("navigation", { name: "Settings sections" })
+        .getByRole("link", { name: /Google accounts/ })
+        .click();
       await page.getByRole("button", { name: /More actions for owner@example.com/ }).click();
       await page.screenshot({ path: shot("data-menu") });
       await page.getByRole("menuitem", { name: "Disconnect account" }).click();

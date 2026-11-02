@@ -58,7 +58,8 @@ import {
   type HtmlConfig,
 } from "./html.js";
 import { handleMcp, handleMcpMetadata } from "./mcp.js";
-import { WORKSPACE_PATHS } from "./product-navigation.js";
+import { LEGACY_WORKSPACE_PATHS, WORKSPACE_PATHS } from "./product-navigation.js";
+import { activityView } from "./activity.js";
 import { renderWorkspacePage } from "./workspace-page.js";
 
 export interface Env extends ClerkEnv, ConnectEnv, ChatEnv {
@@ -69,6 +70,8 @@ export interface Env extends ClerkEnv, ConnectEnv, ChatEnv {
   CLERK_JWT_KEY?: string;
   /** Operator-configured canonical public origin; /mcp is appended by the UI. */
   GOG_HOSTED_CANONICAL_ORIGIN?: string;
+  /** Optional public contact address shown to people without an invitation (P03). */
+  GOG_CONTACT_EMAIL?: string;
   /** Operator-configured UTC-day tool-call quota per tenant; defaults to 100. */
   GOG_MCP_TOOL_CALL_DAILY_LIMIT?: string;
   /** Operator-configured fixed-minute request limit per tenant/IP; defaults to 60. */
@@ -150,7 +153,7 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   if (path === "/request-access") {
     if (request.method !== "GET")
       return new Response(null, { status: 405, headers: { Allow: "GET", ...securityHeaders() } });
-    return new Response(renderRequestAccess(), {
+    return new Response(renderRequestAccess(env.GOG_CONTACT_EMAIL), {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
@@ -158,6 +161,13 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
       },
     });
   }
+  // Pages from the previous IA move permanently; the query survives, the browser keeps the hash.
+  const legacyTarget = LEGACY_WORKSPACE_PATHS[path];
+  if (legacyTarget && (request.method === "GET" || request.method === "HEAD"))
+    return new Response(null, {
+      status: 301,
+      headers: { Location: legacyTarget + url.search, ...securityHeaders() },
+    });
   if (path === "/sign-in" && request.method !== "GET")
     return new Response(null, { status: 405, headers: { Allow: "GET", ...securityHeaders() } });
   if (
@@ -183,7 +193,13 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
   if (mcpResponse) return mcpResponse;
 
   // Only the known routes are served. Everything else is 404.
-  const knownPaths = [...WORKSPACE_PATHS, "/sign-in", "/api/tenant", ...GOOGLE_API_PATHS];
+  const knownPaths = [
+    ...WORKSPACE_PATHS,
+    "/sign-in",
+    "/api/tenant",
+    "/api/activity",
+    ...GOOGLE_API_PATHS,
+  ];
   if (!knownPaths.includes(path) && !connectionAction) {
     // Browser page navigations get a recoverable HTML page; API/protocol paths keep JSON (P01).
     const machinePath = /^\/(api|mcp|oauth|agents|\.well-known)(\/|$)/.test(path);
@@ -277,6 +293,12 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
           { status: session.tenant.status, userId: session.userId },
           { headers: outcome.headers },
         );
+      }
+      if (path === "/api/activity") {
+        if (request.method !== "GET") return safeError(405, "Unsupported request for this route.");
+        return Response.json(await activityView(repo, session.tenant.id), {
+          headers: { ...securityHeaders(), "Cache-Control": "no-store" },
+        });
       }
       if (path === "/api/google/resources") {
         const result = await listResources(repo, {
@@ -419,7 +441,12 @@ async function handleRoute(request: Request, env: Env, repo: HostedRepository): 
           "Your session has ended. Sign in again, then reconnect your Google account.",
         );
       }
-      if (path === "/api/tenant" || GOOGLE_API_PATHS.includes(path) || connectionAction) {
+      if (
+        path === "/api/tenant" ||
+        path === "/api/activity" ||
+        GOOGLE_API_PATHS.includes(path) ||
+        connectionAction
+      ) {
         return safeError(401, "Authentication required.");
       }
       const htmlConfig = buildHtmlConfig(env);
@@ -631,6 +658,8 @@ async function handleGoogleRoute(
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const canonical = canonicalPageRedirect(request, env);
+    if (canonical) return canonical;
     const repo = new HostedRepository(env.DB);
     try {
       const chatResponse = await handleChat(request, env, repo);
@@ -655,6 +684,38 @@ export default {
     }
   },
 };
+
+const BROWSER_PAGES = new Set<string>([
+  ...WORKSPACE_PATHS,
+  ...Object.keys(LEGACY_WORKSPACE_PATHS),
+  "/chat",
+  "/sign-in",
+  "/about",
+  "/request-access",
+]);
+/**
+ * Browser pages on any other host (the workers.dev address) move to the
+ * canonical origin: production Clerk only signs in there. Machine routes
+ * (MCP, OAuth, API, runner identity) are never redirected.
+ */
+function canonicalPageRedirect(request: Request, env: Env): Response | null {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const url = new URL(request.url);
+  if (!url.hostname.endsWith(".workers.dev") || !BROWSER_PAGES.has(url.pathname)) return null;
+  let origin: string;
+  try {
+    const configured = new URL((env.GOG_HOSTED_CANONICAL_ORIGIN ?? "").trim());
+    if (configured.protocol !== "https:" || configured.pathname !== "/") return null;
+    origin = configured.origin;
+  } catch {
+    return null;
+  }
+  if (origin === url.origin) return null;
+  return new Response(null, {
+    status: 308,
+    headers: { Location: origin + url.pathname + url.search, "Cache-Control": "no-store" },
+  });
+}
 
 function buildHtmlConfig(env: Env): HtmlConfig {
   const publishableKey = env.CLERK_PUBLISHABLE_KEY ?? "";

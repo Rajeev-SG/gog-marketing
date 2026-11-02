@@ -1,19 +1,42 @@
-/** Signed-in workspace pages served by the React workspace app (D05 route split). */
-export const WORKSPACE_PATHS = ["/", "/data", "/access", "/connect-ai"] as const;
-export type WorkspacePath = (typeof WORKSPACE_PATHS)[number];
+/**
+ * Information architecture (D05, refreshed 2 Nov 2026).
+ *
+ * The sidebar has three destinations: Home, Chat and Settings. Everything the
+ * user configures lives under Settings, split into sub-pages that each show
+ * whether they need attention.
+ */
+export const SETTINGS_SECTIONS = [
+  { id: "overview", label: "Overview", href: "/settings" },
+  { id: "accounts", label: "Google accounts", href: "/settings/accounts" },
+  { id: "data", label: "Data access", href: "/settings/data" },
+  { id: "tools", label: "AI tools", href: "/settings/tools" },
+  { id: "activity", label: "Activity", href: "/settings/activity" },
+  { id: "connect-ai", label: "Connect AI apps", href: "/settings/connect-ai" },
+] as const;
+export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]["id"];
 
-/** Old single-page anchors keep working: the workspace app maps them to real pages. */
-export const LEGACY_WORKSPACE_ANCHORS: Readonly<Record<string, WorkspacePath>> = {
-  home: "/",
-  "google-data": "/data",
-  "asset-workspace": "/data",
-  "tool-workspace": "/data",
-  activity: "/access",
-  "connect-panel": "/access",
-  settings: "/connect-ai",
+/** Signed-in pages served by the React workspace app. */
+export const WORKSPACE_PATHS = ["/", ...SETTINGS_SECTIONS.map((section) => section.href)] as const;
+
+/** Pages from the previous IA. The server redirects them permanently, keeping the query. */
+export const LEGACY_WORKSPACE_PATHS: Readonly<Record<string, string>> = {
+  "/data": "/settings/data",
+  "/access": "/settings/accounts",
+  "/connect-ai": "/settings/connect-ai",
 };
 
-/** Canonical application destinations shared by the workspace app and chat. */
+/** Old single-page anchors (/#google-data, …) still land on the right page. */
+export const LEGACY_WORKSPACE_ANCHORS: Readonly<Record<string, string>> = {
+  home: "/",
+  "google-data": "/settings/data",
+  "asset-workspace": "/settings/data",
+  "tool-workspace": "/settings/tools",
+  activity: "/settings/activity",
+  "connect-panel": "/settings/accounts",
+  settings: "/settings",
+};
+
+/** The three application destinations, shared by the workspace app and chat. */
 export const PRODUCT_NAVIGATION = [
   {
     id: "home",
@@ -22,36 +45,22 @@ export const PRODUCT_NAVIGATION = [
     path: '<path d="m3 10 9-7 9 7v10H3Z"/><path d="M9 20v-7h6v7"/>',
   },
   {
-    id: "google-data",
-    label: "Google data",
-    href: "/data",
-    path: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>',
-  },
-  {
     id: "chat",
     label: "Chat",
     href: "/chat",
     path: '<path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/>',
   },
   {
-    // Which Google services each account may use, and how to add or change that (N01).
-    id: "activity",
-    label: "Access",
-    href: "/access",
-    path: '<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10Z"/><path d="m9 12 2 2 4-5"/>',
-  },
-  {
-    // The destination is the remote MCP connection, not workspace settings (N02).
     id: "settings",
-    label: "Connect AI",
-    href: "/connect-ai",
-    path: '<path d="M12 22v-5M9 8V2M15 8V2"/><path d="M18 8v5a6 6 0 0 1-12 0V8Z"/>',
+    label: "Settings",
+    href: "/settings",
+    path: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/>',
   },
 ] as const;
+export type ProductNavId = (typeof PRODUCT_NAVIGATION)[number]["id"];
 
-export function renderProductNavigation(active: string): string {
-  return PRODUCT_NAVIGATION.map(
-    (item) =>
-      `<a href="${item.href}" data-product-nav="${item.id}"${active === item.id ? ' aria-current="page"' : ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${item.path}</svg><span>${item.label}</span></a>`,
-  ).join("");
+/** Which sidebar item a workspace path belongs to. */
+export function productNavFor(path: string): ProductNavId {
+  if (path === "/chat") return "chat";
+  return path.startsWith("/settings") ? "settings" : "home";
 }

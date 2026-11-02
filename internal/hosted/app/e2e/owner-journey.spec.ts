@@ -54,7 +54,7 @@ test("@deterministic public home, Clerk sign-in on workspace pages, and API 401"
   await expect(page.getByRole("link", { name: /sign in/i }).first()).toBeVisible();
 
   // A signed-out workspace page renders Clerk sign-in that returns to that page.
-  const workspace = await page.goto("/data");
+  const workspace = await page.goto("/settings/data");
   expect(workspace?.status()).toBe(200);
   await expect(page.locator("#sign-in")).toBeAttached();
   await expect(page.locator("script[data-clerk-publishable-key]").first()).toBeAttached();

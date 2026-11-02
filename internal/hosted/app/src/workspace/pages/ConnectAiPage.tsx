@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Icon } from "../../ui/index.js";
+import { Button, Disclosure, Icon } from "../../ui/index.js";
 
 /** The server injects the canonical MCP URL; the browser never derives it from its own host. */
 function mcpUrl(): string {
@@ -12,6 +12,36 @@ function mcpUrl(): string {
   }
 }
 
+const APPS = [
+  {
+    id: "chatgpt",
+    name: "ChatGPT",
+    steps: [
+      "In ChatGPT, open Settings › Apps & Connectors and turn on Developer mode (Advanced settings).",
+      "Choose Create, name it gog-marketing, and paste the address above as the MCP server URL. Leave authentication as OAuth.",
+      "Sign in when ChatGPT opens gog-marketing, then pick the connector from the + menu in a chat.",
+    ],
+  },
+  {
+    id: "claude",
+    name: "Claude",
+    steps: [
+      "In Claude, open Settings › Connectors and choose Add custom connector.",
+      "Name it gog-marketing and paste the address above.",
+      "Choose Connect and sign in. Turn the connector on from the tools menu in a chat.",
+    ],
+  },
+  {
+    id: "codex",
+    name: "Codex",
+    steps: [
+      "Add a remote MCP server with the address above, for example: codex mcp add gog-marketing --url <address>.",
+      "Run codex mcp login gog-marketing and sign in in the browser window that opens.",
+    ],
+  },
+];
+
+/** Settings › Connect AI apps: use your Google data from AI apps outside this one. */
 export function ConnectAiPage() {
   const [copied, setCopied] = useState(false);
   const url = mcpUrl();
@@ -19,18 +49,20 @@ export function ConnectAiPage() {
     <>
       <header className="page-header">
         <div>
-          <h1>Connect AI</h1>
-          <p>Use your Google data from an AI assistant outside this app.</p>
+          <h1>Connect AI apps</h1>
+          <p>
+            Use your Google data from ChatGPT, Claude, Codex or another app that supports remote MCP
+            servers.
+          </p>
         </div>
       </header>
       <section className="panel connect-panel" aria-labelledby="mcp-heading">
-        <p className="eyebrow">Remote MCP endpoint</p>
-        <h2 id="mcp-heading">Codex remote MCP endpoint</h2>
+        <h2 id="mcp-heading">Your connection address</h2>
         {url ? (
           <>
             <p>
-              Add this HTTPS URL as a remote MCP server in Codex. Complete the browser sign-in, then
-              the assistant can use only the tools and assets enabled for your Google accounts.
+              Paste this address into the AI app, then sign in with this account. The app can use
+              only the data and tools you enabled in Settings, and it asks before any change.
             </p>
             <div className="ai-panel">
               <code id="mcp-url">{url}</code>
@@ -42,23 +74,38 @@ export function ConnectAiPage() {
                 }}
               >
                 <Icon name={copied ? "check" : "copy"} />
-                {copied ? "Copied" : "Copy URL"}
+                {copied ? "Copied" : "Copy address"}
               </Button>
             </div>
             <p className="sr-only" role="status">
-              {copied ? "MCP URL copied to the clipboard" : ""}
+              {copied ? "Address copied to the clipboard" : ""}
             </p>
           </>
         ) : (
           <p>
-            The workspace address isn't configured yet, so the MCP URL is unavailable. Ask the
-            workspace owner.
+            The workspace address isn’t configured yet, so the connection address is unavailable.
+            Ask the workspace owner.
           </p>
         )}
-        <p className="faint">
-          Expanded service coverage is still being verified; this is not a public-beta readiness
-          claim.
-        </p>
+      </section>
+      <section className="panel" aria-labelledby="apps-heading">
+        <div className="panel-head">
+          <div>
+            <h2 id="apps-heading">Set up an app</h2>
+            <p>Menu names can change between app versions.</p>
+          </div>
+        </div>
+        <div className="tool-panel">
+          {APPS.map((app) => (
+            <Disclosure key={app.id} title={app.name} className="app-setup">
+              <ol className="app-steps">
+                {app.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </Disclosure>
+          ))}
+        </div>
       </section>
     </>
   );
