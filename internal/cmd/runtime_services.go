@@ -27,6 +27,7 @@ import (
 	scriptapi "google.golang.org/api/script/v1"
 	searchconsoleapi "google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
+	siteverificationapi "google.golang.org/api/siteverification/v1"
 	"google.golang.org/api/slides/v1"
 	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
@@ -187,6 +188,9 @@ func composeRuntimeMarketingGoogleServices(services *app.Services, factory googl
 	}
 	if services.SearchConsole == nil {
 		services.SearchConsole = factory.SearchConsole
+	}
+	if services.SiteVerification == nil {
+		services.SiteVerification = factory.SiteVerification
 	}
 	if services.TagManager == nil {
 		services.TagManager = factory.TagManager
@@ -485,6 +489,14 @@ func searchConsoleService(ctx context.Context, account string) (*searchconsoleap
 		return nil, serviceError(err, "search console")
 	}
 	return runtime.Services.SearchConsole(ctx, account)
+}
+
+func siteVerificationService(ctx context.Context, account string) (*siteverificationapi.Service, error) {
+	runtime, err := runtimeWithService(ctx, "site verification")
+	if err != nil || runtime.Services.SiteVerification == nil {
+		return nil, serviceError(err, "site verification")
+	}
+	return runtime.Services.SiteVerification(ctx, account)
 }
 
 func gmailService(ctx context.Context, account string) (*gmail.Service, error) {

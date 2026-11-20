@@ -144,6 +144,7 @@ func TestAPIServiceIDsForMarketingServices(t *testing.T) {
 		"bigquery.googleapis.com",
 		"googleads.googleapis.com",
 		"searchconsole.googleapis.com",
+		"siteverification.googleapis.com",
 		"tagmanager.googleapis.com",
 	}
 	if strings.Join(got, ",") != strings.Join(want, ",") {

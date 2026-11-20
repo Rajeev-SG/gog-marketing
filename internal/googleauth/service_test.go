@@ -612,8 +612,18 @@ func TestScopes_ServiceSearchConsole_DefaultIsWritable(t *testing.T) {
 		t.Fatalf("Scopes: %v", err)
 	}
 
-	if len(scopes) != 1 || scopes[0] != "https://www.googleapis.com/auth/webmasters" {
+	want := []string{
+		"https://www.googleapis.com/auth/webmasters",
+		"https://www.googleapis.com/auth/siteverification.verify_only",
+	}
+	if len(scopes) != len(want) {
 		t.Fatalf("unexpected searchconsole scopes: %#v", scopes)
+	}
+
+	for index, scope := range want {
+		if scopes[index] != scope {
+			t.Fatalf("unexpected searchconsole scopes: %#v", scopes)
+		}
 	}
 }
 

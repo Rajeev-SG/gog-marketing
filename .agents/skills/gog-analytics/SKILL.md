@@ -36,6 +36,7 @@ gog --readonly --account user@example.com analytics --help
 | `keyevents` | GA4 key events |
 | `metadata` | GA4 Analytics Data API metadata |
 | `properties` | GA4 properties |
+| `realtime` | Run a GA4 realtime report (e.g. eventName/eventCount) |
 | `report` | Run a GA4 report (Analytics Data API) |
 | `retention` | GA4 retention settings |
 

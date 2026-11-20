@@ -19,6 +19,10 @@ const (
 
 	ServiceAnalytics     = "analytics"
 	ResourceTypeProperty = "property"
+
+	// nativeGoogleAPIHost is the shared www.googleapis.com endpoint used by
+	// Google APIs without a dedicated hostname.
+	nativeGoogleAPIHost = "www.googleapis.com"
 )
 
 // establishedDiscoveryServices is the only service set discovery accepts.

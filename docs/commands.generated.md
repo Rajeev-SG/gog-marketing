@@ -94,8 +94,10 @@ Generated from `gog schema --json`.
     - [`gog analytics (ga) metadata <command>`](commands/gog-analytics-metadata.md) - GA4 Analytics Data API metadata
       - [`gog analytics (ga) metadata get <property>`](commands/gog-analytics-metadata-get.md) - Read GA4 Analytics Data API metadata for one property
     - [`gog analytics (ga) properties <command>`](commands/gog-analytics-properties.md) - GA4 properties
+      - [`gog analytics (ga) properties create --display-name=STRING --time-zone=STRING --currency=STRING <account>`](commands/gog-analytics-properties-create.md) - Create a GA4 property inside an account
       - [`gog analytics (ga) properties get (info,show) <property>`](commands/gog-analytics-properties-get.md)
       - [`gog analytics (ga) properties list (ls) [flags]`](commands/gog-analytics-properties-list.md)
+    - [`gog analytics (ga) realtime (run-realtime-report,realtime-report) <property> [flags]`](commands/gog-analytics-realtime.md) - Run a GA4 realtime report (e.g. eventName/eventCount)
     - [`gog analytics (ga) report <property> [flags]`](commands/gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
     - [`gog analytics (ga) retention <command>`](commands/gog-analytics-retention.md) - GA4 retention settings
       - [`gog analytics (ga) retention get <property>`](commands/gog-analytics-retention-get.md) - Read GA4 retention settings for one property
@@ -666,8 +668,12 @@ Generated from `gog schema --json`.
       - [`gog searchconsole (gsc,search-console,webmasters) sitemaps list (ls) <siteUrl> [flags]`](commands/gog-searchconsole-sitemaps-list.md) - List sitemaps for a site
       - [`gog searchconsole (gsc,search-console,webmasters) sitemaps submit <siteUrl> <feedpath>`](commands/gog-searchconsole-sitemaps-submit.md) - Submit a sitemap
     - [`gog searchconsole (gsc,search-console,webmasters) sites (list,ls) <command>`](commands/gog-searchconsole-sites.md) - List and inspect Search Console sites
+      - [`gog searchconsole (gsc,search-console,webmasters) sites (list,ls) add <siteUrl>`](commands/gog-searchconsole-sites-add.md) - Add a site to the user's Search Console properties
       - [`gog searchconsole (gsc,search-console,webmasters) sites (list,ls) get (info,show) <siteUrl>`](commands/gog-searchconsole-sites-get.md) - Get a specific Search Console site
       - [`gog searchconsole (gsc,search-console,webmasters) sites (list,ls) list (ls) [flags]`](commands/gog-searchconsole-sites-list.md) - List accessible Search Console sites
+    - [`gog searchconsole (gsc,search-console,webmasters) verification (verify-domain,siteverification) <command>`](commands/gog-searchconsole-verification.md) - Domain ownership verification (Site Verification API, DNS TXT)
+      - [`gog searchconsole (gsc,search-console,webmasters) verification (verify-domain,siteverification) token (get-token,dns-txt) <domain>`](commands/gog-searchconsole-verification-token.md) - Get the DNS TXT ownership-verification token for an internet domain
+      - [`gog searchconsole (gsc,search-console,webmasters) verification (verify-domain,siteverification) verify <domain>`](commands/gog-searchconsole-verification-verify.md) - Verify domain ownership after publishing the DNS TXT record
   - [`gog send [flags]`](commands/gog-send.md) - Send an email (alias for 'gmail send')
   - [`gog sheets (sheet) <command> [flags]`](commands/gog-sheets.md) - Google Sheets
     - [`gog sheets (sheet) add-tab (add-sheet) <spreadsheetId> <tabName> [flags]`](commands/gog-sheets-add-tab.md) - Add a new tab/sheet to a spreadsheet

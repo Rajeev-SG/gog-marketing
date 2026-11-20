@@ -273,10 +273,13 @@ var serviceInfoByService = map[Service]serviceInfo{
 		note: "GA4 reporting and typed Admin configuration",
 	},
 	ServiceSearchConsole: {
-		scopes: []string{"https://www.googleapis.com/auth/webmasters"},
-		user:   true,
-		apis:   []string{"Search Console API"},
-		note:   "Search Analytics + sitemap management + URL Inspection",
+		scopes: []string{
+			"https://www.googleapis.com/auth/webmasters",
+			"https://www.googleapis.com/auth/siteverification.verify_only",
+		},
+		user: true,
+		apis: []string{"Search Console API", "Site Verification API"},
+		note: "Search Analytics + sitemap management + URL Inspection + domain ownership verification (siteverification.verify_only)",
 	},
 	ServiceTagManager: {
 		scopes: []string{
@@ -377,7 +380,7 @@ var apiServiceIDsByService = map[Service][]string{
 	ServiceMeet:          {"meet.googleapis.com"},
 	ServiceAppScript:     {"script.googleapis.com"},
 	ServiceAnalytics:     {"analyticsadmin.googleapis.com", "analyticsdata.googleapis.com"},
-	ServiceSearchConsole: {"searchconsole.googleapis.com"},
+	ServiceSearchConsole: {"searchconsole.googleapis.com", "siteverification.googleapis.com"},
 	ServiceTagManager:    {"tagmanager.googleapis.com"},
 	ServiceBigQuery:      {"bigquery.googleapis.com"},
 	ServiceAdSense:       {"adsense.googleapis.com"},

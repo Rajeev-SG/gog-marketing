@@ -25,6 +25,7 @@ import (
 	"google.golang.org/api/script/v1"
 	searchconsole "google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
+	siteverification "google.golang.org/api/siteverification/v1"
 	"google.golang.org/api/slides/v1"
 	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
@@ -194,6 +195,10 @@ func (f Factory) PhotosPicker(ctx context.Context, account string) (*PhotosPicke
 
 func (f Factory) SearchConsole(ctx context.Context, account string) (*searchconsole.Service, error) {
 	return NewSearchConsole(f.withAuth(ctx), account)
+}
+
+func (f Factory) SiteVerification(ctx context.Context, account string) (*siteverification.Service, error) {
+	return NewSiteVerification(f.withAuth(ctx), account)
 }
 
 func (f Factory) Sheets(ctx context.Context, account string) (*sheets.Service, error) {

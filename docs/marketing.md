@@ -129,7 +129,7 @@ The setup command enables the official APIs centrally:
 | analytics | Analytics Admin API, Analytics Data API |
 | tagmanager | Tag Manager API |
 | googleads | Google Ads API |
-| searchconsole | Search Console API |
+| searchconsole | Search Console API, Site Verification API |
 | bigquery | BigQuery API |
 
 Read-only authorization narrows the scopes to `analytics.readonly`,
@@ -141,9 +141,12 @@ Google Ads OAuth scope remains `adwords`.
 ```bash
 gog analytics accounts --all --json
 gog analytics report 123456789 --dimensions=date,country --metrics=sessions
+gog analytics realtime 123456789 --dimensions=eventName --metrics=eventCount
 gog analytics properties list
 gog analytics properties list --filter 'ancestor:accounts/123'
 gog analytics properties get 123456789
+gog analytics properties create accounts/123 \
+  --display-name "Paid Media Decoded" --time-zone Europe/London --currency GBP
 gog analytics datastreams list 123456789
 gog analytics keyevents list 123456789
 gog analytics custom-dimensions list 123456789
@@ -155,6 +158,14 @@ Create, update, delete, and archive commands accept a complete official
 resource body through `--json-file` (inline JSON, `@file`, or `-`), plus
 `--update-mask` where the Admin API supports it. Mutations honour `--readonly`,
 `--dry-run`, `--force`, and `--no-input`.
+
+`analytics properties create` is a typed exception: it takes the parent account
+plus `--display-name`, `--time-zone`, and `--currency`, validates the account
+path and values, and then calls `Properties.Create`. A new property needs a data
+stream before it can collect data; create one with
+`gog analytics datastreams create`. `analytics realtime` calls
+`RunRealtimeReport` for near-real-time event checks (for example
+`eventName`/`eventCount`) and is read-only.
 
 `analytics properties list` uses account summaries when `--filter` is omitted,
 so the bare command does not send an empty Analytics Admin filter. Pass an
@@ -207,13 +218,34 @@ The inherited Search Console implementation remains the single transport:
 
 ```bash
 gog searchconsole sites list
+gog searchconsole sites add sc-domain:example.com
 gog searchconsole query sc-domain:example.com --from 2026-09-01 --to 2026-09-24
 gog searchconsole sitemaps list https://example.com/
 gog searchconsole inspect https://example.com/ https://example.com/page
+gog searchconsole verification token example.com
+gog searchconsole verification verify example.com
 ```
 
-Sitemap submit/delete follow the same dry-run and destructive-confirmation
-rules as other writes.
+`searchconsole sites add` adds a URL-prefix or domain property and honours
+`--dry-run` and `--readonly`. Sitemap submit/delete follow the same dry-run and
+destructive-confirmation rules as other writes.
+
+Domain ownership verification uses the Site Verification API with the
+least-privilege `siteverification.verify_only` scope (requested as part of
+`--services searchconsole`, never the full `siteverification` scope):
+
+1. `gog searchconsole verification token example.com` returns a DNS TXT value
+   for `INET_DOMAIN`/`DNS_TXT`.
+2. Publish that TXT record at the domain.
+3. `gog searchconsole verification verify example.com` records ownership of the
+   authenticated user's own domain.
+
+Only bare domains are accepted; URLs and IP literals are rejected. Verification
+never takes or sends an `owners` list, so it cannot delegate ownership to other
+email addresses, and it cannot list, update, delete or inspect verification
+resources. Both steps belong to the write flow: they need the Search Console
+write authorization (`--allow-write` in MCP, "Writes" consent in the hosted app)
+and honour `--dry-run` and `--readonly`.
 
 ## BigQuery
 

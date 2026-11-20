@@ -117,6 +117,15 @@ const TOOL_RESOURCE_MAPPINGS: Record<string, ToolResourceMapping> = Object.fromE
 );
 const MAX_RESOURCE_IDENTIFIER_LENGTH = 256;
 
+// These setup tools require the existing durable, per-action approval in Chat.
+// The public MCP transport cannot present or consume that approval.
+const CHAT_APPROVAL_ONLY_TOOLS = new Set([
+  "analytics_properties_create",
+  "searchconsole_sites_add",
+  "searchconsole_verification_token",
+  "searchconsole_verification_verify",
+]);
+
 type ToolDenialReason =
   | "unknown_tool"
   | "unsupported_tool_mapping"
@@ -124,7 +133,8 @@ type ToolDenialReason =
   | "foreign_tenant"
   | "connection_not_found"
   | "connection_ambiguous"
-  | "grant_denied";
+  | "grant_denied"
+  | "approval_required_in_chat";
 
 function jsonRpcResult(id: JsonRpcId, result: unknown) {
   return { jsonrpc: "2.0", id, result };
@@ -1189,9 +1199,15 @@ async function handleRpc(
   }
   if (method === "ping") return { body: jsonRpcResult(id, {}), status: 200 };
   if (method === "tools/list") {
-    return { body: jsonRpcResult(id, { tools: await policyTools(repo, tenant) }), status: 200 };
+    const tools = (await policyTools(repo, tenant)).filter(
+      (tool) => !CHAT_APPROVAL_ONLY_TOOLS.has(tool.name),
+    );
+    return { body: jsonRpcResult(id, { tools }), status: 200 };
   }
   if (method === "tools/call") {
+    if (typeof params.name === "string" && CHAT_APPROVAL_ONLY_TOOLS.has(params.name)) {
+      return toolCallDenial(id, "approval_required_in_chat");
+    }
     return handleToolCall(id, params, env, repo, session);
   }
   await recordMcpSignal(repo, env, "mcp_method_not_found");

@@ -2649,6 +2649,248 @@ describe("chat Google tools and durable write approvals", () => {
     await expect(f.run("tasks_lists_create", input, "revoked")).rejects.toThrow("Session revoked");
     expect(f.requests).toHaveLength(0);
   });
+
+  async function launchChatFixture(
+    service: string,
+    tool: string,
+    scope: string,
+    resource?: { service: string; resourceId: string; resourceType: string },
+  ) {
+    const { googleTools, GoogleApprovals } = await import("./chat/tools.js");
+    const requests: ToolExecutionRequest[] = [];
+    const env = await createEnv({
+      __testToolRunner: {
+        async execute(request) {
+          requests.push(request);
+          return { status: "ok", result: { name: "properties/999", added: true, verified: true } };
+        },
+      },
+    });
+    const { repo, tenantId, connectionId } = await createToolFixture(env, `launch-owner-${tool}`);
+    const tenant = (await repo.getTenant(tenantId))!;
+    const session = {
+      userId: `launch-owner-${tool}`,
+      sessionId: "session-launch",
+      tenant,
+    };
+    const values = new Map<string, unknown>();
+    let tail: Promise<unknown> = Promise.resolve();
+    const storage = {
+      get: async (key: string) => structuredClone(values.get(key)),
+      put: async (key: string, value: unknown) => {
+        values.set(key, structuredClone(value));
+      },
+      list: async ({ prefix }: { prefix: string }) =>
+        new Map([...values].filter(([key]) => key.startsWith(prefix))),
+      delete: async (keys: string[]) => {
+        for (const key of keys) values.delete(key);
+      },
+      transaction: (fn: (tx: unknown) => Promise<unknown>) => {
+        const result = tail.then(() => fn(storage));
+        tail = result.catch(() => {});
+        return result;
+      },
+    } as unknown as DurableObjectStorage;
+    const approvals = new GoogleApprovals(storage);
+    await repo.saveToolGrants(tenantId, connectionId, [
+      { service, toolName: tool, enabled: true, allowDestructive: false, allowBillable: false },
+    ]);
+    const cipher = new CredentialCipher(parseCredentialKeys(CREDENTIAL_KEY));
+    const encrypted = await cipher.encrypt(tenantId, connectionId, {
+      access_token: ACCESS_TOKEN,
+      refresh_token: REFRESH_TOKEN,
+      token_type: "Bearer",
+      expiry: new Date(Date.now() + 3_600_000).toISOString(),
+      granted_scopes: [`https://www.googleapis.com/auth/${scope}`],
+    });
+    await repo.upsertCredential({
+      tenantId,
+      connectionId,
+      ciphertext: encrypted.ciphertext,
+      nonce: encrypted.nonce,
+      keyVersion: Number(encrypted.keyVersion),
+    });
+    if (resource) {
+      await repo.upsertResourceGrant(
+        tenantId,
+        connectionId,
+        resource.service,
+        resource.resourceId,
+        resource.resourceType,
+        "Selected resource",
+        true,
+        "{}",
+      );
+    }
+    const tools = await googleTools(env, repo, session, approvals, async () => {});
+    const run = async (name: string, input: Record<string, unknown>, id = "call-1") =>
+      tools[name]!.execute!(input, {
+        toolCallId: id,
+        messages: [],
+        abortSignal: new AbortController().signal,
+        context: undefined,
+      });
+    return { env, repo, tenantId, connectionId, session, approvals, values, tools, run, requests };
+  }
+
+  it("GA4 property creation requires account grants and exact one-use approval", async () => {
+    const name = "analytics_properties_create";
+    const f = await launchChatFixture("analytics", name, "analytics.edit", {
+      service: "analytics",
+      resourceId: "accounts/999",
+      resourceType: "account",
+    });
+    expect(f.tools).toHaveProperty(name);
+    const input = {
+      account: "accounts/999",
+      display_name: "Paid Media Decoded",
+      time_zone: "Europe/London",
+      currency: "GBP",
+      connectionId: f.connectionId,
+    };
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    expect(f.requests).toHaveLength(0);
+    await f.approvals.request("call-1", name, input, f.session);
+    expect(await f.approvals.respond("call-1", true, f.session)).toBe(true);
+    await expect(f.run(name, { ...input, display_name: "Paid Media Decoded UK" })).rejects.toThrow(
+      "fresh approval",
+    );
+    await expect(f.run(name, { ...input, account: "accounts/111" })).rejects.toThrow(
+      "fresh approval",
+    );
+    expect(await f.run(name, input)).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]).toMatchObject({
+      service: "analytics",
+      resourceType: "account",
+      resourceId: "accounts/999",
+    });
+    expect(f.requests[0]!.nativeTool).toMatchObject({
+      name,
+      allowWrite: true,
+      arguments: {
+        account: "accounts/999",
+        display_name: "Paid Media Decoded",
+        time_zone: "Europe/London",
+        currency: "GBP",
+      },
+    });
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    expect(f.requests).toHaveLength(1);
+  });
+
+  it("Search Console site add is account-level and requires exact one-use approval", async () => {
+    const name = "searchconsole_sites_add";
+    const f = await launchChatFixture("searchconsole", name, "webmasters");
+    const input = { site_url: "sc-domain:example.com", connectionId: f.connectionId };
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    await f.approvals.request("call-1", name, input, f.session);
+    await f.approvals.respond("call-1", true, f.session);
+    await expect(f.run(name, { ...input, site_url: "sc-domain:other.com" })).rejects.toThrow(
+      "fresh approval",
+    );
+    expect(await f.run(name, input)).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]).toMatchObject({ service: "searchconsole", resourceType: "" });
+    expect(f.requests[0]!.nativeTool).toMatchObject({
+      name,
+      allowWrite: true,
+      arguments: { site_url: "sc-domain:example.com" },
+    });
+    const tokenName = "searchconsole_verification_token";
+    const token = await launchChatFixture(
+      "searchconsole",
+      tokenName,
+      "siteverification.verify_only",
+    );
+    expect(token.tools).toHaveProperty(tokenName);
+    const tokenInput = { domain: "example.com", connectionId: token.connectionId };
+    await expect(token.run(tokenName, tokenInput)).rejects.toThrow("fresh approval");
+    await token.approvals.request("call-1", tokenName, tokenInput, token.session);
+    await token.approvals.respond("call-1", true, token.session);
+    expect(await token.run(tokenName, tokenInput)).toHaveProperty("structuredContent");
+    expect(token.requests[0]!.nativeTool).toMatchObject({ name: tokenName, allowWrite: true });
+  });
+
+  it.each([
+    "searchconsole_sites_add",
+    "searchconsole_verification_token",
+    "searchconsole_verification_verify",
+    "analytics_properties_create",
+  ])("keeps %s behind Chat approval even with external MCP grants", async (name) => {
+    const analytics = name === "analytics_properties_create";
+    const service = analytics ? "analytics" : "searchconsole";
+    const scope = analytics
+      ? "analytics.edit"
+      : name === "searchconsole_sites_add"
+        ? "webmasters"
+        : "siteverification.verify_only";
+    const f = await launchChatFixture(
+      service,
+      name,
+      scope,
+      analytics ? { service, resourceId: "accounts/999", resourceType: "account" } : undefined,
+    );
+    const token = await tokenFor(f.session.userId);
+    const list = await rpcJson(await rpc(f.env, "tools/list", {}, { token }));
+    expect(list.result.tools).not.toContainEqual(expect.objectContaining({ name }));
+    const input = {
+      ...(analytics
+        ? {
+            account: "accounts/999",
+            display_name: "Paid Media Decoded",
+            time_zone: "Europe/London",
+            currency: "GBP",
+          }
+        : name === "searchconsole_sites_add"
+          ? { site_url: "sc-domain:example.com" }
+          : { domain: "example.com" }),
+      connectionId: f.connectionId,
+    };
+    const call = { name, arguments: input };
+    const assertDenied = async (params: Record<string, unknown>) => {
+      const result = await rpcJson(await rpc(f.env, "tools/call", params, { token }));
+      expect(result.error.data.detail).toBe("approval_required_in_chat");
+    };
+    await assertDenied(call);
+    await f.approvals.request("call-1", name, input, f.session);
+    await f.approvals.respond("call-1", true, f.session);
+    await assertDenied({ ...call, approvalId: "call-1" });
+    expect(f.requests).toHaveLength(0);
+    expect(await f.run(name, input)).toHaveProperty("structuredContent");
+    await assertDenied({ ...call, approvalId: "call-1" });
+    expect(f.requests).toHaveLength(1);
+  });
+
+  it("existing GA4 data-stream create stays in the chat launch surface with approval", async () => {
+    const name = "analytics_datastreams_create";
+    const f = await launchChatFixture("analytics", name, "analytics.edit", {
+      service: "analytics",
+      resourceId: "properties/999",
+      resourceType: "property",
+    });
+    expect(f.tools).toHaveProperty(name);
+    const input = {
+      property: "properties/999",
+      body_json: JSON.stringify({
+        displayName: "Paid Media Decoded web",
+        type: "WEB_DATA_STREAM",
+        webStreamData: { defaultUri: "https://paidmediadecoded.com" },
+      }),
+      connectionId: f.connectionId,
+    };
+    await expect(f.run(name, input)).rejects.toThrow("fresh approval");
+    await f.approvals.request("call-1", name, input, f.session);
+    await f.approvals.respond("call-1", true, f.session);
+    expect(await f.run(name, input)).toHaveProperty("structuredContent");
+    expect(f.requests).toHaveLength(1);
+    expect(f.requests[0]).toMatchObject({
+      service: "analytics",
+      resourceType: "property",
+      resourceId: "properties/999",
+    });
+    expect(f.requests[0]!.nativeTool).toMatchObject({ name, allowWrite: true });
+  });
 });
 
 it("blank spreadsheet creation never seeds file authority and remains tenant/account bound", async () => {

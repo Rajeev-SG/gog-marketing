@@ -55,5 +55,29 @@ func nativeAnalyticsAdminBindings() []NativeToolBinding {
 		}
 	}
 
-	return append(result, nativeAnalyticsRetentionBindings()...)
+	result = append(result, nativeAnalyticsRetentionBindings()...)
+
+	return append(result, nativeAnalyticsPropertyCreateBinding())
+}
+
+// analytics_properties_create is the only Admin write that targets a resource
+// that does not exist yet, so it is scoped to a discovered account grant.
+// The Admin SDK carries the parent in the request body; admission requires it
+// to match that grant exactly.
+func nativeAnalyticsPropertyCreateBinding() NativeToolBinding {
+	return NativeToolBinding{
+		Name: "analytics_properties_create", Service: ServiceAnalytics,
+		ResourceType: "account", ResourceArgument: "account", Write: true,
+		hosts: []string{"analyticsadmin.googleapis.com"}, scopes: []string{"analytics.edit"},
+		methods: []string{http.MethodPost},
+		paths:   exactPaths("", ""),
+		argumentPaths: func(args map[string]any) ([]string, error) {
+			account, _ := args["account"].(string)
+			if !analyticsAccountResourcePattern.MatchString(account) {
+				return nil, invalidf("invalid analytics account selector")
+			}
+
+			return []string{"/v1beta/properties"}, nil
+		},
+	}
 }

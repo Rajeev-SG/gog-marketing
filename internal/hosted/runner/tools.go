@@ -113,6 +113,7 @@ var nativeToolBindings = append([]NativeToolBinding{
 	}, scopes: []string{"presentations", "drive.file"}},
 	{Name: "analytics_properties_get", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsadmin.googleapis.com"}, paths: exactPaths("/v1beta/", ""), scopes: []string{"analytics.readonly", "analytics.edit"}},
 	{Name: "analytics_report", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsdata.googleapis.com"}, paths: exactPaths("/v1beta/", ":runReport"), scopes: []string{"analytics.readonly"}},
+	{Name: "analytics_realtime", Service: "analytics", ResourceType: "property", ResourceArgument: "property", hosts: []string{"analyticsdata.googleapis.com"}, methods: []string{http.MethodPost}, paths: exactPaths("/v1beta/", ":runRealtimeReport"), scopes: []string{"analytics.readonly"}},
 	{Name: "drive_get", Service: "drive", ResourceType: "file", ResourceArgument: "file_id", hosts: []string{"www.googleapis.com"}, paths: exactPaths("/drive/v3/files/", ""), scopes: []string{"drive.file"}},
 	{Name: "docs_get", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", hosts: []string{"docs.googleapis.com"}, paths: exactPaths("/v1/documents/", ""), scopes: []string{"documents.readonly", "documents", "drive.file"}},
 	{Name: "docs_write", Service: "docs", ResourceType: "file", ResourceArgument: "document_id", Write: true, hosts: []string{"docs.googleapis.com"}, paths: func(id string) []string {
@@ -388,10 +389,8 @@ func nativeRequestGuard(invocation *ToolInvocation) func(*http.Request) error {
 			return admitCalendarEventRequest(invocation, request)
 		}
 
-		if invocation.Name == "analytics_properties_list" {
-			if err := admitAnalyticsPropertyInventory(invocation, request); err != nil {
-				return native.ErrDenied
-			}
+		if err := admitInvocationSpecificRequest(invocation, request); err != nil {
+			return native.ErrDenied
 		}
 
 		// slides_info uses paired Drive/Slides endpoints. Keep the host/path

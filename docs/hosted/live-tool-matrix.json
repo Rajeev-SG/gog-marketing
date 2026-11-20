@@ -21,8 +21,8 @@
     ],
     "expected_evidence_state": "representative_variant_verified_existing_deployment"
   },
-  "total_catalog_count": 339,
-  "active_tool_count": 301,
+  "total_catalog_count": 344,
+  "active_tool_count": 306,
   "historical_evidence_rows": 2,
   "rows": [
     {
@@ -480,6 +480,22 @@
     },
     {
       "service": "analytics",
+      "tool": "analytics_properties_create",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "resource_argument": "account",
+      "accepted_scopes": [
+        "analytics.edit"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
       "tool": "analytics_properties_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -506,6 +522,22 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "analytics",
+      "tool": "analytics_realtime",
+      "write": false,
+      "destructive_binding_flag": false,
+      "resource_model": "property",
+      "resource_argument": "property",
+      "accepted_scopes": [
+        "analytics.readonly"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"
@@ -2607,6 +2639,21 @@
     },
     {
       "service": "searchconsole",
+      "tool": "searchconsole_sites_add",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "webmasters"
+      ],
+      "http_methods": [
+        "PUT"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
       "tool": "searchconsole_sites_get",
       "write": false,
       "destructive_binding_flag": false,
@@ -2634,6 +2681,36 @@
       ],
       "http_methods": [
         "GET"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_verification_token",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "siteverification.verify_only"
+      ],
+      "http_methods": [
+        "POST"
+      ],
+      "http_methods_known": true,
+      "candidate_live_state": "implemented_unverified_live"
+    },
+    {
+      "service": "searchconsole",
+      "tool": "searchconsole_verification_verify",
+      "write": true,
+      "destructive_binding_flag": false,
+      "resource_model": "account",
+      "accepted_scopes": [
+        "siteverification.verify_only"
+      ],
+      "http_methods": [
+        "POST"
       ],
       "http_methods_known": true,
       "candidate_live_state": "implemented_unverified_live"

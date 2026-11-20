@@ -345,6 +345,86 @@
     }
   },
   {
+    "name": "analytics_properties_create",
+    "service": "analytics",
+    "resource_type": "account",
+    "resource_argument": "account",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Create a GA4 property inside an account. Requires --allow-write and an account grant. A data stream is created separately.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "description": "GA4 account resource, e.g. accounts/123",
+            "type": "string"
+          },
+          "currency": {
+            "description": "ISO 4217 currency code, e.g. GBP",
+            "type": "string"
+          },
+          "display_name": {
+            "type": "string"
+          },
+          "time_zone": {
+            "description": "IANA time zone, e.g. Europe/London",
+            "type": "string"
+          }
+        },
+        "required": ["account", "display_name", "time_zone", "currency"],
+        "type": "object"
+      },
+      "name": "analytics_properties_create"
+    }
+  },
+  {
+    "name": "analytics_realtime",
+    "service": "analytics",
+    "resource_type": "property",
+    "resource_argument": "property",
+    "write": false,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "description": "Run a GA4 realtime report (for example eventName/eventCount).",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "dimensions": {
+            "default": "eventName",
+            "type": "string"
+          },
+          "max": {
+            "default": 100,
+            "maximum": 250000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "metrics": {
+            "default": "eventCount",
+            "type": "string"
+          },
+          "property": {
+            "type": "string"
+          }
+        },
+        "required": ["property"],
+        "type": "object"
+      },
+      "name": "analytics_realtime"
+    }
+  },
+  {
     "name": "searchconsole_sites_list",
     "service": "searchconsole",
     "resource_type": "",
@@ -365,6 +445,90 @@
         "type": "object"
       },
       "name": "searchconsole_sites_list"
+    }
+  },
+  {
+    "name": "searchconsole_sites_add",
+    "service": "searchconsole",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Add a site or domain property to Search Console. Requires --allow-write; an account-level grant in hosted mode.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "site_url": {
+            "description": "https://example.com/ or sc-domain:example.com",
+            "type": "string"
+          }
+        },
+        "required": ["site_url"],
+        "type": "object"
+      },
+      "name": "searchconsole_sites_add"
+    }
+  },
+  {
+    "name": "searchconsole_verification_token",
+    "service": "searchconsole",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Get the DNS TXT domain-ownership verification token for a bare domain (INET_DOMAIN, DNS_TXT only). Requires --allow-write and the Search Console write grant.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "description": "Bare domain such as example.com",
+            "type": "string"
+          }
+        },
+        "required": ["domain"],
+        "type": "object"
+      },
+      "name": "searchconsole_verification_token"
+    }
+  },
+  {
+    "name": "searchconsole_verification_verify",
+    "service": "searchconsole",
+    "resource_type": "",
+    "resource_argument": "",
+    "write": true,
+    "tool": {
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "description": "Verify domain ownership after the DNS TXT token is published. Never delegates ownership to other emails; requires --allow-write.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "domain": {
+            "description": "Bare domain such as example.com",
+            "type": "string"
+          }
+        },
+        "required": ["domain"],
+        "type": "object"
+      },
+      "name": "searchconsole_verification_verify"
     }
   },
   {

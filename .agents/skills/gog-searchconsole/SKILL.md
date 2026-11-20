@@ -33,6 +33,7 @@ gog --readonly --account user@example.com searchconsole --help
 | `searchanalytics` | Search Analytics queries |
 | `sitemaps` | List/get/submit/delete sitemaps |
 | `sites` | List and inspect Search Console sites |
+| `verification` | Domain ownership verification (Site Verification API, DNS TXT) |
 
 Run `gog searchconsole <command> --help` for flags and `gog schema searchconsole <command> --json`
 for the machine-readable contract. Do not guess command syntax.

@@ -2,7 +2,7 @@
 
 Every `gog` command has a generated docs page. The source of truth is the live CLI schema; run `make docs-commands` after changing command names, flags, help text, aliases, or arguments.
 
-Generated pages: 905.
+Generated pages: 911.
 
 ## Top-level Commands
 
@@ -155,8 +155,10 @@ Generated pages: 905.
     - [gog analytics metadata](gog-analytics-metadata.md) - GA4 Analytics Data API metadata
       - [gog analytics metadata get](gog-analytics-metadata-get.md) - Read GA4 Analytics Data API metadata for one property
     - [gog analytics properties](gog-analytics-properties.md) - GA4 properties
+      - [gog analytics properties create](gog-analytics-properties-create.md) - Create a GA4 property inside an account
       - [gog analytics properties get](gog-analytics-properties-get.md)
       - [gog analytics properties list](gog-analytics-properties-list.md)
+    - [gog analytics realtime](gog-analytics-realtime.md) - Run a GA4 realtime report (e.g. eventName/eventCount)
     - [gog analytics report](gog-analytics-report.md) - Run a GA4 report (Analytics Data API)
     - [gog analytics retention](gog-analytics-retention.md) - GA4 retention settings
       - [gog analytics retention get](gog-analytics-retention-get.md) - Read GA4 retention settings for one property
@@ -727,8 +729,12 @@ Generated pages: 905.
       - [gog searchconsole sitemaps list](gog-searchconsole-sitemaps-list.md) - List sitemaps for a site
       - [gog searchconsole sitemaps submit](gog-searchconsole-sitemaps-submit.md) - Submit a sitemap
     - [gog searchconsole sites](gog-searchconsole-sites.md) - List and inspect Search Console sites
+      - [gog searchconsole sites add](gog-searchconsole-sites-add.md) - Add a site to the user's Search Console properties
       - [gog searchconsole sites get](gog-searchconsole-sites-get.md) - Get a specific Search Console site
       - [gog searchconsole sites list](gog-searchconsole-sites-list.md) - List accessible Search Console sites
+    - [gog searchconsole verification](gog-searchconsole-verification.md) - Domain ownership verification (Site Verification API, DNS TXT)
+      - [gog searchconsole verification token](gog-searchconsole-verification-token.md) - Get the DNS TXT ownership-verification token for an internet domain
+      - [gog searchconsole verification verify](gog-searchconsole-verification-verify.md) - Verify domain ownership after publishing the DNS TXT record
   - [gog send](gog-send.md) - Send an email (alias for 'gmail send')
   - [gog sheets](gog-sheets.md) - Google Sheets
     - [gog sheets add-tab](gog-sheets-add-tab.md) - Add a new tab/sheet to a spreadsheet

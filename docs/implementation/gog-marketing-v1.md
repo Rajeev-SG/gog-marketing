@@ -175,6 +175,14 @@ Read:
 Write:
 - `https://www.googleapis.com/auth/webmasters`
 
+Site ownership verification (DNS TXT only; no owner delegation):
+- `https://www.googleapis.com/auth/siteverification.verify_only`
+
+The full `https://www.googleapis.com/auth/siteverification` scope is deliberately
+not requested: `verify_only` can issue a DNS TXT token and verify the
+authenticated user's own domain, but cannot list, update, delete or delegate
+ownership.
+
 ### BigQuery
 - `https://www.googleapis.com/auth/bigquery`
 

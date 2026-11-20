@@ -5,14 +5,14 @@ live Kong command schema and executable hosted tool catalog. Regenerate it after
 catalog changes and check it with `go run ./cmd/hosted-parity --check
 docs/hosted/cli-hosted-matrix.json`.
 
-The current baseline covers 360 visible native leaves in the 11 active services
-and 301 active hosted tools (339 total). It maps 301 hosted tools across 311
+The current baseline covers 365 visible native leaves in the 11 active services
+and 306 active hosted tools (344 total). It maps 306 hosted tools across 316
 native leaves because Search Console exposes `query` and the equivalent
 `searchanalytics query` leaf, and Docs has equivalent `list-tabs` / `tabs list`
 leaves plus the reviewed `named-range list` hyphen bridge to
 `docs_named_range_list`. Forms question add/move/delete each have equivalent
 direct and grouped command leaves mapped to one tool. Docs tab add/rename/delete
-also map direct and grouped aliases. Counts are: 311 implemented/unverified hosted
+also map direct and grouped aliases. Counts are: 316 implemented/unverified hosted
 leaves, zero reviewed eligible missing, 41 requiring resource/transport/billing
 implementation design, 2 explicitly excluded, 1 outside the current scope
 boundary, and 5 deferred. Forms `raw` is a fixed GET variant of `forms_get`,
