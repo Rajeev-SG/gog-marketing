@@ -16,6 +16,7 @@ gog searchconsole (gsc,search-console,webmasters) sites (list,ls) <command>
 
 ## Subcommands
 
+- [gog searchconsole sites add](gog-searchconsole-sites-add.md) - Add a site to the user's Search Console properties
 - [gog searchconsole sites get](gog-searchconsole-sites-get.md) - Get a specific Search Console site
 - [gog searchconsole sites list](gog-searchconsole-sites-list.md) - List accessible Search Console sites
 

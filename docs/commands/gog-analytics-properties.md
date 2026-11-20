@@ -16,6 +16,7 @@ gog analytics (ga) properties <command>
 
 ## Subcommands
 
+- [gog analytics properties create](gog-analytics-properties-create.md) - Create a GA4 property inside an account
 - [gog analytics properties get](gog-analytics-properties-get.md)
 - [gog analytics properties list](gog-analytics-properties-list.md)
 

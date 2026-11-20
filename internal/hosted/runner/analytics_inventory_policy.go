@@ -19,7 +19,7 @@ func nativeAnalyticsInventoryBindings() []NativeToolBinding {
 	return []NativeToolBinding{
 		{
 			Name:    "analytics_accounts",
-			Service: "analytics",
+			Service: ServiceAnalytics,
 			Write:   false,
 			hosts:   []string{"analyticsadmin.googleapis.com"},
 			scopes:  []string{"analytics.readonly", "analytics.edit"},

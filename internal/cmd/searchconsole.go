@@ -22,11 +22,13 @@ type SearchConsoleCmd struct {
 	Query           SearchConsoleQueryCmd           `cmd:"" name:"query" aliases:"report" help:"Run a Search Analytics query"`
 	Sitemaps        SearchConsoleSitemapsCmd        `cmd:"" name:"sitemaps" help:"List/get/submit/delete sitemaps"`
 	Inspect         SearchConsoleInspectCmd         `cmd:"" help:"Inspect URL index status (URL Inspection API)"`
+	Verification    SearchConsoleVerificationCmd    `cmd:"" name:"verification" aliases:"verify-domain,siteverification" help:"Domain ownership verification (Site Verification API, DNS TXT)"`
 }
 
 type SearchConsoleSitesCmd struct {
 	List SearchConsoleSitesListCmd `cmd:"" default:"withargs" aliases:"ls" help:"List accessible Search Console sites"`
 	Get  SearchConsoleSitesGetCmd  `cmd:"" name:"get" aliases:"info,show" help:"Get a specific Search Console site"`
+	Add  SearchConsoleSitesAddCmd  `cmd:"" name:"add" help:"Add a site to the user's Search Console properties"`
 }
 
 type SearchConsoleSitesListCmd struct {
@@ -113,6 +115,42 @@ func (c *SearchConsoleSitesGetCmd) Run(ctx context.Context, flags *RootFlags) er
 	return writeResult(ctx, u,
 		kv("site_url", site.SiteUrl),
 		kv("permission_level", site.PermissionLevel),
+	)
+}
+
+type SearchConsoleSitesAddCmd struct {
+	SiteURL string `arg:"" name:"siteUrl" help:"Search Console property to add (e.g. https://example.com/ or sc-domain:example.com)"`
+}
+
+func (c *SearchConsoleSitesAddCmd) Run(ctx context.Context, flags *RootFlags) error {
+	siteURL, err := normalizeSearchConsoleSiteProperty(c.SiteURL)
+	if err != nil {
+		return err
+	}
+
+	err = marketingDryRunExit(ctx, flags, "searchconsole.sites.add", map[string]any{
+		"site_url": siteURL,
+	})
+	if err != nil {
+		return err
+	}
+
+	account, err := requireAccount(flags)
+	if err != nil {
+		return err
+	}
+
+	svc, err := searchConsoleService(ctx, account)
+	if err != nil {
+		return err
+	}
+	if err := svc.Sites.Add(siteURL).Context(ctx).Do(); err != nil {
+		return wrapSearchConsoleError(err)
+	}
+
+	return writeResult(ctx, ui.FromContext(ctx),
+		kv("added", true),
+		kv("site_url", siteURL),
 	)
 }
 

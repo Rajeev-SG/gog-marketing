@@ -27,6 +27,7 @@ import (
 	"google.golang.org/api/script/v1"
 	"google.golang.org/api/searchconsole/v1"
 	"google.golang.org/api/sheets/v4"
+	"google.golang.org/api/siteverification/v1"
 	"google.golang.org/api/slides/v1"
 	"google.golang.org/api/tagmanager/v2"
 	"google.golang.org/api/tasks/v1"
@@ -46,52 +47,53 @@ type IO struct {
 }
 
 type (
-	AdminDirectoryServiceFactory func(context.Context, string) (*admin.Service, error)
-	AdSenseServiceFactory        func(context.Context, string) (*adsense.Service, error)
-	AppScriptServiceFactory      func(context.Context, string) (*script.Service, error)
-	AnalyticsAdminServiceFactory func(context.Context, string) (*analyticsadmin.Service, error)
-	AnalyticsDataServiceFactory  func(context.Context, string) (*analyticsdata.Service, error)
-	BigQueryClientFactory        googleapi.BigQueryClientFactory
-	CalendarServiceFactory       func(context.Context, string) (*calendar.Service, error)
-	HTTPClientFactory            func(context.Context, string) (*http.Client, error)
-	ChatServiceFactory           func(context.Context, string) (*chat.Service, error)
-	ChatSearchServiceFactory     func(context.Context, string) (*googleapi.ChatSearchClient, error)
-	ClassroomServiceFactory      func(context.Context, string) (*classroom.Service, error)
-	CloudIdentityServiceFactory  func(context.Context, string) (*cloudidentity.Service, error)
-	CloudAdminClientFactory      googleapi.CloudAdminClientFactory
-	DocsServiceFactory           func(context.Context, string) (*docs.Service, error)
-	DocsHTTPClientFactory        func(context.Context, string) (*http.Client, error)
-	DriveServiceFactory          func(context.Context, string) (*drive.Service, error)
-	DriveV2ServiceFactory        func(context.Context, string) (*drivev2.Service, error)
-	DriveActivityServiceFactory  func(context.Context, string) (*driveactivity.Service, error)
-	DriveLabelsServiceFactory    func(context.Context, string) (*drivelabels.Service, error)
-	FormsServiceFactory          func(context.Context, string) (*forms.Service, error)
-	GmailServiceFactory          func(context.Context, string) (*gmail.Service, error)
-	KeepServiceAccountFactory    func(context.Context, string, string) (*keep.Service, error)
-	MeetServiceFactory           func(context.Context, string) (*meet.Service, error)
-	PeopleServiceFactory         func(context.Context, string) (*people.Service, error)
-	PhotosServiceFactory         func(context.Context, string) (*googleapi.PhotosClient, error)
-	PhotosPickerServiceFactory   func(context.Context, string) (*googleapi.PhotosPickerClient, error)
-	SearchConsoleServiceFactory  func(context.Context, string) (*searchconsole.Service, error)
-	SheetsServiceFactory         func(context.Context, string) (*sheets.Service, error)
-	SheetsHTTPClientFactory      func(context.Context, string) (*http.Client, error)
-	SlidesServiceFactory         func(context.Context, string) (*slides.Service, error)
-	TasksServiceFactory          func(context.Context, string) (*tasks.Service, error)
-	TagManagerServiceFactory     func(context.Context, string) (*tagmanager.Service, error)
-	YouTubeServiceFactory        func(context.Context, string) (*youtube.Service, error)
-	ZoomMeetingClientFactory     func(context.Context, string) (ZoomMeetingClient, error)
-	DriveDownloadFunc            func(context.Context, *drive.Service, string) (*http.Response, error)
-	DriveExportFunc              func(context.Context, *drive.Service, string, string) (*http.Response, error)
-	OpenURLFunc                  func(context.Context, string) error
-	PublicImageAspectFunc        func(context.Context, string) (float64, error)
-	OpenSecretsStoreFunc         func() (secrets.Store, error)
-	OpenSecretStoreFunc          func() (secrets.SecretStore, error)
-	AuthorizeGoogleFunc          func(context.Context, googleauth.AuthorizeOptions) (string, error)
-	StartManageServerFunc        func(context.Context, googleauth.ManageServerOptions) error
-	CheckRefreshTokenFunc        func(context.Context, string, string, []string, time.Duration) error
-	EnsureKeychainAccessFunc     func(context.Context) error
-	FetchAuthorizedIdentityFunc  func(context.Context, string, string, []string, time.Duration) (googleauth.Identity, error)
-	ManualAuthURLFunc            func(context.Context, googleauth.AuthorizeOptions) (googleauth.ManualAuthURLResult, error)
+	AdminDirectoryServiceFactory   func(context.Context, string) (*admin.Service, error)
+	AdSenseServiceFactory          func(context.Context, string) (*adsense.Service, error)
+	AppScriptServiceFactory        func(context.Context, string) (*script.Service, error)
+	AnalyticsAdminServiceFactory   func(context.Context, string) (*analyticsadmin.Service, error)
+	AnalyticsDataServiceFactory    func(context.Context, string) (*analyticsdata.Service, error)
+	BigQueryClientFactory          googleapi.BigQueryClientFactory
+	CalendarServiceFactory         func(context.Context, string) (*calendar.Service, error)
+	HTTPClientFactory              func(context.Context, string) (*http.Client, error)
+	ChatServiceFactory             func(context.Context, string) (*chat.Service, error)
+	ChatSearchServiceFactory       func(context.Context, string) (*googleapi.ChatSearchClient, error)
+	ClassroomServiceFactory        func(context.Context, string) (*classroom.Service, error)
+	CloudIdentityServiceFactory    func(context.Context, string) (*cloudidentity.Service, error)
+	CloudAdminClientFactory        googleapi.CloudAdminClientFactory
+	DocsServiceFactory             func(context.Context, string) (*docs.Service, error)
+	DocsHTTPClientFactory          func(context.Context, string) (*http.Client, error)
+	DriveServiceFactory            func(context.Context, string) (*drive.Service, error)
+	DriveV2ServiceFactory          func(context.Context, string) (*drivev2.Service, error)
+	DriveActivityServiceFactory    func(context.Context, string) (*driveactivity.Service, error)
+	DriveLabelsServiceFactory      func(context.Context, string) (*drivelabels.Service, error)
+	FormsServiceFactory            func(context.Context, string) (*forms.Service, error)
+	GmailServiceFactory            func(context.Context, string) (*gmail.Service, error)
+	KeepServiceAccountFactory      func(context.Context, string, string) (*keep.Service, error)
+	MeetServiceFactory             func(context.Context, string) (*meet.Service, error)
+	PeopleServiceFactory           func(context.Context, string) (*people.Service, error)
+	PhotosServiceFactory           func(context.Context, string) (*googleapi.PhotosClient, error)
+	PhotosPickerServiceFactory     func(context.Context, string) (*googleapi.PhotosPickerClient, error)
+	SearchConsoleServiceFactory    func(context.Context, string) (*searchconsole.Service, error)
+	SheetsServiceFactory           func(context.Context, string) (*sheets.Service, error)
+	SheetsHTTPClientFactory        func(context.Context, string) (*http.Client, error)
+	SiteVerificationServiceFactory func(context.Context, string) (*siteverification.Service, error)
+	SlidesServiceFactory           func(context.Context, string) (*slides.Service, error)
+	TasksServiceFactory            func(context.Context, string) (*tasks.Service, error)
+	TagManagerServiceFactory       func(context.Context, string) (*tagmanager.Service, error)
+	YouTubeServiceFactory          func(context.Context, string) (*youtube.Service, error)
+	ZoomMeetingClientFactory       func(context.Context, string) (ZoomMeetingClient, error)
+	DriveDownloadFunc              func(context.Context, *drive.Service, string) (*http.Response, error)
+	DriveExportFunc                func(context.Context, *drive.Service, string, string) (*http.Response, error)
+	OpenURLFunc                    func(context.Context, string) error
+	PublicImageAspectFunc          func(context.Context, string) (float64, error)
+	OpenSecretsStoreFunc           func() (secrets.Store, error)
+	OpenSecretStoreFunc            func() (secrets.SecretStore, error)
+	AuthorizeGoogleFunc            func(context.Context, googleauth.AuthorizeOptions) (string, error)
+	StartManageServerFunc          func(context.Context, googleauth.ManageServerOptions) error
+	CheckRefreshTokenFunc          func(context.Context, string, string, []string, time.Duration) error
+	EnsureKeychainAccessFunc       func(context.Context) error
+	FetchAuthorizedIdentityFunc    func(context.Context, string, string, []string, time.Duration) (googleauth.Identity, error)
+	ManualAuthURLFunc              func(context.Context, googleauth.AuthorizeOptions) (googleauth.ManualAuthURLResult, error)
 )
 
 type ZoomMeetingClient interface {
@@ -132,6 +134,7 @@ type Services struct {
 	SearchConsole     SearchConsoleServiceFactory
 	Sheets            SheetsServiceFactory
 	SheetsHTTP        SheetsHTTPClientFactory
+	SiteVerification  SiteVerificationServiceFactory
 	ConnectedSheets   SheetsServiceFactory
 	SitesDrive        DriveServiceFactory
 	Slides            SlidesServiceFactory

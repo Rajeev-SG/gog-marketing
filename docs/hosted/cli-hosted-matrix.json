@@ -21,27 +21,27 @@
     ],
     "prior_deferred_excluded": true
   },
-  "native_leaf_count": 360,
-  "hosted_tool_count": 301,
-  "total_hosted_catalog_count": 339,
+  "native_leaf_count": 365,
+  "hosted_tool_count": 306,
+  "total_hosted_catalog_count": 344,
   "excluded_hosted_tool_count": 38,
-  "mapped_native_leaf_count": 311,
-  "mapped_hosted_tool_count": 301,
+  "mapped_native_leaf_count": 316,
+  "mapped_hosted_tool_count": 306,
   "classifications": {
     "deferred": 5,
     "excluded": 2,
     "implementation_design_required": 41,
-    "implemented_hosted_unverified": 311,
+    "implemented_hosted_unverified": 316,
     "scope_boundary_blocked": 1
   },
   "by_service": [
     {
       "service": "analytics",
-      "native_leaves": 32,
-      "hosted_tools": 32,
-      "mapped_native_leaves": 32,
+      "native_leaves": 34,
+      "hosted_tools": 34,
+      "mapped_native_leaves": 34,
       "classifications": {
-        "implemented_hosted_unverified": 32
+        "implemented_hosted_unverified": 34
       }
     },
     {
@@ -99,11 +99,11 @@
     },
     {
       "service": "searchconsole",
-      "native_leaves": 9,
-      "hosted_tools": 8,
-      "mapped_native_leaves": 9,
+      "native_leaves": 12,
+      "hosted_tools": 11,
+      "mapped_native_leaves": 12,
       "classifications": {
-        "implemented_hosted_unverified": 9
+        "implemented_hosted_unverified": 12
       }
     },
     {
@@ -779,6 +779,29 @@
     },
     {
       "service": "analytics",
+      "command": "properties create",
+      "native_command": "gog analytics properties create",
+      "hosted_tool": "analytics_properties_create",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "account",
+      "resource_argument": "account",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.edit"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
       "command": "properties get",
       "native_command": "gog analytics properties get",
       "hosted_tool": "analytics_properties_get",
@@ -817,6 +840,29 @@
         ],
         "http_methods": [
           "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "analytics",
+      "command": "realtime",
+      "native_command": "gog analytics realtime",
+      "hosted_tool": "analytics_realtime",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "resource_model": "property",
+      "resource_argument": "property",
+      "policy_binding": {
+        "accepted_scopes": [
+          "analytics.readonly"
+        ],
+        "http_methods": [
+          "POST"
         ],
         "http_methods_known": true,
         "destructive": false
@@ -6353,6 +6399,27 @@
     },
     {
       "service": "searchconsole",
+      "command": "sites add",
+      "native_command": "gog searchconsole sites add",
+      "hosted_tool": "searchconsole_sites_add",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "webmasters"
+        ],
+        "http_methods": [
+          "PUT"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
       "command": "sites get",
       "native_command": "gog searchconsole sites get",
       "hosted_tool": "searchconsole_sites_get",
@@ -6391,6 +6458,48 @@
         ],
         "http_methods": [
           "GET"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "verification token",
+      "native_command": "gog searchconsole verification token",
+      "hosted_tool": "searchconsole_verification_token",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "siteverification.verify_only"
+        ],
+        "http_methods": [
+          "POST"
+        ],
+        "http_methods_known": true,
+        "destructive": false
+      },
+      "binding_evidence": "runner binding metadata"
+    },
+    {
+      "service": "searchconsole",
+      "command": "verification verify",
+      "native_command": "gog searchconsole verification verify",
+      "hosted_tool": "searchconsole_verification_verify",
+      "status": "implemented_hosted_unverified",
+      "implementation_state": "executable_fixed_schema_live_evidence_separate",
+      "live_verified": false,
+      "classification_reason": "exact canonical hosted tool invokes this native handler path",
+      "policy_binding": {
+        "accepted_scopes": [
+          "siteverification.verify_only"
+        ],
+        "http_methods": [
+          "POST"
         ],
         "http_methods_known": true,
         "destructive": false

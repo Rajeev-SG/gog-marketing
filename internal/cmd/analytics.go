@@ -17,6 +17,7 @@ type AnalyticsCmd struct {
 	Accounts         AnalyticsAccountsCmd         `cmd:"" name:"accounts" aliases:"list,ls" default:"withargs" help:"List GA4 account summaries"`
 	Metadata         AnalyticsMetadataCmd         `cmd:"" name:"metadata" help:"GA4 Analytics Data API metadata"`
 	Report           AnalyticsReportCmd           `cmd:"" name:"report" help:"Run a GA4 report (Analytics Data API)"`
+	Realtime         AnalyticsRealtimeCmd         `cmd:"" name:"realtime" aliases:"run-realtime-report,realtime-report" help:"Run a GA4 realtime report (e.g. eventName/eventCount)"`
 	Properties       AnalyticsPropertiesCmd       `cmd:"" name:"properties" help:"GA4 properties"`
 	DataStreams      AnalyticsDataStreamsCmd      `cmd:"" name:"datastreams" aliases:"data-streams" help:"GA4 data streams"`
 	KeyEvents        AnalyticsKeyEventsCmd        `cmd:"" name:"keyevents" aliases:"key-events" help:"GA4 key events"`

@@ -13,6 +13,8 @@ func mcpMarketingTools() []mcpToolSpec {
 		mcpAnalyticsReportTool(),
 		mcpAnalyticsPropertiesListTool(),
 		mcpAnalyticsPropertiesGetTool(),
+		mcpAnalyticsPropertiesCreateTool(),
+		mcpAnalyticsRealtimeTool(),
 		mcpAnalyticsDataStreamsListTool(),
 		mcpTagManagerAccountsTool(),
 		mcpTagManagerContainersTool(),
@@ -25,6 +27,9 @@ func mcpMarketingTools() []mcpToolSpec {
 		mcpGoogleAdsCustomersTool(),
 		mcpGoogleAdsQueryTool(),
 		mcpSearchConsoleSitesTool(),
+		mcpSearchConsoleSitesAddTool(),
+		mcpSearchConsoleVerificationTokenTool(),
+		mcpSearchConsoleVerificationVerifyTool(),
 		mcpSearchConsoleQueryTool(),
 		mcpSearchConsoleSitemapsTool(),
 		mcpSearchConsoleSitemapSubmitTool(),
@@ -69,6 +74,48 @@ func mcpAnalyticsPropertiesGetTool() mcpToolSpec {
 			return nil, err
 		}
 		return []string{"analytics", "properties", "get", property}, nil
+	}}
+}
+
+func mcpAnalyticsPropertiesCreateTool() mcpToolSpec {
+	return mcpToolSpec{Name: "analytics_properties_create", Service: "analytics", Risk: mcpRiskWrite, Description: "Create a GA4 property inside an account. Requires --allow-write and an account grant. A data stream is created separately.", Options: []mcp.ToolOption{
+		mcp.WithString("account", mcp.Required(), mcp.Description("GA4 account resource, e.g. accounts/123")),
+		mcp.WithString("display_name", mcp.Required()),
+		mcp.WithString("time_zone", mcp.Required(), mcp.Description("IANA time zone, e.g. Europe/London")),
+		mcp.WithString("currency", mcp.Required(), mcp.Description("ISO 4217 currency code, e.g. GBP")),
+	}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		account, err := requireMCPString(req, "account")
+		if err != nil {
+			return nil, err
+		}
+		displayName, err := requireMCPString(req, "display_name")
+		if err != nil {
+			return nil, err
+		}
+		timeZone, err := requireMCPString(req, "time_zone")
+		if err != nil {
+			return nil, err
+		}
+		currency, err := requireMCPString(req, "currency")
+		if err != nil {
+			return nil, err
+		}
+		return []string{"analytics", "properties", "create", account, "--display-name", displayName, "--time-zone", timeZone, "--currency", currency}, nil
+	}}
+}
+
+func mcpAnalyticsRealtimeTool() mcpToolSpec {
+	return mcpToolSpec{Name: "analytics_realtime", Service: "analytics", Risk: mcpRiskRead, Description: "Run a GA4 realtime report (for example eventName/eventCount).", Options: []mcp.ToolOption{
+		mcp.WithString("property", mcp.Required()),
+		mcp.WithString("dimensions", mcp.DefaultString("eventName")),
+		mcp.WithString("metrics", mcp.DefaultString("eventCount")),
+		mcp.WithInteger("max", mcp.DefaultNumber(100), mcp.Min(1), mcp.Max(250000)),
+	}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		property, err := requireMCPString(req, "property")
+		if err != nil {
+			return nil, err
+		}
+		return []string{"analytics", "realtime", property, "--dimensions", req.GetString("dimensions", "eventName"), "--metrics", req.GetString("metrics", "eventCount"), "--max", strconv.Itoa(clampMCPInt(req.GetInt("max", 100), 1, 250000))}, nil
 	}}
 }
 
@@ -188,6 +235,36 @@ func mcpGoogleAdsQueryTool() mcpToolSpec {
 
 func mcpSearchConsoleSitesTool() mcpToolSpec {
 	return mcpToolSpec{Name: "searchconsole_sites_list", Service: "searchconsole", Risk: mcpRiskRead, Description: "List Search Console sites.", BuildArgs: func(mcp.CallToolRequest) ([]string, error) { return []string{"searchconsole", "sites", "list"}, nil }}
+}
+
+func mcpSearchConsoleSitesAddTool() mcpToolSpec {
+	return mcpToolSpec{Name: "searchconsole_sites_add", Service: "searchconsole", Risk: mcpRiskWrite, Description: "Add a site or domain property to Search Console. Requires --allow-write; an account-level grant in hosted mode.", Options: []mcp.ToolOption{mcp.WithString("site_url", mcp.Required(), mcp.Description("https://example.com/ or sc-domain:example.com"))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		site, err := requireMCPString(req, "site_url")
+		if err != nil {
+			return nil, err
+		}
+		return []string{"searchconsole", "sites", "add", "--", site}, nil
+	}}
+}
+
+func mcpSearchConsoleVerificationTokenTool() mcpToolSpec {
+	return mcpToolSpec{Name: "searchconsole_verification_token", Service: "searchconsole", Risk: mcpRiskWrite, Description: "Get the DNS TXT domain-ownership verification token for a bare domain (INET_DOMAIN, DNS_TXT only). Requires --allow-write and the Search Console write grant.", Options: []mcp.ToolOption{mcp.WithString("domain", mcp.Required(), mcp.Description("Bare domain such as example.com"))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		domain, err := requireMCPString(req, "domain")
+		if err != nil {
+			return nil, err
+		}
+		return []string{"searchconsole", "verification", "token", "--", domain}, nil
+	}}
+}
+
+func mcpSearchConsoleVerificationVerifyTool() mcpToolSpec {
+	return mcpToolSpec{Name: "searchconsole_verification_verify", Service: "searchconsole", Risk: mcpRiskWrite, Description: "Verify domain ownership after the DNS TXT token is published. Never delegates ownership to other emails; requires --allow-write.", Options: []mcp.ToolOption{mcp.WithString("domain", mcp.Required(), mcp.Description("Bare domain such as example.com"))}, BuildArgs: func(req mcp.CallToolRequest) ([]string, error) {
+		domain, err := requireMCPString(req, "domain")
+		if err != nil {
+			return nil, err
+		}
+		return []string{"searchconsole", "verification", "verify", "--", domain}, nil
+	}}
 }
 
 func mcpSearchConsoleQueryTool() mcpToolSpec {

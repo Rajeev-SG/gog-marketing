@@ -21,6 +21,7 @@ gog searchconsole (gsc,search-console,webmasters) <command> [flags]
 - [gog searchconsole searchanalytics](gog-searchconsole-searchanalytics.md) - Search Analytics queries
 - [gog searchconsole sitemaps](gog-searchconsole-sitemaps.md) - List/get/submit/delete sitemaps
 - [gog searchconsole sites](gog-searchconsole-sites.md) - List and inspect Search Console sites
+- [gog searchconsole verification](gog-searchconsole-verification.md) - Domain ownership verification (Site Verification API, DNS TXT)
 
 ## Flags
 

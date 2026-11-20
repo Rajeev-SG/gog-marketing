@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	analyticsadmin "google.golang.org/api/analyticsadmin/v1beta"
@@ -13,8 +14,9 @@ import (
 )
 
 type AnalyticsPropertiesCmd struct {
-	List AnalyticsPropertiesListCmd `cmd:"" default:"withargs" aliases:"ls"`
-	Get  AnalyticsPropertyGetCmd    `cmd:"" name:"get" aliases:"info,show"`
+	List   AnalyticsPropertiesListCmd   `cmd:"" default:"withargs" aliases:"ls"`
+	Get    AnalyticsPropertyGetCmd      `cmd:"" name:"get" aliases:"info,show"`
+	Create AnalyticsPropertiesCreateCmd `cmd:"" name:"create" help:"Create a GA4 property inside an account"`
 }
 
 type AnalyticsPropertiesListCmd struct {
@@ -153,6 +155,70 @@ func (c *AnalyticsPropertyGetCmd) Run(ctx context.Context, flags *RootFlags) err
 		return err
 	}
 	return writeAnalyticsAdminItem(ctx, "property", item)
+}
+
+type AnalyticsPropertiesCreateCmd struct {
+	Account     string `arg:"" name:"account" help:"GA4 account resource (e.g. accounts/123 or 123)"`
+	DisplayName string `name:"display-name" required:"" help:"Property display name (1-100 characters)"`
+	TimeZone    string `name:"time-zone" aliases:"timezone" required:"" help:"IANA reporting time zone (e.g. Europe/London)"`
+	Currency    string `name:"currency" aliases:"currency-code" required:"" help:"ISO 4217 currency code (e.g. GBP)"`
+}
+
+func (c *AnalyticsPropertiesCreateCmd) Run(ctx context.Context, flags *RootFlags) error {
+	parent, err := normalizeAnalyticsAccountPath(c.Account)
+	if err != nil {
+		return err
+	}
+	displayName := strings.TrimSpace(c.DisplayName)
+	timeZone := strings.TrimSpace(c.TimeZone)
+	currency := strings.ToUpper(strings.TrimSpace(c.Currency))
+	if displayName == "" || len([]rune(displayName)) > 100 {
+		return usage("--display-name must be 1-100 characters")
+	}
+	if !validAnalyticsTimeZone(timeZone) {
+		return usagef("invalid --time-zone %q (expected an IANA time zone such as Europe/London)", c.TimeZone)
+	}
+	if !validAnalyticsCurrency(currency) {
+		return usagef("invalid --currency %q (expected an ISO 4217 code such as GBP)", c.Currency)
+	}
+
+	body := &analyticsadmin.GoogleAnalyticsAdminV1betaProperty{
+		Parent:       parent,
+		DisplayName:  displayName,
+		TimeZone:     timeZone,
+		CurrencyCode: currency,
+	}
+	return analyticsCreateAndWrite(ctx, flags, "property", "analytics.properties.create", parent, body, func(svc *analyticsadmin.Service, _ string, value any) (any, error) {
+		return svc.Properties.Create(value.(*analyticsadmin.GoogleAnalyticsAdminV1betaProperty)).Context(ctx).Do()
+	})
+}
+
+var analyticsTimeZonePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$`)
+
+var analyticsCurrencyPattern = regexp.MustCompile(`^[A-Z]{3}$`)
+
+var analyticsAccountIDPattern = regexp.MustCompile(`^accounts/[0-9]+$`)
+
+func validAnalyticsTimeZone(value string) bool {
+	return value != "" && len(value) <= 64 && analyticsTimeZonePattern.MatchString(value)
+}
+
+func validAnalyticsCurrency(value string) bool {
+	return analyticsCurrencyPattern.MatchString(value)
+}
+
+func normalizeAnalyticsAccountPath(raw string) (string, error) {
+	account := strings.TrimSpace(raw)
+	if account == "" {
+		return "", usage("empty account")
+	}
+	if !strings.HasPrefix(account, "accounts/") {
+		account = "accounts/" + strings.TrimPrefix(account, "/")
+	}
+	if !analyticsAccountIDPattern.MatchString(account) {
+		return "", usagef("invalid account %q (expected accounts/<numeric id>)", raw)
+	}
+	return account, nil
 }
 
 type AnalyticsMutationFlags struct {

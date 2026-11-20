@@ -11,6 +11,15 @@ import (
 
 var searchDomain = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9.-]{0,251}[A-Za-z0-9]$`)
 
+// verificationDomain pins Site Verification to a bare, lowercase-able
+// registrable domain. Numeric-only TLD labels are rejected, so an IPv4 literal
+// can never be verified as an INET_DOMAIN.
+var verificationDomain = regexp.MustCompile(`^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$`)
+
+func validVerificationDomain(domain string) bool {
+	return len(domain) <= 253 && verificationDomain.MatchString(domain)
+}
+
 func validSearchSite(site string) bool {
 	if strings.HasPrefix(site, "sc-domain:") {
 		return searchDomain.MatchString(strings.TrimPrefix(site, "sc-domain:"))
@@ -101,6 +110,55 @@ func nativeSearchConsoleBindings() []NativeToolBinding {
 			},
 		})
 	}
+
+	result = append(result,
+		NativeToolBinding{
+			// Sites.Add creates a new property, so no pre-existing site grant can
+			// scope it. Admission is the account-level tool grant plus the
+			// Worker's durable exact-argument one-use approval.
+			Name: "searchconsole_sites_add", Service: "searchconsole", Write: true,
+			hosts: []string{"searchconsole.googleapis.com"}, methods: []string{http.MethodPut},
+			scopes: []string{"webmasters"}, escapedPaths: true, paths: exactPaths("", ""),
+			argumentPaths: func(args map[string]any) ([]string, error) {
+				site, _ := args["site_url"].(string)
+				if !validSearchSite(site) {
+					return nil, invalidf("invalid Search Console site")
+				}
+				path := url.URL{Path: "/webmasters/v3/sites/{siteUrl}"}
+				gapi.Expand(&path, map[string]string{"siteUrl": site})
+
+				return []string{path.EscapedPath()}, nil
+			},
+		},
+		NativeToolBinding{
+			// Issuing a DNS TXT token records no Google state, but it is part of
+			// the write-only verification flow and uses the verify_only scope.
+			Name: "searchconsole_verification_token", Service: "searchconsole", Write: true,
+			hosts: []string{nativeGoogleAPIHost}, methods: []string{http.MethodPost},
+			scopes: []string{"siteverification.verify_only"}, escapedPaths: true, paths: exactPaths("", ""),
+			argumentPaths: func(args map[string]any) ([]string, error) {
+				domain, _ := args["domain"].(string)
+				if !validVerificationDomain(domain) {
+					return nil, invalidf("invalid verification domain")
+				}
+
+				return []string{"/siteVerification/v1/token"}, nil
+			},
+		},
+		NativeToolBinding{
+			Name: "searchconsole_verification_verify", Service: "searchconsole", Write: true,
+			hosts: []string{nativeGoogleAPIHost}, methods: []string{http.MethodPost},
+			scopes: []string{"siteverification.verify_only"}, escapedPaths: true, paths: exactPaths("", ""),
+			argumentPaths: func(args map[string]any) ([]string, error) {
+				domain, _ := args["domain"].(string)
+				if !validVerificationDomain(domain) {
+					return nil, invalidf("invalid verification domain")
+				}
+
+				return []string{"/siteVerification/v1/webResource"}, nil
+			},
+		},
+	)
 
 	return result
 }

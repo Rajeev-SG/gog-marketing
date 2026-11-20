@@ -276,15 +276,40 @@ list pagination/all-pages controls pass to existing handlers. This does not
 expose Google Ads links or authorize an indirect `adwords` scope. Fixture CRUD
 and read-back evidence is not real Google acceptance.
 
-Search Console now registers site list/get, search analytics query, sitemap
-list/get/submit/delete and URL inspection using existing typed tools/handlers.
-Site listing uses an explicit account tool grant; the other tools require an
-enabled `site` resource (`site_url`), supporting URL-prefix or `sc-domain:`
-properties. Read methods accept `webmasters.readonly` or `webmasters`; sitemap
-mutations require `webmasters`, and deletion requires destructive permission.
+`analytics_properties_create` creates a GA4 property inside an enabled
+`account` grant (a property does not exist before creation, so no property
+selectors are accepted). It requires `analytics.edit`, an explicit write grant
+and fixed `display_name`/`time_zone`/`currency` inputs; the Admin SDK carries the
+parent only in the body, so admission pins `POST /v1beta/properties`, rejects
+query widening and requires the body parent to equal the selected account
+exactly. `analytics_realtime` runs `runRealtimeReport` against the enabled
+property with `analytics.readonly`, using fixed dimensions/metrics and a
+1–250000 row cap. Creating the required data stream afterwards reuses the
+existing `analytics_datastreams_create` property-scoped tool.
+
+Search Console registers site list/get/add, search analytics query, sitemap
+list/get/submit/delete, URL inspection and DNS TXT domain verification using
+existing typed tools/handlers. Site listing and site add use an explicit account
+tool grant; the other site tools require an enabled `site` resource (`site_url`),
+supporting URL-prefix or `sc-domain:` properties. Site add is account-level
+because it creates the property before any site grant can exist. Read methods
+accept `webmasters.readonly` or `webmasters`; site/sitemap mutations require
+`webmasters`, and deletion requires destructive permission.
 Search Analytics and inspection POSTs are semantically read-only and admitted
 only for their declared exact endpoints. Site/feed URL path segments must match
 the existing SDK's escaped encoding, not an ambiguous decoded path.
+
+Domain verification is restricted to the least-privilege
+`siteverification.verify_only` grant: `searchconsole_verification_token` issues a
+DNS TXT token for a bare `INET_DOMAIN`, and `searchconsole_verification_verify`
+records the authenticated user's own ownership. Both are account-level tools
+behind the Search Console write grant, reject URL-shaped or IP identifiers,
+never send `owners`, and cannot list, update, delete or delegate verification.
+
+Hosted GA4 property creation, Search Console site addition and both verification
+tools require [Chat approval](chat.md#google-tools-and-approvals-92) for the exact
+arguments. The external MCP endpoint omits these four tools and directs callers
+to Chat if they try to invoke them. GA4 realtime remains available through MCP.
 
 Inspection and sitemap URLs must belong to the enabled URL-prefix/domain scope;
 suffix lookalikes, foreign hosts and traversal are rejected before Google calls.
